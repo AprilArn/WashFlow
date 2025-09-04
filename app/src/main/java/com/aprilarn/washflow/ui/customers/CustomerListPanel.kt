@@ -1,0 +1,144 @@
+package com.aprilarn.washflow.ui.customers
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.aprilarn.washflow.ui.theme.GrayBlue
+
+// Data class and sample data are moved here as they are specific to the customer list
+data class Customer(val id: String, val name: String, val contact: String)
+
+val sampleCustomers = listOf(
+    Customer("1", "Xxxxxxx Xxx Xxxxxxxx", "081xxxxxxx"),
+    Customer("2", "Xxxxxxx Xxx Xxxxxxxx", "081xxxxxxx"),
+    Customer("3", "Xxxxxxx Xxx Xxxxxxxx", "081xxxxxxx"),
+    Customer("4", "Raphael", "081233334444")
+)
+
+@Composable
+fun CustomerListPanel(
+    customers: List<Customer>,
+    onEditClick: (Customer) -> Unit,
+    onDeleteClick: (Customer) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxSize(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.25f))
+    ) {
+        LazyColumn(
+            modifier = Modifier.padding(0.dp)
+        ) {
+            // Table Header
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White, shape = RoundedCornerShape(16.dp))
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Name", modifier = Modifier.weight(0.45f), fontWeight = FontWeight.Bold, color = GrayBlue)
+                    Text("Contact", modifier = Modifier.weight(0.45f), fontWeight = FontWeight.Bold, color = GrayBlue)
+                    Text("Edit", modifier = Modifier.weight(0.1f), fontWeight = FontWeight.Bold, color = GrayBlue)
+                }
+            }
+
+            // Table Rows
+            items(customers) { customer ->
+                CustomerListItem(
+                    customer = customer,
+                    onEditClick = { onEditClick(customer) },
+                    onDeleteClick = { onDeleteClick(customer) }
+                )
+                Divider(
+                    color = Color.White.copy(alpha = 0.5f),
+                    modifier = Modifier.padding(horizontal = 18.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun CustomerListItem(
+    customer: Customer,
+    onEditClick: () -> Unit,
+    onDeleteClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 20.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(customer.name, modifier = Modifier.weight(0.45f), color = GrayBlue)
+        Text(customer.contact, modifier = Modifier.weight(0.45f), color = GrayBlue)
+        Row(
+            modifier = Modifier.weight(0.1f),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            IconButton(
+                onClick = onEditClick,
+                modifier = Modifier
+                    .size(24.dp)
+                    .background(Color(0xFF8BC34A), CircleShape)
+                    .padding(0.dp)
+            ) {
+                Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color.White, modifier = Modifier.size(16.dp))
+            }
+            IconButton(
+                onClick = onDeleteClick,
+                modifier = Modifier
+                    .size(24.dp)
+                    .background(Color(0xFFF44336), CircleShape)
+                    .padding(0.dp)
+            ) {
+                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.White, modifier = Modifier.size(16.dp))
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true, widthDp = 800, heightDp = 600)
+@Composable
+fun CustomerListPanelPreview() {
+    Box(
+        modifier = Modifier.background(Color(0xFF949494))
+    ) {
+        CustomerListPanel(
+            customers = sampleCustomers,
+            onEditClick = {},
+            onDeleteClick = {},
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxSize()
+        )
+    }
+}
