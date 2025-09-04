@@ -42,10 +42,10 @@ fun NavigationBar(
             .height(60.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(Color.White.copy(alpha = 0.5f))
-            .padding(horizontal = 24.dp)
+            .padding(horizontal = 10.dp)
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(20.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Definisikan setiap item navigasi
@@ -98,8 +98,9 @@ private fun BottomNavItem(
         verticalArrangement = Arrangement.Center,
         modifier = Modifier
             .fillMaxHeight()
+            .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick) // Buat item bisa diklik
-            .padding(horizontal = 8.dp) // Beri sedikit padding agar area klik lebih luas
+            .padding(horizontal = 14.dp) // Beri sedikit padding agar area klik lebih luas
     ) {
         Icon(
             imageVector = icon,
@@ -107,11 +108,11 @@ private fun BottomNavItem(
             tint = contentColor,
             modifier = Modifier.size(24.dp)
         )
-        Text(
-            text = label,
-            color = contentColor,
-            fontSize = 12.sp
-        )
+//        Text(
+//            text = label,
+//            color = contentColor,
+//            fontSize = 12.sp
+//        )
     }
 }
 
