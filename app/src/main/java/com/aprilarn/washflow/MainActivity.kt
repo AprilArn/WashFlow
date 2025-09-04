@@ -8,15 +8,18 @@ import android.os.Bundle
 import android.view.View
 import android.view.WindowInsets
 import android.view.WindowInsetsController
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,24 +32,40 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.aprilarn.washflow.ui.components.Header
 import com.aprilarn.washflow.ui.components.NavigationBar
 import com.aprilarn.washflow.ui.customers.CustomersScreen
 import com.aprilarn.washflow.ui.home.HomePage
 import com.aprilarn.washflow.ui.home.HomeViewModel
+import com.aprilarn.washflow.ui.login.GoogleAuthUiClient
+import com.aprilarn.washflow.ui.login.LoginScreen
+import com.aprilarn.washflow.ui.login.LoginViewModel
 import com.aprilarn.washflow.ui.theme.MainBLue
 import com.aprilarn.washflow.ui.theme.MornYellow
 import com.aprilarn.washflow.ui.theme.NoonBlue
 import com.aprilarn.washflow.ui.theme.EveOrange
 import com.aprilarn.washflow.ui.theme.NightDarkBlue
 import com.aprilarn.washflow.ui.theme.WashFlowTheme
+import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.location.LocationServices
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+
+    private val GoogleAuthUiClient by lazy {
+        GoogleAuthUiClient(
+            context = applicationContext,
+            oneTapClient = Identity.getSignInClient(applicationContext)
+        )
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -54,7 +73,85 @@ class MainActivity : ComponentActivity() {
         hideSystemBars()
         setContent {
             WashFlowTheme {
-                WashFlowApp()
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = Color.Transparent
+                ) {
+                    // 1. Navigasi utama aplikasi diatur di sini, dimulai dari "login"
+                    val navController = rememberNavController()
+                    NavHost(navController = navController, startDestination = "login") {
+
+                        // 2. Rute untuk Login Screen
+                        composable("login") {
+                            val viewModel = viewModel<LoginViewModel>()
+                            val state by viewModel.state.collectAsStateWithLifecycle()
+
+                            // Navigasi ke halaman utama SETELAH login berhasil
+                            LaunchedEffect(key1 = state.isSignInSuccessful) {
+                                if (state.isSignInSuccessful) {
+                                    Toast.makeText(
+                                        applicationContext,
+                                        "Sign-in successful!",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+
+                                    // 3. Pindah ke rute "main" dan hapus "login" dari back stack
+                                    navController.navigate("main") {
+                                        popUpTo("login") {
+                                            inclusive = true
+                                        }
+                                    }
+                                }
+                            }
+
+                            val launcher = rememberLauncherForActivityResult(
+                                contract = ActivityResultContracts.StartIntentSenderForResult(),
+                                onResult = { result ->
+                                    if (result.resultCode == RESULT_OK) {
+                                        lifecycleScope.launch {
+                                            val signInResult = GoogleAuthUiClient.signInWithIntent(
+                                                intent = result.data ?: return@launch
+                                            )
+                                            viewModel.onSignInResult(signInResult)
+                                        }
+                                    }
+                                }
+                            )
+
+                            // Tampilkan background gradient untuk Login Screen
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        Brush.linearGradient(
+                                            colors = listOf(MainBLue, MornYellow),
+                                            start = Offset(0f, Float.POSITIVE_INFINITY),
+                                            end = Offset(Float.POSITIVE_INFINITY, 0f)
+                                        )
+                                    )
+                            ) {
+                                LoginScreen(
+                                    state = state,
+                                    onGoogleSignInClick = {
+                                        lifecycleScope.launch {
+                                            val signInIntentSender = GoogleAuthUiClient.signIn()
+                                            launcher.launch(
+                                                IntentSenderRequest.Builder(
+                                                    signInIntentSender ?: return@launch
+                                                ).build()
+                                            )
+                                        }
+                                    }
+                                )
+                            }
+                        }
+
+                        // 4. Rute untuk seluruh aplikasi utama (setelah login)
+                        composable("main") {
+                            MainAppScreen() // Panggil composable yang berisi Scaffold dan Navigasi Internal
+                        }
+                    }
+                }
             }
         }
     }
@@ -75,23 +172,25 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun WashFlowApp() {
-    // 1. Buat NavController
-    val navController = rememberNavController()
+fun MainAppScreen() {
+    // NavController khusus untuk navigasi di dalam Bottom Navigation Bar
+    val bottomNavController = rememberNavController()
+    val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        // Hanya tampilkan Header jika tidak di halaman tertentu (opsional)
         topBar = { Header() },
         bottomBar = {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 22.dp)
-                    .padding(bottom = 12.dp),
+                    .padding(bottom = 12.dp)
+                    .padding(top = 16.dp),
                 contentAlignment = Alignment.Center
             ) {
-                // 2. Berikan NavController ke NavigationBar
-                NavigationBar(navController = navController)
+                NavigationBar(navController = bottomNavController)
             }
         },
         containerColor = Color.Transparent
@@ -108,8 +207,8 @@ fun WashFlowApp() {
                 )
                 .padding(innerPadding)
         ) {
-            // 3. Gunakan NavHost untuk mengatur layar
-            NavHost(navController = navController, startDestination = AppNavigation.Home.route) {
+            // NavHost internal untuk mengatur layar yang diakses dari Bottom Navigation Bar
+            NavHost(navController = bottomNavController, startDestination = AppNavigation.Home.route) {
                 composable(AppNavigation.Home.route) {
                     LocationAwareHomePage()
                 }
@@ -120,15 +219,12 @@ fun WashFlowApp() {
                         onDeleteCustomerClick = { /* TODO */ }
                     )
                 }
-                // Tambahkan layar lain di sini jika perlu
                 composable(AppNavigation.Orders.route) {
-                    // Placeholder untuk layar Orders
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text("Orders Screen", color = Color.White)
                     }
                 }
                 composable(AppNavigation.Settings.route) {
-                    // Placeholder untuk layar Settings
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text("Settings Screen", color = Color.White)
                     }
@@ -210,6 +306,6 @@ fun LocationAwareHomePage() {
 @Composable
 fun WashFlowAppPreview() {
     WashFlowTheme {
-        WashFlowApp()
+        MainAppScreen()
     }
 }

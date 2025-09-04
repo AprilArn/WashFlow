@@ -94,6 +94,10 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.foundation.layout)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
+    implementation(libs.play.services.auth)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -110,11 +114,14 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.9.3")
 
     // Firebase
-    implementation(libs.firebase.firestore)
-    implementation("com.google.firebase:firebase-auth-ktx:23.2.1")
-    implementation("com.google.firebase:firebase-auth:23.2.1")
-    implementation("com.google.firebase:firebase-firestore-ktx")
     implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
+
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx")
+    //implementation("com.google.firebase:firebase-auth-play-services:23.2.1")
+    implementation(libs.firebase.firestore)
+
+    // gms location
     implementation("com.google.android.gms:play-services-location:21.2.0")
 
     // url image
