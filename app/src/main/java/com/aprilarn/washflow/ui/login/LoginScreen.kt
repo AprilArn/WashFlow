@@ -50,21 +50,19 @@ fun LoginScreen(
         ) {
             Text(
                 text = "Wash",
-                style = MaterialTheme.typography.headlineMedium.copy(
+                style = MaterialTheme.typography.headlineLarge.copy(
                     color = GrayBlue, // Menggunakan GrayBlue
-                    fontSize =30.sp, // Ukuran font diperbesar
                     fontStyle = FontStyle.Normal,
                 ),
-                fontWeight = FontWeight.Medium, // Font lebih tebal
+                fontWeight = FontWeight.Medium // Font lebih tebal
             )
             Text(
                 text = "Flow",
-                style = MaterialTheme.typography.headlineSmall.copy(
+                style = MaterialTheme.typography.headlineLarge.copy(
                     color = Color.White, // Menggunakan warna putih
-                    fontSize = 30.sp, // Ukuran font diperbesar
                     fontStyle = FontStyle.Italic
                 ),
-                fontWeight = FontWeight.Medium, // Font lebih tebal
+                fontWeight = FontWeight.Medium // Font lebih tebal
             )
         }
 
@@ -100,7 +98,7 @@ fun LoginScreen(
 }
 
 
-@Preview(showBackground = true, widthDp = 960, heightDp = 500)
+@Preview(showBackground = true, widthDp = 960, heightDp = 600)
 @Composable
 fun LoginScreenPreview() {
     Box(
