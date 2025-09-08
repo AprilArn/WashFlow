@@ -53,6 +53,9 @@ import com.aprilarn.washflow.ui.theme.NoonBlue
 import com.aprilarn.washflow.ui.theme.EveOrange
 import com.aprilarn.washflow.ui.theme.NightDarkBlue
 import com.aprilarn.washflow.ui.theme.WashFlowTheme
+import com.aprilarn.washflow.ui.workspace.WorkspaceEvent
+import com.aprilarn.washflow.ui.workspace.WorkspaceScreen
+import com.aprilarn.washflow.ui.workspace.WorkspaceViewModel
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.launch
@@ -86,21 +89,19 @@ class MainActivity : ComponentActivity() {
                             val viewModel = viewModel<LoginViewModel>()
                             val state by viewModel.state.collectAsStateWithLifecycle()
 
-                            // Navigasi ke halaman utama SETELAH login berhasil
-                            LaunchedEffect(key1 = state.isSignInSuccessful) {
-                                if (state.isSignInSuccessful) {
-                                    Toast.makeText(
-                                        applicationContext,
-                                        "Sign-in successful!",
-                                        Toast.LENGTH_LONG
-                                    ).show()
-
-                                    // 3. Pindah ke rute "main" dan hapus "login" dari back stack
+                            // Efek ini akan memantau status workspace dan menavigasi
+                            LaunchedEffect(key1 = state.userHasWorkspace) {
+                                if (state.userHasWorkspace == true) { // Punya workspace
+                                    Toast.makeText(applicationContext, "Welcome back!", Toast.LENGTH_SHORT).show()
                                     navController.navigate("main") {
-                                        popUpTo("login") {
-                                            inclusive = true
-                                        }
+                                        popUpTo("login") { inclusive = true }
                                     }
+                                    viewModel.onNavigationComplete()
+                                } else if (state.userHasWorkspace == false) { // Tidak punya
+                                    navController.navigate("workspace") {
+                                        popUpTo("login") { inclusive = true }
+                                    }
+                                    viewModel.onNavigationComplete()
                                 }
                             }
 
@@ -146,9 +147,47 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        // 4. Rute untuk seluruh aplikasi utama (setelah login)
+                        // Rute baru untuk Workspace Screen
+                        composable("workspace") {
+                            val viewModel = viewModel<WorkspaceViewModel>()
+                            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+                            val context = LocalContext.current
+
+                            // Efek untuk menangani event dari WorkspaceViewModel
+                            LaunchedEffect(Unit) {
+                                viewModel.eventFlow.collect { event ->
+                                    when (event) {
+                                        is WorkspaceEvent.NavigateToDashboard -> {
+                                            navController.navigate("main") {
+                                                popUpTo("workspace") { inclusive = true }
+                                            }
+                                        }
+                                        is WorkspaceEvent.ShowError -> {
+                                            Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
+                                        }
+                                    }
+                                }
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        Brush.linearGradient(
+                                            colors = listOf(Color(0xFF8EC5FC), Color(0xFFE0C3FC))
+                                        )
+                                    )
+                            ) {
+                                WorkspaceScreen(
+                                    state = uiState,
+                                    onJoinClick = { code -> viewModel.joinWorkspace(code) },
+                                    onCreateWorkspaceClick = { viewModel.createWorkspace() }
+                                )
+                            }
+                        }
+
                         composable("main") {
-                            MainAppScreen() // Panggil composable yang berisi Scaffold dan Navigasi Internal
+                            MainAppScreen()
                         }
                     }
                 }

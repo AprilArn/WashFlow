@@ -68,9 +68,15 @@ fun LoginScreen(
 
         Spacer(Modifier.weight(1f))
 
+        // Tampilkan loading indicator jika sedang memeriksa workspace
+        if (state.isCheckingWorkspace) {
+            CircularProgressIndicator(color = Color.White)
+        }
+
         // Bagian bawah: Tombol "Sign in with Google"
         // Anda bisa membuat composable terpisah untuk tombol ini atau menuliskannya langsung
         Button(
+            enabled = !state.isCheckingWorkspace,
             onClick = { onGoogleSignInClick() },
             modifier = Modifier
                 .width(240.dp) // Lebar tombol sekitar 60% dari lebar layar
