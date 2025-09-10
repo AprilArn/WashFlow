@@ -28,23 +28,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.ui.theme.GrayBlue
 
-// Data class and sample data are moved here as they are specific to the customer list
-data class Customer(val id: String, val name: String, val contact: String)
-
-val sampleCustomers = listOf(
-    Customer("1", "Xxxxxxx Xxx Xxxxxxxx", "081xxxxxxx"),
-    Customer("2", "Xxxxxxx Xxx Xxxxxxxx", "081xxxxxxx"),
-    Customer("3", "Xxxxxxx Xxx Xxxxxxxx", "081xxxxxxx"),
-    Customer("4", "Raphael", "081233334444")
-)
 
 @Composable
 fun CustomerListPanel(
-    customers: List<Customer>,
-    onEditClick: (Customer) -> Unit,
-    onDeleteClick: (Customer) -> Unit,
+    customers: List<Customers>,
+    onEditClick: (Customers) -> Unit,
+    onDeleteClick: (Customers) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -88,7 +80,7 @@ fun CustomerListPanel(
 
 @Composable
 fun CustomerListItem(
-    customer: Customer,
+    customer: Customers, // <- Gunakan Customers
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
@@ -99,7 +91,9 @@ fun CustomerListItem(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(customer.name, modifier = Modifier.weight(0.45f), color = GrayBlue)
-        Text(customer.contact, modifier = Modifier.weight(0.45f), color = GrayBlue)
+        customer.contact?.let { // Handle contact yang nullable
+            Text(it, modifier = Modifier.weight(0.45f), color = GrayBlue)
+        }
         Row(
             modifier = Modifier.weight(0.1f),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -129,11 +123,19 @@ fun CustomerListItem(
 @Preview(showBackground = true, widthDp = 800, heightDp = 600)
 @Composable
 fun CustomerListPanelPreview() {
+    // Buat data contoh lokal hanya untuk preview
+    val sampleCustomersForPreview = listOf(
+        Customers("1", "Xxxxxxx Xxx Xxxxxxxx", "081xxxxxxx"),
+        Customers("2", "Xxxxxxx Xxx Xxxxxxxx", "081xxxxxxx"),
+        Customers("3", "Xxxxxxx Xxx Xxxxxxxx", "081xxxxxxx"),
+        Customers("4", "Raphael", "081233334444")
+    )
+
     Box(
         modifier = Modifier.background(Color(0xFF949494))
     ) {
         CustomerListPanel(
-            customers = sampleCustomers,
+            customers = sampleCustomersForPreview,
             onEditClick = {},
             onDeleteClick = {},
             modifier = Modifier

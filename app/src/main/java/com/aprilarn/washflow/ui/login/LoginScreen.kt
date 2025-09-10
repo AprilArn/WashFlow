@@ -73,6 +73,8 @@ fun LoginScreen(
             CircularProgressIndicator(color = Color.White)
         }
 
+        Spacer(Modifier.weight(1f))
+
         // Bagian bawah: Tombol "Sign in with Google"
         // Anda bisa membuat composable terpisah untuk tombol ini atau menuliskannya langsung
         Button(

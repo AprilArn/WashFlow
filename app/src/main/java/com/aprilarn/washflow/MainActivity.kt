@@ -42,6 +42,7 @@ import androidx.navigation.compose.rememberNavController
 import com.aprilarn.washflow.ui.components.Header
 import com.aprilarn.washflow.ui.components.NavigationBar
 import com.aprilarn.washflow.ui.customers.CustomersScreen
+import com.aprilarn.washflow.ui.customers.CustomersViewModel
 import com.aprilarn.washflow.ui.home.HomePage
 import com.aprilarn.washflow.ui.home.HomeViewModel
 import com.aprilarn.washflow.ui.login.GoogleAuthUiClient
@@ -251,9 +252,38 @@ fun MainAppScreen() {
                 composable(AppNavigation.Home.route) {
                     LocationAwareHomePage()
                 }
+//                composable(AppNavigation.Customers.route) {
+//                    CustomersScreen(
+//                        onAddCustomerClick = { _, _ -> /* TODO */ },
+//                        onEditCustomerClick = { /* TODO */ },
+//                        onDeleteCustomerClick = { /* TODO */ }
+//                    )
+//                }
                 composable(AppNavigation.Customers.route) {
+                    // 1. Buat instance ViewModel
+                    val viewModel: CustomersViewModel = viewModel()
+                    // 2. Ambil state dari ViewModel
+                    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+                    val context = LocalContext.current
+
+                    // Menampilkan pesan Toast dari ViewModel
+                    LaunchedEffect(uiState.successMessage, uiState.errorMessage) {
+                        uiState.successMessage?.let {
+                            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+                            viewModel.onMessageShown()
+                        }
+                        uiState.errorMessage?.let {
+                            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+                            viewModel.onMessageShown()
+                        }
+                    }
+
+                    // 3. Berikan 'uiState' ke CustomersScreen
                     CustomersScreen(
-                        onAddCustomerClick = { _, _ -> /* TODO */ },
+                        uiState = uiState,
+                        onAddCustomerClick = { name, contact ->
+                            viewModel.addCustomer(name, contact)
+                        },
                         onEditCustomerClick = { /* TODO */ },
                         onDeleteCustomerClick = { /* TODO */ }
                     )

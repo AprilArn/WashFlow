@@ -1,3 +1,4 @@
+// com/aprilarn/washflow/ui/customers/CustomersScreen.kt
 package com.aprilarn.washflow.ui.customers
 
 import androidx.compose.foundation.background
@@ -16,18 +17,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aprilarn.washflow.data.model.Customers
 
 @Composable
 fun CustomersScreen(
+    // Ubah parameter untuk menerima seluruh UiState
+    uiState: CustomersUiState,
     onAddCustomerClick: (String, String) -> Unit,
-    onEditCustomerClick: (Customer) -> Unit,
-    onDeleteCustomerClick: (Customer) -> Unit,
+    onEditCustomerClick: (Customers) -> Unit,
+    onDeleteCustomerClick: (Customers) -> Unit,
 ) {
     // State for the text fields and search query
     var searchQuery by remember { mutableStateOf("") }
     var customerName by remember { mutableStateOf("") }
     var customerPhone by remember { mutableStateOf("") }
-    val customerCount = sampleCustomers.size
+    // Ambil jumlah customer dari state yang sebenarnya
+    val customerCount = uiState.customers.size
 
     Row(
         modifier = Modifier
@@ -75,9 +80,10 @@ fun CustomersScreen(
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-            // Customer List Panel (now imported from its own file)
+            // Customer List Panel
+            // Gunakan data customer dari uiState, bukan sampleCustomers
             CustomerListPanel(
-                customers = sampleCustomers,
+                customers = uiState.customers,
                 onEditClick = onEditCustomerClick,
                 onDeleteClick = onDeleteCustomerClick
             )
@@ -101,6 +107,7 @@ fun CustomersScreen(
     }
 }
 
+// ... (Kode AddCustomerPanel tidak berubah)
 @Composable
 fun AddCustomerPanel(
     name: String,
@@ -122,7 +129,7 @@ fun AddCustomerPanel(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text("Add New Customer", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             OutlinedTextField(
                 value = name,
                 onValueChange = onNameChange,
@@ -130,7 +137,7 @@ fun AddCustomerPanel(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(2.dp))
             OutlinedTextField(
                 value = phone,
                 onValueChange = onPhoneChange,
@@ -155,6 +162,7 @@ fun AddCustomerPanel(
     }
 }
 
+
 @Preview(showBackground = true, widthDp = 1200, heightDp = 600)
 @Composable
 fun CustomersScreenPreview() {
@@ -165,7 +173,15 @@ fun CustomersScreenPreview() {
             )
         )
     ) {
+        // Buat data palsu untuk preview
+        val previewState = CustomersUiState(
+            customers = listOf(
+                Customers("1", "Pelanggan Satu", "081234567890"),
+                Customers("2", "Pelanggan Dua", "089876543210")
+            )
+        )
         CustomersScreen(
+            uiState = previewState,
             onAddCustomerClick = { _, _ -> },
             onEditCustomerClick = {},
             onDeleteCustomerClick = {}
