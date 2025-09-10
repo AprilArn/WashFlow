@@ -84,6 +84,7 @@ fun CustomersScreen(
             // Gunakan data customer dari uiState, bukan sampleCustomers
             CustomerListPanel(
                 customers = uiState.customers,
+                isLoading = uiState.isLoading,
                 onEditClick = onEditCustomerClick,
                 onDeleteClick = onDeleteCustomerClick
             )

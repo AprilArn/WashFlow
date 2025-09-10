@@ -20,8 +20,8 @@ data class Workspaces (
 )
 
     data class Customers (
-        val customerId: String,
-        val name: String,
+        val customerId: String = "",
+        val name: String = "",
         val contact: String? = null
     )
 
