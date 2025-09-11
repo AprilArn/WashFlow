@@ -4,6 +4,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -54,7 +56,7 @@ fun WorkspaceScreen(
             modifier = Modifier
                 .clip(RoundedCornerShape(16.dp))
                 .background(Color.White.copy(alpha = 0.25f))
-                .padding(24.dp),
+                .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
@@ -85,7 +87,7 @@ fun WorkspaceScreen(
                 )
             )
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(12.dp))
 
             // 4. Tambahkan tombol untuk aksi "Join"
             Button(
@@ -109,7 +111,18 @@ fun WorkspaceScreen(
             onClick = onCreateWorkspaceClick,
             border = BorderStroke(1.dp, Color.White)
         ) {
-            Text("Create new workspace", color = Color.White)
+            Row (
+                verticalAlignment = Alignment.CenterVertically
+            ){
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Create Icon",
+                    tint = Color.White
+                )
+                Spacer(modifier = Modifier.width(4.dp) )
+                Text("Create new workspace", color = Color.White)
+            }
+
         }
     }
 }
