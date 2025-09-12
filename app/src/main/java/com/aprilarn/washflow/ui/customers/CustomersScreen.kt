@@ -18,6 +18,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aprilarn.washflow.data.model.Customers
+import com.aprilarn.washflow.ui.components.AddNewDataInputField
+import com.aprilarn.washflow.ui.components.AddNewDataPanel
 
 @Composable
 fun CustomersScreen(
@@ -90,79 +92,37 @@ fun CustomersScreen(
             )
         }
 
-        // Right Panel: Add New Customer
+        // Right Panel: Gunakan AddNewDataPanel yang baru
         Box(modifier = Modifier.weight(1f)) {
-            AddCustomerPanel(
-                name = customerName,
-                onNameChange = { customerName = it },
-                phone = customerPhone,
-                onPhoneChange = { customerPhone = it },
+            // 1. Definisikan daftar input fields yang dibutuhkan
+            val inputFields = listOf(
+                AddNewDataInputField(
+                    value = customerName,
+                    onValueChange = { customerName = it },
+                    label = "Nama Pelanggan"
+                ),
+                AddNewDataInputField(
+                    value = customerPhone,
+                    onValueChange = { customerPhone = it },
+                    label = "No. WA"
+                )
+            )
+
+            // 2. Panggil komponen generik yang baru dibuat
+            AddNewDataPanel(
+                title = "Add New Customer",
+                inputFields = inputFields,
                 onAddClick = {
                     onAddCustomerClick(customerName, customerPhone)
-                    // Clear fields after adding
+                    // Kosongkan field setelah data ditambahkan
                     customerName = ""
                     customerPhone = ""
-                }
+                },
+                addButtonText = "Add"
             )
         }
     }
 }
-
-// ... (Kode AddCustomerPanel tidak berubah)
-@Composable
-fun AddCustomerPanel(
-    name: String,
-    onNameChange: (String) -> Unit,
-    phone: String,
-    onPhoneChange: (String) -> Unit,
-    onAddClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxHeight(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.25f))
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text("Add New Customer", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(4.dp))
-            OutlinedTextField(
-                value = name,
-                onValueChange = onNameChange,
-                label = { Text("Nama Pelanggan") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            OutlinedTextField(
-                value = phone,
-                onValueChange = onPhoneChange,
-                label = { Text("No. WA") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Button(
-                onClick = onAddClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8BC34A)),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Icon")
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Add")
-            }
-        }
-    }
-}
-
 
 @Preview(showBackground = true, widthDp = 1200, heightDp = 600)
 @Composable
