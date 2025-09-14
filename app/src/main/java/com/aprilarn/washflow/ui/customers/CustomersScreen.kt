@@ -3,9 +3,12 @@ package com.aprilarn.washflow.ui.customers
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -20,6 +23,9 @@ import androidx.compose.ui.unit.sp
 import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.ui.components.AddNewDataInputField
 import com.aprilarn.washflow.ui.components.AddNewDataPanel
+import com.aprilarn.washflow.ui.components.DataTablePanel
+import com.aprilarn.washflow.ui.components.ColumnConfig
+import com.aprilarn.washflow.ui.theme.GrayBlue
 
 @Composable
 fun CustomersScreen(
@@ -43,52 +49,105 @@ fun CustomersScreen(
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Left Panel: Customer List
-        Column(
-            modifier = Modifier.weight(2f)
-        ) {
-            // Top bar with Search and Customer Count
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Search Bar
-                TextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = { Text("Search by Name/Contact") },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search Icon") },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.Gray,
-                        disabledContainerColor = Color.Gray,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        disabledIndicatorColor = Color.Transparent
-                    )
+//        Column(
+//            modifier = Modifier.weight(2f)
+//        ) {
+//            // Top bar with Search and Customer Count
+//            Row(
+//                modifier = Modifier.fillMaxWidth(),
+//                horizontalArrangement = Arrangement.spacedBy(16.dp),
+//                verticalAlignment = Alignment.CenterVertically
+//            ) {
+//                // Search Bar
+//                TextField(
+//                    value = searchQuery,
+//                    onValueChange = { searchQuery = it },
+//                    placeholder = { Text("Search by Name/Contact") },
+//                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search Icon") },
+//                    modifier = Modifier.weight(1f),
+//                    shape = RoundedCornerShape(16.dp),
+//                    colors = TextFieldDefaults.colors(
+//                        focusedContainerColor = Color.White,
+//                        unfocusedContainerColor = Color.Gray,
+//                        disabledContainerColor = Color.Gray,
+//                        focusedIndicatorColor = Color.Transparent,
+//                        unfocusedIndicatorColor = Color.Transparent,
+//                        disabledIndicatorColor = Color.Transparent
+//                    )
+//                )
+//                // Customer Count
+//                Card(
+//                    shape = RoundedCornerShape(16.dp),
+//                    colors = CardDefaults.cardColors(containerColor = Color.White)
+//                ) {
+//                    Text(
+//                        text = "Customer: $customerCount",
+//                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+//                        fontWeight = FontWeight.Bold
+//                    )
+//                }
+//            }
+//            Spacer(modifier = Modifier.height(16.dp))
+//            // Customer List Panel
+//            // Gunakan data customer dari uiState, bukan sampleCustomers
+//            CustomerListPanel(
+//                customers = uiState.customers,
+//                isLoading = uiState.isLoading,
+//                onEditClick = onEditCustomerClick,
+//                onDeleteClick = onDeleteCustomerClick
+//            )
+//        }
+
+        // Left Panel: Menggunakan DataTablePanel yang baru
+        Box(modifier = Modifier.weight(2f)) {
+            // Definisikan konfigurasi kolom di sini
+            val customerColumns = listOf(
+                ColumnConfig<Customers>(
+                    header = "Name",
+                    weight = 0.45f,
+                    content = { customer ->
+                        Text(customer.name, color = GrayBlue)
+                    }
+                ),
+                ColumnConfig<Customers>(
+                    header = "Contact",
+                    weight = 0.45f,
+                    content = { customer ->
+                        customer.contact?.let { Text(it, color = GrayBlue) }
+                    }
+                ),
+                ColumnConfig<Customers>(
+                    header = "Edit",
+                    weight = 0.1f,
+                    content = { customer ->
+                        // UI untuk tombol bisa langsung didefinisikan di sini
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            IconButton(
+                                onClick = { onEditCustomerClick(customer) },
+                                modifier = Modifier.size(24.dp).background(Color(0xFF8BC34A), CircleShape)
+                            ) {
+                                Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color.White, modifier = Modifier.size(16.dp))
+                            }
+                            IconButton(
+                                onClick = { onDeleteCustomerClick(customer) },
+                                modifier = Modifier.size(24.dp).background(Color(0xFFF44336), CircleShape)
+                            ) {
+                                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.White, modifier = Modifier.size(16.dp))
+                            }
+                        }
+                    }
                 )
-                // Customer Count
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
-                ) {
-                    Text(
-                        text = "Customer: $customerCount",
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            // Customer List Panel
-            // Gunakan data customer dari uiState, bukan sampleCustomers
-            CustomerListPanel(
-                customers = uiState.customers,
-                isLoading = uiState.isLoading,
-                onEditClick = onEditCustomerClick,
-                onDeleteClick = onDeleteCustomerClick
+            )
+
+            DataTablePanel(
+                title = "Customer",
+                itemCount = uiState.customers.size,
+                searchQuery = searchQuery,
+                onSearchQueryChange = { searchQuery = it },
+                searchPlaceholder = "Search by Name/Contact",
+                columns = customerColumns, // <- Gunakan konfigurasi yang baru
+                data = uiState.customers,
+                isLoading = uiState.isLoading
             )
         }
 
