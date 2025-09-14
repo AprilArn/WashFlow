@@ -78,7 +78,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             WashFlowTheme {
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize(),
                     color = Color.Transparent
                 ) {
                     // 1. Navigasi utama aplikasi diatur di sini, dimulai dari "login"
@@ -252,13 +253,7 @@ fun MainAppScreen() {
                 composable(AppNavigation.Home.route) {
                     LocationAwareHomePage()
                 }
-//                composable(AppNavigation.Customers.route) {
-//                    CustomersScreen(
-//                        onAddCustomerClick = { _, _ -> /* TODO */ },
-//                        onEditCustomerClick = { /* TODO */ },
-//                        onDeleteCustomerClick = { /* TODO */ }
-//                    )
-//                }
+
                 composable(AppNavigation.Customers.route) {
                     // 1. Buat instance ViewModel
                     val viewModel: CustomersViewModel = viewModel()
@@ -284,8 +279,20 @@ fun MainAppScreen() {
                         onAddCustomerClick = { name, contact ->
                             viewModel.addCustomer(name, contact)
                         },
-                        onEditCustomerClick = { /* TODO */ },
-                        onDeleteCustomerClick = { /* TODO */ }
+                        // Implementasikan callback yang sebelumnya TODO
+                        onEditCustomerClick = { customer ->
+                            viewModel.updateCustomer(customer)
+                        },
+                        onDeleteCustomerClick = { customer ->
+                            viewModel.deleteCustomer(customer)
+                        },
+                        // Tambahkan callback baru yang menyebabkan error
+                        onCustomerSelected = { customer ->
+                            viewModel.onCustomerSelected(customer)
+                        },
+                        onDismissDialog = {
+                            viewModel.onDismissEditDialog()
+                        }
                     )
                 }
                 composable(AppNavigation.Orders.route) {

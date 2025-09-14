@@ -76,4 +76,52 @@ class CustomerRepository {
             false
         }
     }
+
+    /**
+     * Mengubah data pelanggan yang ada di Firestore.
+     */
+    suspend fun updateCustomer(customerId: String, newName: String, newContact: String): Boolean {
+        val user = Firebase.auth.currentUser ?: return false
+        val userDoc = db.collection("users").document(user.uid).get().await()
+        val workspaceId = userDoc.getString("workspaceId") ?: return false
+
+        return try {
+            val customerDocRef = db.collection("workspaces")
+                .document(workspaceId)
+                .collection("customers")
+                .document(customerId)
+
+            val updates = mapOf(
+                "name" to newName,
+                "contact" to newContact
+            )
+            customerDocRef.update(updates).await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    /**
+     * Menghapus data pelanggan dari Firestore.
+     */
+    suspend fun deleteCustomer(customerId: String): Boolean {
+        val user = Firebase.auth.currentUser ?: return false
+        val userDoc = db.collection("users").document(user.uid).get().await()
+        val workspaceId = userDoc.getString("workspaceId") ?: return false
+
+        return try {
+            db.collection("workspaces")
+                .document(workspaceId)
+                .collection("customers")
+                .document(customerId)
+                .delete()
+                .await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
 }

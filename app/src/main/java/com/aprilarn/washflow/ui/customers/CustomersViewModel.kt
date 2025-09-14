@@ -3,6 +3,7 @@ package com.aprilarn.washflow.ui.customers
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.data.repository.CustomerRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,13 +18,9 @@ class CustomersViewModel : ViewModel() {
     private val customerRepository = CustomerRepository()
 
     init {
-        // Langsung panggil fungsi untuk memuat daftar customer saat ViewModel dibuat
         loadCustomers()
     }
 
-    /**
-     * Memuat daftar customer dari Firestore dan memperbarui UI state.
-     */
     private fun loadCustomers() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
@@ -52,7 +49,6 @@ class CustomersViewModel : ViewModel() {
                         successMessage = "Customer '$name' added successfully!"
                     )
                 }
-                // Panggil fungsi untuk refresh daftar customer setelah berhasil menambahkan
                 loadCustomers()
             } else {
                 _uiState.update {
@@ -65,9 +61,46 @@ class CustomersViewModel : ViewModel() {
         }
     }
 
+    fun updateCustomer(customer: Customers) {
+        viewModelScope.launch {
+            val success = customerRepository.updateCustomer(customer.customerId, customer.name, customer.contact ?: "")
+            if (success) {
+                // Tutup dialog setelah berhasil dan refresh data
+                _uiState.update { it.copy(successMessage = "Customer updated!", selectedCustomer = null) }
+                loadCustomers()
+            } else {
+                _uiState.update { it.copy(errorMessage = "Failed to update customer.") }
+            }
+        }
+    }
+
+    fun deleteCustomer(customer: Customers) {
+        viewModelScope.launch {
+            val success = customerRepository.deleteCustomer(customer.customerId)
+            if (success) {
+                // Tutup dialog setelah berhasil dan refresh data
+                _uiState.update { it.copy(successMessage = "Customer deleted!", selectedCustomer = null) }
+                loadCustomers()
+            } else {
+                _uiState.update { it.copy(errorMessage = "Failed to delete customer.") }
+            }
+        }
+    }
+
     /**
-     * Dipanggil dari UI setelah pesan ditampilkan untuk membersihkan state.
+     * Fungsi baru untuk memilih pelanggan dan menampilkan dialog edit.
      */
+    fun onCustomerSelected(customer: Customers) {
+        _uiState.update { it.copy(selectedCustomer = customer) }
+    }
+
+    /**
+     * Fungsi baru untuk menutup/membatalkan dialog edit.
+     */
+    fun onDismissEditDialog() {
+        _uiState.update { it.copy(selectedCustomer = null) }
+    }
+
     fun onMessageShown() {
         _uiState.update { it.copy(successMessage = null, errorMessage = null) }
     }

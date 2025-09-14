@@ -1,6 +1,7 @@
 package com.aprilarn.washflow.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -33,6 +34,7 @@ fun <T> DataTablePanel(
     columns: List<ColumnConfig<T>>, // <- PARAMETER BARU
     data: List<T>,
     isLoading: Boolean,
+    onRowClick: (T) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         // Top bar with Search and Item Count
@@ -124,6 +126,7 @@ fun <T> DataTablePanel(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .clickable { onRowClick(item) }
                                     .padding(horizontal = 24.dp, vertical = 20.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
