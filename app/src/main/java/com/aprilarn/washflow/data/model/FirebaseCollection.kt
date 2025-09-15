@@ -26,8 +26,8 @@ data class Workspaces (
     )
 
     data class Services (
-        val serviceId: String,
-        val serviceName: String
+        val serviceId: String = "",
+        val serviceName: String = ""
     )
 
     data class Items (

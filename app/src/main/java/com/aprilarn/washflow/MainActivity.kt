@@ -43,6 +43,8 @@ import com.aprilarn.washflow.ui.components.Header
 import com.aprilarn.washflow.ui.components.NavigationBar
 import com.aprilarn.washflow.ui.customers.CustomersScreen
 import com.aprilarn.washflow.ui.customers.CustomersViewModel
+import com.aprilarn.washflow.ui.services.ServicesScreen
+import com.aprilarn.washflow.ui.services.ServicesViewModel
 import com.aprilarn.washflow.ui.home.HomePage
 import com.aprilarn.washflow.ui.home.HomeViewModel
 import com.aprilarn.washflow.ui.login.GoogleAuthUiClient
@@ -293,6 +295,31 @@ fun MainAppScreen() {
                         onDismissDialog = {
                             viewModel.onDismissEditDialog()
                         }
+                    )
+                }
+                composable(AppNavigation.Services.route) { // Asumsi Anda punya AppNavigation.Services
+                    val viewModel: ServicesViewModel = viewModel()
+                    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+                    val context = LocalContext.current
+
+                    LaunchedEffect(uiState.successMessage, uiState.errorMessage) {
+                        uiState.successMessage?.let {
+                            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+                            viewModel.onMessageShown()
+                        }
+                        uiState.errorMessage?.let {
+                            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+                            viewModel.onMessageShown()
+                        }
+                    }
+
+                    ServicesScreen(
+                        uiState = uiState,
+                        onAddServiceClick = { id, name -> viewModel.addService(id, name) },
+                        onEditServiceClick = { service -> viewModel.updateService(service) },
+                        onDeleteServiceClick = { service -> viewModel.deleteService(service) },
+                        onServiceSelected = { service -> viewModel.onServiceSelected(service) },
+                        onDismissDialog = { viewModel.onDismissEditDialog() }
                     )
                 }
                 composable(AppNavigation.Orders.route) {

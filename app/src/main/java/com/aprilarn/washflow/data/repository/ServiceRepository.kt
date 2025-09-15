@@ -1,14 +1,13 @@
-// com/aprilarn/washflow/data/repository/CustomerRepository.kt
 package com.aprilarn.washflow.data.repository
 
-import com.aprilarn.washflow.data.model.Customers
+import com.aprilarn.washflow.data.model.Services
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
 import com.google.firebase.firestore.toObjects
 import kotlinx.coroutines.tasks.await
 
-class CustomerRepository {
+class ServiceRepository {
     private val db = Firebase.firestore
     private val currentUser = Firebase.auth.currentUser
 
@@ -22,43 +21,42 @@ class CustomerRepository {
         }
     }
 
-    suspend fun getCustomers(): List<Customers> {
+    suspend fun getServices(): List<Services> {
         val workspaceId = getWorkspaceId() ?: return emptyList()
-
         return try {
             val snapshot = db.collection("workspaces")
                 .document(workspaceId)
-                .collection("customers")
+                .collection("services")
                 .get()
                 .await()
-            snapshot.toObjects() // Konversi semua dokumen menjadi list objek Customers
+            snapshot.toObjects()
         } catch (e: Exception) {
             e.printStackTrace()
             emptyList()
         }
     }
 
-    suspend fun addCustomer(customerName: String, customerContact: String): Boolean {
+    /**
+     * Menambahkan service baru dengan ID kustom yang ditentukan oleh pengguna.
+     * @return Boolean true jika sukses.
+     */
+    suspend fun addService(serviceId: String, serviceName: String): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
-
         return try {
-            // 2. Buat referensi ke sub-koleksi 'customers'
-            val customersCollection = db.collection("workspaces")
+            // Referensi ke koleksi 'services'
+            val servicesCollection = db.collection("workspaces")
                 .document(workspaceId)
-                .collection("customers")
+                .collection("services")
 
-            // 3. Buat dokumen baru untuk mendapatkan ID unik
-            val newCustomerDocRef = customersCollection.document()
+            // **KUNCI UTAMA**: Gunakan .document(serviceId) untuk menetapkan ID kustom
+            val newServiceDocRef = servicesCollection.document(serviceId)
 
-            // 4. Siapkan objek Customer dengan ID yang baru dibuat
-            val newCustomer = Customers(
-                customerId = newCustomerDocRef.id,
-                name = customerName,
-                contact = customerContact
+            val newService = Services(
+                serviceId = serviceId, // ID dari input pengguna
+                serviceName = serviceName
             )
 
-            // 5. Simpan objek ke Firestore
-            newCustomerDocRef.set(newCustomer).await()
+            newServiceDocRef.set(newService).await()
             true
         } catch (e: Exception) {
             e.printStackTrace()
@@ -66,19 +64,15 @@ class CustomerRepository {
         }
     }
 
-    suspend fun updateCustomer(customerId: String, newName: String, newContact: String): Boolean {
+    suspend fun updateService(serviceId: String, newName: String): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
         return try {
-            val customerDocRef = db.collection("workspaces")
+            val serviceDocRef = db.collection("workspaces")
                 .document(workspaceId)
-                .collection("customers")
-                .document(customerId)
+                .collection("services")
+                .document(serviceId)
 
-            val updates = mapOf(
-                "name" to newName,
-                "contact" to newContact
-            )
-            customerDocRef.update(updates).await()
+            serviceDocRef.update("serviceName", newName).await()
             true
         } catch (e: Exception) {
             e.printStackTrace()
@@ -86,13 +80,13 @@ class CustomerRepository {
         }
     }
 
-    suspend fun deleteCustomer(customerId: String): Boolean {
+    suspend fun deleteService(serviceId: String): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
         return try {
             db.collection("workspaces")
                 .document(workspaceId)
-                .collection("customers")
-                .document(customerId)
+                .collection("services")
+                .document(serviceId)
                 .delete()
                 .await()
             true

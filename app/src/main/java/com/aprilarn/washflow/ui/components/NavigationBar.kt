@@ -49,31 +49,24 @@ fun NavigationBar(
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Definisikan setiap item navigasi
+            // Daftar item sekarang lebih dinamis
             val items = listOf(
-                AppNavigation.Home to Icons.Default.Home,
-                AppNavigation.Orders to Icons.Default.ShoppingCart,
-                AppNavigation.Customers to Icons.Default.Person, // Rute ke CustomersScreen
-                AppNavigation.Settings to Icons.Default.Settings
+                AppNavigation.Home,
+                AppNavigation.Orders,
+                AppNavigation.Customers,
+                AppNavigation.Services, // Item baru akan muncul di sini
+                AppNavigation.Settings
             )
 
             // Loop untuk membuat setiap item
-            items.forEach { (screen, icon) ->
-                val label = when (screen) {
-                    AppNavigation.Home -> "Home"
-                    AppNavigation.Orders -> "Orders"
-                    AppNavigation.Customers -> "Users"
-                    AppNavigation.Settings -> "Settings"
-                }
-
+            items.forEach { screen ->
                 BottomNavItem(
-                    icon = icon,
-                    label = label,
+                    icon = screen.icon,
+                    label = screen.label,
                     isSelected = currentRoute == screen.route,
                     onClick = {
-                        // Navigasi hanya jika belum berada di layar tersebut
                         if (currentRoute != screen.route) {
                             navController.navigate(screen.route) {
-                                // Pop up ke start destination untuk menghindari tumpukan back stack
                                 popUpTo(navController.graph.startDestinationId)
                                 launchSingleTop = true
                             }

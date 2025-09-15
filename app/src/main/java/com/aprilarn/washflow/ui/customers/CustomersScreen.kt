@@ -33,6 +33,8 @@ fun CustomersScreen(
     onCustomerSelected: (Customers) -> Unit,
     onDismissDialog: () -> Unit
 ) {
+    // State untuk pencarian (search) data
+    // var searchQuery by remember { mutableStateOf("") }
     // State untuk panel "Add New"
     var newCustomerName by remember { mutableStateOf("") }
     var newCustomerPhone by remember { mutableStateOf("") }
@@ -131,10 +133,7 @@ fun CustomersScreen(
                 columns = customerColumns,
                 data = filteredCustomers, // Gunakan data yang sudah difilter
                 isLoading = uiState.isLoading,
-                onRowClick = { customer ->
-                    // Panggil fungsi callback saat baris diklik
-                    onCustomerSelected(customer)
-                }
+                onRowClick = { customer -> onCustomerSelected(customer) }
             )
         }
 
