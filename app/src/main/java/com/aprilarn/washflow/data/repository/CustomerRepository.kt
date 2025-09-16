@@ -1,4 +1,3 @@
-// com/aprilarn/washflow/data/repository/CustomerRepository.kt
 package com.aprilarn.washflow.data.repository
 
 import com.aprilarn.washflow.data.model.Customers
@@ -7,6 +6,9 @@ import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
 import com.google.firebase.firestore.toObjects
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.channels.awaitClose
 
 class CustomerRepository {
     private val db = Firebase.firestore
@@ -22,19 +24,37 @@ class CustomerRepository {
         }
     }
 
-    suspend fun getCustomers(): List<Customers> {
-        val workspaceId = getWorkspaceId() ?: return emptyList()
+    suspend fun getCustomersRealtime(): Flow<List<Customers>> = callbackFlow {
+        val workspaceId = getWorkspaceId()
+        if (workspaceId.isNullOrEmpty()) {
+            // Kirim list kosong jika tidak ada workspace dan tutup flow
+            send(emptyList())
+            close()
+            return@callbackFlow
+        }
 
-        return try {
-            val snapshot = db.collection("workspaces")
-                .document(workspaceId)
-                .collection("customers")
-                .get()
-                .await()
-            snapshot.toObjects() // Konversi semua dokumen menjadi list objek Customers
-        } catch (e: Exception) {
-            e.printStackTrace()
-            emptyList()
+        val customersCollection = db.collection("workspaces")
+            .document(workspaceId)
+            .collection("customers")
+
+        // 1. Pasang listener ke koleksi
+        val listener = customersCollection.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                // Jika ada error, tutup flow dengan exception
+                close(error)
+                return@addSnapshotListener
+            }
+            if (snapshot != null) {
+                // 2. Konversi snapshot ke list objek
+                val customers = snapshot.toObjects<Customers>()
+                // 3. Kirim data terbaru ke flow
+                trySend(customers)
+            }
+        }
+        // 4. Saat flow dibatalkan (mis. ViewModel hancur), hapus listener-nya
+        // Ini sangat penting untuk mencegah memory leak!
+        awaitClose {
+            listener.remove()
         }
     }
 
