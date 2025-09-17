@@ -1,4 +1,3 @@
-// com/aprilarn/washflow/ui/customers/CustomersUiState.kt
 package com.aprilarn.washflow.ui.customers
 
 import com.aprilarn.washflow.data.model.Customers

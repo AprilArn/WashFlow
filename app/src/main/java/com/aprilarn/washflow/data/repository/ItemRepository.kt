@@ -1,6 +1,6 @@
 package com.aprilarn.washflow.data.repository
 
-import com.aprilarn.washflow.data.model.Services
+import com.aprilarn.washflow.data.model.Items
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.channels.awaitClose
 
-class ServiceRepository {
+class ItemRepository {
     private val db = Firebase.firestore
     private val currentUser = Firebase.auth.currentUser
 
@@ -24,7 +24,7 @@ class ServiceRepository {
         }
     }
 
-    suspend fun getServicesRealtime(): Flow<List<Services>> = callbackFlow {
+    suspend fun getItemsRealtime(): Flow<List<Items>> = callbackFlow {
         val workspaceId = getWorkspaceId()
         if (workspaceId.isNullOrEmpty()) {
             // Kirim list kosong jika tidak ada workspace dan tutup flow
@@ -33,12 +33,12 @@ class ServiceRepository {
             return@callbackFlow
         }
 
-        val servicesCollection = db.collection("workspaces")
+        val itemsCollection = db.collection("workspaces")
             .document(workspaceId)
-            .collection("services")
+            .collection("items")
 
         // 1. Pasang listener ke koleksi
-        val listener = servicesCollection.addSnapshotListener { snapshot, error ->
+        val listener = itemsCollection.addSnapshotListener { snapshot, error ->
             if (error != null) {
                 // Jika ada error, tutup flow dengan exception
                 close(error)
@@ -46,11 +46,12 @@ class ServiceRepository {
             }
             if (snapshot != null) {
                 // 2. Konversi snapshot ke list objek
-                val services = snapshot.toObjects<Services>()
+                val items = snapshot.toObjects<Items>()
                 // 3. Kirim data terbaru ke flow
-                trySend(services)
+                trySend(items)
             }
         }
+
         // 4. Saat flow dibatalkan (mis. ViewModel hancur), hapus listener-nya
         // Ini sangat penting untuk mencegah memory leak!
         awaitClose {
@@ -58,28 +59,28 @@ class ServiceRepository {
         }
     }
 
-    /**
-     * Menambahkan service baru dengan ID kustom yang ditentukan oleh pengguna.
-     * @return Boolean true jika sukses.
-     */
-    suspend fun addService(serviceId: String, serviceName: String): Boolean {
+    suspend fun addItem(serviceId: String, itemName: String, itemPrice: Double): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
 
         return try {
-            // Referensi ke koleksi 'services'
-            val servicesCollection = db.collection("workspaces")
+            // 2. Buat referensi ke sub-koleksi 'items'
+            val itemsCollection = db.collection("workspaces")
                 .document(workspaceId)
-                .collection("services")
+                .collection("items")
 
-            // **KUNCI UTAMA**: Gunakan .document(serviceId) untuk menetapkan ID kustom
-            val newServiceDocRef = servicesCollection.document(serviceId)
+            // 3. Buat dokumen baru untuk mendapatkan ID unik
+            val newItemDocRef = itemsCollection.document()
 
-            val newService = Services(
-                serviceId = serviceId, // ID dari input pengguna
-                serviceName = serviceName
+            // 4. Siapkan objek Customer dengan ID yang baru dibuat
+            val newItem = Items(
+                itemId = newItemDocRef.id,
+                itemName = itemName,
+                itemPrice = itemPrice,
+                serviceId = serviceId
             )
 
-            newServiceDocRef.set(newService).await()
+            // 5. Simpan objek ke Firestore
+            newItemDocRef.set(newItem).await()
             true
         } catch (e: Exception) {
             e.printStackTrace()
@@ -87,16 +88,22 @@ class ServiceRepository {
         }
     }
 
-    suspend fun updateService(serviceId: String, newName: String): Boolean {
+    suspend fun updateItem(itemId: String, newService: String, newName: String, newPrice: Double): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
 
         return try {
-            val serviceDocRef = db.collection("workspaces")
+            val itemDocRef = db.collection("workspaces")
                 .document(workspaceId)
-                .collection("services")
-                .document(serviceId)
+                .collection("items")
+                .document(itemId)
 
-            serviceDocRef.update("serviceName", newName).await()
+            val updates = mapOf(
+                "serviceId" to newService,
+                "itemName" to newName,
+                "itemPrice" to newPrice
+            )
+
+            itemDocRef.update(updates).await()
             true
         } catch (e: Exception) {
             e.printStackTrace()
@@ -104,13 +111,13 @@ class ServiceRepository {
         }
     }
 
-    suspend fun deleteService(serviceId: String): Boolean {
+    suspend fun deleteItems(itemId: String): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
         return try {
             db.collection("workspaces")
                 .document(workspaceId)
-                .collection("services")
-                .document(serviceId)
+                .collection("items")
+                .document(itemId)
                 .delete()
                 .await()
             true

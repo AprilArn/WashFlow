@@ -54,7 +54,8 @@ fun NavigationBar(
                 AppNavigation.Home,
                 AppNavigation.Orders,
                 AppNavigation.Customers,
-                AppNavigation.Services, // Item baru akan muncul di sini
+                AppNavigation.Services,
+                AppNavigation.Items,
                 AppNavigation.Settings
             )
 

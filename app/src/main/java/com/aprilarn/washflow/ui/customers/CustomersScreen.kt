@@ -1,4 +1,3 @@
-// com/aprilarn/washflow/ui/customers/CustomersScreen.kt
 package com.aprilarn.washflow.ui.customers
 
 import androidx.compose.foundation.background
@@ -29,7 +28,6 @@ fun CustomersScreen(
     onAddCustomerClick: (String, String) -> Unit,
     onEditCustomerClick: (Customers) -> Unit,
     onDeleteCustomerClick: (Customers) -> Unit,
-    // Tambahkan parameter callback baru
     onCustomerSelected: (Customers) -> Unit,
     onDismissDialog: () -> Unit
 ) {
@@ -41,12 +39,11 @@ fun CustomersScreen(
 
     val customerCount = uiState.customers.size
     val filteredCustomers = uiState.customers.filter {
-        it.name.contains(newCustomerName, ignoreCase = true) ||
-                it.contact?.contains(newCustomerName, ignoreCase = true) == true
+        it.name.contains(newCustomerName, ignoreCase = true)
+                || it.contact?.contains(newCustomerName, ignoreCase = true) == true
     }
 
-    // --- DIALOG UNTUK EDIT/DELETE ---
-    // Tampilkan dialog jika ada customer yang dipilih
+    // Dialog untuk Edit/Delete
     uiState.selectedCustomer?.let { customerToEdit ->
         // State untuk field di dalam dialog edit
         var editedName by remember { mutableStateOf(customerToEdit.name) }
@@ -101,7 +98,7 @@ fun CustomersScreen(
             val customerColumns = listOf(
                 ColumnConfig<Customers>(
                     header = "Name",
-                    weight = 0.6f,
+                    weight = 0.7f,
                     content = { customer -> Text(customer.name, color = GrayBlue) }
                 ),
                 ColumnConfig<Customers>(

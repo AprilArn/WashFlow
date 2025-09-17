@@ -88,6 +88,7 @@ class CustomerRepository {
 
     suspend fun updateCustomer(customerId: String, newName: String, newContact: String): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
+
         return try {
             val customerDocRef = db.collection("workspaces")
                 .document(workspaceId)
@@ -98,6 +99,7 @@ class CustomerRepository {
                 "name" to newName,
                 "contact" to newContact
             )
+
             customerDocRef.update(updates).await()
             true
         } catch (e: Exception) {

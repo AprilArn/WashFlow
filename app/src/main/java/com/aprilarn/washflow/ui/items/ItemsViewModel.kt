@@ -1,35 +1,37 @@
-package com.aprilarn.washflow.ui.customers
+package com.aprilarn.washflow.ui.items
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aprilarn.washflow.data.model.Customers
-import com.aprilarn.washflow.data.repository.CustomerRepository
+import com.aprilarn.washflow.data.model.Items
+import com.aprilarn.washflow.data.repository.ItemRepository
+import com.aprilarn.washflow.data.repository.ServiceRepository  // <- IMPORT BARU
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine // <- IMPORT BARU
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class CustomersViewModel : ViewModel() {
-
-    private val _uiState = MutableStateFlow(CustomersUiState())
+class ItemsViewModel: ViewModel() {
+    private val _uiState = MutableStateFlow(ItemsUiState())
     val uiState = _uiState.asStateFlow()
 
-    private val customerRepository = CustomerRepository()
+    private val itemRepository = ItemRepository()
+    // private val serviceRepository = ServiceRepository() // <- REPOSITORY BARU
 
     init {
-        listenForCustomerChanges()
+        listenForItemChanges()
     }
 
-    private fun listenForCustomerChanges() {
+    private fun listenForItemChanges() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            customerRepository.getCustomersRealtime()
+            itemRepository.getItemsRealtime()
                 .catch { e ->
                     // Tangani error jika flow gagal
                     _uiState.update {
                         it.copy(
-                            errorMessage = "Failed to listen for customer data.",
+                            errorMessage = "Failed to listen for item data.",
                             isLoading = false
                         )
                     }
@@ -38,7 +40,7 @@ class CustomersViewModel : ViewModel() {
                     // Setiap kali data baru datang dari flow, perbarui UI state
                     _uiState.update {
                         it.copy(
-                            customers = customers,
+                            items = customers,
                             isLoading = false
                         )
                     }
@@ -46,82 +48,83 @@ class CustomersViewModel : ViewModel() {
         }
     }
 
-    fun addCustomer(name: String, contact: String) {
-        if (name.isBlank()) {
+    fun addItem(service: String, name: String, price: Double) {
+        if (service.isBlank() || name.isBlank() || price <= 0.0) {
             _uiState.update {
                 it.copy(
-                    errorMessage = "Customer name cannot be empty."
+                    errorMessage = "All fields must be filled correctly."
                 )
             }
             return
         }
 
         viewModelScope.launch {
-            val success = customerRepository.addCustomer(name, contact)
+            val success = itemRepository.addItem(service, name, price)
             if (success) {
                 _uiState.update {
                     it.copy(
-                        successMessage = "Customer '$name' added successfully!"
+                        successMessage = "Item '$name' added successfully!"
                     )
                 }
             } else {
                 _uiState.update {
                     it.copy(
-                        errorMessage = "Failed to add customer. Please try again."
+                        errorMessage = "Failed to add item. Please try again."
                     )
                 }
             }
         }
     }
 
-    fun updateCustomer(customer: Customers) {
+    fun updateItem(item: Items) {
         viewModelScope.launch {
-            val success = customerRepository.updateCustomer(
-                customer.customerId,
-                customer.name,
-                customer.contact ?: ""
+            val success = itemRepository.updateItem(
+                item.itemId,
+                item.serviceId,
+                item.itemName,
+                item.itemPrice
             )
             if (success) {
                 _uiState.update {
                     it.copy(
-                        successMessage = "Customer updated!",
-                        selectedCustomer = null
+                        successMessage = "Item updated!",
+                        selectedItem = null
                     )
                 }
             } else {
                 _uiState.update {
                     it.copy(
-                        errorMessage = "Failed to update customer."
+                        errorMessage = "Failed to update item."
                     )
                 }
             }
         }
     }
 
-    fun deleteCustomer(customer: Customers) {
+    fun deleteItem(item: Items) {
         viewModelScope.launch {
-            val success = customerRepository.deleteCustomer(customer.customerId)
+            val success = itemRepository.deleteItems(item.itemId)
             if (success) {
                 _uiState.update {
                     it.copy(
-                        successMessage = "Customer deleted!",
-                        selectedCustomer = null
+                        successMessage = "Item deleted!",
+                        selectedItem = null
                     )
                 }
             } else {
                 _uiState.update {
                     it.copy(
-                        errorMessage = "Failed to delete customer."
+                        errorMessage = "Failed to delete item."
                     )
                 }
             }
         }
     }
 
-    fun onCustomerSelected(customer: Customers) {
+    fun onItemSelected(item: Items) {
         _uiState.update {
             it.copy(
-                selectedCustomer = customer
+                selectedItem = item
             )
         }
     }
@@ -129,7 +132,7 @@ class CustomersViewModel : ViewModel() {
     fun onDismissEditDialog() {
         _uiState.update {
             it.copy(
-                selectedCustomer = null
+                selectedItem = null
             )
         }
     }

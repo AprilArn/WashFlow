@@ -31,10 +31,10 @@ data class Workspaces (
     )
 
     data class Items (
-        val itemId: String,
-        val itemName: String,
-        val itemPrice: Double,
-        val serviceId: String
+        val itemId: String = "",
+        val itemName: String = "",
+        val itemPrice: Double = 0.0,
+        val serviceId: String = ""
     )
 
     data class Orders (

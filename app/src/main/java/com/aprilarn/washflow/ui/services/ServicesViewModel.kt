@@ -29,7 +29,7 @@ class ServicesViewModel : ViewModel() {
                     // Tangani error jika flow gagal
                     _uiState.update {
                         it.copy(
-                            errorMessage = "Failed to listen for data.",
+                            errorMessage = "Failed to listen for service data.",
                             isLoading = false
                         )
                     }
@@ -50,7 +50,7 @@ class ServicesViewModel : ViewModel() {
         if (id.isBlank() || name.isBlank()) {
             _uiState.update {
                 it.copy(
-                    errorMessage = "Service ID and Name cannot be empty."
+                    errorMessage = "All fields must be filled correctly."
                 )
             }
             return
@@ -76,7 +76,10 @@ class ServicesViewModel : ViewModel() {
 
     fun updateService(service: Services) {
         viewModelScope.launch {
-            val success = serviceRepository.updateService(service.serviceId, service.serviceName)
+            val success = serviceRepository.updateService(
+                service.serviceId,
+                service.serviceName
+            )
             if (success) {
                 _uiState.update {
                     it.copy(

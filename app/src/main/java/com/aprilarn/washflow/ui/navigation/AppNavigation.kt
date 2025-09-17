@@ -9,5 +9,6 @@ sealed class AppNavigation(val route: String, val icon: ImageVector, val label: 
     object Orders : AppNavigation("orders", Icons.Default.ShoppingCart, "Orders")
     object Customers : AppNavigation("customers", Icons.Default.Person, "Users")
     object Services : AppNavigation("services", Icons.Default.List, "Services")
+    object Items : AppNavigation("items", Icons.Default.ShoppingCart, "Items")
     object Settings : AppNavigation("settings", Icons.Default.Settings, "Settings")
 }

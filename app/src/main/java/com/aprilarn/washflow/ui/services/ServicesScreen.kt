@@ -34,8 +34,8 @@ fun ServicesScreen(
 
     val serviceCount = uiState.services.size
     val filteredServices = uiState.services.filter {
-        it.serviceName.contains(newServiceName, ignoreCase = true) ||
-                it.serviceId.contains(newServiceName, ignoreCase = true)
+        it.serviceName.contains(newServiceName, ignoreCase = true)
+                || it.serviceId.contains(newServiceName, ignoreCase = true)
     }
 
     // Dialog untuk Edit/Delete
@@ -87,7 +87,7 @@ fun ServicesScreen(
                 ),
                 ColumnConfig<Services>(
                     header = "Service Name",
-                    weight = 0.7f,
+                    weight = 0.8f,
                     content = { service -> Text(service.serviceName, color = GrayBlue) }
                 ),
                 ColumnConfig<Services>(

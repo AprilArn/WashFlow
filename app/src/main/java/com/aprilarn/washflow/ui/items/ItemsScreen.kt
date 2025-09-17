@@ -1,0 +1,221 @@
+package com.aprilarn.washflow.ui.items
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import com.aprilarn.washflow.data.model.Customers
+import com.aprilarn.washflow.data.model.Items
+import com.aprilarn.washflow.ui.components.AddNewDataInputField
+import com.aprilarn.washflow.ui.components.AddNewDataPanel
+import com.aprilarn.washflow.ui.components.ColumnConfig
+import com.aprilarn.washflow.ui.components.DataTablePanel
+import com.aprilarn.washflow.ui.components.EditDataPanel
+import com.aprilarn.washflow.ui.customers.CustomersScreen
+import com.aprilarn.washflow.ui.customers.CustomersUiState
+import com.aprilarn.washflow.ui.theme.GrayBlue
+
+@Composable
+fun ItemsScreen (
+    uiState: ItemsUiState,
+    onAddItemClick: (String, String, Double) -> Unit,
+    onEditItemClick: (Items) -> Unit,
+    onDeleteItemClick: (Items) -> Unit,
+    onItemSelected: (Items) -> Unit,
+    onDismissDialog: () -> Unit
+) {
+    // State untuk pencarian (search) data
+    // var searchQuery by remember { mutableStateOf("") }
+    // State untuk panel "Add New"
+    var newItemService by remember { mutableStateOf("") }
+    var newItemName by remember { mutableStateOf("") }
+    var newItemPrice by remember { mutableStateOf(0.0) }
+
+    val itemCount = uiState.items.size
+    val filteredItems = uiState.items.filter {
+        it.itemName.contains(newItemName, ignoreCase = true)
+                || it.serviceId.contains(newItemService, ignoreCase = true)
+                || it.itemPrice.toString().contains(newItemPrice.toString(), ignoreCase = true)
+    }
+
+    // Dialog untuk Edit/Delete
+    uiState.selectedItem?.let { itemToEdit ->
+        // State untuk field di dalam dialog edit
+        var editedService by remember { mutableStateOf(itemToEdit.serviceId) }
+        var editedName by remember { mutableStateOf(itemToEdit.itemName) }
+        var editedPrice by remember { mutableStateOf(itemToEdit.itemPrice) }
+
+        // LaunchedEffect untuk mereset state jika item yang dipilih berganti
+        LaunchedEffect(itemToEdit) {
+            editedService = itemToEdit.serviceId
+            editedName = itemToEdit.itemName
+            editedPrice = itemToEdit.itemPrice
+        }
+
+        Dialog(onDismissRequest = onDismissDialog) {
+            val editInputFields = listOf(
+                AddNewDataInputField(
+                    value = editedService,
+                    onValueChange = { editedService = it },
+                    label = "Service ID"
+                ),
+                AddNewDataInputField(
+                    value = editedName,
+                    onValueChange = { editedName = it },
+                    label = "Item Name"
+                ),
+                AddNewDataInputField(
+                    value = editedPrice.toString(),
+                    onValueChange = { editedPrice = it.toDoubleOrNull() ?: 0.0 },
+                    label = "Item Price"
+                    // isNumber = true
+                )
+            )
+
+            EditDataPanel(
+                title = "Edit ${itemToEdit.itemName}",
+                inputFields = editInputFields,
+                onDoneClick = {
+                    val updatedItem = itemToEdit.copy(
+                        serviceId = editedService,
+                        itemName = editedName,
+                        itemPrice = editedPrice
+                    )
+                    onEditItemClick(updatedItem)
+                },
+                onDeleteClick = {
+                    onDeleteItemClick(itemToEdit)
+                }
+            )
+        }
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 32.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Left Panel: DataTablePanel
+        Box(modifier = Modifier.weight(2f)) {
+            val itemColumns = listOf(
+                ColumnConfig<Items>(
+                    header = "Service ID",
+                    weight = 0.3f,
+                    content = { item -> Text(item.serviceId, color = GrayBlue) }
+                ),
+                ColumnConfig<Items>(
+                    header = "Item Name",
+                    weight = 0.5f,
+                    content = { item -> Text(item.itemName, color = GrayBlue) }
+                ),
+                ColumnConfig<Items>(
+                    header = "Item Price",
+                    weight = 0.3f,
+                    content = { item -> Text(item.itemPrice.toString(), color = GrayBlue) }
+                ),
+                ColumnConfig<Items>(
+                    header = "Edit", // Ubah header menjadi "Actions"
+                    weight = 0.1f,
+                    content = { item ->
+                        // Hapus tombol dari sini karena aksi sekarang via onRowClick
+                        // Bisa diganti dengan ikon atau indikator lain jika perlu
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit Item",
+                            tint = GrayBlue.copy(alpha = 0.7f)
+                        )
+                    }
+                )
+            )
+
+            DataTablePanel(
+                title = "Item",
+                itemCount = itemCount,
+                searchQuery = newItemName,
+                onSearchQueryChange = { newItemName = it },
+                searchPlaceholder = "Search by Service/Name/Price",
+                columns = itemColumns,
+                data = filteredItems, // Gunakan data yang sudah difilter
+                isLoading = uiState.isLoading,
+                onRowClick = { item -> onItemSelected(item) }
+            )
+        }
+
+        // Right Panel: AddNewDataPanel
+        Box(modifier = Modifier.weight(1f)) {
+            val inputFields = listOf(
+                AddNewDataInputField(
+                    value = newItemService,
+                    onValueChange = { newItemService = it },
+                    label = "Service ID"
+                ),
+                AddNewDataInputField(
+                    value = newItemName,
+                    onValueChange = { newItemName = it },
+                    label = "Nama Barang"
+                ),
+                AddNewDataInputField(
+                    value = if (newItemPrice == 0.0) "" else newItemPrice.toString(),
+                    onValueChange = { newItemPrice = it.toDoubleOrNull() ?: 0.0 },
+                    label = "Harga Barang"
+                    // isNumber = true
+                )
+            )
+
+            AddNewDataPanel(
+                title = "Add New Item",
+                inputFields = inputFields,
+                onAddClick = {
+                    onAddItemClick(newItemService, newItemName, newItemPrice)
+                    newItemService = ""
+                    newItemName = ""
+                    newItemPrice = 0.0
+                },
+                addButtonText = "Add Item" // Teks lebih deskriptif
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true, widthDp = 1200, heightDp = 600)
+@Composable
+fun ItemsScreenPreview() {
+    Box(
+        modifier = Modifier.background(
+            Brush.linearGradient(
+                colors = listOf(Color(0xFFB9E9FF), Color(0xFFFFD6BF))
+            )
+        )
+    ) {
+        // --- PERBAIKI BAGIAN INI ---
+        val previewState = ItemsUiState(
+            items = listOf(
+                // Gunakan named arguments agar tidak salah urutan
+                Items(itemId = "item_1", serviceId = "L-01", itemName = "Dress", itemPrice = 15000.0),
+                Items(itemId = "item_2", serviceId = "L-02", itemName = "Baju", itemPrice = 12000.0),
+                Items(itemId = "item_3", serviceId = "D-01", itemName = "Jas", itemPrice = 25000.0)
+            ),
+            // Perbaiki juga di sini
+            selectedItem = Items(itemId = "item_1", serviceId = "L-01", itemName = "Dress", itemPrice = 15000.0)
+        )
+        ItemsScreen(
+            uiState = previewState,
+            onAddItemClick = { _, _, _ -> },
+            onEditItemClick = {},
+            onDeleteItemClick = {},
+            onItemSelected = {},
+            onDismissDialog = {}
+        )
+    }
+}

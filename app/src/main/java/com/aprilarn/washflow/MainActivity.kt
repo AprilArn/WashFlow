@@ -47,6 +47,8 @@ import com.aprilarn.washflow.ui.services.ServicesScreen
 import com.aprilarn.washflow.ui.services.ServicesViewModel
 import com.aprilarn.washflow.ui.home.HomePage
 import com.aprilarn.washflow.ui.home.HomeViewModel
+import com.aprilarn.washflow.ui.items.ItemsScreen
+import com.aprilarn.washflow.ui.items.ItemsViewModel
 import com.aprilarn.washflow.ui.login.GoogleAuthUiClient
 import com.aprilarn.washflow.ui.login.LoginScreen
 import com.aprilarn.washflow.ui.login.LoginViewModel
@@ -252,18 +254,16 @@ fun MainAppScreen() {
         ) {
             // NavHost internal untuk mengatur layar yang diakses dari Bottom Navigation Bar
             NavHost(navController = bottomNavController, startDestination = AppNavigation.Home.route) {
+
                 composable(AppNavigation.Home.route) {
                     LocationAwareHomePage()
                 }
 
                 composable(AppNavigation.Customers.route) {
-                    // 1. Buat instance ViewModel
                     val viewModel: CustomersViewModel = viewModel()
-                    // 2. Ambil state dari ViewModel
                     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                     val context = LocalContext.current
 
-                    // Menampilkan pesan Toast dari ViewModel
                     LaunchedEffect(uiState.successMessage, uiState.errorMessage) {
                         uiState.successMessage?.let {
                             Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
@@ -275,29 +275,17 @@ fun MainAppScreen() {
                         }
                     }
 
-                    // 3. Berikan 'uiState' ke CustomersScreen
                     CustomersScreen(
                         uiState = uiState,
-                        onAddCustomerClick = { name, contact ->
-                            viewModel.addCustomer(name, contact)
-                        },
-                        // Implementasikan callback yang sebelumnya TODO
-                        onEditCustomerClick = { customer ->
-                            viewModel.updateCustomer(customer)
-                        },
-                        onDeleteCustomerClick = { customer ->
-                            viewModel.deleteCustomer(customer)
-                        },
-                        // Tambahkan callback baru yang menyebabkan error
-                        onCustomerSelected = { customer ->
-                            viewModel.onCustomerSelected(customer)
-                        },
-                        onDismissDialog = {
-                            viewModel.onDismissEditDialog()
-                        }
+                        onAddCustomerClick = { name, contact -> viewModel.addCustomer(name, contact) },
+                        onEditCustomerClick = { customer -> viewModel.updateCustomer(customer) },
+                        onDeleteCustomerClick = { customer -> viewModel.deleteCustomer(customer) },
+                        onCustomerSelected = { customer -> viewModel.onCustomerSelected(customer) },
+                        onDismissDialog = { viewModel.onDismissEditDialog() }
                     )
                 }
-                composable(AppNavigation.Services.route) { // Asumsi Anda punya AppNavigation.Services
+
+                composable(AppNavigation.Services.route) {
                     val viewModel: ServicesViewModel = viewModel()
                     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                     val context = LocalContext.current
@@ -322,11 +310,39 @@ fun MainAppScreen() {
                         onDismissDialog = { viewModel.onDismissEditDialog() }
                     )
                 }
+
+                composable(AppNavigation.Items.route) {
+                    val viewModel: ItemsViewModel = viewModel()
+                    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+                    val context = LocalContext.current
+
+                    LaunchedEffect(uiState.successMessage, uiState.errorMessage) {
+                        uiState.successMessage?.let {
+                            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+                            viewModel.onMessageShown()
+                        }
+                        uiState.errorMessage?.let {
+                            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+                            viewModel.onMessageShown()
+                        }
+                    }
+
+                    ItemsScreen(
+                        uiState = uiState,
+                        onAddItemClick = { serviceId, name, price -> viewModel.addItem(serviceId, name, price) },
+                        onEditItemClick = { item -> viewModel.updateItem(item) },
+                        onDeleteItemClick = { item -> viewModel.deleteItem(item) },
+                        onItemSelected = { item -> viewModel.onItemSelected(item) },
+                        onDismissDialog = { viewModel.onDismissEditDialog() }
+                    )
+                }
+
                 composable(AppNavigation.Orders.route) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text("Orders Screen", color = Color.White)
                     }
                 }
+
                 composable(AppNavigation.Settings.route) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text("Settings Screen", color = Color.White)
