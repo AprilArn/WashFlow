@@ -8,6 +8,7 @@ import com.aprilarn.washflow.data.repository.ServiceRepository  // <- IMPORT BAR
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine // <- IMPORT BARU
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -17,34 +18,61 @@ class ItemsViewModel: ViewModel() {
     val uiState = _uiState.asStateFlow()
 
     private val itemRepository = ItemRepository()
-    // private val serviceRepository = ServiceRepository() // <- REPOSITORY BARU
+    private val serviceRepository = ServiceRepository() // <- REPOSITORY BARU
 
     init {
-        listenForItemChanges()
+        // listenForItemChanges()
+        listenForDataChanges()
     }
 
-    private fun listenForItemChanges() {
+//    private fun listenForItemChanges() {
+//        viewModelScope.launch {
+//            _uiState.update { it.copy(isLoading = true) }
+//            itemRepository.getItemsRealtime()
+//                .catch { e ->
+//                    // Tangani error jika flow gagal
+//                    _uiState.update {
+//                        it.copy(
+//                            errorMessage = "Failed to listen for item data.",
+//                            isLoading = false
+//                        )
+//                    }
+//                }
+//                .collect { customers ->
+//                    // Setiap kali data baru datang dari flow, perbarui UI state
+//                    _uiState.update {
+//                        it.copy(
+//                            items = customers,
+//                            isLoading = false
+//                        )
+//                    }
+//                }
+//        }
+//    }
+
+    private fun listenForDataChanges() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            itemRepository.getItemsRealtime()
-                .catch { e ->
-                    // Tangani error jika flow gagal
-                    _uiState.update {
-                        it.copy(
-                            errorMessage = "Failed to listen for item data.",
-                            isLoading = false
-                        )
-                    }
+
+            // Ambil flow dari kedua repository
+            val itemsFlow = itemRepository.getItemsRealtime()
+            val servicesFlow = serviceRepository.getServicesRealtime()
+
+            // Gabungkan flow items dan services
+            combine(itemsFlow, servicesFlow) { items, services ->
+                // Buat state baru dengan kedua data
+                _uiState.update {
+                    it.copy(
+                        items = items,
+                        services = services,
+                        isLoading = false
+                    )
                 }
-                .collect { customers ->
-                    // Setiap kali data baru datang dari flow, perbarui UI state
-                    _uiState.update {
-                        it.copy(
-                            items = customers,
-                            isLoading = false
-                        )
-                    }
+            }.catch { e ->
+                _uiState.update {
+                    it.copy(errorMessage = "Failed to load data.", isLoading = false)
                 }
+            }.collect() // Mulai mengoleksi flow gabungan
         }
     }
 
