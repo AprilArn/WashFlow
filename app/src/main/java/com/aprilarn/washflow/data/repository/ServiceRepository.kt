@@ -107,16 +107,33 @@ class ServiceRepository {
     suspend fun deleteService(serviceId: String): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
         return try {
-            db.collection("workspaces")
-                .document(workspaceId)
-                .collection("services")
-                .document(serviceId)
-                .delete()
-                .await()
-            true
+            // 1. Buat referensi ke koleksi-koleksi yang relevan
+            val workspaceRef = db.collection("workspaces").document(workspaceId)
+            val serviceToDeleteRef = workspaceRef.collection("services").document(serviceId)
+            val itemsCollectionRef = workspaceRef.collection("items")
+
+            // 2. Buat query untuk menemukan semua item yang memiliki serviceId yang sama
+            val itemsToDeleteQuery = itemsCollectionRef.whereEqualTo("serviceId", serviceId)
+
+            // 3. Eksekusi query untuk mendapatkan daftar item yang akan dihapus
+            val itemsSnapshot = itemsToDeleteQuery.get().await()
+
+            // 4. Mulai Batched Write
+            db.runBatch { batch ->
+                // 5. Tambahkan penghapusan dokumen service ke dalam batch
+                batch.delete(serviceToDeleteRef)
+
+                // 6. Loop melalui hasil query dan tambahkan setiap item untuk dihapus
+                for (document in itemsSnapshot.documents) {
+                    batch.delete(document.reference)
+                }
+
+            }.await() // 7. Jalankan semua operasi dalam batch
+
+            true // Operasi berhasil
         } catch (e: Exception) {
             e.printStackTrace()
-            false
+            false // Operasi gagal
         }
     }
 }
