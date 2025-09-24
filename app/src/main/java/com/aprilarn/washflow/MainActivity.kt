@@ -32,6 +32,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -39,6 +41,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.aprilarn.washflow.data.repository.CustomerRepository
+import com.aprilarn.washflow.data.repository.ItemRepository
+import com.aprilarn.washflow.data.repository.OrderRepository
+import com.aprilarn.washflow.data.repository.ServiceRepository
 import com.aprilarn.washflow.ui.components.Header
 import com.aprilarn.washflow.ui.components.NavigationBar
 import com.aprilarn.washflow.ui.customers.CustomersScreen
@@ -52,6 +58,8 @@ import com.aprilarn.washflow.ui.items.ItemsViewModel
 import com.aprilarn.washflow.ui.login.GoogleAuthUiClient
 import com.aprilarn.washflow.ui.login.LoginScreen
 import com.aprilarn.washflow.ui.login.LoginViewModel
+import com.aprilarn.washflow.ui.orders.OrdersScreen
+import com.aprilarn.washflow.ui.orders.OrdersViewModel
 import com.aprilarn.washflow.ui.theme.MainBLue
 import com.aprilarn.washflow.ui.theme.MornYellow
 import com.aprilarn.washflow.ui.theme.NoonBlue
@@ -338,9 +346,32 @@ fun MainAppScreen() {
                 }
 
                 composable(AppNavigation.Orders.route) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Orders Screen", color = Color.White)
+                    val factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            return OrdersViewModel(
+                                CustomerRepository(),
+                                ServiceRepository(),
+                                ItemRepository(),
+                                OrderRepository()
+                            ) as T
+                        }
                     }
+                    val viewModel: OrdersViewModel = viewModel(factory = factory)
+                    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+                    val context = LocalContext.current
+
+                    LaunchedEffect(uiState.successMessage, uiState.errorMessage) {
+                        uiState.successMessage?.let {
+                            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+                            viewModel.onMessageShown()
+                        }
+                        uiState.errorMessage?.let {
+                            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+                            viewModel.onMessageShown()
+                        }
+                    }
+
+                    OrdersScreen(uiState = uiState, viewModel = viewModel)
                 }
 
                 composable(AppNavigation.Settings.route) {
