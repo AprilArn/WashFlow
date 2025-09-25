@@ -1,5 +1,6 @@
 package com.aprilarn.washflow.ui.orders
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -58,7 +59,7 @@ fun OrderPanel(
                     ItemCheckRow(
                         item = item,
                         isChecked = uiState.selectedItems.containsKey(item.itemId),
-                        onToggle = { viewModel.onItemToggled(item) }
+                        onClick = { viewModel.handleItemClick(item) }
                     )
                 }
             }
@@ -82,12 +83,18 @@ fun OrderPanel(
 }
 
 @Composable
-private fun ItemCheckRow(item: Items, isChecked: Boolean, onToggle: () -> Unit) {
+private fun ItemCheckRow(
+    item: Items,
+    isChecked: Boolean,
+    onClick: () -> Unit
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
     ) {
-        Checkbox(checked = isChecked, onCheckedChange = { onToggle() })
+        Checkbox(checked = isChecked, onCheckedChange = { null })
         Text(item.itemName, modifier = Modifier.weight(1f))
         Text("Rp ${item.itemPrice}")
     }

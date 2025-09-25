@@ -77,14 +77,59 @@ class OrdersViewModel(
         _uiState.update { it.copy(activeServiceTabId = serviceId) }
     }
 
-    fun onItemToggled(item: Items) {
-        val currentSelected = _uiState.value.selectedItems.toMutableMap()
+//    fun onItemToggled(item: Items) {
+//        val currentSelected = _uiState.value.selectedItems.toMutableMap()
+//        if (currentSelected.containsKey(item.itemId)) {
+//            currentSelected.remove(item.itemId)
+//        } else {
+//            currentSelected[item.itemId] = item
+//        }
+//        _uiState.update { it.copy(selectedItems = currentSelected) }
+//    }
+
+    fun handleItemClick(item: Items) {
+        val currentSelected = _uiState.value.selectedItems
         if (currentSelected.containsKey(item.itemId)) {
-            currentSelected.remove(item.itemId)
+            // Jika sudah ada, hapus dari daftar
+            val updatedMap = currentSelected.toMutableMap()
+            updatedMap.remove(item.itemId)
+            _uiState.update { it.copy(selectedItems = updatedMap) }
         } else {
-            currentSelected[item.itemId] = item
+            // Jika belum ada, tampilkan dialog untuk input kuantitas
+            _uiState.update { it.copy(itemForQuantityInput = item) }
         }
-        _uiState.update { it.copy(selectedItems = currentSelected) }
+    }
+
+    fun onQuantityConfirmed(quantity: Int) {
+        val item = _uiState.value.itemForQuantityInput ?: return
+        if (quantity <= 0) {
+            onDismissQuantityDialog()
+            return
+        }
+
+        val subtotal = item.itemPrice * quantity
+        val orderItem = OrderItem(
+            itemId = item.itemId,
+            itemName = item.itemName,
+            itemPrice = item.itemPrice,
+            serviceId = item.serviceId,
+            itemQuantity = quantity,
+            subtotal = subtotal
+        )
+
+        val updatedMap = _uiState.value.selectedItems.toMutableMap()
+        updatedMap[item.itemId] = orderItem
+
+        _uiState.update {
+            it.copy(
+                selectedItems = updatedMap,
+                itemForQuantityInput = null // Tutup dialog
+            )
+        }
+    }
+
+    fun onDismissQuantityDialog() {
+        _uiState.update { it.copy(itemForQuantityInput = null) }
     }
 
     fun createOrder() {
@@ -97,17 +142,12 @@ class OrdersViewModel(
 
             _uiState.update { it.copy(isCreatingOrder = true) }
 
-            val orderItems = state.selectedItems.values.map { item ->
-                OrderItem(
-                    itemId = item.itemId,
-                    itemName = item.itemName,
-                    itemPrice = item.itemPrice,
-                    serviceId = item.serviceId,
-                    itemQuantity = 1 // Asumsi kuantitas 1 untuk saat ini
-                )
-            }
+            // --- PERBAIKAN DI SINI ---
+            // Langsung ambil daftar OrderItem dari state. Tidak perlu .map lagi.
+            val orderItems = state.selectedItems.values.toList()
 
-            val totalPrice = orderItems.sumOf { it.itemPrice ?: 0.0 }
+            // Jumlahkan subtotal yang sudah ada di setiap OrderItem.
+            val totalPrice = orderItems.sumOf { it.subtotal ?: 0.0 }
 
             val newOrder = Orders(
                 orderId = "", // Akan dibuat oleh repository
@@ -115,8 +155,8 @@ class OrdersViewModel(
                 customerName = state.selectedCustomer.name,
                 orderDate = Timestamp.now(),
                 orderDueDate = state.dueDate,
-                orderItems = orderItems,
-                totalPrice = totalPrice,
+                orderItems = orderItems, // Gunakan list yang sudah benar
+                totalPrice = totalPrice, // Gunakan total harga yang sudah benar
                 status = "On Queue"
             )
 
