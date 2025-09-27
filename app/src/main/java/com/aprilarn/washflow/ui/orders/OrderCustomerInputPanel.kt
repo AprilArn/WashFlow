@@ -1,5 +1,7 @@
 package com.aprilarn.washflow.ui.orders
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,12 +12,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.google.firebase.Timestamp
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -23,20 +31,48 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OrderCustomerInputPanel(uiState: OrdersUiState, viewModel: OrdersViewModel) {
+fun OrderCustomerInputPanel(
+    uiState: OrdersUiState,
+    viewModel: OrdersViewModel
+) {
     var isDropdownExpanded by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
     val calendar = remember { Calendar.getInstance() }
 
-    Card(
-        modifier = Modifier.fillMaxWidth()
+    val borderRadius = RoundedCornerShape(24.dp)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight()
+            .background(Color.White.copy(alpha = 0.25f), shape = borderRadius)
+            .border(
+                width = 2.dp,
+                color = GrayBlue.copy(alpha = 0.8f),
+                shape = borderRadius
+            )
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
+                .padding(vertical=24.dp, horizontal=22.dp)
         ) {
-            Text("Customer", style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = "Customer",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp,
+                    color = GrayBlue
+                )
+            )
+            Text(
+                text = "Pelanggan",
+                style = MaterialTheme.typography.bodyMedium,
+                color = GrayBlue
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
 
             ExposedDropdownMenuBox(
                 expanded = isDropdownExpanded && uiState.customerSearchQuery.isNotEmpty(),
@@ -49,7 +85,10 @@ fun OrderCustomerInputPanel(uiState: OrdersUiState, viewModel: OrdersViewModel) 
                         isDropdownExpanded = true
                     },
                     label = { Text("Nama Pelanggan") },
-                    modifier = Modifier.fillMaxWidth().menuAnchor()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
+                    shape = RoundedCornerShape(12.dp)
                 )
                 ExposedDropdownMenu(
                     expanded = isDropdownExpanded && uiState.customerSearchQuery.isNotEmpty(),
@@ -75,10 +114,15 @@ fun OrderCustomerInputPanel(uiState: OrdersUiState, viewModel: OrdersViewModel) 
                 onValueChange = {},
                 readOnly = true,
                 label = { Text("No WA/Telp") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
             )
 
-            Box {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+            ){
                 OutlinedTextField(
                     value = uiState.dueDate?.toDate()?.let {
                         SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault()).format(it)
@@ -86,13 +130,16 @@ fun OrderCustomerInputPanel(uiState: OrdersUiState, viewModel: OrdersViewModel) 
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Batas Waktu") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
                 )
-                // Kotak transparan di atasnya untuk menangkap klik
+                // Kotak transparan di atasnya untuk menangkap klik (MASIH ADA KECACATAN UI)
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .clickable { showDatePicker = true } // Saat diklik, tampilkan Date Picker
+                        .clickable { showDatePicker = true }
+                        .clip(RoundedCornerShape(12.dp))
                 )
             }
         }

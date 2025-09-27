@@ -7,12 +7,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,15 +38,16 @@ import java.util.Locale
 fun OrderPreviewPanel(
     uiState: OrdersUiState
 ) {
+    val borderRadius = RoundedCornerShape(24.dp)
+
     Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .fillMaxHeight()
-            .background(Color.White.copy(alpha = 0.25f), shape = RoundedCornerShape(24.dp))
+            .fillMaxSize()
+            .background(Color.White.copy(alpha = 0.25f), shape = borderRadius)
             .border(
                 width = 2.dp,
                 color = GrayBlue.copy(alpha = 0.8f),
-                shape = RoundedCornerShape(24.dp)
+                shape = borderRadius
             )
     ) {
         Column(
@@ -59,7 +59,7 @@ fun OrderPreviewPanel(
                     .padding(top=10.dp, bottom=4.dp, start=8.dp, end=8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
-                ) {
+            ) {
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -94,7 +94,7 @@ fun OrderPreviewPanel(
             val selectedServices = uiState.selectedItems.values
                 .mapNotNull { item -> uiState.services.find { it.serviceId == item.serviceId } }
                 .distinct()
-                .joinToString(" + ") { it.serviceName }
+                .joinToString(" + ") { it.serviceName } .ifEmpty { "No item selected" }
             val formattedDate = uiState.dueDate?.toDate()?.let {
                 SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.getDefault()).format(it)
             } ?: "No due date"
@@ -102,20 +102,20 @@ fun OrderPreviewPanel(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(borderRadius)
                     .border(
                         width = 2.dp,
                         color = GrayBlue.copy(alpha = 0.8f),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = borderRadius
                     ),
-                ) {
+            ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp) ,
+                        .padding(18.dp) ,
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
-                    ){
+                ){
                     Column(
                         modifier = Modifier
                             .weight(1f)

@@ -77,16 +77,6 @@ class OrdersViewModel(
         _uiState.update { it.copy(activeServiceTabId = serviceId) }
     }
 
-//    fun onItemToggled(item: Items) {
-//        val currentSelected = _uiState.value.selectedItems.toMutableMap()
-//        if (currentSelected.containsKey(item.itemId)) {
-//            currentSelected.remove(item.itemId)
-//        } else {
-//            currentSelected[item.itemId] = item
-//        }
-//        _uiState.update { it.copy(selectedItems = currentSelected) }
-//    }
-
     fun handleItemClick(item: Items) {
         val currentSelected = _uiState.value.selectedItems
         if (currentSelected.containsKey(item.itemId)) {

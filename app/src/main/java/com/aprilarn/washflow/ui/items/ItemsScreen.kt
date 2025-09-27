@@ -2,7 +2,6 @@ package com.aprilarn.washflow.ui.items
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -21,16 +20,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.data.model.Items
-import com.aprilarn.washflow.ui.components.AddNewDataInputField
-import com.aprilarn.washflow.ui.components.AddNewDataPanel
 import com.aprilarn.washflow.ui.components.ColumnConfig
 import com.aprilarn.washflow.ui.components.DataTablePanel
-import com.aprilarn.washflow.ui.components.EditDataPanel
 import com.aprilarn.washflow.ui.components.ServiceDropdown
-import com.aprilarn.washflow.ui.customers.CustomersScreen
-import com.aprilarn.washflow.ui.customers.CustomersUiState
 import com.aprilarn.washflow.ui.theme.GrayBlue
 
 @Composable
@@ -70,42 +63,6 @@ fun ItemsScreen (
             editedPrice = itemToEdit.itemPrice
         }
 
-//        Dialog(onDismissRequest = onDismissDialog) {
-//            val editInputFields = listOf(
-//                AddNewDataInputField(
-//                    value = editedService,
-//                    onValueChange = { editedService = it },
-//                    label = "Service ID"
-//                ),
-//                AddNewDataInputField(
-//                    value = editedName,
-//                    onValueChange = { editedName = it },
-//                    label = "Item Name"
-//                ),
-//                AddNewDataInputField(
-//                    value = editedPrice.toString(),
-//                    onValueChange = { editedPrice = it.toDoubleOrNull() ?: 0.0 },
-//                    label = "Item Price"
-//                    // isNumber = true
-//                )
-//            )
-//
-//            EditDataPanel(
-//                title = "Edit ${itemToEdit.itemName}",
-//                inputFields = editInputFields,
-//                onDoneClick = {
-//                    val updatedItem = itemToEdit.copy(
-//                        serviceId = editedService,
-//                        itemName = editedName,
-//                        itemPrice = editedPrice
-//                    )
-//                    onEditItemClick(updatedItem)
-//                },
-//                onDeleteClick = {
-//                    onDeleteItemClick(itemToEdit)
-//                }
-//            )
-//        }
         Dialog(onDismissRequest = onDismissDialog) {
             Card(
                 shape = RoundedCornerShape(16.dp),
@@ -132,13 +89,15 @@ fun ItemsScreen (
                         value = editedName,
                         onValueChange = { editedName = it },
                         label = { Text("Item Name") },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
                     )
                     OutlinedTextField(
                         value = editedPrice.toString(),
                         onValueChange = { editedPrice = it.toDoubleOrNull() ?: 0.0 },
                         label = { Text("Item Price") },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -235,39 +194,6 @@ fun ItemsScreen (
             )
         }
 
-        // Right Panel: AddNewDataPanel
-//        Box(modifier = Modifier.weight(1f)) {
-//            val inputFields = listOf(
-//                AddNewDataInputField(
-//                    value = newItemService,
-//                    onValueChange = { newItemService = it },
-//                    label = "Service ID"
-//                ),
-//                AddNewDataInputField(
-//                    value = newItemName,
-//                    onValueChange = { newItemName = it },
-//                    label = "Nama Barang"
-//                ),
-//                AddNewDataInputField(
-//                    value = if (newItemPrice == 0.0) "" else newItemPrice.toString(),
-//                    onValueChange = { newItemPrice = it.toDoubleOrNull() ?: 0.0 },
-//                    label = "Harga Barang"
-//                    // isNumber = true
-//                )
-//            )
-//
-//            AddNewDataPanel(
-//                title = "Add New Item",
-//                inputFields = inputFields,
-//                onAddClick = {
-//                    onAddItemClick(newItemService, newItemName, newItemPrice)
-//                    newItemService = ""
-//                    newItemName = ""
-//                    newItemPrice = 0.0
-//                },
-//                addButtonText = "Add Item" // Teks lebih deskriptif
-//            )
-//        }
         // --- PANEL KANAN: DIBUAT SECARA MANUAL ---
         Box(modifier = Modifier.weight(1f)) {
             Card(
@@ -276,34 +202,36 @@ fun ItemsScreen (
                 colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.25f))
             ) {
                 Column(
-                    //modifier = Modifier.padding(24.dp),
+                    modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(0.dp)
                 ) {
-//                    Text("Add New Item", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-//                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Add New Item", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     ServiceDropdown(
                         services = uiState.services,
                         selectedServiceId = newItemService,
                         onServiceSelected = { newItemService = it.serviceId },
                         label = "Service",
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     )
                     OutlinedTextField(
                         value = newItemName,
                         onValueChange = { newItemName = it },
                         label = { Text("Nama Barang") },
                         modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
                     )
                     OutlinedTextField(
                         value = if (newItemPrice == 0.0) "" else newItemPrice.toString(),
                         onValueChange = { newItemPrice = it.toDoubleOrNull() ?: 0.0 },
                         label = { Text("Harga Barang") },
                         modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
                     )
 
-                    //Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                     Button(
                         onClick = {
                             onAddItemClick(newItemService, newItemName, newItemPrice)
@@ -316,7 +244,7 @@ fun ItemsScreen (
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = "Add Icon")
-                        //Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text("Add Item")
                     }
                 }

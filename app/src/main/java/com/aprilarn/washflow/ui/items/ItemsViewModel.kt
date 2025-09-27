@@ -4,12 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aprilarn.washflow.data.model.Items
 import com.aprilarn.washflow.data.repository.ItemRepository
-import com.aprilarn.washflow.data.repository.ServiceRepository  // <- IMPORT BARU
+import com.aprilarn.washflow.data.repository.ServiceRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.combine // <- IMPORT BARU
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -21,34 +21,8 @@ class ItemsViewModel: ViewModel() {
     private val serviceRepository = ServiceRepository() // <- REPOSITORY BARU
 
     init {
-        // listenForItemChanges()
         listenForDataChanges()
     }
-
-//    private fun listenForItemChanges() {
-//        viewModelScope.launch {
-//            _uiState.update { it.copy(isLoading = true) }
-//            itemRepository.getItemsRealtime()
-//                .catch { e ->
-//                    // Tangani error jika flow gagal
-//                    _uiState.update {
-//                        it.copy(
-//                            errorMessage = "Failed to listen for item data.",
-//                            isLoading = false
-//                        )
-//                    }
-//                }
-//                .collect { customers ->
-//                    // Setiap kali data baru datang dari flow, perbarui UI state
-//                    _uiState.update {
-//                        it.copy(
-//                            items = customers,
-//                            isLoading = false
-//                        )
-//                    }
-//                }
-//        }
-//    }
 
     private fun listenForDataChanges() {
         viewModelScope.launch {
