@@ -1,6 +1,7 @@
 package com.aprilarn.washflow.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -36,21 +37,32 @@ fun <T> DataTablePanel(
     isLoading: Boolean,
     onRowClick: (T) -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxSize()) {
+    val borderRadius = RoundedCornerShape(24.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
         // Top bar with Search and Item Count
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Search Bar
             TextField(
+                modifier = Modifier
+                    .weight(1f)
+                    .border(
+                        width = 2.dp,
+                        color = GrayBlue.copy(alpha = 0.8f),
+                        shape = borderRadius
+                    ),
                 value = searchQuery,
                 onValueChange = onSearchQueryChange,
                 placeholder = { Text(searchPlaceholder) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search Icon") },
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(24.dp),
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color.White,
                     unfocusedContainerColor = Color.LightGray,
@@ -62,7 +74,13 @@ fun <T> DataTablePanel(
             )
             // Item Count
             Card(
-                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .border(
+                        width = 2.dp,
+                        color = GrayBlue.copy(alpha = 0.8f),
+                        shape = borderRadius
+                    ),
+                shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Text(
@@ -76,18 +94,26 @@ fun <T> DataTablePanel(
 
         // Data List Panel
         Card(
-            modifier = Modifier.fillMaxSize(),
-            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .border(
+                    width = 2.dp,
+                    color = GrayBlue.copy(alpha = 0.8f),
+                    shape = borderRadius
+                ),
+            shape = borderRadius,
             colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.25f))
         ) {
-            Column {
+            Column (
+                modifier = Modifier.padding(2.dp)
+            ){
                 // Table Header (Sekarang dibuat dari List<ColumnConfig>)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
                             Color.White,
-                            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+                            shape = RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)
                         )
                         .padding(horizontal = 24.dp, vertical = 16.dp),
                     verticalAlignment = Alignment.CenterVertically

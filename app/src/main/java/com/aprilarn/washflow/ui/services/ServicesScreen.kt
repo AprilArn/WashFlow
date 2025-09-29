@@ -133,6 +133,7 @@ fun ServicesScreen(
 
             AddNewDataPanel(
                 title = "Add New Service",
+                subTitle = "Tambah layanan baru",
                 inputFields = inputFields,
                 onAddClick = {
                     onAddServiceClick(newServiceId, newServiceName)

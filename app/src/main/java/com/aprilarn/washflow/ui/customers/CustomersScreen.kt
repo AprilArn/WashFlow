@@ -151,6 +151,7 @@ fun CustomersScreen(
 
             AddNewDataPanel(
                 title = "Add New Customer",
+                subTitle = "Tambah pelanggan baru",
                 inputFields = inputFields,
                 onAddClick = {
                     onAddCustomerClick(newCustomerName, newCustomerPhone)

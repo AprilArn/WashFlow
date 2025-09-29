@@ -1,6 +1,7 @@
 package com.aprilarn.washflow.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -16,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aprilarn.washflow.ui.theme.GrayBlue
 
 
 data class AddNewDataInputField(
@@ -27,24 +29,45 @@ data class AddNewDataInputField(
 @Composable
 fun AddNewDataPanel(
     title: String,
+    subTitle: String,
     inputFields: List<AddNewDataInputField>,
     onAddClick: () -> Unit,
     addButtonText: String = "Add",
     modifier: Modifier = Modifier
 ) {
+    val borderRadius = RoundedCornerShape(24.dp)
     Card(
-        modifier = modifier.wrapContentHeight(),
-        shape = RoundedCornerShape(16.dp),
+        modifier = modifier
+            .wrapContentHeight()
+            .border(
+                width = 2.dp,
+                color = GrayBlue.copy(alpha = 0.8f),
+                shape = borderRadius
+            ),
+        shape = borderRadius,
         colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.25f))
     ) {
         Column(
             modifier = Modifier
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(vertical=24.dp, horizontal=22.dp),
+            //horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // Menggunakan title dari parameter
-            Text(title, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            //Spacer(modifier = Modifier.height(16.dp))
+            // Text(title, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp,
+                    color = GrayBlue
+                )
+            )
+            Text(
+                text = subTitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = GrayBlue
+            )
+            Spacer(modifier = Modifier.height(14.dp))
 
             // Membuat OutlinedTextField secara dinamis dari daftar inputFields
             inputFields.forEach { field ->
@@ -55,16 +78,16 @@ fun AddNewDataPanel(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 )
-                //Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(4.dp))
             }
 
-            //Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(18.dp))
             Button(
                 onClick = onAddClick,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8BC34A)),
+                colors = ButtonDefaults.buttonColors(containerColor = GrayBlue),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add Icon")
@@ -109,6 +132,7 @@ fun AddNewDataPanelPreview() {
             )
             AddNewDataPanel(
                 title = "Add New Customer",
+                subTitle = "Tambah pelanggan baru",
                 inputFields = sampleFields,
                 onAddClick = {},
                 modifier = Modifier

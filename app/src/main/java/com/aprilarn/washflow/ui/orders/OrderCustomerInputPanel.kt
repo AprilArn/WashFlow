@@ -109,6 +109,8 @@ fun OrderCustomerInputPanel(
                 }
             }
 
+            Spacer(modifier = Modifier.height(4.dp))
+
             OutlinedTextField(
                 value = uiState.selectedCustomer?.contact ?: "",
                 onValueChange = {},
@@ -118,6 +120,8 @@ fun OrderCustomerInputPanel(
                     .fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             )
+
+            Spacer(modifier = Modifier.height(4.dp))
 
             Box(
                 modifier = Modifier

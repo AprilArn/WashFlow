@@ -1,6 +1,7 @@
 package com.aprilarn.washflow.ui.items
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -48,6 +49,8 @@ fun ItemsScreen (
                 || it.serviceId.contains(newItemName, ignoreCase = true)
                 || it.itemPrice.toString().contains(newItemName, ignoreCase = true)
     }
+
+    val borderRadius = RoundedCornerShape(24.dp)
 
     // Dialog untuk Edit/Delete
     uiState.selectedItem?.let { itemToEdit ->
@@ -130,7 +133,7 @@ fun ItemsScreen (
                             },
                             modifier = Modifier.weight(1f).height(48.dp),
                             shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8BC34A))
+                            colors = ButtonDefaults.buttonColors(containerColor = GrayBlue)
                         ) {
                             Icon(Icons.Default.Check, "Done")
                             Spacer(Modifier.width(4.dp))
@@ -197,17 +200,34 @@ fun ItemsScreen (
         // --- PANEL KANAN: DIBUAT SECARA MANUAL ---
         Box(modifier = Modifier.weight(1f)) {
             Card(
-                modifier = Modifier.wrapContentHeight(),
+                modifier = Modifier
+                    .wrapContentHeight()
+                    .border(
+                        width = 2.dp,
+                        color = GrayBlue.copy(alpha = 0.8f),
+                        shape = borderRadius
+                    ),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.25f))
             ) {
                 Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(vertical=24.dp, horizontal=22.dp),
                     verticalArrangement = Arrangement.spacedBy(0.dp)
                 ) {
-                    Text("Add New Item", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Add New Item",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 22.sp,
+                            color = GrayBlue
+                        )
+                    )
+                    Text(
+                        text = "Tambah item baru",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = GrayBlue
+                    )
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     ServiceDropdown(
                         services = uiState.services,
@@ -216,6 +236,7 @@ fun ItemsScreen (
                         label = "Service",
                         modifier = Modifier.fillMaxWidth(),
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
                     OutlinedTextField(
                         value = newItemName,
                         onValueChange = { newItemName = it },
@@ -223,6 +244,7 @@ fun ItemsScreen (
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
                     OutlinedTextField(
                         value = if (newItemPrice == 0.0) "" else newItemPrice.toString(),
                         onValueChange = { newItemPrice = it.toDoubleOrNull() ?: 0.0 },
@@ -230,8 +252,7 @@ fun ItemsScreen (
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
                     )
-
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(18.dp))
                     Button(
                         onClick = {
                             onAddItemClick(newItemService, newItemName, newItemPrice)
@@ -240,7 +261,7 @@ fun ItemsScreen (
                             newItemPrice = 0.0
                         },
                         modifier = Modifier.fillMaxWidth().height(48.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8BC34A)),
+                        colors = ButtonDefaults.buttonColors(containerColor = GrayBlue),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = "Add Icon")
