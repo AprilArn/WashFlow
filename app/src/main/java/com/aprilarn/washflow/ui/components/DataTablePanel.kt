@@ -54,7 +54,7 @@ fun <T> DataTablePanel(
                 modifier = Modifier
                     .weight(1f)
                     .border(
-                        width = 2.dp,
+                        width = 1.dp,
                         color = GrayBlue.copy(alpha = 0.8f),
                         shape = borderRadius
                     ),
@@ -76,11 +76,11 @@ fun <T> DataTablePanel(
             Card(
                 modifier = Modifier
                     .border(
-                        width = 2.dp,
+                        width = 1.dp,
                         color = GrayBlue.copy(alpha = 0.8f),
                         shape = borderRadius
                     ),
-                shape = RoundedCornerShape(24.dp),
+                shape = borderRadius,
                 colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Text(
@@ -97,7 +97,7 @@ fun <T> DataTablePanel(
             modifier = Modifier
                 .fillMaxSize()
                 .border(
-                    width = 2.dp,
+                    width = 1.dp,
                     color = GrayBlue.copy(alpha = 0.8f),
                     shape = borderRadius
                 ),
@@ -105,7 +105,7 @@ fun <T> DataTablePanel(
             colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.25f))
         ) {
             Column (
-                modifier = Modifier.padding(2.dp)
+                modifier = Modifier.padding(1.dp)
             ){
                 // Table Header (Sekarang dibuat dari List<ColumnConfig>)
                 Row(
@@ -113,7 +113,7 @@ fun <T> DataTablePanel(
                         .fillMaxWidth()
                         .background(
                             Color.White,
-                            shape = RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)
+                            shape = RoundedCornerShape(topStart = 23.dp, topEnd = 23.dp)
                         )
                         .padding(horizontal = 24.dp, vertical = 16.dp),
                     verticalAlignment = Alignment.CenterVertically

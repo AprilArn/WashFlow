@@ -203,11 +203,11 @@ fun ItemsScreen (
                 modifier = Modifier
                     .wrapContentHeight()
                     .border(
-                        width = 2.dp,
+                        width = 1.dp,
                         color = GrayBlue.copy(alpha = 0.8f),
                         shape = borderRadius
                     ),
-                shape = RoundedCornerShape(16.dp),
+                shape = borderRadius,
                 colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.25f))
             ) {
                 Column(

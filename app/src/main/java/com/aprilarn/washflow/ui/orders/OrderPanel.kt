@@ -45,7 +45,7 @@ fun OrderPanel(
             .fillMaxSize()
             .background(Color.White.copy(alpha = 0.25f), shape = borderRadius)
             .border(
-                width = 2.dp,
+                width = 1.dp,
                 color = GrayBlue.copy(alpha = 0.8f),
                 shape = borderRadius
             )
