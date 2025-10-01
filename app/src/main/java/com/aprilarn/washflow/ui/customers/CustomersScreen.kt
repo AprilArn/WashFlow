@@ -2,32 +2,90 @@ package com.aprilarn.washflow.ui.customers
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import com.aprilarn.washflow.data.model.Customers
+import com.aprilarn.washflow.ui.components.AddNewDataInputField
+import com.aprilarn.washflow.ui.components.AddNewDataPanel
+import com.aprilarn.washflow.ui.components.ColumnConfig
+import com.aprilarn.washflow.ui.components.DataTablePanel
+import com.aprilarn.washflow.ui.components.EditDataPanel
+import com.aprilarn.washflow.ui.theme.GrayBlue
 
 @Composable
 fun CustomersScreen(
+    uiState: CustomersUiState,
     onAddCustomerClick: (String, String) -> Unit,
-    onEditCustomerClick: (Customer) -> Unit,
-    onDeleteCustomerClick: (Customer) -> Unit,
+    onEditCustomerClick: (Customers) -> Unit,
+    onDeleteCustomerClick: (Customers) -> Unit,
+    onCustomerSelected: (Customers) -> Unit,
+    onDismissDialog: () -> Unit
 ) {
-    // State for the text fields and search query
-    var searchQuery by remember { mutableStateOf("") }
-    var customerName by remember { mutableStateOf("") }
-    var customerPhone by remember { mutableStateOf("") }
-    val customerCount = sampleCustomers.size
+    // State untuk pencarian (search) data
+    // var searchQuery by remember { mutableStateOf("") }
+    // State untuk panel "Add New"
+    var newCustomerName by remember { mutableStateOf("") }
+    var newCustomerPhone by remember { mutableStateOf("") }
+
+    val customerCount = uiState.customers.size
+    val filteredCustomers = uiState.customers.filter {
+        it.name.contains(newCustomerName, ignoreCase = true)
+                || it.contact?.contains(newCustomerName, ignoreCase = true) == true
+    }
+
+    // Dialog untuk Edit/Delete
+    uiState.selectedCustomer?.let { customerToEdit ->
+        // State untuk field di dalam dialog edit
+        var editedName by remember { mutableStateOf(customerToEdit.name) }
+        var editedContact by remember { mutableStateOf(customerToEdit.contact ?: "") }
+
+        // LaunchedEffect untuk mereset state jika customer yang dipilih berganti
+        LaunchedEffect(customerToEdit) {
+            editedName = customerToEdit.name
+            editedContact = customerToEdit.contact ?: ""
+        }
+
+        Dialog(onDismissRequest = onDismissDialog) {
+            val editInputFields = listOf(
+                AddNewDataInputField(
+                    value = editedName,
+                    onValueChange = { editedName = it },
+                    label = "Customer Name"
+                ),
+                AddNewDataInputField(
+                    value = editedContact,
+                    onValueChange = { editedContact = it },
+                    label = "Contact"
+                )
+            )
+
+            EditDataPanel(
+                title = "Edit ${customerToEdit.name}",
+                inputFields = editInputFields,
+                onDoneClick = {
+                    val updatedCustomer = customerToEdit.copy(
+                        name = editedName,
+                        contact = editedContact
+                    )
+                    onEditCustomerClick(updatedCustomer)
+                },
+                onDeleteClick = {
+                    onDeleteCustomerClick(customerToEdit)
+                }
+            )
+        }
+    }
+
 
     Row(
         modifier = Modifier
@@ -35,122 +93,73 @@ fun CustomersScreen(
             .padding(horizontal = 32.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Left Panel: Customer List
-        Column(
-            modifier = Modifier.weight(2f)
-        ) {
-            // Top bar with Search and Customer Count
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Search Bar
-                TextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = { Text("Search by Name/Contact") },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search Icon") },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.Gray,
-                        disabledContainerColor = Color.Gray,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        disabledIndicatorColor = Color.Transparent
-                    )
+        // Left Panel: DataTablePanel
+        Box(modifier = Modifier.weight(2f)) {
+            val customerColumns = listOf(
+                ColumnConfig<Customers>(
+                    header = "Name",
+                    weight = 0.7f,
+                    content = { customer -> Text(customer.name, color = GrayBlue) }
+                ),
+                ColumnConfig<Customers>(
+                    header = "Contact",
+                    weight = 0.4f,
+                    content = { customer -> customer.contact?.let { Text(it, color = GrayBlue) } }
+                ),
+                ColumnConfig<Customers>(
+                    header = "Edit", // Ubah header menjadi "Actions"
+                    weight = 0.1f,
+                    content = { customer ->
+                        // Hapus tombol dari sini karena aksi sekarang via onRowClick
+                        // Bisa diganti dengan ikon atau indikator lain jika perlu
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit Customer",
+                            tint = GrayBlue.copy(alpha = 0.7f)
+                        )
+                    }
                 )
-                // Customer Count
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
-                ) {
-                    Text(
-                        text = "Customer: $customerCount",
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            // Customer List Panel (now imported from its own file)
-            CustomerListPanel(
-                customers = sampleCustomers,
-                onEditClick = onEditCustomerClick,
-                onDeleteClick = onDeleteCustomerClick
+            )
+
+            DataTablePanel(
+                title = "Customer",
+                itemCount = customerCount,
+                searchQuery = newCustomerName,
+                onSearchQueryChange = { newCustomerName = it },
+                searchPlaceholder = "Search by Name/Contact",
+                columns = customerColumns,
+                data = filteredCustomers, // Gunakan data yang sudah difilter
+                isLoading = uiState.isLoading,
+                onRowClick = { customer -> onCustomerSelected(customer) }
             )
         }
 
-        // Right Panel: Add New Customer
+        // Right Panel: AddNewDataPanel
         Box(modifier = Modifier.weight(1f)) {
-            AddCustomerPanel(
-                name = customerName,
-                onNameChange = { customerName = it },
-                phone = customerPhone,
-                onPhoneChange = { customerPhone = it },
-                onAddClick = {
-                    onAddCustomerClick(customerName, customerPhone)
-                    // Clear fields after adding
-                    customerName = ""
-                    customerPhone = ""
-                }
+            val inputFields = listOf(
+                AddNewDataInputField(
+                    value = newCustomerName,
+                    onValueChange = { newCustomerName = it },
+                    label = "Nama Pelanggan"
+                ),
+                AddNewDataInputField(
+                    value = newCustomerPhone,
+                    onValueChange = { newCustomerPhone = it },
+                    label = "No. WA"
+                )
             )
-        }
-    }
-}
 
-@Composable
-fun AddCustomerPanel(
-    name: String,
-    onNameChange: (String) -> Unit,
-    phone: String,
-    onPhoneChange: (String) -> Unit,
-    onAddClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxHeight(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.25f))
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text("Add New Customer", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(32.dp))
-            OutlinedTextField(
-                value = name,
-                onValueChange = onNameChange,
-                label = { Text("Nama Pelanggan") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
+            AddNewDataPanel(
+                title = "Add New Customer",
+                subTitle = "Tambah pelanggan baru",
+                inputFields = inputFields,
+                onAddClick = {
+                    onAddCustomerClick(newCustomerName, newCustomerPhone)
+                    newCustomerName = ""
+                    newCustomerPhone = ""
+                },
+                addButtonText = "Add Customer" // Teks lebih deskriptif
             )
-            Spacer(modifier = Modifier.height(16.dp))
-            OutlinedTextField(
-                value = phone,
-                onValueChange = onPhoneChange,
-                label = { Text("No. WA") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Button(
-                onClick = onAddClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8BC34A)),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Icon")
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Add")
-            }
         }
     }
 }
@@ -165,10 +174,21 @@ fun CustomersScreenPreview() {
             )
         )
     ) {
+        val previewState = CustomersUiState(
+            customers = listOf(
+                Customers("1", "Pelanggan Satu", "081234567890"),
+                Customers("2", "Pelanggan Dua", "089876543210")
+            ),
+            // Contoh saat dialog edit muncul untuk pelanggan pertama
+            selectedCustomer = Customers("1", "Pelanggan Satu", "081234567890")
+        )
         CustomersScreen(
+            uiState = previewState,
             onAddCustomerClick = { _, _ -> },
             onEditCustomerClick = {},
-            onDeleteCustomerClick = {}
+            onDeleteCustomerClick = {},
+            onCustomerSelected = {},
+            onDismissDialog = {}
         )
     }
 }

@@ -42,38 +42,32 @@ fun NavigationBar(
             .height(60.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(Color.White.copy(alpha = 0.5f))
-            .padding(horizontal = 24.dp)
+            .padding(horizontal = 10.dp)
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(20.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Definisikan setiap item navigasi
+            // Daftar item sekarang lebih dinamis
             val items = listOf(
-                AppNavigation.Home to Icons.Default.Home,
-                AppNavigation.Orders to Icons.Default.ShoppingCart,
-                AppNavigation.Customers to Icons.Default.Person, // Rute ke CustomersScreen
-                AppNavigation.Settings to Icons.Default.Settings
+                AppNavigation.Home,
+                AppNavigation.Orders,
+                AppNavigation.Customers,
+                AppNavigation.Services,
+                AppNavigation.Items,
+                AppNavigation.Settings
             )
 
             // Loop untuk membuat setiap item
-            items.forEach { (screen, icon) ->
-                val label = when (screen) {
-                    AppNavigation.Home -> "Home"
-                    AppNavigation.Orders -> "Orders"
-                    AppNavigation.Customers -> "Users"
-                    AppNavigation.Settings -> "Settings"
-                }
-
+            items.forEach { screen ->
                 BottomNavItem(
-                    icon = icon,
-                    label = label,
+                    icon = screen.icon,
+                    label = screen.label,
                     isSelected = currentRoute == screen.route,
                     onClick = {
-                        // Navigasi hanya jika belum berada di layar tersebut
                         if (currentRoute != screen.route) {
                             navController.navigate(screen.route) {
-                                // Pop up ke start destination untuk menghindari tumpukan back stack
                                 popUpTo(navController.graph.startDestinationId)
                                 launchSingleTop = true
                             }
@@ -98,8 +92,9 @@ private fun BottomNavItem(
         verticalArrangement = Arrangement.Center,
         modifier = Modifier
             .fillMaxHeight()
+            .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick) // Buat item bisa diklik
-            .padding(horizontal = 8.dp) // Beri sedikit padding agar area klik lebih luas
+            .padding(horizontal = 14.dp) // Beri sedikit padding agar area klik lebih luas
     ) {
         Icon(
             imageVector = icon,
@@ -107,11 +102,11 @@ private fun BottomNavItem(
             tint = contentColor,
             modifier = Modifier.size(24.dp)
         )
-        Text(
-            text = label,
-            color = contentColor,
-            fontSize = 12.sp
-        )
+//        Text(
+//            text = label,
+//            color = contentColor,
+//            fontSize = 12.sp
+//        )
     }
 }
 

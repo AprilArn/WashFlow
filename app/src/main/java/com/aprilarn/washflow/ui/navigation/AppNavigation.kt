@@ -1,8 +1,14 @@
 package com.aprilarn.washflow
 
-sealed class AppNavigation(val route: String) {
-    object Home : AppNavigation("home")
-    object Orders : AppNavigation("orders")
-    object Customers : AppNavigation("customers")
-    object Settings : AppNavigation("settings")
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.ui.graphics.vector.ImageVector
+
+sealed class AppNavigation(val route: String, val icon: ImageVector, val label: String) {
+    object Home : AppNavigation("home", Icons.Default.Home, "Home")
+    object Orders : AppNavigation("orders", Icons.Default.ShoppingCart, "Orders")
+    object Customers : AppNavigation("customers", Icons.Default.Person, "Users")
+    object Services : AppNavigation("services", Icons.Default.List, "Services")
+    object Items : AppNavigation("items", Icons.Default.ShoppingCart, "Items")
+    object Settings : AppNavigation("settings", Icons.Default.Settings, "Settings")
 }
