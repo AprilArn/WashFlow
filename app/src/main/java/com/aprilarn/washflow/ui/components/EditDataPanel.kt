@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aprilarn.washflow.ui.theme.GrayBlue
 
 /**
  * Panel generik untuk mengedit atau menghapus data yang sudah ada.
@@ -85,7 +86,7 @@ fun EditDataPanel(
                     modifier = Modifier
                         .weight(1f)
                         .height(48.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8BC34A)),
+                    colors = ButtonDefaults.buttonColors(containerColor = GrayBlue),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Icon(Icons.Default.Check, contentDescription = "Done Icon")
