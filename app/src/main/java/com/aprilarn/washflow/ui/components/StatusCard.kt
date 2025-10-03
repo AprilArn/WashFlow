@@ -2,6 +2,7 @@ package com.example.app.ui.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,12 +21,14 @@ import com.aprilarn.washflow.ui.theme.GrayBlue
 @Composable
 fun StatusCard(
     text: String,
-    count: Int
+    count: Int,
+    onClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .size(width = 140.dp, height = 180.dp)
             .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
             .background(Color.White)
             .padding(12.dp),
         verticalArrangement = Arrangement.Top,
@@ -45,5 +48,5 @@ fun StatusCard(
 @Preview
 @Composable
 fun StatusCardPreview() {
-    StatusCard(text = "In Queue", count = 12)
+    StatusCard(text = "In Queue", count = 12, onClick = {})
 }

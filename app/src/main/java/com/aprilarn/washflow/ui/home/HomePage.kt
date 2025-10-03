@@ -8,7 +8,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 @Composable
 fun HomePage(
     homeViewModel: HomeViewModel = viewModel(),
-    onEnterDataClick: () -> Unit
+    onEnterDataClick: () -> Unit,
+    onStatusCardClick: () -> Unit
 ) {
     // Menggunakan `collectAsState` untuk mengobservasi StateFlow
     // UI akan otomatis recompose setiap kali ada update dari ViewModel
@@ -16,6 +17,7 @@ fun HomePage(
 
     HomeScreen(
         state = state,
-        onEnterDataClick = onEnterDataClick
+        onEnterDataClick = onEnterDataClick,
+        onStatusCardClick = onStatusCardClick
     )
 }

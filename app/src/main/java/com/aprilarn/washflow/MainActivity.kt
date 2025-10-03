@@ -58,6 +58,8 @@ import com.aprilarn.washflow.ui.items.ItemsViewModel
 import com.aprilarn.washflow.ui.login.GoogleAuthUiClient
 import com.aprilarn.washflow.ui.login.LoginScreen
 import com.aprilarn.washflow.ui.login.LoginViewModel
+import com.aprilarn.washflow.ui.manage_order.ManageOrderScreen
+import com.aprilarn.washflow.ui.manage_order.ManageOrderViewModel
 import com.aprilarn.washflow.ui.orders.OrdersScreen
 import com.aprilarn.washflow.ui.orders.OrdersViewModel
 import com.aprilarn.washflow.ui.theme.MainBLue
@@ -264,7 +266,21 @@ fun MainAppScreen() {
             NavHost(navController = bottomNavController, startDestination = AppNavigation.Home.route) {
 
                 composable(AppNavigation.Home.route) {
-                    LocationAwareHomePage()
+                    LocationAwareHomePage(
+                        onNavigateToManageOrder = {
+                            bottomNavController.navigate(AppNavigation.ManageOrder.route)
+                        }
+                    )
+                }
+
+                composable(AppNavigation.ManageOrder.route) {
+                    val factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            return ManageOrderViewModel(OrderRepository()) as T
+                        }
+                    }
+                    val viewModel: ManageOrderViewModel = viewModel(factory = factory)
+                    ManageOrderScreen(viewModel = viewModel)
                 }
 
                 composable(AppNavigation.Customers.route) {
@@ -385,7 +401,9 @@ fun MainAppScreen() {
 }
 
 @Composable
-fun LocationAwareHomePage() {
+fun LocationAwareHomePage(
+    onNavigateToManageOrder: () -> Unit
+) {
     val context = LocalContext.current
     val homeViewModel: HomeViewModel = viewModel()
     var hasLocationPermission by remember { mutableStateOf(false) }
@@ -436,7 +454,8 @@ fun LocationAwareHomePage() {
     if (hasLocationPermission) {
         HomePage(
             homeViewModel = homeViewModel,
-            onEnterDataClick = {}
+            onEnterDataClick = {},
+            onStatusCardClick = onNavigateToManageOrder
         )
     } else {
         // Tampilan jika pengguna menolak izin

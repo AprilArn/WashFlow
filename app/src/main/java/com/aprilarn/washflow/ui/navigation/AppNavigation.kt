@@ -11,4 +11,5 @@ sealed class AppNavigation(val route: String, val icon: ImageVector, val label: 
     object Services : AppNavigation("services", Icons.Default.List, "Services")
     object Items : AppNavigation("items", Icons.Default.ShoppingCart, "Items")
     object Settings : AppNavigation("settings", Icons.Default.Settings, "Settings")
+    object ManageOrder : AppNavigation("manage_order", Icons.Default.Phone, "Manage Order") // <- TAMBAHKAN INI
 }

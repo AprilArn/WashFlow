@@ -24,7 +24,8 @@ import com.aprilarn.washflow.ui.theme.GrayBlue
 @Composable
 fun HomeScreen(
     state: HomeUiState,
-    onEnterDataClick: () -> Unit
+    onEnterDataClick: () -> Unit,
+    onStatusCardClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -109,9 +110,10 @@ fun HomeScreen(
 
                 // Status cards
                 Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
-                    StatusCard(text = "In Queue", count = state.inQueue)
-                    StatusCard(text = "On Process", count = state.onProcess)
-                    StatusCard(text = "Done", count = state.done)
+                    // --- TERAPKAN onClick DI SINI ---
+                    StatusCard(text = "In Queue", count = state.inQueue, onClick = onStatusCardClick)
+                    StatusCard(text = "On Process", count = state.onProcess, onClick = onStatusCardClick)
+                    StatusCard(text = "Done", count = state.done, onClick = onStatusCardClick)
                 }
 
 //                Spacer(modifier = Modifier.height(18.dp))
@@ -149,7 +151,8 @@ fun HomeScreenPreview() {
                     HourlyForecastUiState("22:00", "https://openweathermap.org/img/wn/02n@2x.png", "20°")
                 )
             ),
-            onEnterDataClick = {}
+            onEnterDataClick = {},
+            onStatusCardClick = {}
         )
     }
 }

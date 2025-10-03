@@ -38,10 +38,10 @@ data class Workspaces (
     )
 
     data class Orders (
-        val orderId: String,
-        val customerId: String,  // referensi ke Customers
+        val orderId: String = "",
+        val customerId: String = "",  // referensi ke Customers
         val customerName: String? = null,
-        val orderDate: Timestamp,
+        val orderDate: Timestamp = Timestamp.now(),
         val orderDueDate: Timestamp? = null,
         val orderItems: List<OrderItem> = emptyList(),
         val totalPrice: Double? = 0.0,
@@ -49,7 +49,7 @@ data class Workspaces (
     )
 
         data class OrderItem (
-            val itemId: String,  // referensi ke Items
+            val itemId: String = "",  // referensi ke Items
             val itemName: String? = null,
             val itemPrice: Double? = 0.0,
             val serviceId: String? = null,
