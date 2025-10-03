@@ -112,10 +112,10 @@ fun OrderPreviewPanel(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(18.dp) ,
+                        .padding(18.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
-                ){
+                ) {
                     Column(
                         modifier = Modifier
                             .weight(1f)

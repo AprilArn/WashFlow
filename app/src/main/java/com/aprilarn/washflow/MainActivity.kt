@@ -280,7 +280,23 @@ fun MainAppScreen() {
                         }
                     }
                     val viewModel: ManageOrderViewModel = viewModel(factory = factory)
-                    ManageOrderScreen(viewModel = viewModel)
+                    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+                    val context = LocalContext.current
+
+                    LaunchedEffect(uiState.errorMessage) {
+                        uiState.errorMessage?.let {
+                            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+                            viewModel.onErrorMessageShown()
+                        }
+                    }
+
+                    ManageOrderScreen(
+                        uiState = uiState,
+                        onDrop = { orderId, newStatus ->
+                            viewModel.changeOrderStatus(orderId, newStatus)
+                        }
+
+                    )
                 }
 
                 composable(AppNavigation.Customers.route) {
