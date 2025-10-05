@@ -21,9 +21,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
@@ -52,6 +55,14 @@ internal class DragDropState<T> {
 
     // Menyimpan daftar semua kolom yang bisa menjadi target
     val dropTargets = mutableStateListOf<DropTarget>()
+
+    var draggedItemSize: IntSize by mutableStateOf(IntSize.Zero)
+    fun stopDrag() {
+        isDragging = false
+        itemData = null
+        dragPosition = Offset.Zero
+        draggedItemSize = IntSize.Zero // Reset ukuran
+    }
 }
 
 @Composable
@@ -70,32 +81,25 @@ fun DragDropContainer(
     content: @Composable () -> Unit
 ) {
     val state = rememberDragDropState<Orders>()
-    var containerPosition by remember { mutableStateOf(Offset.Zero) }
+    val density = LocalDensity.current
 
     CompositionLocalProvider(LocalDragDropState provides state) {
         Box(modifier = modifier.fillMaxSize()) {
             content()
 
-//            if (state.isDragging && state.itemData != null) {
-//                Box(
-//                    modifier = Modifier.graphicsLayer {
-//                        translationX = state.dragPosition.x
-//                        translationY = state.dragPosition.y
-//                    }
-//                ) {
-//                    OrderCardContent(order = state.itemData!!)
-//                }
-//            }
             if (state.isDragging) {
                 state.itemData?.let { data ->
+                    // Konversi ukuran dari pixel ke Dp
+                    val draggedItemWidthDp = with(density) { state.draggedItemSize.width.toDp() }
+                    val draggedItemHeightDp = with(density) { state.draggedItemSize.height.toDp() }
+
                     Box(
-                        modifier = Modifier.graphicsLayer {
-                            // --- PERBAIKAN LOGIKA POSISI DI SINI ---
-                            // Hitung posisi lokal = posisi absolut jari - posisi absolut kontainer
-                            val localDragPosition = state.dragPosition - containerPosition
-                            translationX = localDragPosition.x
-                            translationY = localDragPosition.y
-                        }
+                        modifier = Modifier
+                            .graphicsLayer {
+                                translationX = state.dragPosition.x
+                                translationY = state.dragPosition.y
+                            }
+                            .size(width = draggedItemWidthDp, height = draggedItemHeightDp)
                     ) {
                         OrderCardContent(order = data, services = services)
                     }
@@ -209,33 +213,27 @@ fun OrderStatusColumn(
     }
 }
 
-// Draggable Card
 @Composable
-fun DraggableOrderCard(
-    order: Orders,
-    services: List<Services>
-) {
+fun DraggableOrderCard(order: Orders, services: List<Services>) {
     val dragDropState = LocalDragDropState.current
     var startPosition by remember { mutableStateOf(Offset.Zero) }
+    var itemSize by remember { mutableStateOf(IntSize.Zero) } // <- State untuk menyimpan ukuran kartu ini
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(borderRadius)
-            .border(
-                width = 1.dp,
-                color = GrayBlue.copy(alpha = 0.8f),
-                shape = borderRadius
-            )
+            // --- CATAT UKURAN KARTU ASLI DI SINI ---
+            .onSizeChanged { itemSize = it }
             .onGloballyPositioned {
                 startPosition = it.positionInWindow()
             }
             .pointerInput(Unit) {
                 detectDragGestures(
                     onDragStart = { offset ->
-                        dragDropState.itemData = order
                         dragDropState.isDragging = true
+                        dragDropState.itemData = order
                         dragDropState.dragPosition = startPosition + offset
+                        dragDropState.draggedItemSize = itemSize
                     },
                     onDragEnd = {
                         dragDropState.itemData?.let { draggedItem ->
@@ -246,15 +244,8 @@ fun DraggableOrderCard(
                                 target.onDrop(draggedItem.orderId)
                             }
                         }
-                        dragDropState.isDragging = false
-                        dragDropState.itemData = null
-                        dragDropState.dragPosition = Offset.Zero
-                    },
-                    onDragCancel = {
-                        dragDropState.isDragging = false
-                        dragDropState.itemData = null
-                        dragDropState.dragPosition = Offset.Zero
-                    },
+                        dragDropState.stopDrag() },
+                    onDragCancel = { dragDropState.stopDrag() },
                     onDrag = { change, dragAmount ->
                         change.consume()
                         dragDropState.dragPosition += dragAmount
@@ -271,6 +262,7 @@ fun DraggableOrderCard(
         OrderCardContent(order = order, services = services)
     }
 }
+
 
 // Card Content UI
 @Composable
@@ -298,7 +290,7 @@ fun OrderCardContent(
 
     Box(
         modifier = Modifier
-            .fillMaxWidth()
+            //.fillMaxWidth()
             .clip(borderRadius)
             .border(
                 width = 1.dp,
@@ -308,7 +300,7 @@ fun OrderCardContent(
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
+                //.fillMaxWidth()
                 .padding(18.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
