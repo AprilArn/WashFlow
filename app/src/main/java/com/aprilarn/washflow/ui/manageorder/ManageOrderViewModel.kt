@@ -105,43 +105,69 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aprilarn.washflow.data.repository.OrderRepository
+import com.aprilarn.washflow.data.repository.ServiceRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ManageOrderViewModel(
-    private val orderRepository: OrderRepository
+    private val orderRepository: OrderRepository,
+    private val serviceRepository: ServiceRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ManageOrderUiState())
     val uiState = _uiState.asStateFlow()
 
     init {
-        listenForOrders()
+//        listenForOrders()
+        listenForDataChanges()
     }
 
-    private fun listenForOrders() {
+    private fun listenForDataChanges() {
+//        viewModelScope.launch {
+//            Log.d("ManageOrderVM", "Starting to listen for real-time order updates.")
+//            orderRepository.getOrdersRealtime()
+//                .catch { e ->
+//                    Log.e("ManageOrderVM", "Error listening for orders", e)
+//                    _uiState.update { it.copy(isLoading = false, errorMessage = e.message) }
+//                }
+//                .collect { orders ->
+//                    Log.d("ManageOrderVM", "Received ${orders.size} orders from Firestore.")
+//                    _uiState.update {
+//                        it.copy(
+//                            isLoading = false,
+//                            ordersOnQueue = orders.filter { o -> o.status == "On Queue" },
+//                            ordersOnProcess = orders.filter { o -> o.status == "On Process" },
+//                            ordersDone = orders.filter { o -> o.status == "Done" }
+//                        )
+//                    }
+//                    Log.d("ManageOrderVM", "UI state updated with new order lists.")
+//                }
+//        }
         viewModelScope.launch {
-            Log.d("ManageOrderVM", "Starting to listen for real-time order updates.")
-            orderRepository.getOrdersRealtime()
-                .catch { e ->
-                    Log.e("ManageOrderVM", "Error listening for orders", e)
-                    _uiState.update { it.copy(isLoading = false, errorMessage = e.message) }
+            _uiState.update { it.copy(isLoading = true) }
+
+            val ordersFlow = orderRepository.getOrdersRealtime()
+            val servicesFlow = serviceRepository.getServicesRealtime()
+
+            // Gabungkan data orders dan services secara real-time
+            combine(ordersFlow, servicesFlow) { orders, services ->
+                val groupedOrders = orders.groupBy { it.status }
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        ordersOnQueue = groupedOrders["On Queue"] ?: emptyList(),
+                        ordersOnProcess = groupedOrders["On Process"] ?: emptyList(),
+                        ordersDone = groupedOrders["Done"] ?: emptyList(),
+                        services = services // Simpan daftar services ke state
+                    )
                 }
-                .collect { orders ->
-                    Log.d("ManageOrderVM", "Received ${orders.size} orders from Firestore.")
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            ordersOnQueue = orders.filter { o -> o.status == "On Queue" },
-                            ordersOnProcess = orders.filter { o -> o.status == "On Process" },
-                            ordersDone = orders.filter { o -> o.status == "Done" }
-                        )
-                    }
-                    Log.d("ManageOrderVM", "UI state updated with new order lists.")
-                }
+            }.catch { e ->
+                _uiState.update { it.copy(isLoading = false, errorMessage = e.message) }
+            }.collect {}
         }
     }
 

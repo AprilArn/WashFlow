@@ -123,7 +123,8 @@ fun ManageOrderScreen(
         DragDropContainer(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 32.dp)
+                .padding(horizontal = 32.dp),
+            services = uiState.services
         ) {
             Row(
                 modifier = Modifier
@@ -136,6 +137,7 @@ fun ManageOrderScreen(
                     title = "On Queue",
                     subTitle = "Dalam antrian",
                     orders = uiState.ordersOnQueue,
+                    services = uiState.services,
                     onDrop = { orderId -> onDrop(orderId, "On Queue") }
                 )
 
@@ -145,6 +147,7 @@ fun ManageOrderScreen(
                     title = "On Process",
                     subTitle = "Sedang diproses",
                     orders = uiState.ordersOnProcess,
+                    services = uiState.services,
                     onDrop = { orderId -> onDrop(orderId, "On Process") }
                 )
 
@@ -154,6 +157,7 @@ fun ManageOrderScreen(
                     title = "Done",
                     subTitle = "Selesai",
                     orders = uiState.ordersDone,
+                    services = uiState.services,
                     onDrop = { orderId -> onDrop(orderId, "Done") }
                 )
             }

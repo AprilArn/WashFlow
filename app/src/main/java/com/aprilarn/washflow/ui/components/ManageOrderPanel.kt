@@ -27,10 +27,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
+import com.aprilarn.washflow.data.model.OrderItem
 import com.aprilarn.washflow.data.model.Orders
+import com.aprilarn.washflow.data.model.Services
 import com.aprilarn.washflow.ui.theme.Gray
 import com.aprilarn.washflow.ui.theme.GrayBlue
+import com.google.firebase.Timestamp
 import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 // DATA CLASS UNTUK MENYIMPAN INFORMASI TARGET DROP (diubah menjadi internal)
@@ -62,22 +66,39 @@ val borderRadius = RoundedCornerShape(24.dp)
 @Composable
 fun DragDropContainer(
     modifier: Modifier = Modifier,
+    services: List<Services>,
     content: @Composable () -> Unit
 ) {
     val state = rememberDragDropState<Orders>()
+    var containerPosition by remember { mutableStateOf(Offset.Zero) }
 
     CompositionLocalProvider(LocalDragDropState provides state) {
         Box(modifier = modifier.fillMaxSize()) {
             content()
 
-            if (state.isDragging && state.itemData != null) {
-                Box(
-                    modifier = Modifier.graphicsLayer {
-                        translationX = state.dragPosition.x
-                        translationY = state.dragPosition.y
+//            if (state.isDragging && state.itemData != null) {
+//                Box(
+//                    modifier = Modifier.graphicsLayer {
+//                        translationX = state.dragPosition.x
+//                        translationY = state.dragPosition.y
+//                    }
+//                ) {
+//                    OrderCardContent(order = state.itemData!!)
+//                }
+//            }
+            if (state.isDragging) {
+                state.itemData?.let { data ->
+                    Box(
+                        modifier = Modifier.graphicsLayer {
+                            // --- PERBAIKAN LOGIKA POSISI DI SINI ---
+                            // Hitung posisi lokal = posisi absolut jari - posisi absolut kontainer
+                            val localDragPosition = state.dragPosition - containerPosition
+                            translationX = localDragPosition.x
+                            translationY = localDragPosition.y
+                        }
+                    ) {
+                        OrderCardContent(order = data, services = services)
                     }
-                ) {
-                    OrderCardContent(order = state.itemData!!)
                 }
             }
         }
@@ -91,6 +112,7 @@ fun OrderStatusColumn(
     title: String,
     subTitle: String,
     orders: List<Orders>,
+    services: List<Services>,
     onDrop: (orderId: String) -> Unit
 ) {
     val dragDropState = LocalDragDropState.current
@@ -180,7 +202,7 @@ fun OrderStatusColumn(
                 modifier = Modifier.fillMaxSize()
             ) {
                 items(orders, key = { it.orderId }) { order ->
-                    DraggableOrderCard(order = order)
+                    DraggableOrderCard(order = order, services = services)
                 }
             }
         }
@@ -189,7 +211,10 @@ fun OrderStatusColumn(
 
 // Draggable Card
 @Composable
-fun DraggableOrderCard(order: Orders) {
+fun DraggableOrderCard(
+    order: Orders,
+    services: List<Services>
+) {
     val dragDropState = LocalDragDropState.current
     var startPosition by remember { mutableStateOf(Offset.Zero) }
 
@@ -243,17 +268,33 @@ fun DraggableOrderCard(order: Orders) {
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
-        OrderCardContent(order = order)
+        OrderCardContent(order = order, services = services)
     }
 }
 
 // Card Content UI
 @Composable
-fun OrderCardContent(order: Orders) {
-    val formattedDate = remember(order.orderDate) {
-        SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.getDefault()).format(order.orderDate.toDate())
-    } // ubah ke duedate
+fun OrderCardContent(
+    order: Orders,
+    services: List<Services>
+) {
+    val formattedOrderDate = remember(order.orderDate) {
+        SimpleDateFormat("EEEE, dd MMMM yyyy, HH:mm", Locale.getDefault()).format(order.orderDate.toDate())
+    }
+    val formattedDueDate = remember(order.orderDueDate) {
+        order.orderDueDate?.toDate()?.let {
+            SimpleDateFormat("EEEE, dd MMMM, HH:mm", Locale.getDefault()).format(it)
+        } ?: "No due date"
+    }
     val totalQuantity = order.orderItems.sumOf { it.itemQuantity ?: 0 }
+
+    val serviceNames = remember(order.orderItems, services) {
+        order.orderItems
+            .map { orderItem -> services.find { it.serviceId == orderItem.serviceId }?.serviceId } //serviceName jika ingin menggunakan nama
+            .filterNotNull()
+            .distinct()
+            .joinToString(" + ")
+    }
 
     Box(
         modifier = Modifier
@@ -277,7 +318,7 @@ fun OrderCardContent(order: Orders) {
                     .weight(1f)
             ) {
                 Text(
-                    text = "selectedServices (ex: Laundry Kiloan + Dry Clean)", // Ganti dengan data sebenarnya
+                    text = if (serviceNames.isEmpty()) "No services" else serviceNames, // Ganti dengan data sebenarnya
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = Gray
                     )
@@ -292,7 +333,13 @@ fun OrderCardContent(order: Orders) {
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = formattedDate,
+                    text = formattedOrderDate,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = GrayBlue
+                    )
+                )
+                Text(
+                    text = formattedDueDate,
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = GrayBlue
                     )
@@ -310,56 +357,61 @@ fun OrderCardContent(order: Orders) {
     }
 }
 
-@Preview
+// --- PRATINJAU UNTUK SATU KARTU PESANAN ---
+@Preview(showBackground = true, name = "Order Card Preview")
 @Composable
 fun OrderCardContentPreview() {
+    // Siapkan data sampel
+    val sampleServices = listOf(
+        Services(serviceId = "L-01", serviceName = "Laundry Satuan"),
+        Services(serviceId = "D-01", serviceName = "Dry Clean")
+    )
     val sampleOrder = Orders(
         orderId = "1",
-        customerName = "Budi",
-        orderDate = com.google.firebase.Timestamp.now(),
+        customerName = "Budi Santoso",
+        orderDate = Timestamp.now(),
+        orderDueDate = Timestamp(Date(System.currentTimeMillis() + 86400000)), // Besok
         orderItems = listOf(
-            com.aprilarn.washflow.data.model.OrderItem(itemQuantity = 3),
-            com.aprilarn.washflow.data.model.OrderItem(itemQuantity = 2)
+            OrderItem(itemId = "item_1", serviceId = "L-01", itemQuantity = 3),
+            OrderItem(itemId = "item_4", serviceId = "D-01", itemQuantity = 1)
         )
-    ) // Contoh data
-    OrderCardContent(
-        order = sampleOrder
     )
+
+    MaterialTheme {
+        Box(modifier = Modifier.padding(8.dp)) {
+            // Panggil komponen konten dengan data sampel
+            OrderCardContent(order = sampleOrder, services = sampleServices)
+        }
+    }
 }
 
-@Preview
+// --- PRATINJAU UNTUK SATU KOLOM STATUS ---
+@Preview(showBackground = true, name = "Order Status Column Preview", widthDp = 360, heightDp = 700)
 @Composable
 fun OrderStatusColumnPreview() {
-    val sampleOrders = listOf(
-        Orders(
-            orderId = "1",
-            customerName = "Budi",
-            orderDate = com.google.firebase.Timestamp.now(),
-            orderItems = listOf(
-                com.aprilarn.washflow.data.model.OrderItem(itemQuantity = 3),
-                com.aprilarn.washflow.data.model.OrderItem(itemQuantity = 2)
-            )
-        ),
-        Orders(
-            orderId = "2",
-            customerName = "Citra",
-            orderDate = com.google.firebase.Timestamp.now(),
-            orderItems = listOf(
-                com.aprilarn.washflow.data.model.OrderItem(itemQuantity = 1)
-            )
-        )
+    // Siapkan data sampel
+    val sampleServices = listOf(
+        Services(serviceId = "L-01", serviceName = "Laundry Satuan")
     )
-    DragDropContainer(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        OrderStatusColumn(
-            modifier = Modifier.fillMaxSize(),
-            title = "On Queue",
-            subTitle = "Order menunggu",
-            orders = sampleOrders,
-            onDrop = { orderId -> /* Handle drop action */ }
-        )
+    val sampleOrders = listOf(
+        Orders(orderId = "1", customerName = "Budi", status = "On Queue", orderItems = listOf(OrderItem(serviceId = "L-01", itemQuantity = 3))),
+        Orders(orderId = "2", customerName = "Citra", status = "On Queue", orderItems = listOf(OrderItem(serviceId = "L-01", itemQuantity = 1)))
+    )
+
+    MaterialTheme {
+        // DragDropContainer dibutuhkan karena komponen di dalamnya menggunakan state dari sana
+        DragDropContainer(
+            modifier = Modifier.padding(8.dp),
+            services = sampleServices
+        ) {
+            OrderStatusColumn(
+                modifier = Modifier.fillMaxSize(),
+                title = "On Queue",
+                subTitle = "Order menunggu",
+                orders = sampleOrders,
+                services = sampleServices,
+                onDrop = { } // Biarkan kosong untuk preview
+            )
+        }
     }
 }

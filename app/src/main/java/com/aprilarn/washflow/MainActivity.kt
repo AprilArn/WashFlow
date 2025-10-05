@@ -276,7 +276,10 @@ fun MainAppScreen() {
                 composable(AppNavigation.ManageOrder.route) {
                     val factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                            return ManageOrderViewModel(OrderRepository()) as T
+                            return ManageOrderViewModel(
+                                OrderRepository(),
+                                ServiceRepository()
+                            ) as T
                         }
                     }
                     val viewModel: ManageOrderViewModel = viewModel(factory = factory)
