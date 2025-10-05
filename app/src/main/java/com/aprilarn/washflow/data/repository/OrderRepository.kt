@@ -87,4 +87,20 @@ class OrderRepository {
         }
     }
 
+    suspend fun deleteOrder(orderId: String): Boolean {
+        val workspaceId = getWorkspaceId() ?: return false
+        return try {
+            db.collection("workspaces")
+                .document(workspaceId)
+                .collection("orders")
+                .document(orderId)
+                .delete()
+                .await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
 }

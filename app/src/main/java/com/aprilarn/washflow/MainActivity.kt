@@ -297,8 +297,10 @@ fun MainAppScreen() {
                         uiState = uiState,
                         onDrop = { orderId, newStatus ->
                             viewModel.changeOrderStatus(orderId, newStatus)
-                        }
-
+                        },
+                        onOrderClick = { order -> viewModel.onOrderCardClicked(order) },
+                        onDismissDialog = { viewModel.onDismissOrderDetailDialog() },
+                        onDeleteOrder = { orderId -> viewModel.deleteOrder(orderId) }
                     )
                 }
 

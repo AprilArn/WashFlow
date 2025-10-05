@@ -9,6 +9,7 @@ data class ManageOrderUiState(
     val ordersOnProcess: List<Orders> = emptyList(),
     val ordersDone: List<Orders> = emptyList(),
     val services: List<Services> = emptyList(),
+    val selectedOrderForDetail: Orders? = null,
     val isLoading: Boolean = true,
     val errorMessage: String? = null
 )

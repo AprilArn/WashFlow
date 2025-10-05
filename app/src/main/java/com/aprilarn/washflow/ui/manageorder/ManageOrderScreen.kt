@@ -1,102 +1,15 @@
-//// com/aprilarn/washflow/ui/manage_order/ManageOrderScreen.kt
-//package com.aprilarn.washflow.ui.manage_order
-//
-//import android.util.Log
-//import androidx.compose.foundation.layout.*
-//import androidx.compose.material3.CircularProgressIndicator
-//import androidx.compose.material3.Scaffold
-//import androidx.compose.material3.SnackbarHost
-//import androidx.compose.material3.SnackbarHostState
-//import androidx.compose.runtime.*
-//import androidx.compose.ui.Alignment
-//import androidx.compose.ui.Modifier
-//import androidx.compose.ui.unit.dp
-//import com.aprilarn.washflow.ui.components.DragDropContainer
-//import com.aprilarn.washflow.ui.components.OrderStatusColumn
-//
-//@Composable
-//fun ManageOrderScreen(
-//    viewModel: ManageOrderViewModel // Dapatkan dari dependency injection
-//) {
-//    val uiState by viewModel.uiState.collectAsState()
-//    val snackbarHostState = remember { SnackbarHostState() }
-//
-//    LaunchedEffect(uiState.errorMessage) {
-//        uiState.errorMessage?.let {
-//            snackbarHostState.showSnackbar(it)
-//            viewModel.onErrorMessageShown()
-//        }
-//    }
-//
-//    Scaffold(
-//        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
-//    ) { paddingValues ->
-//        if (uiState.isLoading) {
-//            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-//                CircularProgressIndicator()
-//            }
-//        } else {
-//            DragDropContainer(
-//                modifier = Modifier
-//                    .fillMaxSize()
-//                    .padding(paddingValues)
-//            ) {
-//                Row(
-//                    modifier = Modifier
-//                        .fillMaxSize()
-//                        .padding(16.dp),
-//                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-//                ) {
-//                    // Column untuk "On Queue"
-//                    OrderStatusColumn(
-//                        modifier = Modifier.weight(1f),
-//                        title = "On Queue",
-//                        orders = uiState.ordersOnQueue,
-//                        onDrop = { orderId ->
-//                            // LOG #3: Untuk mengecek apakah lambda onDrop sampai ke Screen
-//                            Log.d("DragDropDebug", "ManageOrderScreen - onDrop triggered for 'On Queue'. Calling ViewModel.")
-//                            viewModel.changeOrderStatus(orderId, "On Queue")
-//                        }
-//                    )
-//
-//                    // Column untuk "On Process"
-//                    OrderStatusColumn(
-//                        modifier = Modifier.weight(1f),
-//                        title = "On Process",
-//                        orders = uiState.ordersOnProcess,
-//                        onDrop = { orderId ->
-//                            // LOG #3: Untuk mengecekan apakah lambda onDrop sampai ke Screen
-//                            Log.d("DragDropDebug", "ManageOrderScreen - onDrop triggered for 'On Process'. Calling ViewModel.")
-//                            viewModel.changeOrderStatus(orderId, "On Process")
-//                        }
-//                    )
-//
-//                    // Column untuk "Done"
-//                    OrderStatusColumn(
-//                        modifier = Modifier.weight(1f),
-//                        title = "Done",
-//                        orders = uiState.ordersDone,
-//                        onDrop = { orderId ->
-//                            // LOG #3: Untuk mengecek apakah lambda onDrop sampai ke Screen
-//                            Log.d("DragDropDebug", "ManageOrderScreen - onDrop triggered for 'Done'. Calling ViewModel.")
-//                            viewModel.changeOrderStatus(orderId, "Done")
-//                        }
-//                    )
-//                }
-//            }
-//        }
-//    }
-//}
-
 package com.aprilarn.washflow.ui.manage_order
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -104,16 +17,22 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import com.aprilarn.washflow.data.model.OrderItem
 import com.aprilarn.washflow.data.model.Orders
+import com.aprilarn.washflow.data.model.Services
 import com.aprilarn.washflow.ui.components.DragDropContainer
 import com.aprilarn.washflow.ui.components.OrderStatusColumn
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @Composable
 fun ManageOrderScreen(
-    // --- PERUBAHAN DI SINI ---
     uiState: ManageOrderUiState,
-    onDrop: (orderId: String, newStatus: String) -> Unit
+    onDrop: (orderId: String, newStatus: String) -> Unit,
+    onOrderClick: (Orders) -> Unit,
+    onDismissDialog: () -> Unit,
+    onDeleteOrder: (String) -> Unit
 ) {
     if (uiState.isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -138,7 +57,8 @@ fun ManageOrderScreen(
                     subTitle = "Dalam antrian",
                     orders = uiState.ordersOnQueue,
                     services = uiState.services,
-                    onDrop = { orderId -> onDrop(orderId, "On Queue") }
+                    onDrop = { orderId -> onDrop(orderId, "On Queue") },
+                    onOrderClick = onOrderClick
                 )
 
                 // Column untuk "On Process"
@@ -148,7 +68,8 @@ fun ManageOrderScreen(
                     subTitle = "Sedang diproses",
                     orders = uiState.ordersOnProcess,
                     services = uiState.services,
-                    onDrop = { orderId -> onDrop(orderId, "On Process") }
+                    onDrop = { orderId -> onDrop(orderId, "On Process") },
+                    onOrderClick = onOrderClick
                 )
 
                 // Column untuk "Done"
@@ -158,8 +79,70 @@ fun ManageOrderScreen(
                     subTitle = "Selesai",
                     orders = uiState.ordersDone,
                     services = uiState.services,
-                    onDrop = { orderId -> onDrop(orderId, "Done") }
+                    onDrop = { orderId -> onDrop(orderId, "Done") },
+                    onOrderClick = onOrderClick
                 )
+            }
+        }
+        // Tampilkan dialog jika ada order yang dipilih
+        uiState.selectedOrderForDetail?.let { order ->
+            OrderDetailDialog(
+                order = order,
+                services = uiState.services,
+                onDismiss = onDismissDialog,
+                onDelete = { onDeleteOrder(order.orderId) }
+            )
+        }
+    }
+}
+
+@Composable
+fun OrderDetailDialog(
+    order: Orders,
+    services: List<Services>,
+    onDismiss: () -> Unit,
+    onDelete: () -> Unit
+) {
+    val serviceNames = remember(order.orderItems, services) {
+        order.orderItems
+            .mapNotNull { orderItem -> services.find { it.serviceId == orderItem.serviceId }?.serviceName }
+            .distinct()
+            .joinToString(" + ")
+    }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(shape = RoundedCornerShape(16.dp)) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text("Order Details", style = MaterialTheme.typography.titleLarge)
+                Text("Customer: ${order.customerName ?: "N/A"}", style = MaterialTheme.typography.bodyLarge)
+                Text("Services: $serviceNames", style = MaterialTheme.typography.bodyMedium)
+                Text("Total Items: ${order.orderItems.sumOf { it.itemQuantity ?: 0 }}", style = MaterialTheme.typography.bodyMedium)
+                Text("Total Price: Rp ${order.totalPrice ?: 0.0}", style = MaterialTheme.typography.bodyMedium)
+                val formattedDueDate = order.orderDueDate?.toDate()?.let {
+                    SimpleDateFormat("EEEE, dd MMM yyyy, HH:mm", Locale.getDefault()).format(it)
+                } ?: "No due date"
+                Text("Due Date: $formattedDueDate", style = MaterialTheme.typography.bodyMedium)
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("Close")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = onDelete,
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Delete Order")
+                    }
+                }
             }
         }
     }
@@ -200,7 +183,10 @@ fun ManageOrderScreenPreview() {
         ) {
             ManageOrderScreen(
                 uiState = previewState,
-                onDrop = { _, _ -> }, // Tidak melakukan apa-apa di preview
+                onDrop = { _, _ -> },
+                onOrderClick = {},
+                onDismissDialog = {},
+                onDeleteOrder = {}
             )
         }
     }

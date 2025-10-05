@@ -2,6 +2,7 @@ package com.aprilarn.washflow.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -117,7 +118,8 @@ fun OrderStatusColumn(
     subTitle: String,
     orders: List<Orders>,
     services: List<Services>,
-    onDrop: (orderId: String) -> Unit
+    onDrop: (orderId: String) -> Unit,
+    onOrderClick: (Orders) -> Unit
 ) {
     val dragDropState = LocalDragDropState.current
     val currentOnDrop by rememberUpdatedState(onDrop)
@@ -206,7 +208,11 @@ fun OrderStatusColumn(
                 modifier = Modifier.fillMaxSize()
             ) {
                 items(orders, key = { it.orderId }) { order ->
-                    DraggableOrderCard(order = order, services = services)
+                    DraggableOrderCard(
+                        order = order,
+                        services = services,
+                        onClick = { onOrderClick(order) }
+                    )
                 }
             }
         }
@@ -214,7 +220,11 @@ fun OrderStatusColumn(
 }
 
 @Composable
-fun DraggableOrderCard(order: Orders, services: List<Services>) {
+fun DraggableOrderCard(
+    order: Orders,
+    services: List<Services>,
+    onClick: () -> Unit
+) {
     val dragDropState = LocalDragDropState.current
     var startPosition by remember { mutableStateOf(Offset.Zero) }
     var itemSize by remember { mutableStateOf(IntSize.Zero) } // <- State untuk menyimpan ukuran kartu ini
@@ -222,7 +232,6 @@ fun DraggableOrderCard(order: Orders, services: List<Services>) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            // --- CATAT UKURAN KARTU ASLI DI SINI ---
             .onSizeChanged { itemSize = it }
             .onGloballyPositioned {
                 startPosition = it.positionInWindow()
@@ -254,7 +263,8 @@ fun DraggableOrderCard(order: Orders, services: List<Services>) {
             }
             .graphicsLayer {
                 alpha = if (dragDropState.isDragging && dragDropState.itemData?.orderId == order.orderId) 0.0f else 1f
-            },
+            }
+            .clickable(onClick = onClick),
         shape = borderRadius,
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
@@ -372,7 +382,10 @@ fun OrderCardContentPreview() {
     MaterialTheme {
         Box(modifier = Modifier.padding(8.dp)) {
             // Panggil komponen konten dengan data sampel
-            OrderCardContent(order = sampleOrder, services = sampleServices)
+            OrderCardContent(
+                order = sampleOrder,
+                services = sampleServices
+            )
         }
     }
 }
@@ -402,7 +415,8 @@ fun OrderStatusColumnPreview() {
                 subTitle = "Order menunggu",
                 orders = sampleOrders,
                 services = sampleServices,
-                onDrop = { } // Biarkan kosong untuk preview
+                onDrop = { },
+                onOrderClick = { }
             )
         }
     }
