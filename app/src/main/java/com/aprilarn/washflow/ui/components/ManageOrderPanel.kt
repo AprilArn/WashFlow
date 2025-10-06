@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -36,6 +37,7 @@ import com.aprilarn.washflow.data.model.Orders
 import com.aprilarn.washflow.data.model.Services
 import com.aprilarn.washflow.ui.theme.Gray
 import com.aprilarn.washflow.ui.theme.GrayBlue
+import com.aprilarn.washflow.ui.theme.SoftRed
 import com.google.firebase.Timestamp
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -53,15 +55,15 @@ internal class DragDropState<T> {
     var isDragging: Boolean by mutableStateOf(false)
     var itemData: T? by mutableStateOf(null)
     var dragPosition: Offset by mutableStateOf(Offset.Zero)
-
     // Menyimpan daftar semua kolom yang bisa menjadi target
     val dropTargets = mutableStateListOf<DropTarget>()
-
+    var dragStartOffset: Offset by mutableStateOf(Offset.Zero)
     var draggedItemSize: IntSize by mutableStateOf(IntSize.Zero)
     fun stopDrag() {
         isDragging = false
         itemData = null
         dragPosition = Offset.Zero
+        dragStartOffset = Offset.Zero // Reset offset
         draggedItemSize = IntSize.Zero // Reset ukuran
     }
 }
@@ -72,7 +74,9 @@ internal fun <T> rememberDragDropState(): DragDropState<T> {
 }
 
 internal val LocalDragDropState = compositionLocalOf { DragDropState<Orders>() }
+
 val borderRadius = RoundedCornerShape(24.dp)
+val borderColor = Color.White
 
 // Main Container
 @Composable
@@ -97,12 +101,20 @@ fun DragDropContainer(
                     Box(
                         modifier = Modifier
                             .graphicsLayer {
-                                translationX = state.dragPosition.x
-                                translationY = state.dragPosition.y
+//                                translationX = state.dragPosition.x
+//                                translationY = state.dragPosition.y
+                                val adjustedX = state.dragPosition.x - state.dragStartOffset.x
+                                val adjustedY = state.dragPosition.y - state.dragStartOffset.y
+                                translationX = adjustedX
+                                translationY = adjustedY
                             }
                             .size(width = draggedItemWidthDp, height = draggedItemHeightDp)
                     ) {
-                        OrderCardContent(order = data, services = services)
+                        OrderCardContent(
+                            order = data,
+                            services = services,
+                            alpha = 1f
+                        )
                     }
                 }
             }
@@ -145,7 +157,7 @@ fun OrderStatusColumn(
             .background(if (isHighlighted) Color.LightGray.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.25f), shape = borderRadius)
             .border(
                 width = 1.dp,
-                color = GrayBlue.copy(alpha = 0.8f),
+                color = borderColor,
                 shape = borderRadius
             )
             .onGloballyPositioned {
@@ -229,7 +241,7 @@ fun DraggableOrderCard(
     var startPosition by remember { mutableStateOf(Offset.Zero) }
     var itemSize by remember { mutableStateOf(IntSize.Zero) } // <- State untuk menyimpan ukuran kartu ini
 
-    Card(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .onSizeChanged { itemSize = it }
@@ -237,12 +249,13 @@ fun DraggableOrderCard(
                 startPosition = it.positionInWindow()
             }
             .pointerInput(Unit) {
-                detectDragGestures(
+                detectDragGesturesAfterLongPress (
                     onDragStart = { offset ->
                         dragDropState.isDragging = true
                         dragDropState.itemData = order
                         dragDropState.dragPosition = startPosition + offset
                         dragDropState.draggedItemSize = itemSize
+                        dragDropState.dragStartOffset = offset
                     },
                     onDragEnd = {
                         dragDropState.itemData?.let { draggedItem ->
@@ -264,12 +277,13 @@ fun DraggableOrderCard(
             .graphicsLayer {
                 alpha = if (dragDropState.isDragging && dragDropState.itemData?.orderId == order.orderId) 0.0f else 1f
             }
-            .clickable(onClick = onClick),
-        shape = borderRadius,
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            .clip(borderRadius)
+            .clickable(onClick = onClick)
     ) {
-        OrderCardContent(order = order, services = services)
+        OrderCardContent(
+            order = order,
+            services = services
+        )
     }
 }
 
@@ -278,7 +292,8 @@ fun DraggableOrderCard(
 @Composable
 fun OrderCardContent(
     order: Orders,
-    services: List<Services>
+    services: List<Services>,
+    alpha: Float = 0.1f // Nilai alpha default untuk kartu yang tidak sedang di-drag
 ) {
     val formattedOrderDate = remember(order.orderDate) {
         SimpleDateFormat("EEEE, dd MMMM yyyy, HH:mm", Locale.getDefault()).format(order.orderDate.toDate())
@@ -302,9 +317,10 @@ fun OrderCardContent(
         modifier = Modifier
             //.fillMaxWidth()
             .clip(borderRadius)
+            .background(Color.White.copy(alpha = alpha), shape = borderRadius)
             .border(
                 width = 1.dp,
-                color = GrayBlue.copy(alpha = 0.8f),
+                color = borderColor,
                 shape = borderRadius
             ),
     ) {
@@ -343,7 +359,7 @@ fun OrderCardContent(
                 Text(
                     text = formattedDueDate,
                     style = MaterialTheme.typography.bodySmall.copy(
-                        color = GrayBlue
+                        color = SoftRed
                     )
                 )
             }

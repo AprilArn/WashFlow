@@ -39,6 +39,7 @@ fun OrderPreviewPanel(
     uiState: OrdersUiState
 ) {
     val borderRadius = RoundedCornerShape(24.dp)
+    val borderColor = Color.White
 
     Box(
         modifier = Modifier
@@ -46,7 +47,7 @@ fun OrderPreviewPanel(
             .background(Color.White.copy(alpha = 0.25f), shape = borderRadius)
             .border(
                 width = 1.dp,
-                color = GrayBlue.copy(alpha = 0.8f),
+                color = borderColor,
                 shape = borderRadius
             )
     ) {
@@ -105,7 +106,7 @@ fun OrderPreviewPanel(
                     .clip(borderRadius)
                     .border(
                         width = 1.dp,
-                        color = GrayBlue.copy(alpha = 0.8f),
+                        color = borderColor,
                         shape = borderRadius
                     ),
             ) {

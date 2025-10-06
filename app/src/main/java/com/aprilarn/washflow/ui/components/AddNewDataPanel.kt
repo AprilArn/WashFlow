@@ -36,12 +36,14 @@ fun AddNewDataPanel(
     modifier: Modifier = Modifier
 ) {
     val borderRadius = RoundedCornerShape(24.dp)
+    val borderColor = Color.White
+
     Card(
         modifier = modifier
             .wrapContentHeight()
             .border(
                 width = 1.dp,
-                color = GrayBlue.copy(alpha = 0.8f),
+                color = borderColor,
                 shape = borderRadius
             ),
         shape = borderRadius,

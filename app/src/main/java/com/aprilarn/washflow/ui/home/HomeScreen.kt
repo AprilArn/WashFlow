@@ -44,7 +44,7 @@ fun HomeScreen(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(24.dp))
                     .background(Color.White.copy(alpha = 0.25f)),
             ) {
                 WeatherForecastPanel(forecasts = state.hourlyForecasts)

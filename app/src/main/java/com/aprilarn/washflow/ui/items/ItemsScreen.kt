@@ -51,6 +51,7 @@ fun ItemsScreen (
     }
 
     val borderRadius = RoundedCornerShape(24.dp)
+    val borderColor = Color.White
 
     // Dialog untuk Edit/Delete
     uiState.selectedItem?.let { itemToEdit ->
@@ -204,7 +205,7 @@ fun ItemsScreen (
                     .wrapContentHeight()
                     .border(
                         width = 1.dp,
-                        color = GrayBlue.copy(alpha = 0.8f),
+                        color = borderColor,
                         shape = borderRadius
                     ),
                 shape = borderRadius,

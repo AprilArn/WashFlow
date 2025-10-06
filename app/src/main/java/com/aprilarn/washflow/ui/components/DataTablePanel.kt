@@ -38,6 +38,8 @@ fun <T> DataTablePanel(
     onRowClick: (T) -> Unit
 ) {
     val borderRadius = RoundedCornerShape(24.dp)
+    val borderColor = Color.White
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -55,14 +57,14 @@ fun <T> DataTablePanel(
                     .weight(1f)
                     .border(
                         width = 1.dp,
-                        color = GrayBlue.copy(alpha = 0.8f),
-                        shape = borderRadius
+                        color = borderColor,
+                        shape = RoundedCornerShape(42.dp)
                     ),
                 value = searchQuery,
                 onValueChange = onSearchQueryChange,
                 placeholder = { Text(searchPlaceholder) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search Icon") },
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(42.dp),
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color.White,
                     unfocusedContainerColor = Color.LightGray,
@@ -77,10 +79,10 @@ fun <T> DataTablePanel(
                 modifier = Modifier
                     .border(
                         width = 1.dp,
-                        color = GrayBlue.copy(alpha = 0.8f),
-                        shape = borderRadius
+                        color = borderColor,
+                        shape = RoundedCornerShape(42.dp)
                     ),
-                shape = borderRadius,
+                shape = RoundedCornerShape(42.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Text(
@@ -98,7 +100,7 @@ fun <T> DataTablePanel(
                 .fillMaxSize()
                 .border(
                     width = 1.dp,
-                    color = GrayBlue.copy(alpha = 0.8f),
+                    color = borderColor,
                     shape = borderRadius
                 ),
             shape = borderRadius,

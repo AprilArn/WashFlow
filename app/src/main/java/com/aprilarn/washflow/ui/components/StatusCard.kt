@@ -1,6 +1,5 @@
 package com.example.app.ui.components
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -27,7 +26,7 @@ fun StatusCard(
     Column(
         modifier = Modifier
             .size(width = 140.dp, height = 180.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(24.dp))
             .clickable(onClick = onClick)
             .background(Color.White)
             .padding(12.dp),
