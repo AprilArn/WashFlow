@@ -54,16 +54,15 @@ internal class DropTarget(
 internal class DragDropState<T> {
     var isDragging: Boolean by mutableStateOf(false)
     var itemData: T? by mutableStateOf(null)
-    var dragPosition: Offset by mutableStateOf(Offset.Zero)
-    // Menyimpan daftar semua kolom yang bisa menjadi target
+    var fingerPosition: Offset by mutableStateOf(Offset.Zero)
     val dropTargets = mutableStateListOf<DropTarget>()
-    var dragStartOffset: Offset by mutableStateOf(Offset.Zero)
+   var dragStartOffsetInItem: Offset by mutableStateOf(Offset.Zero)
     var draggedItemSize: IntSize by mutableStateOf(IntSize.Zero)
     fun stopDrag() {
         isDragging = false
         itemData = null
-        dragPosition = Offset.Zero
-        dragStartOffset = Offset.Zero // Reset offset
+        fingerPosition = Offset.Zero
+        dragStartOffsetInItem = Offset.Zero // Reset offset
         draggedItemSize = IntSize.Zero // Reset ukuran
     }
 }
@@ -87,9 +86,17 @@ fun DragDropContainer(
 ) {
     val state = rememberDragDropState<Orders>()
     val density = LocalDensity.current
+    var containerPositionInWindow by remember { mutableStateOf(Offset.Zero) }
 
     CompositionLocalProvider(LocalDragDropState provides state) {
-        Box(modifier = modifier.fillMaxSize()) {
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .onGloballyPositioned {
+                    // Catat posisi kontainer di layar
+                    containerPositionInWindow = it.positionInWindow()
+                }
+        ) {
             content()
 
             if (state.isDragging) {
@@ -101,12 +108,10 @@ fun DragDropContainer(
                     Box(
                         modifier = Modifier
                             .graphicsLayer {
-//                                translationX = state.dragPosition.x
-//                                translationY = state.dragPosition.y
-                                val adjustedX = state.dragPosition.x - state.dragStartOffset.x
-                                val adjustedY = state.dragPosition.y - state.dragStartOffset.y
-                                translationX = adjustedX
-                                translationY = adjustedY
+                                val localTouchPosition = state.fingerPosition - containerPositionInWindow
+                                val topLeft = localTouchPosition - state.dragStartOffsetInItem
+                                translationX = topLeft.x
+                                translationY = topLeft.y
                             }
                             .size(width = draggedItemWidthDp, height = draggedItemHeightDp)
                     ) {
@@ -144,10 +149,10 @@ fun OrderStatusColumn(
         }
     }
 
-    val isHighlighted by remember(dragDropState.isDragging, dragDropState.dragPosition) {
+    val isHighlighted by remember(dragDropState.isDragging, dragDropState.fingerPosition) {
         derivedStateOf {
             dragDropState.isDragging &&
-                    dragDropState.dropTargets.find { it.id == title }?.bounds?.contains(dragDropState.dragPosition) == true
+                    dragDropState.dropTargets.find { it.id == title }?.bounds?.contains(dragDropState.fingerPosition) == true
         }
     }
 
@@ -253,14 +258,14 @@ fun DraggableOrderCard(
                     onDragStart = { offset ->
                         dragDropState.isDragging = true
                         dragDropState.itemData = order
-                        dragDropState.dragPosition = startPosition + offset
+                        dragDropState.fingerPosition = startPosition + offset
                         dragDropState.draggedItemSize = itemSize
-                        dragDropState.dragStartOffset = offset
+                        dragDropState.dragStartOffsetInItem = offset
                     },
                     onDragEnd = {
                         dragDropState.itemData?.let { draggedItem ->
                             val target = dragDropState.dropTargets.find {
-                                it.bounds.contains(dragDropState.dragPosition)
+                                it.bounds.contains(dragDropState.fingerPosition)
                             }
                             if (target != null) {
                                 target.onDrop(draggedItem.orderId)
@@ -270,7 +275,7 @@ fun DraggableOrderCard(
                     onDragCancel = { dragDropState.stopDrag() },
                     onDrag = { change, dragAmount ->
                         change.consume()
-                        dragDropState.dragPosition += dragAmount
+                        dragDropState.fingerPosition += dragAmount
                     }
                 )
             }

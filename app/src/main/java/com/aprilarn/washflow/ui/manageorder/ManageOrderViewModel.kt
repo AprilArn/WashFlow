@@ -23,31 +23,10 @@ class ManageOrderViewModel(
     val uiState = _uiState.asStateFlow()
 
     init {
-//        listenForOrders()
         listenForDataChanges()
     }
 
     private fun listenForDataChanges() {
-//        viewModelScope.launch {
-//            Log.d("ManageOrderVM", "Starting to listen for real-time order updates.")
-//            orderRepository.getOrdersRealtime()
-//                .catch { e ->
-//                    Log.e("ManageOrderVM", "Error listening for orders", e)
-//                    _uiState.update { it.copy(isLoading = false, errorMessage = e.message) }
-//                }
-//                .collect { orders ->
-//                    Log.d("ManageOrderVM", "Received ${orders.size} orders from Firestore.")
-//                    _uiState.update {
-//                        it.copy(
-//                            isLoading = false,
-//                            ordersOnQueue = orders.filter { o -> o.status == "On Queue" },
-//                            ordersOnProcess = orders.filter { o -> o.status == "On Process" },
-//                            ordersDone = orders.filter { o -> o.status == "Done" }
-//                        )
-//                    }
-//                    Log.d("ManageOrderVM", "UI state updated with new order lists.")
-//                }
-//        }
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
@@ -63,7 +42,7 @@ class ManageOrderViewModel(
                         ordersOnQueue = groupedOrders["On Queue"] ?: emptyList(),
                         ordersOnProcess = groupedOrders["On Process"] ?: emptyList(),
                         ordersDone = groupedOrders["Done"] ?: emptyList(),
-                        services = services // Simpan daftar services ke state
+                        services = services
                     )
                 }
             }.catch { e ->
@@ -87,9 +66,7 @@ class ManageOrderViewModel(
 
             Log.d("ManageOrderVM", "Attempting to change order '$orderId' to status '$newStatus'.")
 
-            // 3. HAPUS SEMUA LOGIKA OPTIMISTIC UPDATE.
-            //    Langsung panggil repository untuk mengubah data di Firestore.
-            //    Listener real-time akan secara otomatis menangani pembaruan UI.
+            // 3. Lakukan pembaruan status
             val success = orderRepository.updateOrderStatus(orderId, newStatus)
 
             if (success) {
