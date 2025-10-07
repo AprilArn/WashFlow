@@ -111,7 +111,7 @@ fun HomeScreen(
                 // Status cards
                 Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
                     // --- TERAPKAN onClick DI SINI ---
-                    StatusCard(text = "In Queue", count = state.inQueue, onClick = onStatusCardClick)
+                    StatusCard(text = "On Queue", count = state.inQueue, onClick = onStatusCardClick)
                     StatusCard(text = "On Process", count = state.onProcess, onClick = onStatusCardClick)
                     StatusCard(text = "Done", count = state.done, onClick = onStatusCardClick)
                 }

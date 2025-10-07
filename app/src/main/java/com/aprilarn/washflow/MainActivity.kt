@@ -426,7 +426,13 @@ fun LocationAwareHomePage(
     onNavigateToManageOrder: () -> Unit
 ) {
     val context = LocalContext.current
-    val homeViewModel: HomeViewModel = viewModel()
+    val factory = object : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            return HomeViewModel(OrderRepository()) as T
+        }
+    }
+    val homeViewModel: HomeViewModel = viewModel(factory = factory)
     var hasLocationPermission by remember { mutableStateOf(false) }
 
     // Launcher untuk meminta izin lokasi
