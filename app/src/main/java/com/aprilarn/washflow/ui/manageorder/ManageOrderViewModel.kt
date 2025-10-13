@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aprilarn.washflow.data.model.Orders
+import com.aprilarn.washflow.data.repository.CustomerRepository
 import com.aprilarn.washflow.data.repository.OrderRepository
 import com.aprilarn.washflow.data.repository.ServiceRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,6 +17,7 @@ import kotlinx.coroutines.launch
 
 class ManageOrderViewModel(
     private val orderRepository: OrderRepository,
+    private val customerRepository: CustomerRepository,
     private val serviceRepository: ServiceRepository
 ) : ViewModel() {
 
@@ -32,9 +34,10 @@ class ManageOrderViewModel(
 
             val ordersFlow = orderRepository.getOrdersRealtime()
             val servicesFlow = serviceRepository.getServicesRealtime()
+            val customersFlow = customerRepository.getCustomersRealtime()
 
             // Gabungkan data orders dan services secara real-time
-            combine(ordersFlow, servicesFlow) { orders, services ->
+            combine(ordersFlow, customersFlow, servicesFlow) { orders, customers, services  ->
                 val groupedOrders = orders.groupBy { it.status }
                 _uiState.update {
                     it.copy(
@@ -42,6 +45,7 @@ class ManageOrderViewModel(
                         ordersOnQueue = groupedOrders["On Queue"] ?: emptyList(),
                         ordersOnProcess = groupedOrders["On Process"] ?: emptyList(),
                         ordersDone = groupedOrders["Done"] ?: emptyList(),
+                        customers = customers,
                         services = services
                     )
                 }

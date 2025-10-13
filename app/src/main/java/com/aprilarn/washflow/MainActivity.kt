@@ -278,6 +278,7 @@ fun MainAppScreen() {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
                             return ManageOrderViewModel(
                                 OrderRepository(),
+                                CustomerRepository(),
                                 ServiceRepository()
                             ) as T
                         }
