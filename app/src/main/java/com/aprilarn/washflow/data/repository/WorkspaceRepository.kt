@@ -7,6 +7,9 @@ import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
 class WorkspaceRepository {
@@ -14,6 +17,45 @@ class WorkspaceRepository {
     private val usersCollection = db.collection("users")
     private val workspacesCollection = db.collection("workspaces")
     private val invitesCollection = db.collection("invites")
+
+    suspend fun getCurrentWorkspaceRealtime(): Flow<Workspaces?> {
+        return callbackFlow {
+            val user = Firebase.auth.currentUser
+            if (user == null) {
+                trySend(null)
+                close()
+                return@callbackFlow
+            }
+
+            // Dapatkan workspaceId dari dokumen pengguna
+            val userDocRef = usersCollection.document(user.uid)
+            val userSnapshot = userDocRef.get().await()
+            val workspaceId = userSnapshot.getString("workspaceId")
+
+            if (workspaceId.isNullOrEmpty()) {
+                trySend(null)
+                close()
+                return@callbackFlow
+            }
+
+            // Pasang listener ke dokumen workspace yang sesuai
+            val workspaceDocRef = workspacesCollection.document(workspaceId)
+            val listener = workspaceDocRef.addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                if (snapshot != null && snapshot.exists()) {
+                    trySend(snapshot.toObject(Workspaces::class.java))
+                } else {
+                    trySend(null)
+                }
+            }
+
+            // Hapus listener saat flow ditutup
+            awaitClose { listener.remove() }
+        }
+    }
 
     /**
      * Membuat workspace baru dan mengaitkannya dengan pengguna.

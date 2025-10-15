@@ -45,6 +45,8 @@ import com.aprilarn.washflow.data.repository.CustomerRepository
 import com.aprilarn.washflow.data.repository.ItemRepository
 import com.aprilarn.washflow.data.repository.OrderRepository
 import com.aprilarn.washflow.data.repository.ServiceRepository
+import com.aprilarn.washflow.data.repository.WorkspaceRepository
+import com.aprilarn.washflow.ui.MainViewModel
 import com.aprilarn.washflow.ui.components.Header
 import com.aprilarn.washflow.ui.components.NavigationBar
 import com.aprilarn.washflow.ui.customers.CustomersScreen
@@ -233,10 +235,19 @@ fun MainAppScreen() {
     val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
+    // --- BUAT MAINVIEWMODEL DI SINI ---
+    val mainViewModelFactory = object : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            return MainViewModel(WorkspaceRepository()) as T
+        }
+    }
+    val mainViewModel: MainViewModel = viewModel(factory = mainViewModelFactory)
+    val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         // Hanya tampilkan Header jika tidak di halaman tertentu (opsional)
-        topBar = { Header() },
+        topBar = { Header(workspaceName = mainUiState.workspaceName) },
         bottomBar = {
             Box(
                 modifier = Modifier

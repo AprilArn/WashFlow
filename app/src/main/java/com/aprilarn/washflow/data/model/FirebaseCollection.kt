@@ -15,7 +15,7 @@ data class Workspaces (
     // val workspaceId: String, // tidak perlu, karena tidak dipakai oleh koleksi Invites
     val workspaceName: String? = null,
     val ownerUid: String? = null,
-    val createdAt: Timestamp,
+    val createdAt: Timestamp = Timestamp.now(),
     val contributors: Map<String, String>? = null // Daftar UID pengguna yang berkontribusi (uid, role)
 )
 
@@ -60,7 +60,9 @@ data class Workspaces (
 data class Invites (
     val inviteId: String? = null,
     val workspaceId: String? = null, // workspace tujuan (diambil dari state viewmodel aplikasi)
-    val persons: Int? = null,
+    val maxPersons: Int? = null, // maksimal pengguna yang boleh bergabung
+    val usersWhoJoined: List<String> = emptyList(), // daftar UID pengguna yang sudah bergabung
+    val createdAt: Timestamp? = Timestamp.now(), // waktu pembuatan
     val expiresAt: Timestamp? = null,
-    val status: String? = null,
+    val status: String? = null, // "active", "used", "expired"
 )
