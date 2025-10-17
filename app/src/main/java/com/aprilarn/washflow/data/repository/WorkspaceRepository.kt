@@ -82,6 +82,20 @@ class WorkspaceRepository {
         }
     }
 
+    suspend fun updateWorkspaceName(newName: String): Boolean {
+        val user = Firebase.auth.currentUser ?: return false
+        val workspaceId = usersCollection.document(user.uid).get().await().getString("workspaceId")
+        if (workspaceId.isNullOrEmpty()) return false
+
+        return try {
+            workspacesCollection.document(workspaceId).update("workspaceName", newName).await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
     /**
      * Bergabung ke workspace menggunakan kode invite.
      * @return Boolean true jika sukses.

@@ -164,7 +164,7 @@ private fun LeftDetailPanel(
     Box(
         modifier = modifier
             .fillMaxHeight()
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(Color.White.copy())
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
@@ -211,7 +211,7 @@ private fun RightDetailPanel(
     // Panel kanan menggunakan Box sebagai dasar
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(Color.White)
     ) {
         Column (

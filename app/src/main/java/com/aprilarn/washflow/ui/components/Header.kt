@@ -5,6 +5,7 @@ package com.aprilarn.washflow.ui.components
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -35,15 +36,16 @@ import com.aprilarn.washflow.ui.theme.GrayBlue
 @Composable
 fun Header(
     modifier: Modifier = Modifier,
-    workspaceName: String
+    workspaceName: String,
+    onWorkspaceClick: () -> Unit,
+    dropdownContent: @Composable BoxScope.() -> Unit
 ) {
     Row(
         modifier = modifier
-            .fillMaxWidth() // Memastikan Row memenuhi lebar layar
-            // Padding agar tidak terlalu mepet ke tepi layar
+            .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Start // Mendorong item ke ujung kiri dan kanan
+        horizontalArrangement = Arrangement.Start
     ) {
         // Kelompokkan teks dalam satu Row agar tetap bersama
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -68,24 +70,34 @@ fun Header(
         }
 
         Spacer(modifier=Modifier.weight(1f)) // Spacer fleksibel untuk mendorong item ke ujung kanan
+
         // Nama Workspace
-        Row(
-            modifier = Modifier
-                .clip(RoundedCornerShape(12.dp)),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.End,
-        ){
-            Text(
+        Box {
+            Row(
                 modifier = Modifier
-                    .padding(start = 4.dp, top = 4.dp, bottom = 4.dp, end = 0.dp),
-                text = workspaceName, // Ganti dengan nama workspace yang sesuai (workspaceName)
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Light,
-                ),
-            )
-            Icon(Icons.Default.ArrowDropDown, contentDescription = "Workspace Options", tint = Color.White)
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable(onClick = onWorkspaceClick),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    modifier = Modifier.padding(start = 8.dp, top = 4.dp, bottom = 4.dp),
+                    text = workspaceName,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Light,
+                    )
+                )
+                Icon(
+                    Icons.Default.ArrowDropDown,
+                    contentDescription = "Workspace Options",
+                    tint = Color.White
+                )
+            }
+
+            // --- KONTEN DROPDOWN AKAN DIRENDER DI SINI ---
+            // Posisinya akan relatif terhadap Box di atas
+            dropdownContent()
         }
         // icon notification
         // Ikon notifikasi sekarang menjadi sebuah tombol
@@ -103,6 +115,8 @@ fun Header(
 @Composable
 fun HeaderPreview() {
     Header(
-        workspaceName = "Example"
+        workspaceName = "Example",
+        onWorkspaceClick = {},
+        dropdownContent = {}
     )
 }

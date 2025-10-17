@@ -17,13 +17,21 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -246,8 +254,20 @@ fun MainAppScreen() {
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        // Hanya tampilkan Header jika tidak di halaman tertentu (opsional)
-        topBar = { Header(workspaceName = mainUiState.workspaceName) },
+        topBar = {
+            Header(
+                workspaceName = mainUiState.workspaceName,
+                onWorkspaceClick = { mainViewModel.onWorkspaceNameClicked() }
+            ) {
+                // --- TERUSKAN INFORMASI OWNER KE DROPDOWN ---
+                WorkspaceOptionsDropdown(
+                    expanded = mainUiState.showWorkspaceOptions,
+                    isOwner = mainUiState.isCurrentUserOwner, // <- Teruskan dari state
+                    onDismiss = { mainViewModel.onDismissWorkspaceOptions() },
+                    onRenameClicked = { mainViewModel.showRenameDialog() }
+                )
+            }
+        },
         bottomBar = {
             Box(
                 modifier = Modifier
@@ -431,6 +451,72 @@ fun MainAppScreen() {
             }
         }
     }
+
+    // --- DIALOG UNTUK RENAME WORKSPACE ---
+    // Ditampilkan di luar Scaffold agar muncul di atas segalanya
+    if (mainUiState.showRenameDialog) {
+        RenameWorkspaceDialog(
+            currentName = mainUiState.workspaceName,
+            onDismiss = { mainViewModel.onDismissRenameDialog() },
+            onApply = { newName -> mainViewModel.renameWorkspace(newName) }
+        )
+    }
+
+}
+
+@Composable
+fun WorkspaceOptionsDropdown(
+    expanded: Boolean,
+    isOwner: Boolean, // <- Tambah parameter
+    onDismiss: () -> Unit,
+    onRenameClicked: () -> Unit
+) {
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismiss
+    ) {
+        // --- GUNAKAN isOwner UNTUK MENGONTROL ITEM MENU ---
+        DropdownMenuItem(
+            text = { Text("Ubah Nama Workspace") },
+            onClick = onRenameClicked,
+            enabled = isOwner // <- Tombol akan non-aktif & berwarna abu-abu jika bukan owner
+        )
+        // Anda bisa menambahkan opsi lain di sini
+    }
+}
+
+@Composable
+fun RenameWorkspaceDialog(
+    currentName: String,
+    onDismiss: () -> Unit,
+    onApply: (String) -> Unit
+) {
+    var newName by remember { mutableStateOf(currentName) }
+
+    AlertDialog(
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp)),
+        onDismissRequest = onDismiss,
+        title = { Text("Ubah Nama Workspace") },
+        text = {
+            OutlinedTextField(
+                value = newName,
+                onValueChange = { newName = it },
+                label = { Text("Nama workspace baru") },
+                singleLine = true
+            )
+        },
+        confirmButton = {
+            Button(onClick = { onApply(newName) }) {
+                Text("Apply")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @Composable
