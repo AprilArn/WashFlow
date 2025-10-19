@@ -16,7 +16,7 @@ class WorkspaceRepository {
     private val db = Firebase.firestore
     private val usersCollection = db.collection("users")
     private val workspacesCollection = db.collection("workspaces")
-    private val invitesCollection = db.collection("invites")
+    // private val invitesCollection = db.collection("invites")
 
     suspend fun getCurrentWorkspaceRealtime(): Flow<Workspaces?> {
         return callbackFlow {
@@ -100,52 +100,52 @@ class WorkspaceRepository {
      * Bergabung ke workspace menggunakan kode invite.
      * @return Boolean true jika sukses.
      */
-    suspend fun joinWorkspace(inviteCode: String): Boolean {
-        val user = Firebase.auth.currentUser ?: return false
-        val inviteDocRef = invitesCollection.document(inviteCode)
-
-        try {
-            db.runTransaction { transaction ->
-                val inviteSnapshot = transaction.get(inviteDocRef)
-
-                // Validasi 1: Cek apakah kode ada
-                if (!inviteSnapshot.exists()) {
-                    throw Exception("Invalid invite code.")
-                }
-
-                // --- TAMBAHAN VALIDASI ---
-                // Validasi 2: Cek status (jika ada)
-                if (inviteSnapshot.getString("status") != "active") {
-                    throw Exception("This invitation code has already been used.")
-                }
-                // Validasi 3: Cek waktu kedaluwarsa
-                val expiresAt = inviteSnapshot.getTimestamp("expiresAt")
-                if (expiresAt != null && expiresAt.toDate().before(Timestamp.now().toDate())) {
-                    throw Exception("This invitation code has expired.")
-                }
-                // --- AKHIR TAMBAHAN ---
-
-                val workspaceId = inviteSnapshot.getString("workspaceId")
-                    ?: throw Exception("Workspace ID not found in invite.")
-
-                val workspaceDocRef = workspacesCollection.document(workspaceId)
-                val userDocRef = usersCollection.document(user.uid)
-
-                // Update workspace: tambahkan user sebagai 'member'
-                transaction.update(workspaceDocRef, "contributors.${user.uid}", "member")
-                // Update user: set workspaceId
-                transaction.update(userDocRef, "workspaceId", workspaceId)
-
-                // Ubah status invite menjadi 'used' daripada menghapusnya langsung
-                // Ini baik untuk pencatatan (opsional, tapi lebih baik)
-                transaction.update(inviteDocRef, "status", "used")
-
-            }.await()
-            return true
-        } catch (e: Exception) {
-            e.printStackTrace()
-            // Di sini Anda bisa meneruskan e.message ke ViewModel untuk ditampilkan ke user
-            return false
-        }
-    }
+//    suspend fun joinWorkspace(inviteCode: String): Boolean {
+//        val user = Firebase.auth.currentUser ?: return false
+//        val inviteDocRef = invitesCollection.document(inviteCode)
+//
+//        try {
+//            db.runTransaction { transaction ->
+//                val inviteSnapshot = transaction.get(inviteDocRef)
+//
+//                // Validasi 1: Cek apakah kode ada
+//                if (!inviteSnapshot.exists()) {
+//                    throw Exception("Invalid invite code.")
+//                }
+//
+//                // --- TAMBAHAN VALIDASI ---
+//                // Validasi 2: Cek status (jika ada)
+//                if (inviteSnapshot.getString("status") != "active") {
+//                    throw Exception("This invitation code has already been used.")
+//                }
+//                // Validasi 3: Cek waktu kedaluwarsa
+//                val expiresAt = inviteSnapshot.getTimestamp("expiresAt")
+//                if (expiresAt != null && expiresAt.toDate().before(Timestamp.now().toDate())) {
+//                    throw Exception("This invitation code has expired.")
+//                }
+//                // --- AKHIR TAMBAHAN ---
+//
+//                val workspaceId = inviteSnapshot.getString("workspaceId")
+//                    ?: throw Exception("Workspace ID not found in invite.")
+//
+//                val workspaceDocRef = workspacesCollection.document(workspaceId)
+//                val userDocRef = usersCollection.document(user.uid)
+//
+//                // Update workspace: tambahkan user sebagai 'member'
+//                transaction.update(workspaceDocRef, "contributors.${user.uid}", "member")
+//                // Update user: set workspaceId
+//                transaction.update(userDocRef, "workspaceId", workspaceId)
+//
+//                // Ubah status invite menjadi 'used' daripada menghapusnya langsung
+//                // Ini baik untuk pencatatan (opsional, tapi lebih baik)
+//                transaction.update(inviteDocRef, "status", "used")
+//
+//            }.await()
+//            return true
+//        } catch (e: Exception) {
+//            e.printStackTrace()
+//            // Di sini Anda bisa meneruskan e.message ke ViewModel untuk ditampilkan ke user
+//            return false
+//        }
+//    }
 }

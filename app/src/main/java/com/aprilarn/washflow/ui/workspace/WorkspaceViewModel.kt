@@ -3,6 +3,7 @@ package com.aprilarn.washflow.ui.workspace
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aprilarn.washflow.data.repository.InviteRepository // <-- Import yang baru
 import com.aprilarn.washflow.data.repository.WorkspaceRepository
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
@@ -16,7 +17,8 @@ sealed class WorkspaceEvent {
 }
 
 class WorkspaceViewModel : ViewModel() {
-    private val workspaceRepository = WorkspaceRepository() // Pastikan file ini ada
+    private val workspaceRepository = WorkspaceRepository()
+    private val inviteRepository = InviteRepository() // <-- 1. Tambahkan InviteRepository
     private val auth = Firebase.auth
 
     private val _uiState = MutableStateFlow(WorkspaceUiState())
@@ -47,11 +49,15 @@ class WorkspaceViewModel : ViewModel() {
     fun joinWorkspace(inviteCode: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val success = workspaceRepository.joinWorkspace(inviteCode)
-            if (success) {
+
+            // 2. Panggil dari inviteRepository dan tangani return type baru (Pair)
+            val result = inviteRepository.joinWorkspace(inviteCode)
+
+            if (result.first) { // 'first' berisi Boolean (sukses/gagal)
                 _eventFlow.emit(WorkspaceEvent.NavigateToDashboard)
             } else {
-                _eventFlow.emit(WorkspaceEvent.ShowError("Failed to join. Invalid code?"))
+                // 'second' berisi pesan error yang lebih spesifik
+                _eventFlow.emit(WorkspaceEvent.ShowError(result.second))
             }
             _uiState.update { it.copy(isLoading = false) }
         }

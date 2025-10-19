@@ -60,7 +60,7 @@ data class Workspaces (
 data class Invites (
     val inviteId: String? = null,
     val workspaceId: String? = null, // workspace tujuan (diambil dari state viewmodel aplikasi)
-    val maxPersons: Int? = null, // maksimal pengguna yang boleh bergabung
+    val maxContributors: Int? = 0, // maksimal pengguna yang boleh bergabung
     val usersWhoJoined: List<String> = emptyList(), // daftar UID pengguna yang sudah bergabung
     val createdAt: Timestamp? = Timestamp.now(), // waktu pembuatan
     val expiresAt: Timestamp? = null,
