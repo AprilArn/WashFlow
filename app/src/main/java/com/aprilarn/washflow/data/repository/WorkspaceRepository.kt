@@ -6,6 +6,8 @@ import com.aprilarn.washflow.data.model.Workspaces
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -18,6 +20,11 @@ class WorkspaceRepository {
     private val workspacesCollection = db.collection("workspaces")
     // private val invitesCollection = db.collection("invites")
 
+    /**
+     * FUNGSI YANG DIPERBARUI:
+     * Mendengarkan dokumen pengguna, lalu mendengarkan dokumen workspace
+     * berdasarkan workspaceId yang didapat.
+     */
     suspend fun getCurrentWorkspaceRealtime(): Flow<Workspaces?> {
         return callbackFlow {
             val user = Firebase.auth.currentUser
@@ -27,33 +34,52 @@ class WorkspaceRepository {
                 return@callbackFlow
             }
 
-            // Dapatkan workspaceId dari dokumen pengguna
+            // Simpan referensi ke listener workspace agar bisa dihapus
+            var workspaceListener: ListenerRegistration? = null
             val userDocRef = usersCollection.document(user.uid)
-            val userSnapshot = userDocRef.get().await()
-            val workspaceId = userSnapshot.getString("workspaceId")
 
-            if (workspaceId.isNullOrEmpty()) {
-                trySend(null)
-                close()
-                return@callbackFlow
-            }
-
-            // Pasang listener ke dokumen workspace yang sesuai
-            val workspaceDocRef = workspacesCollection.document(workspaceId)
-            val listener = workspaceDocRef.addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    close(error)
+            // 1. UTAMA: Dengarkan dokumen pengguna
+            val userListener = userDocRef.addSnapshotListener { userSnapshot, userError ->
+                if (userError != null) {
+                    close(userError) // Error serius, tutup flow
                     return@addSnapshotListener
                 }
-                if (snapshot != null && snapshot.exists()) {
-                    trySend(snapshot.toObject(Workspaces::class.java))
-                } else {
+
+                // Hapus listener workspace yang lama setiap kali data pengguna berubah
+                workspaceListener?.remove()
+
+                val workspaceId = userSnapshot?.getString("workspaceId")
+
+                if (workspaceId.isNullOrEmpty()) {
+                    // Pengguna tidak punya workspace (atau baru saja keluar)
                     trySend(null)
+                } else {
+                    // Pengguna punya workspace, buat listener baru ke sana
+                    val workspaceDocRef = workspacesCollection.document(workspaceId)
+                    workspaceListener = workspaceDocRef.addSnapshotListener { workspaceSnapshot, workspaceError ->
+
+                        if (workspaceError != null) {
+                            // INI ADALAH ERROR PERMISSION_DENIED YANG DIHARAPKAN
+                            // Jangan 'close(error)', cukup kirim null
+                            // karena listener pengguna masih valid.
+                            trySend(null)
+                            return@addSnapshotListener
+                        }
+
+                        if (workspaceSnapshot != null && workspaceSnapshot.exists()) {
+                            trySend(workspaceSnapshot.toObject(Workspaces::class.java))
+                        } else {
+                            trySend(null)
+                        }
+                    }
                 }
             }
 
-            // Hapus listener saat flow ditutup
-            awaitClose { listener.remove() }
+            // Saat flow ditutup, hapus kedua listener
+            awaitClose {
+                userListener.remove()
+                workspaceListener?.remove()
+            }
         }
     }
 
@@ -97,55 +123,38 @@ class WorkspaceRepository {
     }
 
     /**
-     * Bergabung ke workspace menggunakan kode invite.
+     * Menghapus pengguna dari workspace saat ini.
      * @return Boolean true jika sukses.
      */
-//    suspend fun joinWorkspace(inviteCode: String): Boolean {
-//        val user = Firebase.auth.currentUser ?: return false
-//        val inviteDocRef = invitesCollection.document(inviteCode)
-//
-//        try {
-//            db.runTransaction { transaction ->
-//                val inviteSnapshot = transaction.get(inviteDocRef)
-//
-//                // Validasi 1: Cek apakah kode ada
-//                if (!inviteSnapshot.exists()) {
-//                    throw Exception("Invalid invite code.")
-//                }
-//
-//                // --- TAMBAHAN VALIDASI ---
-//                // Validasi 2: Cek status (jika ada)
-//                if (inviteSnapshot.getString("status") != "active") {
-//                    throw Exception("This invitation code has already been used.")
-//                }
-//                // Validasi 3: Cek waktu kedaluwarsa
-//                val expiresAt = inviteSnapshot.getTimestamp("expiresAt")
-//                if (expiresAt != null && expiresAt.toDate().before(Timestamp.now().toDate())) {
-//                    throw Exception("This invitation code has expired.")
-//                }
-//                // --- AKHIR TAMBAHAN ---
-//
-//                val workspaceId = inviteSnapshot.getString("workspaceId")
-//                    ?: throw Exception("Workspace ID not found in invite.")
-//
-//                val workspaceDocRef = workspacesCollection.document(workspaceId)
-//                val userDocRef = usersCollection.document(user.uid)
-//
-//                // Update workspace: tambahkan user sebagai 'member'
-//                transaction.update(workspaceDocRef, "contributors.${user.uid}", "member")
-//                // Update user: set workspaceId
-//                transaction.update(userDocRef, "workspaceId", workspaceId)
-//
-//                // Ubah status invite menjadi 'used' daripada menghapusnya langsung
-//                // Ini baik untuk pencatatan (opsional, tapi lebih baik)
-//                transaction.update(inviteDocRef, "status", "used")
-//
-//            }.await()
-//            return true
-//        } catch (e: Exception) {
-//            e.printStackTrace()
-//            // Di sini Anda bisa meneruskan e.message ke ViewModel untuk ditampilkan ke user
-//            return false
-//        }
-//    }
+    suspend fun leaveWorkspace(): Boolean {
+        val user = Firebase.auth.currentUser ?: return false
+        val userDocRef = usersCollection.document(user.uid)
+
+        return try {
+            val workspaceId = userDocRef.get().await().getString("workspaceId")
+            if (workspaceId.isNullOrEmpty()) {
+                // Pengguna sudah tidak di workspace, anggap sukses
+                return true
+            }
+
+            val workspaceDocRef = workspacesCollection.document(workspaceId)
+
+            // Jalankan transaksi untuk memastikan kedua operasi berhasil
+            db.runTransaction { transaction ->
+                // 1. Hapus pengguna dari map contributors di workspace
+                // Kita menggunakan FieldValue.delete() untuk menghapus key dari map
+                val workspaceUpdate = mapOf(
+                    "contributors.${user.uid}" to FieldValue.delete()
+                )
+                transaction.update(workspaceDocRef, workspaceUpdate)
+
+                // 2. Set workspaceId pengguna menjadi null
+                transaction.update(userDocRef, "workspaceId", null)
+            }.await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
 }

@@ -3,17 +3,22 @@ package com.aprilarn.washflow.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aprilarn.washflow.data.model.Invites
 import com.aprilarn.washflow.data.repository.InviteRepository
 import com.aprilarn.washflow.data.repository.WorkspaceRepository
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.auth
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Date
+
+sealed class MainNavigationEvent {
+    object NavigateToWorkspace : MainNavigationEvent()
+}
 
 class MainViewModel(
     private val workspaceRepository: WorkspaceRepository,
@@ -22,6 +27,9 @@ class MainViewModel(
 
     private val _uiState = MutableStateFlow(MainUiState())
     val uiState = _uiState.asStateFlow()
+
+    private val _eventFlow = MutableSharedFlow<MainNavigationEvent>()
+    val eventFlow = _eventFlow.asSharedFlow()
 
     init {
         listenForWorkspaceChanges()
@@ -108,5 +116,27 @@ class MainViewModel(
 
     fun onDismissCreateInviteDialog() {
         _uiState.update { it.copy(showCreateInviteDialog = false) }
+    }
+
+    fun onLeaveWorkspaceClicked() {
+        _uiState.update {
+            it.copy(showWorkspaceOptions = false, showLeaveWorkspaceDialog = true)
+        }
+    }
+
+    fun onDismissLeaveWorkspaceDialog() {
+        _uiState.update { it.copy(showLeaveWorkspaceDialog = false) }
+    }
+
+    fun confirmLeaveWorkspace() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(showLeaveWorkspaceDialog = false) }
+            val success = workspaceRepository.leaveWorkspace()
+            if (success) {
+                // Kirim event untuk navigasi
+                _eventFlow.emit(MainNavigationEvent.NavigateToWorkspace)
+            }
+            // Jika gagal, bisa tambahkan event untuk menampilkan error
+        }
     }
 }

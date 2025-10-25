@@ -1,7 +1,6 @@
 package com.aprilarn.washflow
 
 import android.Manifest
-import android.app.Activity
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -22,7 +21,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
@@ -42,6 +40,7 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -75,6 +74,7 @@ import com.aprilarn.washflow.data.repository.ItemRepository
 import com.aprilarn.washflow.data.repository.OrderRepository
 import com.aprilarn.washflow.data.repository.ServiceRepository
 import com.aprilarn.washflow.data.repository.WorkspaceRepository
+import com.aprilarn.washflow.ui.MainNavigationEvent
 import com.aprilarn.washflow.ui.MainViewModel
 import com.aprilarn.washflow.ui.components.Header
 import com.aprilarn.washflow.ui.components.NavigationBar
@@ -239,7 +239,33 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable("main") {
-                            MainAppScreen()
+                            // --- MAINVIEWMODEL DIBUAT DI SINI ---
+                            val mainViewModelFactory = object : ViewModelProvider.Factory {
+                                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                    @Suppress("UNCHECKED_CAST")
+                                    return MainViewModel(
+                                        WorkspaceRepository(),
+                                        InviteRepository()
+                                    ) as T
+                                }
+                            }
+                            val mainViewModel: MainViewModel = viewModel(factory = mainViewModelFactory)
+
+                            // --- EFEK UNTUK NAVIGASI KELUAR ---
+                            LaunchedEffect(Unit) {
+                                mainViewModel.eventFlow.collect { event ->
+                                    when (event) {
+                                        is MainNavigationEvent.NavigateToWorkspace -> {
+                                            navController.navigate("workspace") {
+                                                popUpTo("main") { inclusive = true }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // --- PASS VIEWMODEL KE MAINAPPSCREEN ---
+                            MainAppScreen(mainViewModel)
                         }
                     }
                 }
@@ -263,7 +289,9 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MainAppScreen() {
+fun MainAppScreen(
+    mainViewModel: MainViewModel
+) {
     // NavController khusus untuk navigasi di dalam Bottom Navigation Bar
     val bottomNavController = rememberNavController()
     val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
@@ -295,7 +323,8 @@ fun MainAppScreen() {
                     isOwner = mainUiState.isCurrentUserOwner, // <- Teruskan dari state
                     onDismiss = { mainViewModel.onDismissWorkspaceOptions() },
                     onRenameClicked = { mainViewModel.showRenameDialog() },
-                    onAddContributorClicked = { mainViewModel.onAddNewContributorClicked() }
+                    onAddContributorClicked = { mainViewModel.onAddNewContributorClicked() },
+                    onLeaveWorkspaceClicked = { mainViewModel.onLeaveWorkspaceClicked() }
                 )
             }
         },
@@ -516,6 +545,14 @@ fun MainAppScreen() {
             )
         }
     }
+
+    // --- DIALOG BARU UNTUK LEAVE WORKSPACE ---
+    if (mainUiState.showLeaveWorkspaceDialog) {
+        LeaveWorkspaceDialog(
+            onDismiss = { mainViewModel.onDismissLeaveWorkspaceDialog() },
+            onConfirm = { mainViewModel.confirmLeaveWorkspace() }
+        )
+    }
 }
 
 @Composable
@@ -524,7 +561,8 @@ fun WorkspaceOptionsDropdown(
     isOwner: Boolean,
     onDismiss: () -> Unit,
     onRenameClicked: () -> Unit,
-    onAddContributorClicked: () -> Unit // <-- New callback
+    onAddContributorClicked: () -> Unit,
+    onLeaveWorkspaceClicked: () -> Unit
 ) {
     DropdownMenu(
         expanded = expanded,
@@ -540,6 +578,11 @@ fun WorkspaceOptionsDropdown(
             text = { Text("Add New Contributor") },
             onClick = onAddContributorClicked,
             enabled = isOwner // Only owner can add contributors
+        )
+        DropdownMenuItem(
+            text = { Text("Leave Workspace") },
+            onClick = onLeaveWorkspaceClicked,
+            enabled = !isOwner // Hanya aktif jika BUKAN owner
         )
     }
 }
@@ -584,7 +627,7 @@ fun ActiveInviteDialog(
     onDismiss: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val clipboardManager: ClipboardManager = LocalClipboardManager.current
+    val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
     val formattedExpiry = remember(invite.expiresAt) {
         invite.expiresAt?.toDate()?.let {
@@ -754,6 +797,34 @@ fun CreateInviteDialog(
     )
 }
 
+// --- COMPOSABLE BARU UNTUK DIALOG KONFIRMASI ---
+@Composable
+fun LeaveWorkspaceDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Leave Workspace") },
+        text = { Text("Are you sure you want to leave from this workspace?") },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Text("Leave")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
 @Composable
 fun LocationAwareHomePage(
     onNavigateToManageOrder: () -> Unit
@@ -831,10 +902,10 @@ fun LocationAwareHomePage(
 }
 
 
-@Preview(showBackground = true, widthDp = 960, heightDp = 600)
-@Composable
-fun WashFlowAppPreview() {
-    WashFlowTheme {
-        MainAppScreen()
-    }
-}
+//@Preview(showBackground = true, widthDp = 960, heightDp = 600)
+//@Composable
+//fun WashFlowAppPreview() {
+//    WashFlowTheme {
+//        MainAppScreen()
+//    }
+//}

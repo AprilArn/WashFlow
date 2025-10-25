@@ -4,6 +4,7 @@ import com.aprilarn.washflow.data.model.Invites
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -53,29 +54,61 @@ class InviteRepository {
         }
     }
 
+    /**
+     * FUNGSI YANG DIPERBARUI:
+     * Mendengarkan dokumen pengguna, lalu mencari invite aktif
+     * berdasarkan workspaceId yang didapat.
+     */
     fun getActiveInviteForCurrentWorkspace(): Flow<Invites?> {
         return callbackFlow {
-            val workspaceId = runBlocking { getCurrentWorkspaceId() }
-            if (workspaceId == null) {
-                trySend(null).isSuccess
+            val user = Firebase.auth.currentUser
+            if (user == null) {
+                trySend(null)
                 close()
                 return@callbackFlow
             }
 
-            val query = invitesCollection
-                .whereEqualTo("workspaceId", workspaceId)
-                .whereEqualTo("status", "active")
-                .limit(1)
+            var inviteListener: ListenerRegistration? = null
+            val userDocRef = usersCollection.document(user.uid)
 
-            val listener = query.addSnapshotListener { snapshot, error ->
-                if (error != null || snapshot == null) {
-                    trySend(null).isSuccess
+            // 1. UTAMA: Dengarkan dokumen pengguna
+            val userListener = userDocRef.addSnapshotListener { userSnapshot, userError ->
+                if (userError != null) {
+                    close(userError)
                     return@addSnapshotListener
                 }
-                val activeInvite = snapshot.documents.firstOrNull()?.toObject(Invites::class.java)
-                trySend(activeInvite).isSuccess
+
+                // Hapus listener invite yang lama
+                inviteListener?.remove()
+
+                val workspaceId = userSnapshot?.getString("workspaceId")
+
+                if (workspaceId.isNullOrEmpty()) {
+                    // Tidak ada workspace, tidak ada invite
+                    trySend(null)
+                } else {
+                    // Ada workspace, cari invite aktif
+                    val query = invitesCollection
+                        .whereEqualTo("workspaceId", workspaceId)
+                        .whereEqualTo("status", "active")
+                        .limit(1)
+
+                    inviteListener = query.addSnapshotListener { snapshot, error ->
+                        if (error != null) {
+                            trySend(null) // Kirim null jika ada error
+                            return@addSnapshotListener
+                        }
+                        val activeInvite = snapshot?.documents?.firstOrNull()?.toObject(Invites::class.java)
+                        trySend(activeInvite)
+                    }
+                }
             }
-            awaitClose { listener.remove() }
+
+            // Saat flow ditutup, hapus kedua listener
+            awaitClose {
+                userListener.remove()
+                inviteListener?.remove()
+            }
         }
     }
 
