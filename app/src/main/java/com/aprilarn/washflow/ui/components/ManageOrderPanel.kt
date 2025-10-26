@@ -305,7 +305,7 @@ fun OrderCardContent(
     }
     val formattedDueDate = remember(order.orderDueDate) {
         order.orderDueDate?.toDate()?.let {
-            SimpleDateFormat("EEEE, dd MMMM, HH:mm", Locale.getDefault()).format(it)
+            SimpleDateFormat("EEEE, dd MMMM yyyy, HH:mm", Locale.getDefault()).format(it)
         } ?: "No due date"
     }
     val totalQuantity = order.orderItems.sumOf { it.itemQuantity ?: 0 }
