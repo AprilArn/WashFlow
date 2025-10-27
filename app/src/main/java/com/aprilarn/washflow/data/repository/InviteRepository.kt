@@ -126,49 +126,77 @@ class InviteRepository {
         val inviteDocRef = invitesCollection.document(inviteCode)
 
         try {
+            // --- BAGIAN 1: BACA & VALIDASI (DI LUAR TRANSAKSI) ---
+            // Kita baca data undangan 1x di luar transaksi utama
+            val inviteSnapshot = inviteDocRef.get().await()
+
+            if (!inviteSnapshot.exists()) {
+                return Pair(false, "Kode tidak valid")
+            }
+
+            val inviteData = inviteSnapshot.toObject(Invites::class.java)
+                ?: return Pair(false, "Gagal memuat data undangan.")
+
+            // 1. Validasi Tanggal Kedaluwarsa (Prioritas 1)
+            val expiresAt = inviteData.expiresAt
+            if (expiresAt != null && expiresAt.toDate().before(Date())) {
+                // INI PERBAIKANNYA: Jika kedaluwarsa, update status di luar transaksi
+                if (inviteData.status != "expired") {
+                    inviteDocRef.update("status", "expired").await() // Update terpisah
+                }
+                // Kembalikan error
+                return Pair(false, "Kode undangan sudah kedaluwarsa")
+            }
+
+            // 2. Validasi Status (Prioritas 2)
+            if (inviteData.status != "active") {
+                if (inviteData.status == "used") return Pair(false, "Kode undangan sudah penuh")
+                // Menangkap status 'expired' manual atau status tidak valid lainnya
+                return Pair(false, "Kode undangan sudah tidak berlaku")
+            }
+
+            // 3. Validasi Kuota (Prioritas 3)
+            val maxContributors = inviteData.maxContributors ?: 0
+            if (inviteData.usersWhoJoined.size >= maxContributors) {
+                // Kuota habis, update status di luar transaksi
+                if (inviteData.status != "used") {
+                    inviteDocRef.update("status", "used").await() // Update terpisah
+                }
+                // Kembalikan error
+                return Pair(false, "Kode undangan sudah penuh")
+            }
+
+            // --- BAGIAN 2: EKSEKUSI JOIN (DI DALAM TRANSAKSI) ---
+            // Jika semua validasi lolos, baru kita jalankan transaksi untuk bergabung.
+
             var finalWorkspaceId: String? = null
             db.runTransaction { transaction ->
-                val inviteSnapshot = transaction.get(inviteDocRef)
+                // Kita tidak perlu 'get' lagi karena sudah punya 'inviteData'
 
-                if (!inviteSnapshot.exists()) throw Exception("Kode tidak valid")
-
-                val inviteData = inviteSnapshot.toObject(Invites::class.java)
-                    ?: throw Exception("Gagal memuat data undangan.")
-
-                // FIX 1: Tangani `Int?` dengan memberikan nilai default jika null.
-                val maxContributors = inviteData.maxContributors ?: 0
-                if (inviteData.usersWhoJoined.size >= maxContributors) {
-                    throw Exception("Kode undangan sudah tidak berlaku")
-                }
-
-                val expiresAt = inviteData.expiresAt
-                if (expiresAt != null && expiresAt.toDate().before(Date())) {
-                    transaction.update(inviteDocRef, "status", "expired")
-                    throw Exception("Kode undangan sudah kedaluwarsa")
-                }
-
-                if (inviteData.status != "active") throw Exception("Kode undangan sudah tidak berlaku")
-
-                // FIX 2: Cek `String?` untuk null sebelum digunakan.
                 val workspaceId = inviteData.workspaceId
                     ?: throw Exception("Workspace ID tidak ditemukan dalam undangan.")
                 finalWorkspaceId = workspaceId
 
-                val workspaceDocRef = workspacesCollection.document(workspaceId) // `workspaceId` sekarang dijamin non-null
+                val workspaceDocRef = workspacesCollection.document(workspaceId)
                 val userDocRef = usersCollection.document(user.uid)
 
                 val newUsersWhoJoined = inviteData.usersWhoJoined + user.uid
+
+                // Update 3 dokumen secara atomik
                 transaction.update(inviteDocRef, "usersWhoJoined", newUsersWhoJoined)
                 transaction.update(workspaceDocRef, "contributors.${user.uid}", "member")
                 transaction.update(userDocRef, "workspaceId", workspaceId)
 
-                // FIX 3: Gunakan variabel maxContributors yang sudah aman dari null.
+                // Jika kuota TEPAT TERPENUHI setelah user ini join, update status
                 if (newUsersWhoJoined.size >= maxContributors) {
                     transaction.update(inviteDocRef, "status", "used")
                 }
+
             }.await()
             return Pair(true, finalWorkspaceId!!)
+
         } catch (e: Exception) {
+            // Catch block ini sekarang hanya menangani kegagalan pada Transaksi (Bagian 2)
             return Pair(false, e.message ?: "Gagal bergabung ke workspace.")
         }
     }
