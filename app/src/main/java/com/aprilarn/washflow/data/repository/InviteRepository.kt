@@ -112,6 +112,44 @@ class InviteRepository {
         }
     }
 
+    /**
+     * Memeriksa invite 'active' saat ini untuk workspace.
+     * Jika sudah kedaluwarsa (melewati due date), statusnya akan diubah ke 'expired'.
+     * Ini dipanggil sebelum menampilkan dialog 'Add New Contributor'.
+     */
+    suspend fun checkAndExpireActiveInvite() {
+        val workspaceId = getCurrentWorkspaceId() ?: return
+
+        try {
+            // 1. Cari invite yang 'active' untuk workspace ini
+            val querySnapshot = invitesCollection
+                .whereEqualTo("workspaceId", workspaceId)
+                .whereEqualTo("status", "active")
+                .limit(1)
+                .get()
+                .await()
+
+            if (querySnapshot.isEmpty) {
+                return // Tidak ada invite aktif, tidak perlu dicek
+            }
+
+            val doc = querySnapshot.documents.first()
+            val inviteData = doc.toObject(Invites::class.java) ?: return
+
+            // 2. Cek tanggal kedaluwarsa (due date)
+            val expiresAt = inviteData.expiresAt
+            if (expiresAt != null && expiresAt.toDate().before(Date())) {
+                // 3. Jika sudah lewat, update statusnya ke 'expired'
+                // Ini adalah logika yang sama dengan yang ada di 'joinWorkspace'
+                doc.reference.update("status", "expired").await()
+            }
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // Jangan hentikan aplikasi jika gagal, cukup log error
+        }
+    }
+
     suspend fun expireInvite(inviteId: String): Boolean {
         return try {
             invitesCollection.document(inviteId).update("status", "expired").await()

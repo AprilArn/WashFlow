@@ -109,9 +109,20 @@ class MainViewModel(
     }
 
     fun onAddNewContributorClicked() {
-        // This will trigger the appropriate dialog in the UI based on whether an active invite exists.
-        // We set a flag to show "a" dialog, and the UI decides which one.
-        _uiState.update { it.copy(showCreateInviteDialog = true, showWorkspaceOptions = false) }
+        // Ubah ini untuk menjalankan pengecekan di background SEBELUM menampilkan dialog
+        viewModelScope.launch {
+
+            // 1. Panggil fungsi baru untuk mengecek dan mengubah status jika perlu
+            inviteRepository.checkAndExpireActiveInvite()
+
+            // 2. (PENTING) Listener 'listenForActiveInvite' akan otomatis
+            // mengambil perubahan status (jika ada) dan memperbarui _uiState.
+
+            // 3. Setelah pengecekan selesai, tampilkan dialog.
+            // Logika di MainActivity akan menampilkan dialog yang benar
+            // (Gambar 1 atau 2) berdasarkan _uiState yang sudah ter-update.
+            _uiState.update { it.copy(showCreateInviteDialog = true, showWorkspaceOptions = false) }
+        }
     }
 
     fun onDismissCreateInviteDialog() {
