@@ -39,14 +39,15 @@ fun OrderPreviewPanel(
     uiState: OrdersUiState
 ) {
     val borderRadius = RoundedCornerShape(24.dp)
+    val borderColor = Color.White
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White.copy(alpha = 0.25f), shape = borderRadius)
             .border(
-                width = 2.dp,
-                color = GrayBlue.copy(alpha = 0.8f),
+                width = 1.dp,
+                color = borderColor,
                 shape = borderRadius
             )
     ) {
@@ -104,18 +105,18 @@ fun OrderPreviewPanel(
                     .fillMaxWidth()
                     .clip(borderRadius)
                     .border(
-                        width = 2.dp,
-                        color = GrayBlue.copy(alpha = 0.8f),
+                        width = 1.dp,
+                        color = borderColor,
                         shape = borderRadius
                     ),
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(18.dp) ,
+                        .padding(18.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
-                ){
+                ) {
                     Column(
                         modifier = Modifier
                             .weight(1f)

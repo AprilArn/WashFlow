@@ -1,7 +1,6 @@
 package com.aprilarn.washflow
 
 import android.Manifest
-import android.app.Activity
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -17,17 +16,44 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.ClipboardManager
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -41,10 +67,15 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.aprilarn.washflow.data.model.Invites
 import com.aprilarn.washflow.data.repository.CustomerRepository
+import com.aprilarn.washflow.data.repository.InviteRepository
 import com.aprilarn.washflow.data.repository.ItemRepository
 import com.aprilarn.washflow.data.repository.OrderRepository
 import com.aprilarn.washflow.data.repository.ServiceRepository
+import com.aprilarn.washflow.data.repository.WorkspaceRepository
+import com.aprilarn.washflow.ui.MainNavigationEvent
+import com.aprilarn.washflow.ui.MainViewModel
 import com.aprilarn.washflow.ui.components.Header
 import com.aprilarn.washflow.ui.components.NavigationBar
 import com.aprilarn.washflow.ui.customers.CustomersScreen
@@ -58,6 +89,8 @@ import com.aprilarn.washflow.ui.items.ItemsViewModel
 import com.aprilarn.washflow.ui.login.GoogleAuthUiClient
 import com.aprilarn.washflow.ui.login.LoginScreen
 import com.aprilarn.washflow.ui.login.LoginViewModel
+import com.aprilarn.washflow.ui.manage_order.ManageOrderScreen
+import com.aprilarn.washflow.ui.manage_order.ManageOrderViewModel
 import com.aprilarn.washflow.ui.orders.OrdersScreen
 import com.aprilarn.washflow.ui.orders.OrdersViewModel
 import com.aprilarn.washflow.ui.theme.MainBLue
@@ -72,6 +105,11 @@ import com.aprilarn.washflow.ui.workspace.WorkspaceViewModel
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 class MainActivity : ComponentActivity() {
 
@@ -201,7 +239,33 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable("main") {
-                            MainAppScreen()
+                            // --- MAINVIEWMODEL DIBUAT DI SINI ---
+                            val mainViewModelFactory = object : ViewModelProvider.Factory {
+                                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                    @Suppress("UNCHECKED_CAST")
+                                    return MainViewModel(
+                                        WorkspaceRepository(),
+                                        InviteRepository()
+                                    ) as T
+                                }
+                            }
+                            val mainViewModel: MainViewModel = viewModel(factory = mainViewModelFactory)
+
+                            // --- EFEK UNTUK NAVIGASI KELUAR ---
+                            LaunchedEffect(Unit) {
+                                mainViewModel.eventFlow.collect { event ->
+                                    when (event) {
+                                        is MainNavigationEvent.NavigateToWorkspace -> {
+                                            navController.navigate("workspace") {
+                                                popUpTo("main") { inclusive = true }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // --- PASS VIEWMODEL KE MAINAPPSCREEN ---
+                            MainAppScreen(mainViewModel)
                         }
                     }
                 }
@@ -225,16 +289,45 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MainAppScreen() {
+fun MainAppScreen(
+    mainViewModel: MainViewModel
+) {
     // NavController khusus untuk navigasi di dalam Bottom Navigation Bar
     val bottomNavController = rememberNavController()
     val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
+    // --- BUAT MAINVIEWMODEL DI SINI ---
+    val mainViewModelFactory = object : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            @Suppress("UNCHECKED_CAST")
+            return MainViewModel(
+                WorkspaceRepository(),
+                InviteRepository()
+            ) as T
+        }
+    }
+    val mainViewModel: MainViewModel = viewModel(factory = mainViewModelFactory)
+    val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        // Hanya tampilkan Header jika tidak di halaman tertentu (opsional)
-        topBar = { Header() },
+        topBar = {
+            Header(
+                workspaceName = mainUiState.workspaceName,
+                onWorkspaceClick = { mainViewModel.onWorkspaceNameClicked() }
+            ) {
+                // --- TERUSKAN INFORMASI OWNER KE DROPDOWN ---
+                WorkspaceOptionsDropdown(
+                    expanded = mainUiState.showWorkspaceOptions,
+                    isOwner = mainUiState.isCurrentUserOwner, // <- Teruskan dari state
+                    onDismiss = { mainViewModel.onDismissWorkspaceOptions() },
+                    onRenameClicked = { mainViewModel.showRenameDialog() },
+                    onAddContributorClicked = { mainViewModel.onAddNewContributorClicked() },
+                    onLeaveWorkspaceClicked = { mainViewModel.onLeaveWorkspaceClicked() }
+                )
+            }
+        },
         bottomBar = {
             Box(
                 modifier = Modifier
@@ -264,7 +357,43 @@ fun MainAppScreen() {
             NavHost(navController = bottomNavController, startDestination = AppNavigation.Home.route) {
 
                 composable(AppNavigation.Home.route) {
-                    LocationAwareHomePage()
+                    LocationAwareHomePage(
+                        onNavigateToManageOrder = {
+                            bottomNavController.navigate(AppNavigation.ManageOrder.route)
+                        }
+                    )
+                }
+
+                composable(AppNavigation.ManageOrder.route) {
+                    val factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            return ManageOrderViewModel(
+                                OrderRepository(),
+                                CustomerRepository(),
+                                ServiceRepository()
+                            ) as T
+                        }
+                    }
+                    val viewModel: ManageOrderViewModel = viewModel(factory = factory)
+                    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+                    val context = LocalContext.current
+
+                    LaunchedEffect(uiState.errorMessage) {
+                        uiState.errorMessage?.let {
+                            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+                            viewModel.onErrorMessageShown()
+                        }
+                    }
+
+                    ManageOrderScreen(
+                        uiState = uiState,
+                        onDrop = { orderId, newStatus ->
+                            viewModel.changeOrderStatus(orderId, newStatus)
+                        },
+                        onOrderClick = { order -> viewModel.onOrderCardClicked(order) },
+                        onDismissDialog = { viewModel.onDismissOrderDetailDialog() },
+                        onDeleteOrder = { orderId -> viewModel.deleteOrder(orderId) }
+                    )
                 }
 
                 composable(AppNavigation.Customers.route) {
@@ -382,12 +511,332 @@ fun MainAppScreen() {
             }
         }
     }
+
+    // --- DIALOG UNTUK RENAME WORKSPACE ---
+    // Ditampilkan di luar Scaffold agar muncul di atas segalanya
+    if (mainUiState.showRenameDialog) {
+        RenameWorkspaceDialog(
+            currentName = mainUiState.workspaceName,
+            onDismiss = { mainViewModel.onDismissRenameDialog() },
+            onApply = { newName -> mainViewModel.renameWorkspace(newName) }
+        )
+    }
+
+    // Conditional logic for Invite Dialogs
+    if (mainUiState.showCreateInviteDialog) {
+        // Copy the value to a local variable
+        val activeInvite = mainUiState.activeInvite
+
+        if (activeInvite == null) {
+            // If there's no active invite, show the creation dialog
+            CreateInviteDialog(
+                onDismiss = { mainViewModel.onDismissCreateInviteDialog() },
+                onGenerate = { maxUsers, expiryDate ->
+                    mainViewModel.createInvitation(maxUsers, expiryDate)
+                }
+            )
+        } else {
+            // If there IS an active invite, show its details
+            // Now it's safe to use the local 'activeInvite' variable
+            ActiveInviteDialog(
+                invite = activeInvite,
+                onDismiss = { mainViewModel.onDismissCreateInviteDialog() },
+                onDelete = { mainViewModel.deleteInvitation() }
+            )
+        }
+    }
+
+    // --- DIALOG BARU UNTUK LEAVE WORKSPACE ---
+    if (mainUiState.showLeaveWorkspaceDialog) {
+        LeaveWorkspaceDialog(
+            onDismiss = { mainViewModel.onDismissLeaveWorkspaceDialog() },
+            onConfirm = { mainViewModel.confirmLeaveWorkspace() }
+        )
+    }
 }
 
 @Composable
-fun LocationAwareHomePage() {
+fun WorkspaceOptionsDropdown(
+    expanded: Boolean,
+    isOwner: Boolean,
+    onDismiss: () -> Unit,
+    onRenameClicked: () -> Unit,
+    onAddContributorClicked: () -> Unit,
+    onLeaveWorkspaceClicked: () -> Unit
+) {
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismiss
+    ) {
+        DropdownMenuItem(
+            text = { Text("Ubah Nama Workspace") },
+            onClick = onRenameClicked,
+            enabled = isOwner
+        )
+        // -- New Menu Item --
+        DropdownMenuItem(
+            text = { Text("Add New Contributor") },
+            onClick = onAddContributorClicked,
+            enabled = isOwner // Only owner can add contributors
+        )
+        DropdownMenuItem(
+            text = { Text("Leave Workspace") },
+            onClick = onLeaveWorkspaceClicked,
+            enabled = !isOwner // Hanya aktif jika BUKAN owner
+        )
+    }
+}
+
+@Composable
+fun RenameWorkspaceDialog(
+    currentName: String,
+    onDismiss: () -> Unit,
+    onApply: (String) -> Unit
+) {
+    var newName by remember { mutableStateOf(currentName) }
+
+    AlertDialog(
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp)),
+        onDismissRequest = onDismiss,
+        title = { Text("Ubah Nama Workspace") },
+        text = {
+            OutlinedTextField(
+                value = newName,
+                onValueChange = { newName = it },
+                label = { Text("Nama workspace baru") },
+                singleLine = true
+            )
+        },
+        confirmButton = {
+            Button(onClick = { onApply(newName) }) {
+                Text("Apply")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+fun ActiveInviteDialog(
+    invite: Invites,
+    onDismiss: () -> Unit,
+    onDelete: () -> Unit
+) {
+    val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
-    val homeViewModel: HomeViewModel = viewModel()
+    val formattedExpiry = remember(invite.expiresAt) {
+        invite.expiresAt?.toDate()?.let {
+            SimpleDateFormat("EEE, dd MMM yyyy 'at' HH:mm", Locale.getDefault()).format(it)
+        } ?: "No expiry"
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Active Invitation Code") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                // Code Display and Copy Button
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    SelectionContainer {
+                        Text(
+                            text = invite.inviteId ?: "------",
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                        )
+                    }
+                    IconButton(onClick = {
+                        clipboardManager.setText(AnnotatedString(invite.inviteId ?: ""))
+                        Toast.makeText(context, "Code copied!", Toast.LENGTH_SHORT).show()
+                    }) {
+                        Icon(Icons.Default.ContentCopy, contentDescription = "Copy Code")
+                    }
+                }
+                // Info Section
+                Column {
+                    Text("Code is valid for ${invite.maxContributors} users.", style = MaterialTheme.typography.bodyMedium)
+                    Text("Expires on: $formattedExpiry", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = onDismiss) {
+                Text("Close")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = {
+                onDelete()
+                onDismiss()
+            }) {
+                Text("Delete", color = MaterialTheme.colorScheme.error)
+            }
+        }
+    )
+}
+
+/**
+ * Dialog to create a new invitation code (Image 1).
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CreateInviteDialog(
+    onDismiss: () -> Unit,
+    onGenerate: (Int, Date) -> Unit
+) {
+    var maxContributors by remember { mutableStateOf("1") }
+    val calendar = Calendar.getInstance()
+    // Default expiry: 1 day from now
+    calendar.add(Calendar.DAY_OF_YEAR, 1)
+    var expiryDate by remember { mutableStateOf(calendar.time) }
+
+    // --- Date & Time Picker States ---
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+
+    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = expiryDate.time)
+    val timePickerState = rememberTimePickerState(
+        initialHour = calendar.get(Calendar.HOUR_OF_DAY),
+        initialMinute = calendar.get(Calendar.MINUTE),
+        is24Hour = true
+    )
+
+    // --- Dialogs ---
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDatePicker = false
+                    datePickerState.selectedDateMillis?.let {
+                        val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+                        cal.timeInMillis = it
+                        val currentCal = Calendar.getInstance()
+                        currentCal.time = expiryDate
+                        currentCal.set(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DATE))
+                        expiryDate = currentCal.time
+                    }
+                    showTimePicker = true // Show time picker after date is selected
+                }) { Text("OK") }
+            },
+            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Cancel") } }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    if (showTimePicker) {
+        AlertDialog( // Wrap time picker in a dialog for better control
+            onDismissRequest = { showTimePicker = false },
+            title = { Text("Select Time") },
+            text = {
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center){
+                    TimePicker(state = timePickerState)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val currentCal = Calendar.getInstance()
+                    currentCal.time = expiryDate
+                    currentCal.set(Calendar.HOUR_OF_DAY, timePickerState.hour)
+                    currentCal.set(Calendar.MINUTE, timePickerState.minute)
+                    expiryDate = currentCal.time
+                    showTimePicker = false
+                }) { Text("OK") }
+            }
+        )
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Create Invitation Code") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = maxContributors,
+                    onValueChange = { if (it.all { char -> char.isDigit() }) maxContributors = it },
+                    label = { Text("Max Contributors") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true
+                )
+
+                val formatter = SimpleDateFormat("EEE, dd MMM yyyy HH:mm", Locale.getDefault())
+                Text("Expires at:")
+                OutlinedButton(
+                    onClick = { showDatePicker = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(formatter.format(expiryDate))
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                val maxUsers = maxContributors.toIntOrNull() ?: 1
+                onGenerate(maxUsers, expiryDate)
+            }) {
+                Text("Generate")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+// --- COMPOSABLE BARU UNTUK DIALOG KONFIRMASI ---
+@Composable
+fun LeaveWorkspaceDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Leave Workspace") },
+        text = { Text("Are you sure you want to leave from this workspace?") },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Text("Leave")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+fun LocationAwareHomePage(
+    onNavigateToManageOrder: () -> Unit
+) {
+    val context = LocalContext.current
+    val factory = object : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            return HomeViewModel(OrderRepository()) as T
+        }
+    }
+    val homeViewModel: HomeViewModel = viewModel(factory = factory)
     var hasLocationPermission by remember { mutableStateOf(false) }
 
     // Launcher untuk meminta izin lokasi
@@ -436,7 +885,8 @@ fun LocationAwareHomePage() {
     if (hasLocationPermission) {
         HomePage(
             homeViewModel = homeViewModel,
-            onEnterDataClick = {}
+            onEnterDataClick = {},
+            onStatusCardClick = onNavigateToManageOrder
         )
     } else {
         // Tampilan jika pengguna menolak izin
@@ -452,10 +902,10 @@ fun LocationAwareHomePage() {
 }
 
 
-@Preview(showBackground = true, widthDp = 960, heightDp = 600)
-@Composable
-fun WashFlowAppPreview() {
-    WashFlowTheme {
-        MainAppScreen()
-    }
-}
+//@Preview(showBackground = true, widthDp = 960, heightDp = 600)
+//@Composable
+//fun WashFlowAppPreview() {
+//    WashFlowTheme {
+//        MainAppScreen()
+//    }
+//}

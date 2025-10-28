@@ -41,14 +41,16 @@ fun OrderCustomerInputPanel(
     val calendar = remember { Calendar.getInstance() }
 
     val borderRadius = RoundedCornerShape(24.dp)
+    val borderColor = Color.White
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .wrapContentHeight()
             .background(Color.White.copy(alpha = 0.25f), shape = borderRadius)
             .border(
-                width = 2.dp,
-                color = GrayBlue.copy(alpha = 0.8f),
+                width = 1.dp,
+                color = borderColor,
                 shape = borderRadius
             )
     ) {

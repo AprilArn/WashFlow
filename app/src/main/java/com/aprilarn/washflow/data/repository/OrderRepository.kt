@@ -3,7 +3,11 @@ package com.aprilarn.washflow.data.repository
 import com.aprilarn.washflow.data.model.Orders
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.firestore
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
 class OrderRepository {
@@ -16,6 +20,34 @@ class OrderRepository {
             userDoc.getString("workspaceId")
         } catch (e: Exception) {
             null
+        }
+    }
+
+    // Fungsi untuk mendapatkan semua order secara realtime
+    suspend fun getOrdersRealtime(): Flow<List<Orders>> {
+        return callbackFlow {
+            val workspaceId = getWorkspaceId()
+            if (workspaceId == null) {
+                close(IllegalStateException("Workspace ID not found"))
+                return@callbackFlow
+            }
+
+            val listener = db.collection("workspaces")
+                .document(workspaceId)
+                .collection("orders")
+                .orderBy("orderDate", Query.Direction.ASCENDING) // Urutkan berdasarkan tanggal order
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        close(error)
+                        return@addSnapshotListener
+                    }
+                    if (snapshot != null) {
+                        val orders = snapshot.toObjects(Orders::class.java)
+                        trySend(orders).isSuccess
+                    }
+                }
+            // Pastikan listener dihapus saat flow ditutup
+            awaitClose { listener.remove() }
         }
     }
 
@@ -37,4 +69,38 @@ class OrderRepository {
             false
         }
     }
+
+    // Fungsi untuk update status order
+    suspend fun updateOrderStatus(orderId: String, newStatus: String): Boolean {
+        val workspaceId = getWorkspaceId() ?: return false
+        return try {
+            db.collection("workspaces")
+                .document(workspaceId)
+                .collection("orders")
+                .document(orderId)
+                .update("status", newStatus)
+                .await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    suspend fun deleteOrder(orderId: String): Boolean {
+        val workspaceId = getWorkspaceId() ?: return false
+        return try {
+            db.collection("workspaces")
+                .document(workspaceId)
+                .collection("orders")
+                .document(orderId)
+                .delete()
+                .await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
 }
