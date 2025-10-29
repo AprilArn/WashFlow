@@ -36,9 +36,38 @@ class MainViewModel(
         listenForActiveInvite()
     }
 
+//    private fun listenForWorkspaceChanges() {
+//        viewModelScope.launch {
+//            workspaceRepository.getCurrentWorkspaceRealtime().collect { workspace ->
+//                val currentUser = Firebase.auth.currentUser
+//                val isOwner = if (workspace != null && currentUser != null) {
+//                    workspace.contributors?.get(currentUser.uid) == "owner"
+//                } else {
+//                    false
+//                }
+//
+//                _uiState.update {
+//                    it.copy(
+//                        workspaceName = workspace?.workspaceName ?: "My Workspace",
+//                        isCurrentUserOwner = isOwner
+//                    )
+//                }
+//            }
+//        }
+//    }
+
     private fun listenForWorkspaceChanges() {
         viewModelScope.launch {
             workspaceRepository.getCurrentWorkspaceRealtime().collect { workspace ->
+
+                // --- LOGIKA KICK-OUT DIHAPUS ---
+                // 'UserRepository' sudah memvalidasi workspace saat login.
+                // if (workspace == null) {
+                //     _eventFlow.emit(MainNavigationEvent.NavigateToWorkspace)
+                //     return@collect
+                // }
+                // --- AKHIR PENGHAPUSAN ---
+
                 val currentUser = Firebase.auth.currentUser
                 val isOwner = if (workspace != null && currentUser != null) {
                     workspace.contributors?.get(currentUser.uid) == "owner"
@@ -48,7 +77,8 @@ class MainViewModel(
 
                 _uiState.update {
                     it.copy(
-                        workspaceName = workspace?.workspaceName ?: "My Workspace",
+                        // Tampilkan "Loading..." jika workspace null (misal: saat user baru 'leave')
+                        workspaceName = workspace?.workspaceName ?: "Loading...",
                         isCurrentUserOwner = isOwner
                     )
                 }
@@ -148,6 +178,30 @@ class MainViewModel(
                 _eventFlow.emit(MainNavigationEvent.NavigateToWorkspace)
             }
             // Jika gagal, bisa tambahkan event untuk menampilkan error
+        }
+    }
+
+    // --- FUNGSI BARU UNTUK DELETE WORKSPACE ---
+
+    fun onDeleteWorkspaceClicked() {
+        _uiState.update {
+            it.copy(showWorkspaceOptions = false, showDeleteWorkspaceDialog = true)
+        }
+    }
+
+    fun onDismissDeleteWorkspaceDialog() {
+        _uiState.update { it.copy(showDeleteWorkspaceDialog = false) }
+    }
+
+    fun confirmDeleteWorkspace() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(showDeleteWorkspaceDialog = false) }
+            val success = workspaceRepository.deleteCurrentWorkspace()
+            if (success) {
+                // Kirim event untuk navigasi kembali ke WorkspaceScreen
+                _eventFlow.emit(MainNavigationEvent.NavigateToWorkspace)
+            }
+            // TODO: Tambahkan penanganan error jika 'success' adalah false
         }
     }
 }

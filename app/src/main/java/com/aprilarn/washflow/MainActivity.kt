@@ -298,16 +298,16 @@ fun MainAppScreen(
     val currentRoute = navBackStackEntry?.destination?.route
 
     // --- BUAT MAINVIEWMODEL DI SINI ---
-    val mainViewModelFactory = object : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            @Suppress("UNCHECKED_CAST")
-            return MainViewModel(
-                WorkspaceRepository(),
-                InviteRepository()
-            ) as T
-        }
-    }
-    val mainViewModel: MainViewModel = viewModel(factory = mainViewModelFactory)
+//    val mainViewModelFactory = object : ViewModelProvider.Factory {
+//        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+//            @Suppress("UNCHECKED_CAST")
+//            return MainViewModel(
+//                WorkspaceRepository(),
+//                InviteRepository()
+//            ) as T
+//        }
+//    }
+//    val mainViewModel: MainViewModel = viewModel(factory = mainViewModelFactory)
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
@@ -320,11 +320,12 @@ fun MainAppScreen(
                 // --- TERUSKAN INFORMASI OWNER KE DROPDOWN ---
                 WorkspaceOptionsDropdown(
                     expanded = mainUiState.showWorkspaceOptions,
-                    isOwner = mainUiState.isCurrentUserOwner, // <- Teruskan dari state
+                    isOwner = mainUiState.isCurrentUserOwner,
                     onDismiss = { mainViewModel.onDismissWorkspaceOptions() },
                     onRenameClicked = { mainViewModel.showRenameDialog() },
                     onAddContributorClicked = { mainViewModel.onAddNewContributorClicked() },
-                    onLeaveWorkspaceClicked = { mainViewModel.onLeaveWorkspaceClicked() }
+                    onLeaveWorkspaceClicked = { mainViewModel.onLeaveWorkspaceClicked() },
+                    onDeleteWorkspaceClicked = { mainViewModel.onDeleteWorkspaceClicked() }
                 )
             }
         },
@@ -553,6 +554,14 @@ fun MainAppScreen(
             onConfirm = { mainViewModel.confirmLeaveWorkspace() }
         )
     }
+
+    // --- DIALOG BARU UNTUK DELETE WORKSPACE ---
+    if (mainUiState.showDeleteWorkspaceDialog) {
+        DeleteWorkspaceDialog(
+            onDismiss = { mainViewModel.onDismissDeleteWorkspaceDialog() },
+            onConfirm = { mainViewModel.confirmDeleteWorkspace() }
+        )
+    }
 }
 
 @Composable
@@ -562,7 +571,8 @@ fun WorkspaceOptionsDropdown(
     onDismiss: () -> Unit,
     onRenameClicked: () -> Unit,
     onAddContributorClicked: () -> Unit,
-    onLeaveWorkspaceClicked: () -> Unit
+    onLeaveWorkspaceClicked: () -> Unit,
+    onDeleteWorkspaceClicked: () -> Unit
 ) {
     DropdownMenu(
         expanded = expanded,
@@ -571,9 +581,8 @@ fun WorkspaceOptionsDropdown(
         DropdownMenuItem(
             text = { Text("Ubah Nama Workspace") },
             onClick = onRenameClicked,
-            enabled = isOwner
+            enabled = isOwner // Hanya aktif jika owner
         )
-        // -- New Menu Item --
         DropdownMenuItem(
             text = { Text("Add New Contributor") },
             onClick = onAddContributorClicked,
@@ -583,6 +592,11 @@ fun WorkspaceOptionsDropdown(
             text = { Text("Leave Workspace") },
             onClick = onLeaveWorkspaceClicked,
             enabled = !isOwner // Hanya aktif jika BUKAN owner
+        )
+        DropdownMenuItem(
+            text = { Text("Delete Workspace", color = MaterialTheme.colorScheme.error) },
+            onClick = onDeleteWorkspaceClicked,
+            enabled = isOwner // Hanya aktif jika owner
         )
     }
 }
@@ -797,7 +811,6 @@ fun CreateInviteDialog(
     )
 }
 
-// --- COMPOSABLE BARU UNTUK DIALOG KONFIRMASI ---
 @Composable
 fun LeaveWorkspaceDialog(
     onDismiss: () -> Unit,
@@ -815,6 +828,55 @@ fun LeaveWorkspaceDialog(
                 )
             ) {
                 Text("Leave")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+fun DeleteWorkspaceDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    var confirmText by remember { mutableStateOf("") }
+    // Tombol delete hanya aktif jika teks = "delete"
+    val isDeleteButtonEnabled = confirmText == "delete"
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Are you sure want to delete current workspace?") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(
+                    "This action will kick/delete all contributors in this workspace and than delete this workspace.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                // Field untuk konfirmasi
+                OutlinedTextField(
+                    value = confirmText,
+                    onValueChange = { confirmText = it },
+                    label = { Text("Type 'delete' to confirm") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                // Tombol hanya aktif jika teks diisi dengan benar
+                enabled = isDeleteButtonEnabled,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    disabledContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.3f)
+                )
+            ) {
+                Text("Delete")
             }
         },
         dismissButton = {

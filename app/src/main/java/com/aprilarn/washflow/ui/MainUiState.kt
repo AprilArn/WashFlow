@@ -11,5 +11,6 @@ data class MainUiState(
     val showCreateInviteDialog: Boolean = false,
     val activeInvite: Invites? = null,
     val isInviteLoading: Boolean = true,
-    val showLeaveWorkspaceDialog: Boolean = false
+    val showLeaveWorkspaceDialog: Boolean = false,
+    val showDeleteWorkspaceDialog: Boolean = false
 )
