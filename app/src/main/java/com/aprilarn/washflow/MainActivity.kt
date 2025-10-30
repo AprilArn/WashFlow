@@ -594,9 +594,23 @@ fun WorkspaceOptionsDropdown(
             enabled = !isOwner // Hanya aktif jika BUKAN owner
         )
         DropdownMenuItem(
-            text = { Text("Delete Workspace", color = MaterialTheme.colorScheme.error) },
+            text = {
+                // Tentukan warna teks berdasarkan apakah 'owner' atau bukan
+                val textColor = if (isOwner) {
+                    // Jika 'owner' (enabled), warnanya merah terang
+                    MaterialTheme.colorScheme.error
+                } else {
+                    // Jika 'member' (disabled), warnanya merah pudar (merah keabu-abuan)
+                    MaterialTheme.colorScheme.error.copy(alpha = 0.4f)
+                }
+
+                Text(
+                    text = "Delete Workspace",
+                    color = textColor
+                )
+            },
             onClick = onDeleteWorkspaceClicked,
-            enabled = isOwner // Hanya aktif jika owner
+            enabled = isOwner
         )
     }
 }
