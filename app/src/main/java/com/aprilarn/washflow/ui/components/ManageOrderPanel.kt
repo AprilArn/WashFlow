@@ -308,7 +308,8 @@ fun OrderCardContent(
             SimpleDateFormat("EEEE, dd MMMM yyyy, HH:mm", Locale.getDefault()).format(it)
         } ?: "No due date"
     }
-    val totalQuantity = order.orderItems.sumOf { it.itemQuantity ?: 0 }
+    // val totalQuantity = order.orderItems.sumOf { it.itemQuantity ?: 0 }
+    val totalItemTypes = order.orderItems.size
 
     val serviceNames = remember(order.orderItems, services) {
         order.orderItems
@@ -369,7 +370,7 @@ fun OrderCardContent(
                 )
             }
             Text(
-                text = "${totalQuantity}",
+                text = "${totalItemTypes}",
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = GrayBlue,
                     fontWeight = FontWeight.Bold,
