@@ -102,7 +102,6 @@ fun OrderPreviewPanel(
 
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
                     .clip(borderRadius)
                     .border(
                         width = 1.dp,

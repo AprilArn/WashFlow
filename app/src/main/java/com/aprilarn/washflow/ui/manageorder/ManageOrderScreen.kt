@@ -52,8 +52,7 @@ fun ManageOrderScreen(
     } else {
         DragDropContainer(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 32.dp),
+                .fillMaxSize(),
             services = uiState.services
         ) {
             Row(

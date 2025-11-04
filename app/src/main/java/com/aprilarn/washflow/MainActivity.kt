@@ -93,6 +93,8 @@ import com.aprilarn.washflow.ui.manage_order.ManageOrderScreen
 import com.aprilarn.washflow.ui.manage_order.ManageOrderViewModel
 import com.aprilarn.washflow.ui.orders.OrdersScreen
 import com.aprilarn.washflow.ui.orders.OrdersViewModel
+import com.aprilarn.washflow.ui.tabledata.TableDataScreen
+import com.aprilarn.washflow.ui.tabledata.TableDataViewModel
 import com.aprilarn.washflow.ui.theme.MainBLue
 import com.aprilarn.washflow.ui.theme.MornYellow
 import com.aprilarn.washflow.ui.theme.NoonBlue
@@ -296,18 +298,6 @@ fun MainAppScreen(
     val bottomNavController = rememberNavController()
     val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-
-    // --- BUAT MAINVIEWMODEL DI SINI ---
-//    val mainViewModelFactory = object : ViewModelProvider.Factory {
-//        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-//            @Suppress("UNCHECKED_CAST")
-//            return MainViewModel(
-//                WorkspaceRepository(),
-//                InviteRepository()
-//            ) as T
-//        }
-//    }
-//    val mainViewModel: MainViewModel = viewModel(factory = mainViewModelFactory)
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
@@ -353,6 +343,7 @@ fun MainAppScreen(
                     )
                 )
                 .padding(innerPadding)
+                .padding(horizontal = 32.dp)
         ) {
             // NavHost internal untuk mengatur layar yang diakses dari Bottom Navigation Bar
             NavHost(navController = bottomNavController, startDestination = AppNavigation.Home.route) {
@@ -394,6 +385,28 @@ fun MainAppScreen(
                         onOrderClick = { order -> viewModel.onOrderCardClicked(order) },
                         onDismissDialog = { viewModel.onDismissOrderDetailDialog() },
                         onDeleteOrder = { orderId -> viewModel.deleteOrder(orderId) }
+                    )
+                }
+
+                composable(AppNavigation.TableData.route) {
+                    val factory = object : ViewModelProvider.Factory {
+                        @Suppress("UNCHECKED_CAST")
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            return TableDataViewModel(
+                                CustomerRepository(),
+                                ServiceRepository(),
+                                ItemRepository()
+                            ) as T
+                        }
+                    }
+                    val viewModel: TableDataViewModel = viewModel(factory = factory)
+                    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+                    TableDataScreen(
+                        uiState = uiState,
+                        onNavigate = { route ->
+                            bottomNavController.navigate(route)
+                        }
                     )
                 }
 

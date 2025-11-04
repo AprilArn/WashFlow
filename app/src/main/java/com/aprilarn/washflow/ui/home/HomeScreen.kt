@@ -29,8 +29,7 @@ fun HomeScreen(
 ) {
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 32.dp),
+            .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(
@@ -128,11 +127,13 @@ fun HomeScreen(
 @Preview(showBackground = true, widthDp = 960, heightDp = 500)
 @Composable
 fun HomeScreenPreview() {
-    Box(modifier = Modifier.background(
-        Brush.linearGradient(
-            colors = listOf(Color(0xFFB9E9FF), Color(0xFFFFD6BF))
+    Box(
+        modifier = Modifier.background(
+            Brush.linearGradient(
+                colors = listOf(Color(0xFFB9E9FF), Color(0xFFFFD6BF))
+            )
         )
-    )) {
+    ) {
         HomeScreen(
             state = HomeUiState(
                 greeting = "Good Morning!",

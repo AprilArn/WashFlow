@@ -29,7 +29,7 @@ import com.aprilarn.washflow.ui.theme.GrayBlue
 
 @Composable
 fun NavigationBar(
-    navController: NavController, // Tambahkan NavController
+    navController: NavController,
     modifier: Modifier = Modifier
 ) {
     // Dapatkan rute saat ini untuk menentukan item mana yang aktif
@@ -53,9 +53,7 @@ fun NavigationBar(
             val items = listOf(
                 AppNavigation.Home,
                 AppNavigation.Orders,
-                AppNavigation.Customers,
-                AppNavigation.Services,
-                AppNavigation.Items,
+                AppNavigation.TableData,
                 AppNavigation.Settings
             )
 

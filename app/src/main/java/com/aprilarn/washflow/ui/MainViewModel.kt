@@ -36,38 +36,9 @@ class MainViewModel(
         listenForActiveInvite()
     }
 
-//    private fun listenForWorkspaceChanges() {
-//        viewModelScope.launch {
-//            workspaceRepository.getCurrentWorkspaceRealtime().collect { workspace ->
-//                val currentUser = Firebase.auth.currentUser
-//                val isOwner = if (workspace != null && currentUser != null) {
-//                    workspace.contributors?.get(currentUser.uid) == "owner"
-//                } else {
-//                    false
-//                }
-//
-//                _uiState.update {
-//                    it.copy(
-//                        workspaceName = workspace?.workspaceName ?: "My Workspace",
-//                        isCurrentUserOwner = isOwner
-//                    )
-//                }
-//            }
-//        }
-//    }
-
     private fun listenForWorkspaceChanges() {
         viewModelScope.launch {
             workspaceRepository.getCurrentWorkspaceRealtime().collect { workspace ->
-
-                // --- LOGIKA KICK-OUT DIHAPUS ---
-                // 'UserRepository' sudah memvalidasi workspace saat login.
-                // if (workspace == null) {
-                //     _eventFlow.emit(MainNavigationEvent.NavigateToWorkspace)
-                //     return@collect
-                // }
-                // --- AKHIR PENGHAPUSAN ---
-
                 val currentUser = Firebase.auth.currentUser
                 val isOwner = if (workspace != null && currentUser != null) {
                     workspace.contributors?.get(currentUser.uid) == "owner"
