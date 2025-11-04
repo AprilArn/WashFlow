@@ -6,8 +6,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,41 +24,44 @@ fun TableDataScreen(
     uiState: TableDataUiState,
     onNavigate: (route: String) -> Unit // Callback untuk navigasi
 ) {
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp) // Atur jarak antar kartu
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(vertical = 16.dp) // Beri padding di atas dan bawah
     ) {
         // Kartu untuk Customers
-        Box(modifier = Modifier.clickable { onNavigate(AppNavigation.Customers.route) }) {
+        item {
+            // Hapus Box pembungkus, panggil Card langsung
             TableDataCard(
                 text = "Customers",
                 subText = "Pelanggan",
                 count = uiState.customerCount,
-                onClick = { onNavigate(AppNavigation.Customers.route) } //
+                onClick = { onNavigate(AppNavigation.Customers.route) }
             )
         }
 
         // Kartu untuk Services
-        Box(modifier = Modifier.clickable { onNavigate(AppNavigation.Services.route) }) {
+        item {
             TableDataCard(
                 text = "Services",
                 subText = "Layanan",
                 count = uiState.serviceCount,
-                onClick = { onNavigate(AppNavigation.Services.route) } //
+                onClick = { onNavigate(AppNavigation.Services.route) }
             )
         }
 
         // Kartu untuk Items
-        Box(modifier = Modifier.clickable { onNavigate(AppNavigation.Items.route) }) {
+        item {
             TableDataCard(
                 text = "Items",
                 subText = "Barang",
                 count = uiState.itemCount,
-                onClick = { onNavigate(AppNavigation.Items.route) } //
+                onClick = { onNavigate(AppNavigation.Items.route) }
             )
         }
+        // Anda bisa menambahkan item lain di sini jika perlu
     }
 }
 

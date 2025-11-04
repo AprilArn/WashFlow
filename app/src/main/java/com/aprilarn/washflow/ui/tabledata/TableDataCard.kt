@@ -2,6 +2,7 @@ package com.aprilarn.washflow.ui.tabledata
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable // <-- Tambahkan import ini
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,13 +32,16 @@ fun TableDataCard(
     text: String,
     subText: String,
     count: Int,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val borderRadius = RoundedCornerShape(24.dp)
     val borderColor = Color.White
     Box(
-        modifier = Modifier
+        modifier = modifier
             .wrapContentHeight()
+            .clip(borderRadius)
+            .clickable(onClick = onClick)
             .background(Color.White.copy(alpha = 0.25f), shape = borderRadius)
             .border(
                 width = 1.dp,

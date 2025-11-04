@@ -330,7 +330,8 @@ fun MainAppScreen(
                 NavigationBar(navController = bottomNavController)
             }
         },
-        containerColor = Color.Transparent
+        containerColor = Color.Transparent,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
         Box(
             modifier = Modifier
