@@ -31,8 +31,8 @@ import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.data.model.OrderItem
 import com.aprilarn.washflow.data.model.Orders
 import com.aprilarn.washflow.data.model.Services
-import com.aprilarn.washflow.ui.components.DragDropContainer
-import com.aprilarn.washflow.ui.components.OrderStatusColumn
+import com.aprilarn.washflow.ui.manageorder.DragDropContainer
+import com.aprilarn.washflow.ui.manageorder.OrderStatusColumn
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import java.text.SimpleDateFormat
 import java.util.Locale

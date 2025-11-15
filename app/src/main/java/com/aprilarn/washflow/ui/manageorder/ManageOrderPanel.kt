@@ -1,4 +1,4 @@
-package com.aprilarn.washflow.ui.components
+package com.aprilarn.washflow.ui.manageorder
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -56,7 +56,7 @@ internal class DragDropState<T> {
     var itemData: T? by mutableStateOf(null)
     var fingerPosition: Offset by mutableStateOf(Offset.Zero)
     val dropTargets = mutableStateListOf<DropTarget>()
-   var dragStartOffsetInItem: Offset by mutableStateOf(Offset.Zero)
+    var dragStartOffsetInItem: Offset by mutableStateOf(Offset.Zero)
     var draggedItemSize: IntSize by mutableStateOf(IntSize.Zero)
     fun stopDrag() {
         isDragging = false

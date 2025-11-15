@@ -24,7 +24,6 @@ import androidx.compose.ui.window.Dialog
 import com.aprilarn.washflow.data.model.Items
 import com.aprilarn.washflow.ui.components.ColumnConfig
 import com.aprilarn.washflow.ui.components.DataTablePanel
-import com.aprilarn.washflow.ui.components.ServiceDropdown
 import com.aprilarn.washflow.ui.theme.GrayBlue
 
 @Composable
