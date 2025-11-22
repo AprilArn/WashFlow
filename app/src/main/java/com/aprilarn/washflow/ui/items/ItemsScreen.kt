@@ -24,6 +24,7 @@ import androidx.compose.ui.window.Dialog
 import com.aprilarn.washflow.data.model.Items
 import com.aprilarn.washflow.ui.components.ColumnConfig
 import com.aprilarn.washflow.ui.components.DataTablePanel
+import com.aprilarn.washflow.ui.components.DeleteConfirmationDialog
 import com.aprilarn.washflow.ui.theme.GrayBlue
 
 @Composable
@@ -35,12 +36,11 @@ fun ItemsScreen (
     onItemSelected: (Items) -> Unit,
     onDismissDialog: () -> Unit
 ) {
-    // State untuk pencarian (search) data
-    // var searchQuery by remember { mutableStateOf("") }
-    // State untuk panel "Add New"
     var newItemService by remember { mutableStateOf("") }
     var newItemName by remember { mutableStateOf("") }
     var newItemPrice by remember { mutableStateOf(0.0) }
+
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
 
     val itemCount = uiState.items.size
     val filteredItems = uiState.items.filter {
@@ -64,80 +64,100 @@ fun ItemsScreen (
             editedService = itemToEdit.serviceId
             editedName = itemToEdit.itemName
             editedPrice = itemToEdit.itemPrice
+            showDeleteConfirmation = false
         }
 
-        Dialog(onDismissRequest = onDismissDialog) {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+        if (showDeleteConfirmation) {
+            DeleteConfirmationDialog(
+                itemName = itemToEdit.itemName,
+                onConfirm = {
+                    onDeleteItemClick(itemToEdit)
+                    showDeleteConfirmation = false
+                    onDismissDialog()
+                },
+                onDismiss = {
+                    showDeleteConfirmation = false
+                }
+            )
+        } else {
+            Dialog(onDismissRequest = onDismissDialog) {
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
                 ) {
-                    Text("Edit ${itemToEdit.itemName}", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    ServiceDropdown(
-                        services = uiState.services,
-                        selectedServiceId = editedService,
-                        onServiceSelected = { editedService = it.serviceId },
-                        label = "Service",
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = editedName,
-                        onValueChange = { editedName = it },
-                        label = { Text("Item Name") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    OutlinedTextField(
-                        value = editedPrice.toString(),
-                        onValueChange = { editedPrice = it.toDoubleOrNull() ?: 0.0 },
-                        label = { Text("Item Price") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        OutlinedButton(
-                            onClick = { onDeleteItemClick(itemToEdit) },
-                            modifier = Modifier.weight(1f).height(48.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFF44336)),
-                            border = ButtonDefaults.outlinedButtonBorder.copy(
-                                brush = SolidColor(Color(0xFFF44336))
-                            )
+                        Text("Edit ${itemToEdit.itemName}", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        ServiceDropdown(
+                            services = uiState.services,
+                            selectedServiceId = editedService,
+                            onServiceSelected = { editedService = it.serviceId },
+                            label = "Service",
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = editedName,
+                            onValueChange = { editedName = it },
+                            label = { Text("Item Name") },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        OutlinedTextField(
+                            value = editedPrice.toString(),
+                            onValueChange = { editedPrice = it.toDoubleOrNull() ?: 0.0 },
+                            label = { Text("Item Price") },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            Icon(Icons.Default.Delete, "Delete")
-                            Spacer(Modifier.width(4.dp))
-                            Text("Delete")
-                        }
-                        Button(
-                            onClick = {
-                                val updatedItem = itemToEdit.copy(
-                                    serviceId = editedService,
-                                    itemName = editedName,
-                                    itemPrice = editedPrice
+                            // Tombol Delete
+                            OutlinedButton(
+                                onClick = {
+                                    // Pemicu konfirmasi delete
+                                    showDeleteConfirmation = true
+                                },
+                                modifier = Modifier.weight(1f).height(48.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFF44336)),
+                                border = ButtonDefaults.outlinedButtonBorder.copy(
+                                    brush = SolidColor(Color(0xFFF44336))
                                 )
-                                onEditItemClick(updatedItem)
-                            },
-                            modifier = Modifier.weight(1f).height(48.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = GrayBlue)
-                        ) {
-                            Icon(Icons.Default.Check, "Done")
-                            Spacer(Modifier.width(4.dp))
-                            Text("Done")
+                            ) {
+                                Icon(Icons.Default.Delete, "Delete")
+                                Spacer(Modifier.width(4.dp))
+                                Text("Delete")
+                            }
+                            // Tombol Done
+                            Button(
+                                onClick = {
+                                    val updatedItem = itemToEdit.copy(
+                                        serviceId = editedService,
+                                        itemName = editedName,
+                                        itemPrice = editedPrice
+                                    )
+                                    onEditItemClick(updatedItem)
+                                },
+                                modifier = Modifier.weight(1f).height(48.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = GrayBlue)
+                            ) {
+                                Icon(Icons.Default.Check, "Done")
+                                Spacer(Modifier.width(4.dp))
+                                Text("Done")
+                            }
                         }
                     }
                 }

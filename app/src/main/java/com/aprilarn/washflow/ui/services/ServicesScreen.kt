@@ -14,6 +14,7 @@ import com.aprilarn.washflow.ui.components.AddNewDataInputField
 import com.aprilarn.washflow.ui.components.AddNewDataPanel
 import com.aprilarn.washflow.ui.components.ColumnConfig
 import com.aprilarn.washflow.ui.components.DataTablePanel
+import com.aprilarn.washflow.ui.components.DeleteConfirmationDialog
 import com.aprilarn.washflow.ui.components.EditDataPanel
 import com.aprilarn.washflow.ui.theme.GrayBlue
 
@@ -26,11 +27,10 @@ fun ServicesScreen(
     onServiceSelected: (Services) -> Unit,
     onDismissDialog: () -> Unit
 ) {
-    // State untuk pencarian (search) data
-    // var searchQuery by remember { mutableStateOf("") }
-    // State untuk panel "Add New"
     var newServiceName by remember { mutableStateOf("") }
     var newServiceId by remember { mutableStateOf("") }
+
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
 
     val serviceCount = uiState.services.size
     val filteredServices = uiState.services.filter {
@@ -40,33 +40,51 @@ fun ServicesScreen(
 
     // Dialog untuk Edit/Delete
     uiState.selectedService?.let { serviceToEdit ->
+        LaunchedEffect(serviceToEdit) {
+            showDeleteConfirmation = false
+        }
         var editedName by remember { mutableStateOf(serviceToEdit.serviceName) }
 
         LaunchedEffect(serviceToEdit) {
             editedName = serviceToEdit.serviceName
         }
 
-        Dialog(onDismissRequest = onDismissDialog) {
-            // ID service tidak bisa diedit karena merupakan primary key
-            val editInputFields = listOf(
-                AddNewDataInputField(
-                    value = editedName,
-                    onValueChange = { editedName = it },
-                    label = "Service Name"
-                )
-            )
-
-            EditDataPanel(
-                title = "Edit ${serviceToEdit.serviceName}",
-                inputFields = editInputFields,
-                onDoneClick = {
-                    val updatedService = serviceToEdit.copy(serviceName = editedName)
-                    onEditServiceClick(updatedService)
-                },
-                onDeleteClick = {
+        if (showDeleteConfirmation) {
+            DeleteConfirmationDialog(
+                itemName = serviceToEdit.serviceName,
+                onConfirm = {
                     onDeleteServiceClick(serviceToEdit)
+                    showDeleteConfirmation = false // Tutup dialog konfirmasi
+                    onDismissDialog() // Tutup dialog edit utama
+                },
+                onDismiss = {
+                    showDeleteConfirmation = false // Hanya tutup dialog konfirmasi, kembali ke edit
                 }
             )
+        } else {
+            // Jika false, tampilkan Dialog Edit Data seperti biasa
+            Dialog(onDismissRequest = onDismissDialog) {
+                val editInputFields = listOf(
+                    AddNewDataInputField(
+                        value = editedName,
+                        onValueChange = { editedName = it },
+                        label = "Service Name"
+                    )
+                )
+
+                EditDataPanel(
+                    title = "Edit ${serviceToEdit.serviceName}",
+                    inputFields = editInputFields,
+                    onDoneClick = {
+                        val updatedService = serviceToEdit.copy(serviceName = editedName)
+                        onEditServiceClick(updatedService)
+                    },
+                    onDeleteClick = {
+                        // --- UBAH DISINI: Jangan langsung hapus, tapi tampilkan konfirmasi ---
+                        showDeleteConfirmation = true
+                    }
+                )
+            }
         }
     }
 
