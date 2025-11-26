@@ -80,7 +80,13 @@ fun LongPressDeleteButton(
     // Animasi progress bar dari 0f ke 1f selama 2000ms (2 detik)
     val progress by animateFloatAsState(
         targetValue = if (isPressed) 1f else 0f,
-        animationSpec = tween(durationMillis = 2000, easing = LinearEasing),
+        animationSpec = if (isPressed) {
+            // Jika ditekan (MAJU ke kanan): Durasi 2 detik (lambat/beban berat)
+            tween(durationMillis = 2000, easing = LinearEasing)
+        } else {
+            // Jika dilepas/batal (MUNDUR ke kiri): Durasi 0.25 detik (cepat/snappy)
+            tween(durationMillis = 250, easing = LinearEasing)
+        },
         label = "DeleteProgress",
         finishedListener = { finalValue ->
             if (finalValue == 1f) {

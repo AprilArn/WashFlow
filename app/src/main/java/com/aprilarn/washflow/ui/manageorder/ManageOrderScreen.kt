@@ -31,6 +31,7 @@ import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.data.model.OrderItem
 import com.aprilarn.washflow.data.model.Orders
 import com.aprilarn.washflow.data.model.Services
+import com.aprilarn.washflow.ui.components.DeleteConfirmationDialog
 import com.aprilarn.washflow.ui.manageorder.DragDropContainer
 import com.aprilarn.washflow.ui.manageorder.OrderStatusColumn
 import com.aprilarn.washflow.ui.theme.GrayBlue
@@ -122,30 +123,52 @@ fun OrderDetailDialog(
         }.filterKeys { it != null } as Map<Services, List<OrderItem>>
     }
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Row(
-            modifier = Modifier
-                .width(1000.dp)
-                .height(600.dp) // Beri tinggi tetap agar tidak melebihi layar
+    // --- STATE UNTUK KONFIRMASI DELETE ---
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
+
+    // --- LOGIKA PEMILIHAN DIALOG ---
+    if (showDeleteConfirmation) {
+        // Tampilkan Dialog Konfirmasi (Tombol Tahan 2 Detik)
+        DeleteConfirmationDialog(
+            itemName = "Order milik ${order.customerName ?: "Pelanggan"}",
+            onConfirm = {
+                onDelete() // Hapus data sebenarnya
+                showDeleteConfirmation = false
+                onDismiss() // Tutup dialog detail
+            },
+            onDismiss = {
+                showDeleteConfirmation = false // Kembali ke detail order
+            }
+        )
+    } else {
+        // Tampilkan Detail Order seperti biasa
+        Dialog(
+            onDismissRequest = onDismiss,
+            properties = DialogProperties(usePlatformDefaultWidth = false)
         ) {
-            // Gunakan weight untuk membagi ruang
-            LeftDetailPanel(
-                modifier = Modifier.weight(6f),
-                order = order,
-                customer = customer,
-                services = groupedItemsByService.keys.toList(),
-                onCancel = onDismiss,
-                onDelete = onDelete
-            )
-            Spacer(Modifier.width(16.dp))
-            RightDetailPanel(
-                modifier = Modifier.weight(4f),
-                groupedItems = groupedItemsByService,
-                totalPrice = order.totalPrice
-            )
+            Row(
+                modifier = Modifier
+                    .width(1000.dp)
+                    .height(600.dp)
+            ) {
+                LeftDetailPanel(
+                    modifier = Modifier.weight(6f),
+                    order = order,
+                    customer = customer,
+                    services = groupedItemsByService.keys.toList(),
+                    onCancel = onDismiss,
+                    onDelete = {
+                        // Ubah state untuk memicu dialog konfirmasi
+                        showDeleteConfirmation = true
+                    }
+                )
+                Spacer(Modifier.width(16.dp))
+                RightDetailPanel(
+                    modifier = Modifier.weight(4f),
+                    groupedItems = groupedItemsByService,
+                    totalPrice = order.totalPrice
+                )
+            }
         }
     }
 }
