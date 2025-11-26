@@ -19,6 +19,7 @@ import com.aprilarn.washflow.ui.components.AddNewDataInputField
 import com.aprilarn.washflow.ui.components.AddNewDataPanel
 import com.aprilarn.washflow.ui.components.ColumnConfig
 import com.aprilarn.washflow.ui.components.DataTablePanel
+import com.aprilarn.washflow.ui.components.DeleteConfirmationDialog
 import com.aprilarn.washflow.ui.components.EditDataPanel
 import com.aprilarn.washflow.ui.theme.GrayBlue
 
@@ -31,11 +32,10 @@ fun CustomersScreen(
     onCustomerSelected: (Customers) -> Unit,
     onDismissDialog: () -> Unit
 ) {
-    // State untuk pencarian (search) data
-    // var searchQuery by remember { mutableStateOf("") }
-    // State untuk panel "Add New"
     var newCustomerName by remember { mutableStateOf("") }
     var newCustomerPhone by remember { mutableStateOf("") }
+
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
 
     val customerCount = uiState.customers.size
     val filteredCustomers = uiState.customers.filter {
@@ -45,6 +45,9 @@ fun CustomersScreen(
 
     // Dialog untuk Edit/Delete
     uiState.selectedCustomer?.let { customerToEdit ->
+        LaunchedEffect(customerToEdit) {
+            showDeleteConfirmation = false
+        }
         // State untuk field di dalam dialog edit
         var editedName by remember { mutableStateOf(customerToEdit.name) }
         var editedContact by remember { mutableStateOf(customerToEdit.contact ?: "") }
@@ -55,42 +58,56 @@ fun CustomersScreen(
             editedContact = customerToEdit.contact ?: ""
         }
 
-        Dialog(onDismissRequest = onDismissDialog) {
-            val editInputFields = listOf(
-                AddNewDataInputField(
-                    value = editedName,
-                    onValueChange = { editedName = it },
-                    label = "Customer Name"
-                ),
-                AddNewDataInputField(
-                    value = editedContact,
-                    onValueChange = { editedContact = it },
-                    label = "Contact"
-                )
-            )
-
-            EditDataPanel(
-                title = "Edit ${customerToEdit.name}",
-                inputFields = editInputFields,
-                onDoneClick = {
-                    val updatedCustomer = customerToEdit.copy(
-                        name = editedName,
-                        contact = editedContact
-                    )
-                    onEditCustomerClick(updatedCustomer)
-                },
-                onDeleteClick = {
+        if (showDeleteConfirmation) {
+            DeleteConfirmationDialog(
+                itemName = customerToEdit.name,
+                onConfirm = {
                     onDeleteCustomerClick(customerToEdit)
+                    showDeleteConfirmation = false
+                    onDismissDialog()
+                },
+                onDismiss = {
+                    showDeleteConfirmation = false // Kembali ke mode edit
                 }
             )
+        } else {
+            Dialog(onDismissRequest = onDismissDialog) {
+                val editInputFields = listOf(
+                    AddNewDataInputField(
+                        value = editedName,
+                        onValueChange = { editedName = it },
+                        label = "Customer Name"
+                    ),
+                    AddNewDataInputField(
+                        value = editedContact,
+                        onValueChange = { editedContact = it },
+                        label = "Contact"
+                    )
+                )
+
+                EditDataPanel(
+                    title = "Edit ${customerToEdit.name}",
+                    inputFields = editInputFields,
+                    onDoneClick = {
+                        val updatedCustomer = customerToEdit.copy(
+                            name = editedName,
+                            contact = editedContact
+                        )
+                        onEditCustomerClick(updatedCustomer)
+                    },
+                    onDeleteClick = {
+                        // Ubah state untuk memicu dialog konfirmasi
+                        showDeleteConfirmation = true
+                    }
+                )
+            }
         }
     }
 
 
     Row(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 32.dp),
+            .fillMaxSize(),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Left Panel: DataTablePanel

@@ -1,4 +1,4 @@
-package com.aprilarn.washflow.ui.components
+package com.aprilarn.washflow.ui.items
 
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*

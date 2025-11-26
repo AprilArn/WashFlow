@@ -1,4 +1,4 @@
-package com.aprilarn.washflow.ui.components
+package com.aprilarn.washflow.ui.manageorder
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -56,7 +56,7 @@ internal class DragDropState<T> {
     var itemData: T? by mutableStateOf(null)
     var fingerPosition: Offset by mutableStateOf(Offset.Zero)
     val dropTargets = mutableStateListOf<DropTarget>()
-   var dragStartOffsetInItem: Offset by mutableStateOf(Offset.Zero)
+    var dragStartOffsetInItem: Offset by mutableStateOf(Offset.Zero)
     var draggedItemSize: IntSize by mutableStateOf(IntSize.Zero)
     fun stopDrag() {
         isDragging = false
@@ -308,7 +308,8 @@ fun OrderCardContent(
             SimpleDateFormat("EEEE, dd MMMM yyyy, HH:mm", Locale.getDefault()).format(it)
         } ?: "No due date"
     }
-    val totalQuantity = order.orderItems.sumOf { it.itemQuantity ?: 0 }
+    // val totalQuantity = order.orderItems.sumOf { it.itemQuantity ?: 0 }
+    val totalItemTypes = order.orderItems.size
 
     val serviceNames = remember(order.orderItems, services) {
         order.orderItems
@@ -369,7 +370,7 @@ fun OrderCardContent(
                 )
             }
             Text(
-                text = "${totalQuantity}",
+                text = "${totalItemTypes}",
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = GrayBlue,
                     fontWeight = FontWeight.Bold,

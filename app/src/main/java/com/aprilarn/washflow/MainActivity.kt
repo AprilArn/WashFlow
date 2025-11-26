@@ -93,6 +93,8 @@ import com.aprilarn.washflow.ui.manage_order.ManageOrderScreen
 import com.aprilarn.washflow.ui.manage_order.ManageOrderViewModel
 import com.aprilarn.washflow.ui.orders.OrdersScreen
 import com.aprilarn.washflow.ui.orders.OrdersViewModel
+import com.aprilarn.washflow.ui.tabledata.TableDataScreen
+import com.aprilarn.washflow.ui.tabledata.TableDataViewModel
 import com.aprilarn.washflow.ui.theme.MainBLue
 import com.aprilarn.washflow.ui.theme.MornYellow
 import com.aprilarn.washflow.ui.theme.NoonBlue
@@ -296,18 +298,6 @@ fun MainAppScreen(
     val bottomNavController = rememberNavController()
     val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-
-    // --- BUAT MAINVIEWMODEL DI SINI ---
-    val mainViewModelFactory = object : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            @Suppress("UNCHECKED_CAST")
-            return MainViewModel(
-                WorkspaceRepository(),
-                InviteRepository()
-            ) as T
-        }
-    }
-    val mainViewModel: MainViewModel = viewModel(factory = mainViewModelFactory)
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
@@ -320,11 +310,12 @@ fun MainAppScreen(
                 // --- TERUSKAN INFORMASI OWNER KE DROPDOWN ---
                 WorkspaceOptionsDropdown(
                     expanded = mainUiState.showWorkspaceOptions,
-                    isOwner = mainUiState.isCurrentUserOwner, // <- Teruskan dari state
+                    isOwner = mainUiState.isCurrentUserOwner,
                     onDismiss = { mainViewModel.onDismissWorkspaceOptions() },
                     onRenameClicked = { mainViewModel.showRenameDialog() },
                     onAddContributorClicked = { mainViewModel.onAddNewContributorClicked() },
-                    onLeaveWorkspaceClicked = { mainViewModel.onLeaveWorkspaceClicked() }
+                    onLeaveWorkspaceClicked = { mainViewModel.onLeaveWorkspaceClicked() },
+                    onDeleteWorkspaceClicked = { mainViewModel.onDeleteWorkspaceClicked() }
                 )
             }
         },
@@ -339,7 +330,8 @@ fun MainAppScreen(
                 NavigationBar(navController = bottomNavController)
             }
         },
-        containerColor = Color.Transparent
+        containerColor = Color.Transparent,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -352,6 +344,7 @@ fun MainAppScreen(
                     )
                 )
                 .padding(innerPadding)
+                .padding(horizontal = 32.dp)
         ) {
             // NavHost internal untuk mengatur layar yang diakses dari Bottom Navigation Bar
             NavHost(navController = bottomNavController, startDestination = AppNavigation.Home.route) {
@@ -393,6 +386,28 @@ fun MainAppScreen(
                         onOrderClick = { order -> viewModel.onOrderCardClicked(order) },
                         onDismissDialog = { viewModel.onDismissOrderDetailDialog() },
                         onDeleteOrder = { orderId -> viewModel.deleteOrder(orderId) }
+                    )
+                }
+
+                composable(AppNavigation.TableData.route) {
+                    val factory = object : ViewModelProvider.Factory {
+                        @Suppress("UNCHECKED_CAST")
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            return TableDataViewModel(
+                                CustomerRepository(),
+                                ServiceRepository(),
+                                ItemRepository()
+                            ) as T
+                        }
+                    }
+                    val viewModel: TableDataViewModel = viewModel(factory = factory)
+                    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+                    TableDataScreen(
+                        uiState = uiState,
+                        onNavigate = { route ->
+                            bottomNavController.navigate(route)
+                        }
                     )
                 }
 
@@ -553,6 +568,14 @@ fun MainAppScreen(
             onConfirm = { mainViewModel.confirmLeaveWorkspace() }
         )
     }
+
+    // --- DIALOG BARU UNTUK DELETE WORKSPACE ---
+    if (mainUiState.showDeleteWorkspaceDialog) {
+        DeleteWorkspaceDialog(
+            onDismiss = { mainViewModel.onDismissDeleteWorkspaceDialog() },
+            onConfirm = { mainViewModel.confirmDeleteWorkspace() }
+        )
+    }
 }
 
 @Composable
@@ -562,7 +585,8 @@ fun WorkspaceOptionsDropdown(
     onDismiss: () -> Unit,
     onRenameClicked: () -> Unit,
     onAddContributorClicked: () -> Unit,
-    onLeaveWorkspaceClicked: () -> Unit
+    onLeaveWorkspaceClicked: () -> Unit,
+    onDeleteWorkspaceClicked: () -> Unit
 ) {
     DropdownMenu(
         expanded = expanded,
@@ -571,9 +595,8 @@ fun WorkspaceOptionsDropdown(
         DropdownMenuItem(
             text = { Text("Ubah Nama Workspace") },
             onClick = onRenameClicked,
-            enabled = isOwner
+            enabled = isOwner // Hanya aktif jika owner
         )
-        // -- New Menu Item --
         DropdownMenuItem(
             text = { Text("Add New Contributor") },
             onClick = onAddContributorClicked,
@@ -583,6 +606,25 @@ fun WorkspaceOptionsDropdown(
             text = { Text("Leave Workspace") },
             onClick = onLeaveWorkspaceClicked,
             enabled = !isOwner // Hanya aktif jika BUKAN owner
+        )
+        DropdownMenuItem(
+            text = {
+                // Tentukan warna teks berdasarkan apakah 'owner' atau bukan
+                val textColor = if (isOwner) {
+                    // Jika 'owner' (enabled), warnanya merah terang
+                    MaterialTheme.colorScheme.error
+                } else {
+                    // Jika 'member' (disabled), warnanya merah pudar (merah keabu-abuan)
+                    MaterialTheme.colorScheme.error.copy(alpha = 0.4f)
+                }
+
+                Text(
+                    text = "Delete Workspace",
+                    color = textColor
+                )
+            },
+            onClick = onDeleteWorkspaceClicked,
+            enabled = isOwner
         )
     }
 }
@@ -797,7 +839,6 @@ fun CreateInviteDialog(
     )
 }
 
-// --- COMPOSABLE BARU UNTUK DIALOG KONFIRMASI ---
 @Composable
 fun LeaveWorkspaceDialog(
     onDismiss: () -> Unit,
@@ -815,6 +856,55 @@ fun LeaveWorkspaceDialog(
                 )
             ) {
                 Text("Leave")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+fun DeleteWorkspaceDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    var confirmText by remember { mutableStateOf("") }
+    // Tombol delete hanya aktif jika teks = "delete"
+    val isDeleteButtonEnabled = confirmText == "delete"
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Are you sure want to delete current workspace?") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(
+                    "This action will kick/delete all contributors in this workspace and than delete this workspace.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                // Field untuk konfirmasi
+                OutlinedTextField(
+                    value = confirmText,
+                    onValueChange = { confirmText = it },
+                    label = { Text("Type 'delete' to confirm") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                // Tombol hanya aktif jika teks diisi dengan benar
+                enabled = isDeleteButtonEnabled,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    disabledContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.3f)
+                )
+            ) {
+                Text("Delete")
             }
         },
         dismissButton = {

@@ -20,10 +20,80 @@ class WorkspaceRepository {
     private val workspacesCollection = db.collection("workspaces")
     // private val invitesCollection = db.collection("invites")
 
+//    /**
+//     * FUNGSI YANG DIPERBARUI:
+//     * Mendengarkan dokumen pengguna, lalu mendengarkan dokumen workspace.
+//     * JIKA workspace tidak ada (dihapus/dikeluarkan),
+//     * fungsi ini akan otomatis mengatur workspaceId pengguna ke null.
+//     */
+//    suspend fun getCurrentWorkspaceRealtime(): Flow<Workspaces?> {
+//        return callbackFlow {
+//            val user = Firebase.auth.currentUser
+//            if (user == null) {
+//                trySend(null)
+//                close()
+//                return@callbackFlow
+//            }
+//
+//            // Simpan referensi ke listener workspace agar bisa dihapus
+//            var workspaceListener: ListenerRegistration? = null
+//            val userDocRef = usersCollection.document(user.uid)
+//
+//            // 1. UTAMA: Dengarkan dokumen pengguna
+//            val userListener = userDocRef.addSnapshotListener { userSnapshot, userError ->
+//                if (userError != null) {
+//                    close(userError) // Error serius, tutup flow
+//                    return@addSnapshotListener
+//                }
+//
+//                // Hapus listener workspace yang lama setiap kali data pengguna berubah
+//                workspaceListener?.remove()
+//
+//                val workspaceId = userSnapshot?.getString("workspaceId")
+//
+//                if (workspaceId.isNullOrEmpty()) {
+//                    // Pengguna tidak punya workspace (atau baru saja keluar)
+//                    trySend(null)
+//                } else {
+//                    // Pengguna punya workspace, buat listener baru ke sana
+//                    val workspaceDocRef = workspacesCollection.document(workspaceId)
+//                    workspaceListener = workspaceDocRef.addSnapshotListener { workspaceSnapshot, workspaceError ->
+//
+//                        if (workspaceError != null) {
+//                            // INI ADALAH ERROR PERMISSION_DENIED (misal: dikeluarkan)
+//                            // Setel workspaceId pengguna ke null
+//                            userDocRef.update("workspaceId", null) // <-- PERBAIKAN DI SINI
+//
+//                            trySend(null)
+//                            return@addSnapshotListener
+//                        }
+//
+//                        if (workspaceSnapshot != null && workspaceSnapshot.exists()) {
+//                            // Workspace valid, kirim datanya
+//                            trySend(workspaceSnapshot.toObject(Workspaces::class.java))
+//                        } else {
+//                            // Workspace tidak ada (dihapus oleh owner)
+//                            // Setel workspaceId pengguna ke null
+//                            userDocRef.update("workspaceId", null) // <-- PERBAIKAN DI SINI
+//
+//                            trySend(null)
+//                        }
+//                    }
+//                }
+//            }
+//
+//            // Saat flow ditutup, hapus kedua listener
+//            awaitClose {
+//                userListener.remove()
+//                workspaceListener?.remove()
+//            }
+//        }
+//    }
+
     /**
-     * FUNGSI YANG DIPERBARUI:
-     * Mendengarkan dokumen pengguna, lalu mendengarkan dokumen workspace
-     * berdasarkan workspaceId yang didapat.
+     * --- FUNGSI YANG DIPERBARUI (DISEDERHANAKAN) ---
+     * Hanya membaca dan melaporkan data workspace.
+     * Tidak lagi melakukan cleanup (update workspaceId).
      */
     suspend fun getCurrentWorkspaceRealtime(): Flow<Workspaces?> {
         return callbackFlow {
@@ -34,44 +104,32 @@ class WorkspaceRepository {
                 return@callbackFlow
             }
 
-            // Simpan referensi ke listener workspace agar bisa dihapus
             var workspaceListener: ListenerRegistration? = null
             val userDocRef = usersCollection.document(user.uid)
 
-            // 1. UTAMA: Dengarkan dokumen pengguna
+            // 1. Dengarkan dokumen pengguna
             val userListener = userDocRef.addSnapshotListener { userSnapshot, userError ->
                 if (userError != null) {
-                    close(userError) // Error serius, tutup flow
+                    trySend(null)
                     return@addSnapshotListener
                 }
 
-                // Hapus listener workspace yang lama setiap kali data pengguna berubah
-                workspaceListener?.remove()
-
+                workspaceListener?.remove() // Hapus listener lama
                 val workspaceId = userSnapshot?.getString("workspaceId")
 
                 if (workspaceId.isNullOrEmpty()) {
-                    // Pengguna tidak punya workspace (atau baru saja keluar)
-                    trySend(null)
+                    trySend(null) // Tidak punya workspace
                 } else {
-                    // Pengguna punya workspace, buat listener baru ke sana
-                    val workspaceDocRef = workspacesCollection.document(workspaceId)
-                    workspaceListener = workspaceDocRef.addSnapshotListener { workspaceSnapshot, workspaceError ->
-
-                        if (workspaceError != null) {
-                            // INI ADALAH ERROR PERMISSION_DENIED YANG DIHARAPKAN
-                            // Jangan 'close(error)', cukup kirim null
-                            // karena listener pengguna masih valid.
-                            trySend(null)
-                            return@addSnapshotListener
+                    // 2. Dengarkan dokumen workspace
+                    workspaceListener = workspacesCollection.document(workspaceId)
+                        .addSnapshotListener { workspaceSnapshot, workspaceError ->
+                            if (workspaceError != null || workspaceSnapshot == null || !workspaceSnapshot.exists()) {
+                                trySend(null) // Workspace tidak valid atau error
+                            } else {
+                                // Sukses, kirim data workspace
+                                trySend(workspaceSnapshot.toObject(Workspaces::class.java))
+                            }
                         }
-
-                        if (workspaceSnapshot != null && workspaceSnapshot.exists()) {
-                            trySend(workspaceSnapshot.toObject(Workspaces::class.java))
-                        } else {
-                            trySend(null)
-                        }
-                    }
                 }
             }
 
@@ -155,6 +213,49 @@ class WorkspaceRepository {
         } catch (e: Exception) {
             e.printStackTrace()
             false
+        }
+    }
+
+    /**
+     * Menghapus workspace saat ini dan membersihkan workspaceId
+     * HANYA UNTUK OWNER.
+     * Kontributor lain akan dibersihkan saat mereka login berikutnya.
+     * @return Boolean true jika sukses.
+     */
+    suspend fun deleteCurrentWorkspace(): Boolean {
+        val user = Firebase.auth.currentUser ?: return false
+        val userDocRef = usersCollection.document(user.uid)
+
+        try {
+            // 1. Dapatkan workspaceId dari dokumen owner
+            val workspaceId = userDocRef.get().await().getString("workspaceId")
+            if (workspaceId.isNullOrEmpty()) return false // Tidak ada workspace untuk dihapus
+
+            val workspaceDocRef = workspacesCollection.document(workspaceId)
+
+            // 2. (Opsional tapi aman) Verifikasi owner
+            val workspaceSnapshot = workspaceDocRef.get().await()
+            if (!workspaceSnapshot.exists()) return true // Workspace sudah tidak ada
+
+            val workspace = workspaceSnapshot.toObject(Workspaces::class.java)
+            if (workspace?.ownerUid != user.uid) {
+                throw Exception("Hanya owner yang bisa menghapus workspace.")
+            }
+
+            // 3. Jalankan transaksi HANYA untuk owner
+            db.runTransaction { transaction ->
+                // A. Hapus dokumen workspace
+                transaction.delete(workspaceDocRef)
+
+                // B. Set workspaceId owner ke null
+                transaction.update(userDocRef, "workspaceId", null)
+            }.await()
+
+            return true
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return false
         }
     }
 }

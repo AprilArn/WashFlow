@@ -27,8 +27,7 @@ fun OrdersScreen(
 
     Row(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 32.dp),
+            .fillMaxSize(),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // --- PANEL KIRI ---
