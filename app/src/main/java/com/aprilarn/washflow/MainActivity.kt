@@ -304,6 +304,7 @@ fun MainAppScreen(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             Header(
+                modifier = Modifier.padding(bottom = 36.dp),
                 workspaceName = mainUiState.workspaceName,
                 onWorkspaceClick = { mainViewModel.onWorkspaceNameClicked() }
             ) {
@@ -323,8 +324,8 @@ fun MainAppScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 12.dp)
-                    .padding(top = 16.dp),
+                    .padding(bottom = 26.dp)
+                    .padding(top = 36.dp),
                 contentAlignment = Alignment.Center
             ) {
                 NavigationBar(navController = bottomNavController)
