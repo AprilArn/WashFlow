@@ -4,11 +4,11 @@ package com.aprilarn.washflow.data.model
 import com.google.firebase.Timestamp
 
 data class Users (
-    val uid: String,
+    val uid: String = "",
     val displayName: String? = null,
     val email: String? = null,
     val photoUrl: String? = null,
-    var workspaceId: String?  // workspace aktif saat ini
+    var workspaceId: String? = null  // workspace aktif saat ini
 )
 
 data class Workspaces (
