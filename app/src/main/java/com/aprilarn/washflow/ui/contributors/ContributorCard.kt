@@ -14,8 +14,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -32,59 +34,85 @@ fun ContributorCard(
 
     val isOwner = role == "owner"
     // Warna teks role: Kuning untuk Owner, Biru untuk Member
-    val roleColor = if (isOwner) MornYellow else Color(0xFF8EC5FC)
+    val roleColor = if (isOwner) Color(0xFFFFCE74) else Color(0xFF77A4FF)
 
     Row(
         modifier = Modifier
-            .fillMaxWidth()
+            .wrapContentHeight()
+            .wrapContentWidth()
             .clip(borderRadius)
-            .background(Color.White)
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Foto Profil
-        Box(
+            .background(roleColor)
+            .padding(end = 8.dp),
+    ){
+        Row(
             modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color.LightGray.copy(alpha = 0.5f)),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .height(72.dp)
+                .clip(borderRadius)
+                .background(Color.White)
+                .padding(start = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            if (photoUrl != null) {
-                AsyncImage(
-                    model = photoUrl,
-                    contentDescription = "Profile Photo",
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Default.Image,
-                    contentDescription = "No Photo",
-                    tint = Color.Gray
-                )
+            // Foto Profil
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.LightGray.copy(alpha = 0.5f)),
+                contentAlignment = Alignment.Center
+            ) {
+                if (photoUrl != null) {
+                    AsyncImage(
+                        model = photoUrl,
+                        contentDescription = "Profile Photo",
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Image,
+                        contentDescription = "No Photo",
+                        tint = Color.Gray
+                    )
+                }
             }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // Nama
+            Text(
+                text = name,
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = GrayBlue
+                ),
+                modifier = Modifier.weight(1f)
+            )
+
+            // Role (Owner/Member)
+            Text(
+                modifier = Modifier.padding(end = 24.dp),
+                text = role.replaceFirstChar { it.uppercase() }, // Capitalize
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = roleColor
+                )
+            )
         }
+    }
+    }
 
-        Spacer(modifier = Modifier.width(16.dp))
 
-        // Nama
-        Text(
-            text = name,
-            style = MaterialTheme.typography.bodyLarge.copy(
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium,
-                color = GrayBlue
-            ),
-            modifier = Modifier.weight(1f)
-        )
-
-        // Role (Owner/Member)
-        Text(
-            text = role.replaceFirstChar { it.uppercase() }, // Capitalize
-            style = MaterialTheme.typography.bodyMedium.copy(
-                fontWeight = FontWeight.Bold,
-                color = roleColor
+@Preview()
+@Composable
+fun ContributorCardPreview() {
+    Box(
+        modifier = Modifier.background(
+            Brush.linearGradient(
+                colors = listOf(Color(0xFFB9E9FF), Color(0xFFFFD6BF))
             )
         )
+    ) {
+        ContributorCard("Rakun D0ng0", null, "owner")
     }
 }

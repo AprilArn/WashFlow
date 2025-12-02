@@ -67,7 +67,7 @@ fun TableDataScreen(
 
 @Preview(showBackground = true, widthDp = 960, heightDp = 500)
 @Composable
-fun PreviewTableDataScreen() {
+fun TableDataScreenPreview() {
     Box(
         modifier = Modifier.background(
             Brush.linearGradient(
