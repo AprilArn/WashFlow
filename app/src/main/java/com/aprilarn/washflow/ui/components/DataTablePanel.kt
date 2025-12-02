@@ -88,7 +88,8 @@ fun <T> DataTablePanel(
                 Text(
                     text = "$title: $itemCount",
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = GrayBlue
                 )
             }
         }

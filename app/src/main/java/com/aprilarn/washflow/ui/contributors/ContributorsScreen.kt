@@ -43,7 +43,7 @@ fun ContributorsScreen(
                 onValueChange = onSearchQueryChange,
                 placeholder = {
                     Text(
-                        "Search by Name/Contact",
+                        "Search by Name",
                         style = MaterialTheme.typography.bodyMedium.copy(color = Color.Gray, fontSize = 14.sp)
                     )
                 },
