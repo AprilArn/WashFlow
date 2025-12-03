@@ -48,6 +48,7 @@ class ContributorsViewModel(
                                     ContributorUiModel(
                                         uid = uid,
                                         name = user.displayName ?: "Unknown",
+                                        email = user.email ?: "-",
                                         photoUrl = user.photoUrl,
                                         role = role
                                     )
@@ -78,6 +79,30 @@ class ContributorsViewModel(
                 } else {
                     _uiState.update { it.copy(isLoading = false, errorMessage = "Workspace not found") }
                 }
+            }
+        }
+    }
+
+    fun onContributorClicked(contributor: ContributorUiModel) {
+        val currentUid = Firebase.auth.currentUser?.uid
+        // Logika: Hanya Owner yang boleh klik, DAN tidak boleh klik diri sendiri
+        if (_uiState.value.isCurrentUserOwner && contributor.uid != currentUid) {
+            _uiState.update { it.copy(selectedContributor = contributor) }
+        }
+    }
+
+    fun onDismissDetailDialog() {
+        _uiState.update { it.copy(selectedContributor = null) }
+    }
+
+    fun kickContributor(contributor: ContributorUiModel) {
+        viewModelScope.launch {
+            val success = workspaceRepository.removeContributor(contributor.uid)
+            if (success) {
+                // Tutup dialog. List akan otomatis update karena realtime listener di loadContributors
+                _uiState.update { it.copy(selectedContributor = null) }
+            } else {
+                _uiState.update { it.copy(errorMessage = "Failed to kick user.") }
             }
         }
     }

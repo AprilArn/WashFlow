@@ -381,7 +381,10 @@ fun MainAppScreen(
                         onSearchQueryChange = { viewModel.onSearchQueryChanged(it) },
                         // Aksi tombol "+ Add" di dalam layar Contributors
                         // Ini akan memicu dialog "Create Invite" yang sudah ada di MainViewModel
-                        onAddClick = { mainViewModel.onAddNewContributorClicked() }
+                        onAddClick = { mainViewModel.onAddNewContributorClicked() },
+                        onContributorClick = { contributor -> viewModel.onContributorClicked(contributor) },
+                        onDismissDialog = { viewModel.onDismissDetailDialog() },
+                        onKickUser = { contributor -> viewModel.kickContributor(contributor) }
                     )
                 }
 
@@ -629,7 +632,7 @@ fun WorkspaceOptionsDropdown(
         DropdownMenuItem(
             text = { Text("Contributors") },
             onClick = onContributorsClicked,
-            enabled = isOwner // Only owner can add contributors
+            //enabled = isOwner // Only owner can add contributors
         )
         DropdownMenuItem(
             text = { Text("Leave Workspace") },

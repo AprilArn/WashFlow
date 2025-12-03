@@ -1,6 +1,7 @@
 // com/aprilarn/washflow/ui/contributors/ContributorsScreen.kt
 package com.aprilarn.washflow.ui.contributors
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -12,18 +13,23 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aprilarn.washflow.ui.theme.GrayBlue
 
+val borderRadius = RoundedCornerShape(24.dp)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ContributorsScreen(
     uiState: ContributorsUiState,
     onSearchQueryChange: (String) -> Unit,
-    onAddClick: () -> Unit
+    onAddClick: () -> Unit,
+    onContributorClick: (ContributorUiModel) -> Unit,
+    onDismissDialog: () -> Unit,
+    onKickUser: (ContributorUiModel) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -118,13 +124,33 @@ fun ContributorsScreen(
                 contentPadding = PaddingValues(bottom = 16.dp)
             ) {
                 items(uiState.filteredContributors) { contributor ->
-                    ContributorCard(
-                        name = contributor.name,
-                        photoUrl = contributor.photoUrl,
-                        role = contributor.role
-                    )
+                    // Bungkus ContributorCard dengan Box untuk menangani klik
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(borderRadius) // Samakan radius dengan Card
+                            .clickable {
+                                // Event klik dikirim ke ViewModel
+                                onContributorClick(contributor)
+                            }
+                    ) {
+                        ContributorCard(
+                            name = contributor.name,
+                            photoUrl = contributor.photoUrl,
+                            role = contributor.role
+                        )
+                    }
                 }
             }
         }
+    }
+
+    // --- TAMPILKAN DIALOG JIKA ADA USER TERPILIH ---
+    if (uiState.selectedContributor != null) {
+        ContributorDetailDialog(
+            contributor = uiState.selectedContributor!!,
+            onDismiss = onDismissDialog,
+            onKick = { onKickUser(uiState.selectedContributor!!) }
+        )
     }
 }
