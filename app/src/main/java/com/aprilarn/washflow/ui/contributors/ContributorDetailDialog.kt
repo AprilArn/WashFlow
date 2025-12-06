@@ -26,6 +26,7 @@ import com.aprilarn.washflow.ui.theme.GrayBlue
 @Composable
 fun ContributorDetailDialog(
     contributor: ContributorUiModel,
+    showKickButton: Boolean,
     onDismiss: () -> Unit,
     onKick: () -> Unit
 ) {
@@ -102,11 +103,12 @@ fun ContributorDetailDialog(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                LongPressKickButton(
-                    onKickConfirmed = onKick
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
+                if (showKickButton) {
+                    LongPressKickButton(
+                        onKickConfirmed = onKick
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
 
                 // Tombol Cancel
                 TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {

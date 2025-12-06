@@ -16,5 +16,6 @@ data class ContributorsUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val isCurrentUserOwner: Boolean = false,
-    val selectedContributor: ContributorUiModel? = null
+    val selectedContributor: ContributorUiModel? = null,
+    val currentUserUid: String = ""
 )

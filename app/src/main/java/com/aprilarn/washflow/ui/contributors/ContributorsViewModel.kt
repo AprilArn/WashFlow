@@ -65,7 +65,7 @@ class ContributorsViewModel(
                             .thenBy { it.name }
                     )
 
-                    val currentUserUid = Firebase.auth.currentUser?.uid
+                    val currentUserUid = Firebase.auth.currentUser?.uid ?: ""
                     val isOwner = contributorMap[currentUserUid] == "owner"
 
                     _uiState.update {
@@ -73,7 +73,8 @@ class ContributorsViewModel(
                             contributors = sortedList,
                             filteredContributors = filterList(sortedList, it.searchQuery),
                             isLoading = false,
-                            isCurrentUserOwner = isOwner
+                            isCurrentUserOwner = isOwner,
+                            currentUserUid = currentUserUid
                         )
                     }
                 } else {
@@ -84,11 +85,7 @@ class ContributorsViewModel(
     }
 
     fun onContributorClicked(contributor: ContributorUiModel) {
-        val currentUid = Firebase.auth.currentUser?.uid
-        // Logika: Hanya Owner yang boleh klik, DAN tidak boleh klik diri sendiri
-        if (_uiState.value.isCurrentUserOwner && contributor.uid != currentUid) {
-            _uiState.update { it.copy(selectedContributor = contributor) }
-        }
+        _uiState.update { it.copy(selectedContributor = contributor) }
     }
 
     fun onDismissDetailDialog() {

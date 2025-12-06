@@ -147,8 +147,14 @@ fun ContributorsScreen(
 
     // --- TAMPILKAN DIALOG JIKA ADA USER TERPILIH ---
     if (uiState.selectedContributor != null) {
+        // Tentukan apakah tombol kick harus muncul
+        val shouldShowKickButton =
+            uiState.isCurrentUserOwner && // User saat ini harus Owner
+                    uiState.selectedContributor.uid != uiState.currentUserUid // Dan yang dipilih BUKAN diri sendiri
+
         ContributorDetailDialog(
             contributor = uiState.selectedContributor!!,
+            showKickButton = shouldShowKickButton, // <-- PASSING LOGIKA KE DIALOG
             onDismiss = onDismissDialog,
             onKick = { onKickUser(uiState.selectedContributor!!) }
         )
