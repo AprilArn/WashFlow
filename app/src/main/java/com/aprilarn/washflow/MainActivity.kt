@@ -78,6 +78,8 @@ import com.aprilarn.washflow.ui.MainNavigationEvent
 import com.aprilarn.washflow.ui.MainViewModel
 import com.aprilarn.washflow.ui.components.Header
 import com.aprilarn.washflow.ui.components.NavigationBar
+import com.aprilarn.washflow.ui.contributors.ContributorsScreen
+import com.aprilarn.washflow.ui.contributors.ContributorsViewModel
 import com.aprilarn.washflow.ui.customers.CustomersScreen
 import com.aprilarn.washflow.ui.customers.CustomersViewModel
 import com.aprilarn.washflow.ui.services.ServicesScreen
@@ -267,7 +269,8 @@ class MainActivity : ComponentActivity() {
                             }
 
                             // --- PASS VIEWMODEL KE MAINAPPSCREEN ---
-                            MainAppScreen(mainViewModel)
+                            // MainAppScreen(mainViewModel)
+                            MainAppScreen( mainViewModel = mainViewModel )
                         }
                     }
                 }
@@ -304,6 +307,7 @@ fun MainAppScreen(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             Header(
+                modifier = Modifier.padding(bottom = 36.dp),
                 workspaceName = mainUiState.workspaceName,
                 onWorkspaceClick = { mainViewModel.onWorkspaceNameClicked() }
             ) {
@@ -313,6 +317,10 @@ fun MainAppScreen(
                     isOwner = mainUiState.isCurrentUserOwner,
                     onDismiss = { mainViewModel.onDismissWorkspaceOptions() },
                     onRenameClicked = { mainViewModel.showRenameDialog() },
+                    onContributorsClicked = {
+                        mainViewModel.onDismissWorkspaceOptions()
+                        bottomNavController.navigate(AppNavigation.Contributors.route)
+                    },
                     onAddContributorClicked = { mainViewModel.onAddNewContributorClicked() },
                     onLeaveWorkspaceClicked = { mainViewModel.onLeaveWorkspaceClicked() },
                     onDeleteWorkspaceClicked = { mainViewModel.onDeleteWorkspaceClicked() }
@@ -323,8 +331,8 @@ fun MainAppScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 12.dp)
-                    .padding(top = 16.dp),
+                    .padding(bottom = 26.dp)
+                    .padding(top = 36.dp),
                 contentAlignment = Alignment.Center
             ) {
                 NavigationBar(navController = bottomNavController)
@@ -354,6 +362,29 @@ fun MainAppScreen(
                         onNavigateToManageOrder = {
                             bottomNavController.navigate(AppNavigation.ManageOrder.route)
                         }
+                    )
+                }
+
+                composable(AppNavigation.Contributors.route) {
+                    val factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            return ContributorsViewModel(
+                                WorkspaceRepository()
+                            ) as T
+                        }
+                    }
+                    val viewModel: ContributorsViewModel = viewModel(factory = factory)
+                    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+                    ContributorsScreen(
+                        uiState = uiState,
+                        onSearchQueryChange = { viewModel.onSearchQueryChanged(it) },
+                        // Aksi tombol "+ Add" di dalam layar Contributors
+                        // Ini akan memicu dialog "Create Invite" yang sudah ada di MainViewModel
+                        onAddClick = { mainViewModel.onAddNewContributorClicked() },
+                        onContributorClick = { contributor -> viewModel.onContributorClicked(contributor) },
+                        onDismissDialog = { viewModel.onDismissDetailDialog() },
+                        onKickUser = { contributor -> viewModel.kickContributor(contributor) }
                     )
                 }
 
@@ -584,6 +615,7 @@ fun WorkspaceOptionsDropdown(
     isOwner: Boolean,
     onDismiss: () -> Unit,
     onRenameClicked: () -> Unit,
+    onContributorsClicked: () -> Unit,
     onAddContributorClicked: () -> Unit,
     onLeaveWorkspaceClicked: () -> Unit,
     onDeleteWorkspaceClicked: () -> Unit
@@ -598,9 +630,9 @@ fun WorkspaceOptionsDropdown(
             enabled = isOwner // Hanya aktif jika owner
         )
         DropdownMenuItem(
-            text = { Text("Add New Contributor") },
-            onClick = onAddContributorClicked,
-            enabled = isOwner // Only owner can add contributors
+            text = { Text("Contributors") },
+            onClick = onContributorsClicked,
+            //enabled = isOwner // Only owner can add contributors
         )
         DropdownMenuItem(
             text = { Text("Leave Workspace") },

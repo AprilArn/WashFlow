@@ -18,77 +18,6 @@ class WorkspaceRepository {
     private val db = Firebase.firestore
     private val usersCollection = db.collection("users")
     private val workspacesCollection = db.collection("workspaces")
-    // private val invitesCollection = db.collection("invites")
-
-//    /**
-//     * FUNGSI YANG DIPERBARUI:
-//     * Mendengarkan dokumen pengguna, lalu mendengarkan dokumen workspace.
-//     * JIKA workspace tidak ada (dihapus/dikeluarkan),
-//     * fungsi ini akan otomatis mengatur workspaceId pengguna ke null.
-//     */
-//    suspend fun getCurrentWorkspaceRealtime(): Flow<Workspaces?> {
-//        return callbackFlow {
-//            val user = Firebase.auth.currentUser
-//            if (user == null) {
-//                trySend(null)
-//                close()
-//                return@callbackFlow
-//            }
-//
-//            // Simpan referensi ke listener workspace agar bisa dihapus
-//            var workspaceListener: ListenerRegistration? = null
-//            val userDocRef = usersCollection.document(user.uid)
-//
-//            // 1. UTAMA: Dengarkan dokumen pengguna
-//            val userListener = userDocRef.addSnapshotListener { userSnapshot, userError ->
-//                if (userError != null) {
-//                    close(userError) // Error serius, tutup flow
-//                    return@addSnapshotListener
-//                }
-//
-//                // Hapus listener workspace yang lama setiap kali data pengguna berubah
-//                workspaceListener?.remove()
-//
-//                val workspaceId = userSnapshot?.getString("workspaceId")
-//
-//                if (workspaceId.isNullOrEmpty()) {
-//                    // Pengguna tidak punya workspace (atau baru saja keluar)
-//                    trySend(null)
-//                } else {
-//                    // Pengguna punya workspace, buat listener baru ke sana
-//                    val workspaceDocRef = workspacesCollection.document(workspaceId)
-//                    workspaceListener = workspaceDocRef.addSnapshotListener { workspaceSnapshot, workspaceError ->
-//
-//                        if (workspaceError != null) {
-//                            // INI ADALAH ERROR PERMISSION_DENIED (misal: dikeluarkan)
-//                            // Setel workspaceId pengguna ke null
-//                            userDocRef.update("workspaceId", null) // <-- PERBAIKAN DI SINI
-//
-//                            trySend(null)
-//                            return@addSnapshotListener
-//                        }
-//
-//                        if (workspaceSnapshot != null && workspaceSnapshot.exists()) {
-//                            // Workspace valid, kirim datanya
-//                            trySend(workspaceSnapshot.toObject(Workspaces::class.java))
-//                        } else {
-//                            // Workspace tidak ada (dihapus oleh owner)
-//                            // Setel workspaceId pengguna ke null
-//                            userDocRef.update("workspaceId", null) // <-- PERBAIKAN DI SINI
-//
-//                            trySend(null)
-//                        }
-//                    }
-//                }
-//            }
-//
-//            // Saat flow ditutup, hapus kedua listener
-//            awaitClose {
-//                userListener.remove()
-//                workspaceListener?.remove()
-//            }
-//        }
-//    }
 
     /**
      * --- FUNGSI YANG DIPERBARUI (DISEDERHANAKAN) ---
@@ -256,6 +185,35 @@ class WorkspaceRepository {
         } catch (e: Exception) {
             e.printStackTrace()
             return false
+        }
+    }
+
+    /**
+     * Mengeluarkan kontributor dari workspace.
+     * 1. Hapus entri UID dari map 'contributors' di dokumen Workspace.
+     * 2. Set 'workspaceId' menjadi null di dokumen User yang bersangkutan.
+     */
+    suspend fun removeContributor(contributorUid: String): Boolean {
+        // Ambil ID workspace dari user yang sedang login (Owner)
+        val currentUser = Firebase.auth.currentUser ?: return false
+        val userDoc = usersCollection.document(currentUser.uid).get().await()
+        val workspaceId = userDoc.getString("workspaceId") ?: return false
+
+        val workspaceRef = workspacesCollection.document(workspaceId)
+        val targetUserRef = usersCollection.document(contributorUid)
+
+        return try {
+            db.runBatch { batch ->
+                // 1. Hapus dari map contributors di Workspace (Syntax: contributors.UID)
+                batch.update(workspaceRef, "contributors.$contributorUid", FieldValue.delete())
+
+                // 2. Hapus workspaceId dari User yang di-kick
+                batch.update(targetUserRef, "workspaceId", null)
+            }.await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
         }
     }
 }
