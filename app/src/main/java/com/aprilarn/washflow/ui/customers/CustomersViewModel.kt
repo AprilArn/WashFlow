@@ -35,10 +35,13 @@ class CustomersViewModel : ViewModel() {
                     }
                 }
                 .collect { customers ->
+                    // --- URUTKAN BERDASARKAN NAMA (A-Z) ---
+                    val sortedCustomers = customers.sortedBy { it.name.lowercase() }
+
                     // Setiap kali data baru datang dari flow, perbarui UI state
                     _uiState.update {
                         it.copy(
-                            customers = customers,
+                            customers = sortedCustomers,
                             isLoading = false
                         )
                     }
