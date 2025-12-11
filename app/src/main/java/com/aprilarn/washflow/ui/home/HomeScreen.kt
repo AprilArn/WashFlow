@@ -103,7 +103,13 @@ fun HomeScreen(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 18.dp)
                 )
-                Spacer(modifier = Modifier)
+
+                Spacer(modifier = Modifier.height(16.dp)) // Jarak dari rekomendasi
+
+                // Tampilkan Forecast Horizontal di sini
+                HorizontalWeatherForecast(
+                    forecasts = state.hourlyForecasts
+                )
 
                 Spacer(modifier = Modifier.weight(1f))
 
