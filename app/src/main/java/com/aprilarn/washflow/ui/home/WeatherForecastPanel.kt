@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -129,8 +131,8 @@ fun HorizontalWeatherForecast(
     // Container transparan agar rapi
     Box(
         modifier = modifier
-            .fillMaxWidth()
-            .height(110.dp) // Tinggi area forecast
+            .wrapContentWidth()
+            .wrapContentHeight() // Tinggi area forecast
             .clip(RoundedCornerShape(16.dp))
             .background(Color.White.copy(alpha = 0.15f)) // Background tipis
             .padding(12.dp),
@@ -146,7 +148,7 @@ fun HorizontalWeatherForecast(
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(24.dp), // Jarak antar item
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.wrapContentWidth()
             ) {
                 items(forecasts) { forecast ->
                     HorizontalForecastItem(forecast)
