@@ -39,10 +39,10 @@ fun NavigationBar(
     Box(
         modifier = modifier
             .wrapContentWidth()
-            .height(60.dp)
+            //.height(60.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(Color.White.copy(alpha = 0.5f))
-            .padding(horizontal = 10.dp)
+            //.background(Color.White.copy(alpha = 0.5f))
+            .padding(horizontal = 6.dp, vertical = 6.dp)
     ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -59,7 +59,7 @@ fun NavigationBar(
 
             // Loop untuk membuat setiap item
             items.forEach { screen ->
-                BottomNavItem(
+                NavItem(
                     icon = screen.icon,
                     label = screen.label,
                     isSelected = currentRoute == screen.route,
@@ -78,40 +78,35 @@ fun NavigationBar(
 }
 
 @Composable
-private fun BottomNavItem(
+private fun NavItem(
     icon: ImageVector,
     label: String,
     isSelected: Boolean,
     onClick: () -> Unit // Tambahkan onClick
 ) {
-    val contentColor = if (isSelected) GrayBlue else Color.Gray
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+    val contentColor = if (isSelected) GrayBlue else Color.White.copy(alpha = 0.7f)
+    val backgroundColor = if (isSelected) Color.White else Color.Transparent
+    Box( // Gunakan Box dan padding untuk area klik yang lebih baik
+        contentAlignment = Alignment.Center,
         modifier = Modifier
-            .fillMaxHeight()
-            .clip(RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick) // Buat item bisa diklik
-            .padding(horizontal = 14.dp) // Beri sedikit padding agar area klik lebih luas
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .background(backgroundColor)
+            .padding(8.dp) // Padding internal ikon
     ) {
         Icon(
             imageVector = icon,
             contentDescription = label,
             tint = contentColor,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(24.dp) // Ukuran ikon sedikit diperkecil agar muat di header
         )
-//        Text(
-//            text = label,
-//            color = contentColor,
-//            fontSize = 12.sp
-//        )
     }
 }
 
 
 @Preview(showBackground = true, backgroundColor = 0xFFB9E9FF)
 @Composable
-fun BottomNavigationBarPreview() {
+fun NavigationBarPreview() {
     Box(modifier = Modifier.padding(16.dp)) {
         // Beri NavController palsu untuk preview
         NavigationBar(navController = rememberNavController())

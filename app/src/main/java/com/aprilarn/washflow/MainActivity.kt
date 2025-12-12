@@ -307,7 +307,8 @@ fun MainAppScreen(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             Header(
-                modifier = Modifier.padding(bottom = 36.dp),
+                modifier = Modifier.padding(bottom = 32.dp),
+                navController = bottomNavController,
                 workspaceName = mainUiState.workspaceName,
                 onWorkspaceClick = { mainViewModel.onWorkspaceNameClicked() }
             ) {
@@ -327,17 +328,17 @@ fun MainAppScreen(
                 )
             }
         },
-        bottomBar = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 26.dp)
-                    .padding(top = 36.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                NavigationBar(navController = bottomNavController)
-            }
-        },
+//        bottomBar = {
+//            Box(
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .padding(bottom = 26.dp)
+//                    .padding(top = 36.dp),
+//                contentAlignment = Alignment.Center
+//            ) {
+//                NavigationBar(navController = bottomNavController)
+//            }
+//        },
         containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
@@ -353,6 +354,8 @@ fun MainAppScreen(
                 )
                 .padding(innerPadding)
                 .padding(horizontal = 32.dp)
+                .navigationBarsPadding()
+                .padding(bottom = 32.dp)
         ) {
             // NavHost internal untuk mengatur layar yang diakses dari Bottom Navigation Bar
             NavHost(navController = bottomNavController, startDestination = AppNavigation.Home.route) {

@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -28,6 +30,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.aprilarn.washflow.ui.theme.GrayBlue
 
 /**
@@ -36,6 +40,7 @@ import com.aprilarn.washflow.ui.theme.GrayBlue
 @Composable
 fun Header(
     modifier: Modifier = Modifier,
+    navController: NavController,
     workspaceName: String,
     onWorkspaceClick: () -> Unit,
     dropdownContent: @Composable BoxScope.() -> Unit
@@ -47,7 +52,7 @@ fun Header(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Start
     ) {
-        // Kelompokkan teks dalam satu Row agar tetap bersama
+        // 1. Judul WashFlow
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = "Wash",
@@ -69,9 +74,19 @@ fun Header(
             )
         }
 
+        // Jarak antara Judul dan Navigasi
+        Spacer(modifier = Modifier.width(32.dp))
+
+        // 2. Navigation Bar
+        NavigationBar(
+            navController = navController,
+            modifier = Modifier.height(44.dp) // Tinggi yang pas untuk header
+        )
+
+        // Jarak antara Navigasi dan Workspace
         Spacer(modifier=Modifier.weight(1f)) // Spacer fleksibel untuk mendorong item ke ujung kanan
 
-        // Nama Workspace
+        // 3. Nama Workspace & Dropdown
         Box {
             Row(
                 modifier = Modifier
@@ -116,6 +131,7 @@ fun Header(
 fun HeaderPreview() {
     Header(
         workspaceName = "Example",
+        navController = rememberNavController(),
         onWorkspaceClick = {},
         dropdownContent = {}
     )
