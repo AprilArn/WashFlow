@@ -42,7 +42,7 @@ fun NavigationBar(
             //.height(60.dp)
             .clip(RoundedCornerShape(16.dp))
             //.background(Color.White.copy(alpha = 0.5f))
-            .padding(horizontal = 6.dp, vertical = 6.dp)
+            .padding(horizontal = 4.dp, vertical = 4.dp)
     ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -98,7 +98,7 @@ private fun NavItem(
             imageVector = icon,
             contentDescription = label,
             tint = contentColor,
-            modifier = Modifier.size(24.dp) // Ukuran ikon sedikit diperkecil agar muat di header
+            modifier = Modifier.size(28.dp) // Ukuran ikon sedikit diperkecil agar muat di header
         )
     }
 }
