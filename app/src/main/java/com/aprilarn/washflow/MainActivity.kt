@@ -77,6 +77,7 @@ import com.aprilarn.washflow.data.repository.WorkspaceRepository
 import com.aprilarn.washflow.ui.MainNavigationEvent
 import com.aprilarn.washflow.ui.MainViewModel
 import com.aprilarn.washflow.ui.components.Header
+import com.aprilarn.washflow.ui.components.LeaveWorkspaceDialog
 import com.aprilarn.washflow.ui.components.NavigationBar
 import com.aprilarn.washflow.ui.contributors.ContributorsScreen
 import com.aprilarn.washflow.ui.contributors.ContributorsViewModel
@@ -864,33 +865,6 @@ fun CreateInviteDialog(
                 onGenerate(maxUsers, expiryDate)
             }) {
                 Text("Generate")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
-}
-
-@Composable
-fun LeaveWorkspaceDialog(
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Leave Workspace") },
-        text = { Text("Are you sure you want to leave from this workspace?") },
-        confirmButton = {
-            Button(
-                onClick = onConfirm,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error
-                )
-            ) {
-                Text("Leave")
             }
         },
         dismissButton = {
