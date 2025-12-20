@@ -6,13 +6,22 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -111,5 +120,77 @@ fun WeatherForecastPanelEmptyPreview() {
     ) {
         // Mengirimkan list kosong untuk mensimulasikan kondisi loading
         WeatherForecastPanel(forecasts = emptyList())
+    }
+}
+
+@Composable
+fun HorizontalWeatherForecast(
+    forecasts: List<HourlyForecastUiState>,
+    modifier: Modifier = Modifier
+) {
+    // Container transparan agar rapi
+    Box(
+        modifier = modifier
+            .wrapContentWidth()
+            .wrapContentHeight() // Tinggi area forecast
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color.White.copy(alpha = 0.15f)) // Background tipis
+            .padding(12.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        if (forecasts.isEmpty()) {
+            Text(
+                text = "Loading weather forecast...",
+                style = MaterialTheme.typography.bodySmall.copy(color = Color.White)
+            )
+        } else {
+            // LazyRow untuk scroll ke samping (Horizontal)
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(24.dp), // Jarak antar item
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.wrapContentWidth()
+            ) {
+                items(forecasts) { forecast ->
+                    HorizontalForecastItem(forecast)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun HorizontalForecastItem(forecast: HourlyForecastUiState) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        // 1. Jam (Time)
+        Text(
+            text = forecast.time,
+            style = MaterialTheme.typography.bodySmall.copy(
+                color = Color.White,
+                fontWeight = FontWeight.Medium
+            )
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // 2. Ikon Cuaca
+        AsyncImage(
+            model = forecast.iconUrl,
+            contentDescription = "Icon",
+            modifier = Modifier.size(32.dp)
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // 3. Suhu
+        Text(
+            text = forecast.temperature,
+            style = MaterialTheme.typography.bodyLarge.copy(
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
+        )
     }
 }

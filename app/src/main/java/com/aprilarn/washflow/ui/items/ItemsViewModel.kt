@@ -34,10 +34,16 @@ class ItemsViewModel: ViewModel() {
 
             // Gabungkan flow items dan services
             combine(itemsFlow, servicesFlow) { items, services ->
+                // --- URUTKAN BERDASARKAN SERVICE ID, LALU ITEM NAME ---
+                val sortedItems = items.sortedWith(
+                    compareBy<Items> { it.serviceId }
+                        .thenBy { it.itemName.lowercase() }
+                )
+
                 // Buat state baru dengan kedua data
                 _uiState.update {
                     it.copy(
-                        items = items,
+                        items = sortedItems,
                         services = services,
                         isLoading = false
                     )

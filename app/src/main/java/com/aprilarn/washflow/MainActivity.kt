@@ -77,6 +77,7 @@ import com.aprilarn.washflow.data.repository.WorkspaceRepository
 import com.aprilarn.washflow.ui.MainNavigationEvent
 import com.aprilarn.washflow.ui.MainViewModel
 import com.aprilarn.washflow.ui.components.Header
+import com.aprilarn.washflow.ui.components.LeaveWorkspaceDialog
 import com.aprilarn.washflow.ui.components.NavigationBar
 import com.aprilarn.washflow.ui.contributors.ContributorsScreen
 import com.aprilarn.washflow.ui.contributors.ContributorsViewModel
@@ -307,7 +308,8 @@ fun MainAppScreen(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             Header(
-                modifier = Modifier.padding(bottom = 36.dp),
+                modifier = Modifier.padding(bottom = 30.dp),
+                navController = bottomNavController,
                 workspaceName = mainUiState.workspaceName,
                 onWorkspaceClick = { mainViewModel.onWorkspaceNameClicked() }
             ) {
@@ -327,17 +329,17 @@ fun MainAppScreen(
                 )
             }
         },
-        bottomBar = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 26.dp)
-                    .padding(top = 36.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                NavigationBar(navController = bottomNavController)
-            }
-        },
+//        bottomBar = {
+//            Box(
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .padding(bottom = 26.dp)
+//                    .padding(top = 36.dp),
+//                contentAlignment = Alignment.Center
+//            ) {
+//                NavigationBar(navController = bottomNavController)
+//            }
+//        },
         containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
@@ -353,6 +355,8 @@ fun MainAppScreen(
                 )
                 .padding(innerPadding)
                 .padding(horizontal = 32.dp)
+                .navigationBarsPadding()
+                .padding(bottom = 34.dp)
         ) {
             // NavHost internal untuk mengatur layar yang diakses dari Bottom Navigation Bar
             NavHost(navController = bottomNavController, startDestination = AppNavigation.Home.route) {
@@ -861,33 +865,6 @@ fun CreateInviteDialog(
                 onGenerate(maxUsers, expiryDate)
             }) {
                 Text("Generate")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
-}
-
-@Composable
-fun LeaveWorkspaceDialog(
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Leave Workspace") },
-        text = { Text("Are you sure you want to leave from this workspace?") },
-        confirmButton = {
-            Button(
-                onClick = onConfirm,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error
-                )
-            ) {
-                Text("Leave")
             }
         },
         dismissButton = {

@@ -35,10 +35,13 @@ class ServicesViewModel : ViewModel() {
                     }
                 }
                 .collect { services ->
+                    // --- URUTKAN BERDASARKAN ID (A-Z) ---
+                    val sortedServices = services.sortedBy { it.serviceId }
+
                     // Setiap kali data baru datang dari flow, perbarui UI state
                     _uiState.update {
                         it.copy(
-                            services = services,
+                            services = sortedServices,
                             isLoading = false
                         )
                     }
