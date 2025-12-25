@@ -95,6 +95,21 @@ class WorkspaceRepository {
         }
     }
 
+    /**
+     * Mengambil HANYA ID workspace saat ini dari dokumen User.
+     */
+    suspend fun getCurrentWorkspaceId(): String? {
+        val user = Firebase.auth.currentUser ?: return null
+        return try {
+            // Kita ambil ID dari dokumen User saja, tidak perlu ke koleksi Workspaces
+            val userDoc = usersCollection.document(user.uid).get().await()
+            userDoc.getString("workspaceId")
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
     suspend fun updateWorkspaceName(newName: String): Boolean {
         val user = Firebase.auth.currentUser ?: return false
         val workspaceId = usersCollection.document(user.uid).get().await().getString("workspaceId")
