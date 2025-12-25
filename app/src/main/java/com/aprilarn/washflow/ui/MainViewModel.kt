@@ -1,6 +1,7 @@
 // com/aprilarn/washflow/ui/MainViewModel.kt
 package com.aprilarn.washflow.ui
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aprilarn.washflow.data.repository.InviteRepository
@@ -8,12 +9,16 @@ import com.aprilarn.washflow.data.repository.WorkspaceRepository
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.firestore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import java.util.Calendar
 import java.util.Date
 
 sealed class MainNavigationEvent {
@@ -123,6 +128,59 @@ class MainViewModel(
             // Logika di MainActivity akan menampilkan dialog yang benar
             // (Gambar 1 atau 2) berdasarkan _uiState yang sudah ter-update.
             _uiState.update { it.copy(showCreateInviteDialog = true, showWorkspaceOptions = false) }
+
+            // Jalankan pembersihan invite expired di background
+            viewModelScope.launch(Dispatchers.IO) {
+                cleanupExpiredInvites()
+            }
+        }
+    }
+
+    /**
+     * Menghapus invite yang expiredAt-nya sudah lewat lebih dari 7 hari. (tidak peduli apakah dokumen invite milik workspace ini atau tidak / global delete)
+     */
+    private suspend fun cleanupExpiredInvites() {
+        try {
+            val db = Firebase.firestore
+            val invitesRef = db.collection("invites")
+
+            // Hapus yang expired > 7 hari lalu
+            val calendar = Calendar.getInstance()
+            calendar.add(Calendar.DAY_OF_YEAR, -7)
+            val thresholdDate = calendar.time
+
+            Log.d("DEBUG_CLEANUP", "Mencari SEMUA invite di database yang expired sebelum: $thresholdDate")
+
+            val snapshot = invitesRef.get().await()
+
+            val batch = db.batch()
+            var countDeleted = 0
+
+            for (doc in snapshot.documents) {
+                val expiresAtTimestamp = doc.getTimestamp("expiresAt")
+
+                if (expiresAtTimestamp != null) {
+                    val expiresDate = expiresAtTimestamp.toDate()
+
+                    // Cek apakah tanggal expired document < thresholdDate
+                    if (expiresDate.before(thresholdDate)) {
+                        batch.delete(doc.reference)
+                        countDeleted++
+                        Log.d("DEBUG_CLEANUP", "Menandai hapus: ${doc.id} (Expired: $expiresDate)")
+                    }
+                }
+            }
+
+            if (countDeleted > 0) {
+                batch.commit().await()
+                Log.d("DEBUG_CLEANUP", "SUKSES GLOBAL CLEANUP: Menghapus $countDeleted invite.")
+            } else {
+                Log.d("DEBUG_CLEANUP", "INFO: Tidak ada invite expired yang ditemukan.")
+            }
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Log.e("DEBUG_CLEANUP", "ERROR: ${e.message}")
         }
     }
 
@@ -152,8 +210,8 @@ class MainViewModel(
         }
     }
 
-    // --- FUNGSI BARU UNTUK DELETE WORKSPACE ---
 
+    // Fungsi untuk Delete Workspace
     fun onDeleteWorkspaceClicked() {
         _uiState.update {
             it.copy(showWorkspaceOptions = false, showDeleteWorkspaceDialog = true)
