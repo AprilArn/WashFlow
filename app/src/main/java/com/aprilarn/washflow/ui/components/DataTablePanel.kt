@@ -54,12 +54,12 @@ fun <T> DataTablePanel(
             // Search Bar
             TextField(
                 modifier = Modifier
-                    .weight(1f)
-                    .border(
-                        width = 1.dp,
-                        color = borderColor,
-                        shape = RoundedCornerShape(42.dp)
-                    ),
+                    .weight(1f),
+//                    .border(
+//                        width = 2.dp,
+//                        color = borderColor,
+//                        shape = RoundedCornerShape(42.dp)
+//                    ),
                 value = searchQuery,
                 onValueChange = onSearchQueryChange,
                 placeholder = { Text(searchPlaceholder) },
@@ -100,7 +100,7 @@ fun <T> DataTablePanel(
             modifier = Modifier
                 .fillMaxSize()
                 .border(
-                    width = 1.dp,
+                    width = 2.dp,
                     color = borderColor,
                     shape = borderRadius
                 ),

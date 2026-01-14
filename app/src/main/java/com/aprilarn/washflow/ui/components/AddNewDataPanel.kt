@@ -42,7 +42,7 @@ fun AddNewDataPanel(
         modifier = modifier
             .wrapContentHeight()
             .border(
-                width = 1.dp,
+                width = 2.dp,
                 color = borderColor,
                 shape = borderRadius
             ),
