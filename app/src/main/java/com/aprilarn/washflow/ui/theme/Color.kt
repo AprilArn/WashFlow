@@ -12,6 +12,9 @@ val Gray = Color(0xFF767C81)
 val GrayBlue = Color(0xFF5E6B9F)
 val SoftRed = Color(0xFFA25A5A)
 
+val MainFontBlack = Color(0xFF323232) // Soft Black
+
+
 // Gradient colors
 // Pagi (Cerah & Lembut)
 val MainBLue = Color(0xFFB9E9FF)

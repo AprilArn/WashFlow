@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.aprilarn.washflow.ui.theme.GrayBlue
 
 
@@ -54,16 +55,21 @@ fun <T> DataTablePanel(
             // Search Bar
             TextField(
                 modifier = Modifier
-                    .weight(1f)
-                    .border(
-                        width = 1.dp,
-                        color = borderColor,
-                        shape = RoundedCornerShape(42.dp)
-                    ),
+                    .weight(1f),
+//                    .border(
+//                        width = 2.dp,
+//                        color = borderColor,
+//                        shape = RoundedCornerShape(42.dp)
+//                    ),
                 value = searchQuery,
                 onValueChange = onSearchQueryChange,
-                placeholder = { Text(searchPlaceholder) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search Icon") },
+                placeholder = {
+                    Text(
+                        searchPlaceholder,
+                        style = MaterialTheme.typography.bodyMedium.copy(color = Color.Gray, fontSize = 14.sp)
+                    )
+                },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
                 shape = RoundedCornerShape(42.dp),
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color.White,
@@ -100,7 +106,7 @@ fun <T> DataTablePanel(
             modifier = Modifier
                 .fillMaxSize()
                 .border(
-                    width = 1.dp,
+                    width = 2.dp,
                     color = borderColor,
                     shape = borderRadius
                 ),

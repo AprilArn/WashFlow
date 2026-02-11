@@ -29,7 +29,7 @@ fun TableDataScreen(
             .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        contentPadding = PaddingValues(vertical = 16.dp) // Beri padding di atas dan bawah
+        contentPadding = PaddingValues(bottom = 16.dp) // Beri padding di atas dan bawah
     ) {
         // Kartu untuk Customers
         item {

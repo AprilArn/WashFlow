@@ -49,7 +49,7 @@ fun OrderCustomerInputPanel(
             .wrapContentHeight()
             .background(Color.White.copy(alpha = 0.25f), shape = borderRadius)
             .border(
-                width = 1.dp,
+                width = 2.dp,
                 color = borderColor,
                 shape = borderRadius
             )

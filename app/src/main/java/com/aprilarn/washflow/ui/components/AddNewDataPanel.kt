@@ -18,6 +18,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aprilarn.washflow.ui.theme.GrayBlue
+import com.aprilarn.washflow.ui.theme.MainFontBlack
 
 
 data class AddNewDataInputField(
@@ -42,7 +43,7 @@ fun AddNewDataPanel(
         modifier = modifier
             .wrapContentHeight()
             .border(
-                width = 1.dp,
+                width = 2.dp,
                 color = borderColor,
                 shape = borderRadius
             ),
@@ -78,7 +79,12 @@ fun AddNewDataPanel(
                     onValueChange = field.onValueChange,
                     label = { Text(field.label) },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = MainFontBlack,
+                        unfocusedTextColor = Color.Gray,
+                        cursorColor = Color.White,
+                    )
                 )
                 Spacer(modifier = Modifier.height(4.dp))
             }

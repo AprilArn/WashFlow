@@ -325,7 +325,7 @@ fun OrderCardContent(
             .clip(borderRadius)
             .background(Color.White.copy(alpha = alpha), shape = borderRadius)
             .border(
-                width = 1.dp,
+                width = 2.dp,
                 color = borderColor,
                 shape = borderRadius
             ),
