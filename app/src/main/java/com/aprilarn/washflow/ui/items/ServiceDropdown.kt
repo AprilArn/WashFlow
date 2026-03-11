@@ -4,8 +4,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.aprilarn.washflow.data.model.Services
+import com.aprilarn.washflow.ui.theme.MainFontBlack
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,7 +38,12 @@ fun ServiceDropdown(
                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
             },
             modifier = Modifier.menuAnchor(),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = MainFontBlack,
+                unfocusedTextColor = Color.Gray,
+                cursorColor = Color.White,
+            )
         )
         ExposedDropdownMenu(
             expanded = expanded,
