@@ -30,6 +30,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.aprilarn.washflow.ui.login.UserData
+import com.aprilarn.washflow.ui.theme.MainFontBlack
 
 
 @Composable
@@ -54,7 +55,7 @@ fun SettingsScreen(
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(24.dp), // Jarak konten di dalam Card
+                    .padding(vertical = 16.dp, horizontal = 24.dp), // Jarak konten di dalam Card
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween // Memisahkan Kiri (Teks) dan Kanan (Gambar)
             ) {
@@ -65,16 +66,20 @@ fun SettingsScreen(
                 ) {
                     Text(
                         text = userData.displayName ?: "Nama Tidak Tersedia",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            color = MainFontBlack,
+                            fontWeight = FontWeight.Bold
+                        )
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
                         text = userData.email ?: "Email Tidak Tersedia",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = Color.Gray
+                        ),
+
                     )
                 }
 
@@ -86,7 +91,7 @@ fun SettingsScreen(
                         model = userData.profilePictureUrl,
                         contentDescription = "Profile picture",
                         modifier = Modifier
-                            .size(72.dp)
+                            .size(58.dp)
                             .clip(CircleShape),
                         contentScale = ContentScale.Crop
                     )

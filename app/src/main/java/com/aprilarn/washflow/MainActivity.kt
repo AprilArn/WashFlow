@@ -92,10 +92,12 @@ import com.aprilarn.washflow.ui.items.ItemsViewModel
 import com.aprilarn.washflow.ui.login.GoogleAuthUiClient
 import com.aprilarn.washflow.ui.login.LoginScreen
 import com.aprilarn.washflow.ui.login.LoginViewModel
+import com.aprilarn.washflow.ui.login.UserData
 import com.aprilarn.washflow.ui.manage_order.ManageOrderScreen
 import com.aprilarn.washflow.ui.manage_order.ManageOrderViewModel
 import com.aprilarn.washflow.ui.orders.OrdersScreen
 import com.aprilarn.washflow.ui.orders.OrdersViewModel
+import com.aprilarn.washflow.ui.settings.SettingsScreen
 import com.aprilarn.washflow.ui.tabledata.TableDataScreen
 import com.aprilarn.washflow.ui.tabledata.TableDataViewModel
 import com.aprilarn.washflow.ui.theme.MainBLue
@@ -244,7 +246,7 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable("main") {
-                            // --- MAINVIEWMODEL DIBUAT DI SINI ---
+                            // --- MAINVIEWMODEL ---
                             val mainViewModelFactory = object : ViewModelProvider.Factory {
                                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
                                     @Suppress("UNCHECKED_CAST")
@@ -255,6 +257,8 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                             val mainViewModel: MainViewModel = viewModel(factory = mainViewModelFactory)
+                            val userData = GoogleAuthUiClient.getSignedUser()
+
 
                             // --- EFEK UNTUK NAVIGASI KELUAR ---
                             LaunchedEffect(Unit) {
@@ -271,7 +275,20 @@ class MainActivity : ComponentActivity() {
 
                             // --- PASS VIEWMODEL KE MAINAPPSCREEN ---
                             // MainAppScreen(mainViewModel)
-                            MainAppScreen( mainViewModel = mainViewModel )
+                            MainAppScreen(
+                                mainViewModel = mainViewModel,
+                                userData = userData,
+                                onSignOut = {
+                                    lifecycleScope.launch {
+                                        GoogleAuthUiClient.signOut()
+                                        Toast.makeText(applicationContext, "Signed out", Toast.LENGTH_LONG).show()
+                                        // Arahkan kembali ke login dan hapus backstack
+                                        navController.navigate("login") {
+                                            popUpTo(0) { inclusive = true }
+                                        }
+                                    }
+                                }
+                            )
                         }
                     }
                 }
@@ -296,7 +313,9 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainAppScreen(
-    mainViewModel: MainViewModel
+    mainViewModel: MainViewModel,
+    userData: UserData?,
+    onSignOut: () -> Unit
 ) {
     // NavController khusus untuk navigasi di dalam Bottom Navigation Bar
     val bottomNavController = rememberNavController()
@@ -554,9 +573,16 @@ fun MainAppScreen(
                 }
 
                 composable(AppNavigation.Settings.route) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Settings Screen", color = Color.White)
-                    }
+                    SettingsScreen(
+                        // Jika userData null (seharusnya tidak), berikan data default kosong agar tidak crash
+                        userData = userData ?: UserData(
+                            userId = "",
+                            displayName = "Unknown",
+                            email = "No Email",
+                            profilePictureUrl = null
+                        ),
+                        onSignOut = onSignOut
+                    )
                 }
             }
         }
