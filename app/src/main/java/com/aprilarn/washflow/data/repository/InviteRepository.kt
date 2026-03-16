@@ -4,6 +4,7 @@ import com.aprilarn.washflow.data.model.Invites
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.channels.awaitClose
@@ -74,6 +75,10 @@ class InviteRepository {
             // 1. UTAMA: Dengarkan dokumen pengguna
             val userListener = userDocRef.addSnapshotListener { userSnapshot, userError ->
                 if (userError != null) {
+                    if (userError is FirebaseFirestoreException && userError.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+                        close() // Tutup dengan aman jika sedang logout
+                        return@addSnapshotListener
+                    }
                     close(userError)
                     return@addSnapshotListener
                 }

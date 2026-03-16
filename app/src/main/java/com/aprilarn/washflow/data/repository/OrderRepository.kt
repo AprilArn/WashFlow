@@ -3,6 +3,7 @@ package com.aprilarn.washflow.data.repository
 import com.aprilarn.washflow.data.model.Orders
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.channels.awaitClose
@@ -38,6 +39,10 @@ class OrderRepository {
                 .orderBy("orderDate", Query.Direction.ASCENDING) // Urutkan berdasarkan tanggal order
                 .addSnapshotListener { snapshot, error ->
                     if (error != null) {
+                        if (error is FirebaseFirestoreException && error.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+                            close()
+                            return@addSnapshotListener
+                        }
                         close(error)
                         return@addSnapshotListener
                     }

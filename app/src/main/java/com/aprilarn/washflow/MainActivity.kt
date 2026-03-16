@@ -280,12 +280,18 @@ class MainActivity : ComponentActivity() {
                                 userData = userData,
                                 onSignOut = {
                                     lifecycleScope.launch {
+                                        // 1. Arahkan kembali ke login dan hapus seluruh backstack TERLEBIH DAHULU
+                                        // Gunakan navController.graph.id agar benar-benar bersih
+                                        navController.navigate("login") {
+                                            popUpTo(navController.graph.id) { inclusive = true }
+                                        }
+
+                                        // 2. Beri jeda sangat singkat agar ViewModel dan Firestore Listener sempat dihancurkan (dibatalkan) oleh sistem
+                                        kotlinx.coroutines.delay(200)
+
+                                        // 3. BARU eksekusi Sign Out dari Firebase
                                         GoogleAuthUiClient.signOut()
                                         Toast.makeText(applicationContext, "Signed out", Toast.LENGTH_LONG).show()
-                                        // Arahkan kembali ke login dan hapus backstack
-                                        navController.navigate("login") {
-                                            popUpTo(0) { inclusive = true }
-                                        }
                                     }
                                 }
                             )
