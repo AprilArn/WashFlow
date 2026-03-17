@@ -13,11 +13,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aprilarn.washflow.ui.theme.Gray
 
 @Composable
 fun WorkspaceScreen(
@@ -43,7 +45,7 @@ fun WorkspaceScreen(
         Spacer(Modifier.height(12.dp))
 
         Text(
-            text = "Join an existing workspace or create a new one.",
+            text = "Join an existing workspace.",
             style = MaterialTheme.typography.bodyLarge,
             color = Color.White,
             fontWeight = FontWeight.Light
@@ -64,8 +66,8 @@ fun WorkspaceScreen(
                 // 2. Hubungkan TextField dengan state
                 value = inviteCode,
                 onValueChange = { inviteCode = it },
-                label = { Text("Workspace invitation code") },
-                placeholder = { Text("e.g., XXX-XXX") },
+                label = { Text("Workspace invitation code", color = White.copy(), textAlign = TextAlign.Center) },
+                placeholder = { Text("e.g., XXX-XXX", color = Gray.copy(alpha = 0.5f), textAlign = TextAlign.Center) },
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
                 textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),

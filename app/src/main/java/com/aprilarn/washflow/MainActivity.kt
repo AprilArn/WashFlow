@@ -148,6 +148,15 @@ class MainActivity : ComponentActivity() {
                             val viewModel = viewModel<LoginViewModel>()
                             val state by viewModel.state.collectAsStateWithLifecycle()
 
+                            LaunchedEffect(Unit) {
+                                val currentUser = GoogleAuthUiClient.getSignedUser()
+                                if (currentUser != null) {
+                                    // Jika user sudah pernah login, langsung jalankan pengecekan Workspace
+                                    // Ini otomatis akan memutar loading (isCheckingWorkspace = true)
+                                    viewModel.checkAutoLogin(currentUser)
+                                }
+                            }
+
                             // Efek ini akan memantau status workspace dan menavigasi
                             LaunchedEffect(key1 = state.userHasWorkspace) {
                                 if (state.userHasWorkspace == true) { // Punya workspace
@@ -280,18 +289,18 @@ class MainActivity : ComponentActivity() {
                                 userData = userData,
                                 onSignOut = {
                                     lifecycleScope.launch {
-                                        // 1. Arahkan kembali ke login dan hapus seluruh backstack TERLEBIH DAHULU
-                                        // Gunakan navController.graph.id agar benar-benar bersih
+                                        // 1. TUNGGU proses Sign Out selesai sepenuhnya (Google & Firebase)
+                                        try {
+                                            GoogleAuthUiClient.signOut()
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
+                                        }
+
+                                        // 2. SETELAH semua beres, baru bersihkan memori dan pindah ke Login
                                         navController.navigate("login") {
                                             popUpTo(navController.graph.id) { inclusive = true }
                                         }
-
-                                        // 2. Beri jeda sangat singkat agar ViewModel dan Firestore Listener sempat dihancurkan (dibatalkan) oleh sistem
-                                        kotlinx.coroutines.delay(200)
-
-                                        // 3. BARU eksekusi Sign Out dari Firebase
-                                        GoogleAuthUiClient.signOut()
-                                        Toast.makeText(applicationContext, "Signed out", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(applicationContext, "Signed out", Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             )
