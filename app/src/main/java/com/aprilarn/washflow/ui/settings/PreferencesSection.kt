@@ -6,6 +6,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.LocationSearching
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.*
@@ -56,10 +58,24 @@ fun PreferencesSection(modifier: Modifier = Modifier) {
                 // 2. Language
                 SettingsItem(
                     icon = Icons.Default.Language,
-                    title = "Language/Set Location",
+                    title = "Language",
                     trailingContent = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("English", color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
+                            Icon(Icons.Default.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
+                        }
+                    }
+                )
+
+                Divider(color = Color.LightGray.copy(alpha = 0.5f), modifier = Modifier.padding(horizontal = 24.dp))
+
+                // 3. Set location
+                SettingsItem(
+                    icon = Icons.Default.MyLocation,
+                    title = "Set location",
+                    trailingContent = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Boyolali, Jawa Tengah", color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
                             Icon(Icons.Default.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
                         }
                     }
