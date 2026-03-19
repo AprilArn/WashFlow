@@ -35,14 +35,17 @@ fun LoginScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(start = 32.dp, end = 32.dp, top = 32.dp, bottom = 64.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+        // Hapus verticalArrangement = Arrangement.Center karena kita akan menggunakan weight
     ) {
+
+        // 1. Spacer atas: mendorong logo agak ke bawah agar tidak mentok atas
+        Spacer(modifier = Modifier.weight(1f))
+
         // Bagian atas: Teks "WashFlow"
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(top = 64.dp)
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = "Wash",
@@ -62,9 +65,10 @@ fun LoginScreen(
             )
         }
 
-        Spacer(Modifier.weight(1f)) // Spacer ini akan mendorong konten di bawahnya ke dasar
+        // 2. Spacer tengah: memisahkan logo dan tombol secara otomatis
+        // Angka 1.5f berarti jarak di tengah akan sedikit lebih lebar daripada jarak di atas/bawah
+        Spacer(modifier = Modifier.weight(1.5f))
 
-        // --- AREA PERBAIKAN ---
         // Gunakan Box untuk menampung Tombol atau Loading Indicator di tempat yang sama.
         Box(
             modifier = Modifier
@@ -92,6 +96,9 @@ fun LoginScreen(
                 }
             }
         }
+
+        // 3. Spacer bawah: mendorong tombol agak ke atas agar tidak mentok bawah
+        Spacer(modifier = Modifier.weight(1f))
     }
 }
 
