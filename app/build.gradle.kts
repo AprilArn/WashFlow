@@ -14,7 +14,7 @@ if (localPropertiesFile.exists()) {
     properties.load(localPropertiesFile.inputStream())
 }
 // Ambil nilai API_KEY dari properties, beri nilai kosong jika tidak ada
-val weatherApiKey = properties.getProperty("weather-api-key", "")
+val GoogleApiKey = properties.getProperty("google-api-key")?.replace("\"", "") ?: ""
 
 android {
     namespace = "com.aprilarn.washflow"
@@ -28,6 +28,8 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        manifestPlaceholders["MAPS_API_KEY"] = GoogleApiKey
     }
 
     buildTypes {
@@ -63,7 +65,7 @@ android {
             buildConfigField(
                 type = "String",
                 name = "API_KEY",
-                value = "$weatherApiKey"
+                value = "\"$GoogleApiKey\""
             )
         }
         create("integration") {
@@ -76,7 +78,7 @@ android {
             buildConfigField(
                 type = "String",
                 name = "API_KEY",
-                value = "$weatherApiKey"
+                value = "\"$GoogleApiKey\""
             )
         }
     }
@@ -121,17 +123,17 @@ dependencies {
 
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
-
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
     //implementation("com.google.firebase:firebase-auth-play-services:23.2.1")
     implementation(libs.firebase.firestore)
 
-    // gms location
-    implementation("com.google.android.gms:play-services-location:21.2.0")
-
     // url image
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("io.coil-kt:coil-svg:2.6.0")
 
+    // Google Maps
+    implementation("com.google.maps.android:maps-compose:4.3.3")
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation("com.google.android.gms:play-services-location:21.2.0")
 }

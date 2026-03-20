@@ -16,6 +16,8 @@ import com.aprilarn.washflow.ui.login.UserData
 @Composable
 fun SettingsScreen(
     userData: UserData,
+    settingsUiState: SettingsUiState,
+    onSetLocationClicked: () -> Unit,
     onSignOut: () -> Unit
 ) {
     // Scroll state untuk bagian konten bawah
@@ -44,7 +46,10 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp) // Jarak antar section
         ) {
 
-            PreferencesSection()
+            PreferencesSection(
+                locationName = settingsUiState.locationName,
+                onSetLocationClicked = onSetLocationClicked
+            )
 
             AccountSection(onSignOut = onSignOut)
         }
@@ -68,6 +73,8 @@ fun SettingsScreenPreview() {
                 email = "diannerussel@mail.com",
                 profilePictureUrl = null
             ),
+            settingsUiState = SettingsUiState(locationName = "Boyolali, Central Java", latitude = -7.797068, longitude = 110.370529),
+            onSetLocationClicked = {},
             onSignOut = {}
         )
     }

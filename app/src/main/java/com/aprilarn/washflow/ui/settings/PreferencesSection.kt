@@ -22,7 +22,11 @@ import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.MainFontBlack
 
 @Composable
-fun PreferencesSection(modifier: Modifier = Modifier) {
+fun PreferencesSection(
+    locationName: String,
+    onSetLocationClicked: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Column(modifier = modifier) {
         Text(
             text = "Preferences",
@@ -73,9 +77,15 @@ fun PreferencesSection(modifier: Modifier = Modifier) {
                 SettingsItem(
                     icon = Icons.Default.MyLocation,
                     title = "Set location",
+                    onClick = onSetLocationClicked,
                     trailingContent = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Boyolali, Jawa Tengah", color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
+                            // Gunakan locationName yang diteruskan dari State
+                            Text(
+                                text = locationName,
+                                color = Color.Gray,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
                             Icon(Icons.Default.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
                         }
                     }

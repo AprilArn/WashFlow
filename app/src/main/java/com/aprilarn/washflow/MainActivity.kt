@@ -97,7 +97,9 @@ import com.aprilarn.washflow.ui.manage_order.ManageOrderScreen
 import com.aprilarn.washflow.ui.manage_order.ManageOrderViewModel
 import com.aprilarn.washflow.ui.orders.OrdersScreen
 import com.aprilarn.washflow.ui.orders.OrdersViewModel
+import com.aprilarn.washflow.ui.settings.LocationSelectionPanel
 import com.aprilarn.washflow.ui.settings.SettingsScreen
+import com.aprilarn.washflow.ui.settings.SettingsViewModel
 import com.aprilarn.washflow.ui.tabledata.TableDataScreen
 import com.aprilarn.washflow.ui.tabledata.TableDataViewModel
 import com.aprilarn.washflow.ui.theme.MainBLue
@@ -141,6 +143,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     // 1. Navigasi utama aplikasi diatur di sini, dimulai dari "login"
                     val navController = rememberNavController()
+
                     NavHost(navController = navController, startDestination = "login") {
 
                         // 2. Rute untuk Login Screen
@@ -338,6 +341,19 @@ fun MainAppScreen(
     val currentRoute = navBackStackEntry?.destination?.route
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
 
+    // Inisialisasi SettingsViewModel di level MainAppScreen
+    val settingsViewModel: SettingsViewModel = viewModel()
+    val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+
+    // Inisialisasi HomeViewModel di level MainAppScreen agar bisa dibagikan
+    val homeViewModelFactory = object : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            return HomeViewModel(OrderRepository()) as T
+        }
+    }
+    val homeViewModel: HomeViewModel = viewModel(factory = homeViewModelFactory)
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -397,6 +413,7 @@ fun MainAppScreen(
 
                 composable(AppNavigation.Home.route) {
                     LocationAwareHomePage(
+                        homeViewModel = homeViewModel,
                         onNavigateToManageOrder = {
                             bottomNavController.navigate(AppNavigation.ManageOrder.route)
                         }
@@ -589,14 +606,30 @@ fun MainAppScreen(
 
                 composable(AppNavigation.Settings.route) {
                     SettingsScreen(
-                        // Jika userData null (seharusnya tidak), berikan data default kosong agar tidak crash
                         userData = userData ?: UserData(
-                            userId = "",
-                            displayName = "Unknown",
-                            email = "No Email",
-                            profilePictureUrl = null
+                            userId = "", displayName = "Unknown", email = "No Email", profilePictureUrl = null
                         ),
+                        settingsUiState = settingsState,
+                        onSetLocationClicked = { // <-- UBAH JADI onSetLocationClicked
+                            bottomNavController.navigate("location_selection")
+                        },
                         onSignOut = onSignOut
+                    )
+                }
+
+                composable("location_selection") {
+                    LocationSelectionPanel( // Pastikan nama fungsinya sesuai dengan yang kamu buat di LocationSelectionPanel.kt
+                        onLocationSelected = { lat, lon, name ->
+                            // A. Update tampilan teks lokasi di SettingsScreen
+                            settingsViewModel.updateLocation(name, lat, lon)
+
+                            // B. Tembak API Cuaca di HomeViewModel dengan koordinat baru
+                            homeViewModel.fetchWeatherData(lat, lon)
+
+                            // C. Kembali ke layar Settings
+                            bottomNavController.popBackStack()
+                        },
+                        onBackClick = { bottomNavController.popBackStack() }
                     )
                 }
             }
@@ -967,16 +1000,17 @@ fun DeleteWorkspaceDialog(
 
 @Composable
 fun LocationAwareHomePage(
+    homeViewModel: HomeViewModel,
     onNavigateToManageOrder: () -> Unit
 ) {
     val context = LocalContext.current
-    val factory = object : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return HomeViewModel(OrderRepository()) as T
-        }
-    }
-    val homeViewModel: HomeViewModel = viewModel(factory = factory)
+//    val factory = object : ViewModelProvider.Factory {
+//        @Suppress("UNCHECKED_CAST")
+//        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+//            return HomeViewModel(OrderRepository()) as T
+//        }
+//    }
+//    val homeViewModel: HomeViewModel = viewModel(factory = factory)
     var hasLocationPermission by remember { mutableStateOf(false) }
 
     // Launcher untuk meminta izin lokasi
@@ -1004,10 +1038,12 @@ fun LocationAwareHomePage(
 
         if (fineLocationGranted || coarseLocationGranted) {
             hasLocationPermission = true
-            // Jika izin sudah ada, ambil lokasi terakhir yang diketahui
-            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                if (location != null) {
-                    homeViewModel.fetchWeatherData(location.latitude, location.longitude)
+            // Hanya ambil lokasi awal JIKA API belum me-load data (menghindari tumpah tindih dengan lokasi manual dari setelan)
+            if (homeViewModel.uiState.value.weather == "loading weather...") {
+                fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                    if (location != null) {
+                        homeViewModel.fetchWeatherData(location.latitude, location.longitude)
+                    }
                 }
             }
         } else {
@@ -1023,6 +1059,8 @@ fun LocationAwareHomePage(
 
     // Tentukan UI yang akan ditampilkan berdasarkan state izin
     if (hasLocationPermission) {
+        val uiState by homeViewModel.uiState.collectAsStateWithLifecycle() // Pastikan mengamati statenya
+
         HomePage(
             homeViewModel = homeViewModel,
             onEnterDataClick = {},
