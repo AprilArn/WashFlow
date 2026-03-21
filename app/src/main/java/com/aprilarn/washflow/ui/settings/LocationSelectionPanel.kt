@@ -5,6 +5,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -14,8 +15,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
@@ -26,10 +30,18 @@ import com.google.maps.android.compose.*
 @Composable
 fun LocationSelectionPanel(
     onLocationSelected: (lat: Double, lon: Double, name: String) -> Unit,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    isPreview: Boolean = false // Parameter tambahan untuk keperluan preview
 ) {
     val context = LocalContext.current
-    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+
+    // Cegah inisialisasi FusedLocationProviderClient jika sedang di mode Preview
+    val fusedLocationClient: FusedLocationProviderClient? = if (!isPreview) {
+        remember { LocationServices.getFusedLocationProviderClient(context) }
+    } else {
+        null
+    }
+
     var showMap by remember { mutableStateOf(false) }
 
     // Launcher untuk meminta izin lokasi saat tombol "Current Location" ditekan
@@ -38,7 +50,7 @@ fun LocationSelectionPanel(
     ) { permissions ->
         if (permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
             permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true) {
-            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+            fusedLocationClient?.lastLocation?.addOnSuccessListener { location ->
                 if (location != null) {
                     onLocationSelected(location.latitude, location.longitude, "Current Location")
                 }
@@ -68,9 +80,11 @@ fun LocationSelectionPanel(
                 ) {
                     Button(
                         onClick = {
-                            locationPermissionLauncher.launch(
-                                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
-                            )
+                            if (!isPreview) {
+                                locationPermissionLauncher.launch(
+                                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+                                )
+                            }
                         },
                         modifier = Modifier.fillMaxWidth().height(56.dp)
                     ) {
@@ -93,35 +107,53 @@ fun LocationSelectionPanel(
                     }
                 }
             } else {
-                // TAMPILAN PETA (Google Maps)
-                var selectedLatLng by remember { mutableStateOf<LatLng?>(null) }
-                val cameraPositionState = rememberCameraPositionState {
-                    position = CameraPosition.fromLatLngZoom(LatLng(-7.5, 110.5), 10f) // Titik awal (Jawa Tengah)
-                }
-
-                Column(modifier = Modifier.fillMaxSize()) {
-                    GoogleMap(
-                        modifier = Modifier.weight(1f),
-                        cameraPositionState = cameraPositionState,
-                        onMapClick = { latLng -> selectedLatLng = latLng } // Titik pin manual
-                    ) {
-                        selectedLatLng?.let { Marker(state = MarkerState(position = it)) }
+                // TAMPILAN PETA (Google Maps) - Jangan render peta jika isPreview true
+                if (!isPreview) {
+                    var selectedLatLng by remember { mutableStateOf<LatLng?>(null) }
+                    val cameraPositionState = rememberCameraPositionState {
+                        position = CameraPosition.fromLatLngZoom(LatLng(-7.5, 110.5), 10f) // Titik awal (Jawa Tengah)
                     }
 
-                    // Tombol konfirmasi lokasi peta
-                    Button(
-                        onClick = {
-                            selectedLatLng?.let {
-                                onLocationSelected(it.latitude, it.longitude, "Custom Map Location")
-                            }
-                        },
-                        enabled = selectedLatLng != null,
-                        modifier = Modifier.fillMaxWidth().padding(16.dp).height(50.dp)
-                    ) {
-                        Text("Confirm Location")
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        GoogleMap(
+                            modifier = Modifier.weight(1f),
+                            cameraPositionState = cameraPositionState,
+                            onMapClick = { latLng -> selectedLatLng = latLng } // Titik pin manual
+                        ) {
+                            selectedLatLng?.let { Marker(state = MarkerState(position = it)) }
+                        }
+
+                        // Tombol konfirmasi lokasi peta
+                        Button(
+                            onClick = {
+                                selectedLatLng?.let {
+                                    onLocationSelected(it.latitude, it.longitude, "Custom Map Location")
+                                }
+                            },
+                            enabled = selectedLatLng != null,
+                            modifier = Modifier.fillMaxWidth().padding(16.dp).height(50.dp)
+                        ) {
+                            Text("Confirm Location")
+                        }
+                    }
+                } else {
+                    // Tampilan dummy pengganti peta untuk mode Preview jika dibutuhkan
+                    Box(modifier = Modifier.fillMaxSize().background(Color.LightGray), contentAlignment = Alignment.Center) {
+                        Text("Google Map tidak dapat ditampilkan di Preview", color = Color.DarkGray)
                     }
                 }
             }
         }
     }
+}
+
+// --- FUNGSI PREVIEW ---
+@Preview(showBackground = true, widthDp = 400, heightDp = 800)
+@Composable
+fun LocationSelectionPanelPreview() {
+    LocationSelectionPanel(
+        onLocationSelected = { _, _, _ -> },
+        onBackClick = {},
+        isPreview = true // Wajib true agar tidak crash di IDE
+    )
 }
