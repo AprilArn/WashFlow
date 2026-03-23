@@ -29,7 +29,7 @@ import com.google.maps.android.compose.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LocationSelectionPanel(
-    onLocationSelected: (lat: Double, lon: Double, name: String) -> Unit,
+    onLocationSelected: (lat: Double, lon: Double) -> Unit,
     onBackClick: () -> Unit,
     isPreview: Boolean = false // Parameter tambahan untuk keperluan preview
 ) {
@@ -52,7 +52,7 @@ fun LocationSelectionPanel(
             permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true) {
             fusedLocationClient?.lastLocation?.addOnSuccessListener { location ->
                 if (location != null) {
-                    onLocationSelected(location.latitude, location.longitude, "Current Location")
+                    onLocationSelected(location.latitude, location.longitude)
                 }
             }
         }
@@ -127,7 +127,7 @@ fun LocationSelectionPanel(
                         Button(
                             onClick = {
                                 selectedLatLng?.let {
-                                    onLocationSelected(it.latitude, it.longitude, "Custom Map Location")
+                                    onLocationSelected(it.latitude, it.longitude)
                                 }
                             },
                             enabled = selectedLatLng != null,
@@ -152,7 +152,7 @@ fun LocationSelectionPanel(
 @Composable
 fun LocationSelectionPanelPreview() {
     LocationSelectionPanel(
-        onLocationSelected = { _, _, _ -> },
+        onLocationSelected = { _, _, -> },
         onBackClick = {},
         isPreview = true // Wajib true agar tidak crash di IDE
     )

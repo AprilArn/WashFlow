@@ -342,7 +342,7 @@ fun MainAppScreen(
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
 
     // Inisialisasi SettingsViewModel di level MainAppScreen
-    val settingsViewModel: SettingsViewModel = viewModel()
+    val settingsViewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory)
     val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
 
     // Inisialisasi HomeViewModel di level MainAppScreen agar bisa dibagikan
@@ -618,12 +618,13 @@ fun MainAppScreen(
                 }
 
                 composable("location_selection") {
-                    LocationSelectionPanel( // Pastikan nama fungsinya sesuai dengan yang kamu buat di LocationSelectionPanel.kt
-                        onLocationSelected = { lat, lon, name ->
-                            // A. Update tampilan teks lokasi di SettingsScreen
-                            settingsViewModel.updateLocation(name, lat, lon)
+                    LocationSelectionPanel(
+                        // Sekarang menerima 2 parameter (lat, lon)
+                        onLocationSelected = { lat, lon ->
+                            // A. Panggil fungsi baru di SettingsViewModel untuk cari nama tempat & save
+                            settingsViewModel.fetchAddressAndSave(lat, lon)
 
-                            // B. Tembak API Cuaca di HomeViewModel dengan koordinat baru
+                            // B. Tetap update cuaca di Home
                             homeViewModel.fetchWeatherData(lat, lon)
 
                             // C. Kembali ke layar Settings
