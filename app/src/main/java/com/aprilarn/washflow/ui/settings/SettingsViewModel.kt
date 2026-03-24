@@ -27,33 +27,29 @@ class SettingsViewModel(
             _uiState.update { it.copy(locationName = "Mencari lokasi...", latitude = lat, longitude = lon) }
 
             try {
-                // Tembak API Google Geocoding
-                // Gunakan BuildConfig.API_KEY yang sudah kita set sebelumnya
                 val response = geocodingApiService.getAddressFromLocation(
                     latlng = "$lat,$lon",
                     apiKey = BuildConfig.API_KEY
                 )
 
                 if (response.status == "OK" && response.results.isNotEmpty()) {
-                    // Ambil address pertama (biasanya paling spesifik)
                     val fullAddress = response.results[0].formattedAddress
+                    val parts = fullAddress.split(",").map { it.trim() }
 
-                    // Kita rapikan sedikit agar tidak kepanjangan (misal hapus Kode Pos/Negara jika ada)
-                    // Contoh rapikan sederhana: "Boyolali, Jawa Tengah 57312, Indonesia" -> "Boyolali, Jawa Tengah"
-                    val cleanedAddress = fullAddress
-                        .split(",") // Pecah berdasarkan koma
-                        .take(2)    // Ambil 2 bagian pertama saja (Kota/Kab + Provinsi)
-                        .joinToString(", ") // Gabungkan kembali dengan koma
-                        .trim()
+                    // Logic: buang negara (elemen terakhir), ambil 2 bagian sebelumnya
+                    val cleanedAddress = if (parts.size >= 2) {
+                        parts.dropLast(2).takeLast(2).joinToString(", ")
+                    } else {
+                        fullAddress
+                    }
 
                     _uiState.update { it.copy(locationName = cleanedAddress) }
+
                 } else {
-                    // Fallback jika API OK tapi results kosong
                     _uiState.update { it.copy(locationName = "Pilih lokasi") }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                // Fallback jika network error
                 _uiState.update { it.copy(locationName = "Gagal mengambil nama tempat") }
             }
         }
