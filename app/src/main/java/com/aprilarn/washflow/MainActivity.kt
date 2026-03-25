@@ -416,6 +416,12 @@ fun MainAppScreen(
                         homeViewModel = homeViewModel,
                         onNavigateToManageOrder = {
                             bottomNavController.navigate(AppNavigation.ManageOrder.route)
+                        },
+                        onLocationFetched = { lat, lon ->
+                            // Cek jika teks masih "Pilih Lokasi" agar API tidak dipanggil berulang kali
+                            if (settingsState.locationName == "Pilih Lokasi") {
+                                settingsViewModel.fetchAddressAndSave(lat, lon)
+                            }
                         }
                     )
                 }
@@ -1002,7 +1008,8 @@ fun DeleteWorkspaceDialog(
 @Composable
 fun LocationAwareHomePage(
     homeViewModel: HomeViewModel,
-    onNavigateToManageOrder: () -> Unit
+    onNavigateToManageOrder: () -> Unit,
+    onLocationFetched: (Double, Double) -> Unit
 ) {
     val context = LocalContext.current
 //    val factory = object : ViewModelProvider.Factory {
@@ -1044,6 +1051,7 @@ fun LocationAwareHomePage(
                 fusedLocationClient.lastLocation.addOnSuccessListener { location ->
                     if (location != null) {
                         homeViewModel.fetchWeatherData(location.latitude, location.longitude)
+                        onLocationFetched(location.latitude, location.longitude)
                     }
                 }
             }
