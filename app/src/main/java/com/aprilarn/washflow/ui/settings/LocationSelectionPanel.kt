@@ -15,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
@@ -111,7 +112,7 @@ fun LocationSelectionPanel(
                 if (!isPreview) {
                     var selectedLatLng by remember { mutableStateOf<LatLng?>(null) }
                     val cameraPositionState = rememberCameraPositionState {
-                        position = CameraPosition.fromLatLngZoom(LatLng(-7.5, 110.5), 10f) // Titik awal (Jawa Tengah)
+                        position = CameraPosition.fromLatLngZoom(LatLng(-2.357500, 117.903056), 5f) // Titik awal (Jawa Tengah)
                     }
 
                     Column(modifier = Modifier.fillMaxSize()) {
@@ -148,12 +149,20 @@ fun LocationSelectionPanel(
 }
 
 // --- FUNGSI PREVIEW ---
-@Preview(showBackground = true, widthDp = 400, heightDp = 800)
+@Preview(showBackground = true, widthDp = 1200, heightDp = 800)
 @Composable
 fun LocationSelectionPanelPreview() {
-    LocationSelectionPanel(
-        onLocationSelected = { _, _, -> },
-        onBackClick = {},
-        isPreview = true // Wajib true agar tidak crash di IDE
-    )
+    Box(
+        modifier = Modifier.background(
+            Brush.linearGradient(
+                colors = listOf(Color(0xFFB9E9FF), Color(0xFFFFD6BF))
+            )
+        )
+    ) {
+        LocationSelectionPanel(
+            onLocationSelected = { _, _, -> },
+            onBackClick = {},
+            isPreview = true // Wajib true agar tidak crash di IDE
+        )
+    }
 }
