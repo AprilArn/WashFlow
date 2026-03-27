@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Map
@@ -15,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -60,6 +62,8 @@ fun LocationSelectionPanel(
     }
 
     Scaffold(
+        modifier = Modifier.clip(RoundedCornerShape(24.dp)),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
                 title = { Text("Set Location") },
@@ -112,7 +116,7 @@ fun LocationSelectionPanel(
                 if (!isPreview) {
                     var selectedLatLng by remember { mutableStateOf<LatLng?>(null) }
                     val cameraPositionState = rememberCameraPositionState {
-                        position = CameraPosition.fromLatLngZoom(LatLng(-2.357500, 117.903056), 5f) // Titik awal (Jawa Tengah)
+                        position = CameraPosition.fromLatLngZoom(LatLng(-2.357500, 118.203056), 5f) // Titik awal (Jawa Tengah)
                     }
 
                     Column(modifier = Modifier.fillMaxSize()) {
