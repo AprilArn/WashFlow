@@ -9,7 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material3.*
@@ -69,7 +69,7 @@ fun LocationSelectionPanel(
                 title = { Text("Set Location") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                     }
                 }
             )
@@ -164,7 +164,7 @@ fun LocationSelectionPanelPreview() {
         )
     ) {
         LocationSelectionPanel(
-            onLocationSelected = { _, _, -> },
+            onLocationSelected = { _, _ -> },
             onBackClick = {},
             isPreview = true // Wajib true agar tidak crash di IDE
         )
