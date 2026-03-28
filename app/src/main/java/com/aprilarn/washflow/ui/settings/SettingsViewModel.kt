@@ -38,7 +38,7 @@ class SettingsViewModel(
 
                     // Logic: buang negara (elemen terakhir), ambil 2 bagian sebelumnya
                     val cleanedAddress = if (parts.size >= 2) {
-                        parts.dropLast(2).takeLast(2).joinToString(", ")
+                        parts.dropLast(1).takeLast(3).joinToString(", ")
                     } else {
                         fullAddress
                     }

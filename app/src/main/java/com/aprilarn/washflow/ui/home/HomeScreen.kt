@@ -56,6 +56,8 @@ fun HomeScreen(
                     .fillMaxHeight(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                Spacer(modifier = Modifier.weight(2f))
+
                 // Greeting and weather
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -104,7 +106,7 @@ fun HomeScreen(
                     modifier = Modifier.padding(horizontal = 18.dp)
                 )
 
-                Spacer(modifier = Modifier.height(16.dp)) // Jarak dari rekomendasi
+                Spacer(modifier = Modifier.weight(1f))
 
                 // Tampilkan Forecast Horizontal di sini
                 HorizontalWeatherForecast(
@@ -121,10 +123,7 @@ fun HomeScreen(
                     StatusCard(text = "Done", count = state.done, onClick = onStatusCardClick)
                 }
 
-//                Spacer(modifier = Modifier.height(18.dp))
-//
-//                // Enter data button
-//                Button(text = "Enter Data", onClick = onEnterDataClick)
+                Spacer(modifier = Modifier.weight(2f))
             }
         }
     }
