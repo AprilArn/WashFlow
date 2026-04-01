@@ -14,6 +14,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -29,11 +30,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -89,20 +87,20 @@ fun LocationSelectionPanel(
     }
 
     // State untuk Search Bar
+    var isSearchExpanded by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var searchResults by remember { mutableStateOf<List<Address>>(emptyList()) }
 
     // Efek untuk memantau ketikan user dan mencari alamat
     LaunchedEffect(searchQuery) {
         if (searchQuery.length > 2) {
-            delay(500) // Debounce: Tunggu user berhenti mengetik selama 500ms
+            delay(500) // Debounce
             searchResults = searchLocation(context, searchQuery)
         } else {
-            searchResults = emptyList() // Kosongkan hasil jika ketikan terlalu pendek
+            searchResults = emptyList()
         }
     }
 
-    // Launcher untuk meminta izin lokasi
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -128,10 +126,7 @@ fun LocationSelectionPanel(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
-                title = { Text(
-                    text = "Set Location on Map",
-                    style = MaterialTheme.typography.titleLarge.copy()
-                ) },
+                title = { Text("Set Location on Map") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -146,91 +141,120 @@ fun LocationSelectionPanel(
 
                     // --- BAGIAN ATAS: PETA & FLOATING SEARCH BAR ---
                     Box(modifier = Modifier.weight(1f)) {
-                        // 1. Google Map (Berada di layar paling dasar)
+                        // Google Map
                         GoogleMap(
                             modifier = Modifier.fillMaxSize(),
                             cameraPositionState = cameraPositionState,
                             onMapClick = { latLng ->
                                 selectedLatLng = latLng
-                                focusManager.clearFocus() // Sembunyikan keyboard jika peta disentuh
-                                searchResults = emptyList() // Sembunyikan dropdown
+                                focusManager.clearFocus()
+                                searchResults = emptyList()
+                                isSearchExpanded = false // Tutup search bar jika peta diklik
                             }
                         ) {
                             selectedLatLng?.let { Marker(state = MarkerState(position = it)) }
                         }
 
-                        // 2. Floating Search Bar (Melayang di atas peta, kiri atas)
-                        Column(
+                        // Floating Search Bar / Icon (Kiri Atas)
+                        Box(
                             modifier = Modifier
                                 .align(Alignment.TopStart)
                                 .padding(16.dp)
-                                .fillMaxWidth(0.9f) // Mengambil 90% lebar layar agar terlihat mengambang
+                                .then(if (isSearchExpanded) Modifier.fillMaxWidth(0.4f) else Modifier.wrapContentSize())
                         ) {
-                            // Input Text
-                            OutlinedTextField(
-                                value = searchQuery,
-                                onValueChange = { searchQuery = it },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(Color.White, RoundedCornerShape(12.dp)),
-                                placeholder = { Text("Search here...") },
-                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
-                                trailingIcon = {
-                                    if (searchQuery.isNotEmpty()) {
-                                        IconButton(onClick = {
-                                            searchQuery = ""
-                                            searchResults = emptyList()
-                                        }) {
-                                            Icon(Icons.Default.Close, contentDescription = "Clear")
-                                        }
-                                    }
-                                },
-                                singleLine = true,
-                                shape = RoundedCornerShape(12.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    unfocusedBorderColor = Color.Transparent,
-                                    focusedBorderColor = MaterialTheme.colorScheme.primary
-                                )
-                            )
-
-                            // Dropdown Hasil Pencarian
-                            if (searchResults.isNotEmpty()) {
+                            if (!isSearchExpanded) {
+                                // TAMPILAN 1: HANYA IKON BULAT (MINIMIZED)
                                 Surface(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 8.dp)
-                                        .heightIn(max = 250.dp), // Batasi tinggi maksimal dropdown
-                                    shape = RoundedCornerShape(12.dp),
-                                    shadowElevation = 8.dp,
-                                    color = Color.White
+                                    shape = CircleShape,
+                                    // shadowElevation = 6.dp,
+                                    color = Color.White,
+                                    modifier = Modifier.size(56.dp),
+                                    onClick = { isSearchExpanded = true } // Buka bar pencarian saat diklik
                                 ) {
-                                    LazyColumn {
-                                        items(searchResults) { address ->
-                                            val addressName = address.getAddressLine(0) ?: address.featureName
-                                            Text(
-                                                text = addressName,
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .clickable {
-                                                        // Jika alamat diklik:
-                                                        searchQuery = addressName // Set teks di search bar
-                                                        searchResults = emptyList() // Tutup dropdown
-                                                        focusManager.clearFocus() // Tutup keyboard
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.Search, contentDescription = "Open Search", tint = Color.DarkGray)
+                                    }
+                                }
+                            } else {
+                                // TAMPILAN 2: SEARCH BAR UTUH (EXPANDED)
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    OutlinedTextField(
+                                        value = searchQuery,
+                                        onValueChange = { searchQuery = it },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(Color.White, RoundedCornerShape(12.dp)),
+                                        placeholder = { Text("Search here...") },
+                                        leadingIcon = {
+                                            // Tombol back untuk menutup search bar
+                                            IconButton(onClick = {
+                                                isSearchExpanded = false
+                                                searchQuery = ""
+                                                searchResults = emptyList()
+                                                focusManager.clearFocus()
+                                            }) {
+                                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Close Search")
+                                            }
+                                        },
+                                        trailingIcon = {
+                                            if (searchQuery.isNotEmpty()) {
+                                                IconButton(onClick = {
+                                                    searchQuery = ""
+                                                    searchResults = emptyList()
+                                                }) {
+                                                    Icon(Icons.Default.Close, contentDescription = "Clear")
+                                                }
+                                            }
+                                        },
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            unfocusedBorderColor = Color.Transparent,
+                                            focusedBorderColor = MaterialTheme.colorScheme.primary
+                                        )
+                                    )
 
-                                                        // Set pin & terbangkan kamera
-                                                        val latLng = LatLng(address.latitude, address.longitude)
-                                                        selectedLatLng = latLng
-                                                        coroutineScope.launch {
-                                                            cameraPositionState.animate(
-                                                                CameraUpdateFactory.newLatLngZoom(latLng, 15f),
-                                                                durationMs = 1500
-                                                            )
-                                                        }
-                                                    }
-                                                    .padding(16.dp),
-                                                style = MaterialTheme.typography.bodyMedium
-                                            )
-                                            HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
+                                    // Dropdown Hasil Pencarian
+                                    if (searchResults.isNotEmpty()) {
+                                        Surface(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(top = 8.dp)
+                                                .heightIn(max = 250.dp),
+                                            shape = RoundedCornerShape(12.dp),
+                                            shadowElevation = 8.dp,
+                                            color = Color.White
+                                        ) {
+                                            LazyColumn {
+                                                items(searchResults) { address ->
+                                                    val addressName = address.getAddressLine(0) ?: address.featureName
+                                                    Text(
+                                                        text = addressName,
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .clickable {
+                                                                // Jika alamat dipilih:
+                                                                searchQuery = addressName
+                                                                searchResults = emptyList()
+                                                                focusManager.clearFocus()
+                                                                isSearchExpanded = false // Tutup otomatis agar peta terlihat
+
+                                                                // Set pin & terbangkan kamera
+                                                                val latLng = LatLng(address.latitude, address.longitude)
+                                                                selectedLatLng = latLng
+                                                                coroutineScope.launch {
+                                                                    cameraPositionState.animate(
+                                                                        CameraUpdateFactory.newLatLngZoom(latLng, 15f),
+                                                                        durationMs = 1500
+                                                                    )
+                                                                }
+                                                            }
+                                                            .padding(16.dp),
+                                                        style = MaterialTheme.typography.bodyMedium
+                                                    )
+                                                    HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
+                                                }
+                                            }
                                         }
                                     }
                                 }
