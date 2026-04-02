@@ -3,6 +3,7 @@ package com.aprilarn.washflow.data.repository
 import com.aprilarn.washflow.data.model.Items
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.firestore
 import com.google.firebase.firestore.toObjects
 import kotlinx.coroutines.tasks.await
@@ -40,14 +41,15 @@ class ItemRepository {
         // 1. Pasang listener ke koleksi
         val listener = itemsCollection.addSnapshotListener { snapshot, error ->
             if (error != null) {
-                // Jika ada error, tutup flow dengan exception
+                if (error is FirebaseFirestoreException && error.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+                    close()
+                    return@addSnapshotListener
+                }
                 close(error)
                 return@addSnapshotListener
             }
             if (snapshot != null) {
-                // 2. Konversi snapshot ke list objek
                 val items = snapshot.toObjects<Items>()
-                // 3. Kirim data terbaru ke flow
                 trySend(items)
             }
         }

@@ -3,6 +3,7 @@ package com.aprilarn.washflow.data.repository
 import com.aprilarn.washflow.data.model.Customers
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.firestore
 import com.google.firebase.firestore.toObjects
 import kotlinx.coroutines.tasks.await
@@ -37,21 +38,22 @@ class CustomerRepository {
             .document(workspaceId)
             .collection("customers")
 
-        // 1. Pasang listener ke koleksi
+        // Pasang listener ke koleksi
         val listener = customersCollection.addSnapshotListener { snapshot, error ->
             if (error != null) {
-                // Jika ada error, tutup flow dengan exception
-                close(error)
+                if (error is FirebaseFirestoreException && error.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+                    close() // Tutup flow dengan aman tanpa crash
+                    return@addSnapshotListener
+                }
+                close(error) // Lempar error jika masalah lain
                 return@addSnapshotListener
             }
             if (snapshot != null) {
-                // 2. Konversi snapshot ke list objek
                 val customers = snapshot.toObjects<Customers>()
-                // 3. Kirim data terbaru ke flow
                 trySend(customers)
             }
         }
-        // 4. Saat flow dibatalkan (mis. ViewModel hancur), hapus listener-nya
+        // Saat flow dibatalkan (mis. ViewModel hancur), hapus listener-nya
         // Ini sangat penting untuk mencegah memory leak!
         awaitClose {
             listener.remove()

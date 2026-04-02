@@ -26,6 +26,7 @@ import com.aprilarn.washflow.ui.components.ColumnConfig
 import com.aprilarn.washflow.ui.components.DataTablePanel
 import com.aprilarn.washflow.ui.components.DeleteConfirmationDialog
 import com.aprilarn.washflow.ui.theme.GrayBlue
+import com.aprilarn.washflow.ui.theme.MainFontBlack
 
 @Composable
 fun ItemsScreen (
@@ -261,7 +262,12 @@ fun ItemsScreen (
                         onValueChange = { newItemName = it },
                         label = { Text("Nama Barang") },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = MainFontBlack,
+                            unfocusedTextColor = Color.Gray,
+                            cursorColor = Color.White,
+                        )
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     OutlinedTextField(
@@ -269,7 +275,12 @@ fun ItemsScreen (
                         onValueChange = { newItemPrice = it.toDoubleOrNull() ?: 0.0 },
                         label = { Text("Harga Barang") },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = MainFontBlack,
+                            unfocusedTextColor = Color.Gray,
+                            cursorColor = Color.White,
+                        )
                     )
                     Spacer(modifier = Modifier.height(18.dp))
                     Button(

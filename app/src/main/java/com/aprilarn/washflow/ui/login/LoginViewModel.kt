@@ -24,6 +24,10 @@ class LoginViewModel : ViewModel() {
         }
     }
 
+    fun checkAutoLogin(userData: UserData) {
+        checkUserAndWorkspace(userData)
+    }
+
     private fun checkUserAndWorkspace(userData: UserData) {
         viewModelScope.launch {
             _state.update { it.copy(isCheckingWorkspace = true) }
