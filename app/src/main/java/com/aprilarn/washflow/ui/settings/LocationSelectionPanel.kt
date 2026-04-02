@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -62,6 +63,25 @@ suspend fun searchLocation(context: Context, query: String): List<Address> {
     }
 }
 
+// --- Fungsi Bantuan untuk Mendapatkan Teks Alamat dari Koordinat (Reverse Geocoding) ---
+suspend fun getAddressFromLatLng(context: Context, latLng: LatLng): String? {
+    return try {
+        val geocoder = Geocoder(context)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            suspendCoroutine { cont ->
+                geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1) { addresses ->
+                    cont.resume(addresses.firstOrNull()?.getAddressLine(0))
+                }
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)?.firstOrNull()?.getAddressLine(0)
+        }
+    } catch (e: Exception) {
+        null
+    }
+}
+
 @SuppressLint("MissingPermission")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,6 +102,7 @@ fun LocationSelectionPanel(
 
     // State untuk peta
     var selectedLatLng by remember { mutableStateOf<LatLng?>(null) }
+    var selectedAddressName by remember { mutableStateOf<String?>(null) }
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(LatLng(-2.357500, 118.203056), 5f)
     }
@@ -110,11 +131,17 @@ fun LocationSelectionPanel(
                 if (location != null) {
                     val currentLatLng = LatLng(location.latitude, location.longitude)
                     selectedLatLng = currentLatLng
+                    selectedAddressName = "Mencari alamat..."
+
                     coroutineScope.launch {
+                        // Terbangkan kamera
                         cameraPositionState.animate(
-                            update = CameraUpdateFactory.newLatLngZoom(currentLatLng, 15f),
+                            update = CameraUpdateFactory.newLatLngZoom(currentLatLng, 18f),
                             durationMs = 1500
                         )
+                        // Ambil nama jalan dari GPS
+                        val addressText = getAddressFromLatLng(context, currentLatLng)
+                        selectedAddressName = addressText ?: "Alamat tidak ditemukan"
                     }
                 }
             }
@@ -149,7 +176,14 @@ fun LocationSelectionPanel(
                                 selectedLatLng = latLng
                                 focusManager.clearFocus()
                                 searchResults = emptyList()
-                                isSearchExpanded = false // Tutup search bar jika peta diklik
+                                isSearchExpanded = false
+
+                                // Mulai proses pencarian nama alamat untuk pin yang baru dijatuhkan
+                                selectedAddressName = "Mencari alamat..."
+                                coroutineScope.launch {
+                                    val addressText = getAddressFromLatLng(context, latLng)
+                                    selectedAddressName = addressText ?: "Alamat tidak ditemukan"
+                                }
                             }
                         ) {
                             selectedLatLng?.let { Marker(state = MarkerState(position = it)) }
@@ -239,12 +273,15 @@ fun LocationSelectionPanel(
                                                                 focusManager.clearFocus()
                                                                 isSearchExpanded = false // Tutup otomatis agar peta terlihat
 
+                                                                // Set text pin address dengan nama yang dicari
+                                                                selectedAddressName = addressName
+
                                                                 // Set pin & terbangkan kamera
                                                                 val latLng = LatLng(address.latitude, address.longitude)
                                                                 selectedLatLng = latLng
                                                                 coroutineScope.launch {
                                                                     cameraPositionState.animate(
-                                                                        CameraUpdateFactory.newLatLngZoom(latLng, 15f),
+                                                                        CameraUpdateFactory.newLatLngZoom(latLng, 18f),
                                                                         durationMs = 1500
                                                                     )
                                                                 }
@@ -257,6 +294,30 @@ fun LocationSelectionPanel(
                                             }
                                         }
                                     }
+                                }
+                            }
+                        }
+
+                        // Floating Address Text (Kiri Bawah) - MUNCUL KETIKA PIN ADA
+                        selectedAddressName?.let { address ->
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.BottomStart)
+                                    .padding(16.dp)
+                                    .fillMaxWidth(0.9f) // Maksimal 90% layar agar tidak mentok
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .background(Color.Black.copy(alpha = 0.65f), RoundedCornerShape(12.dp))
+                                        .padding(horizontal = 16.dp, vertical = 10.dp)
+                                ) {
+                                    Text(
+                                        text = address,
+                                        color = Color.White,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        maxLines = 3, // Batasi 3 baris jika terlalu panjang
+                                        overflow = TextOverflow.Ellipsis
+                                    )
                                 }
                             }
                         }
