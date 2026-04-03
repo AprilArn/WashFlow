@@ -20,6 +20,15 @@ import coil.compose.AsyncImage
 import com.aprilarn.washflow.ui.components.Button
 import com.example.app.ui.components.StatusCard
 import com.aprilarn.washflow.ui.theme.GrayBlue
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.MyLocation
 
 @Composable
 fun HomeScreen(
@@ -58,10 +67,16 @@ fun HomeScreen(
             ) {
                 Spacer(modifier = Modifier.weight(2f))
 
+                val density = LocalDensity.current
+                var weatherHeaderWidth by remember { mutableIntStateOf(0) }
+
                 // Greeting and weather
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.onSizeChanged { size ->
+                        weatherHeaderWidth = size.width
+                    }
                 ) {
                     // Column untuk teks
                     Column(horizontalAlignment = Alignment.End) {
@@ -95,6 +110,41 @@ fun HomeScreen(
                         )
                     }
                 }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.End,
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                        .then(
+                            if (weatherHeaderWidth > 0) {
+                                Modifier.width(with(density) { weatherHeaderWidth.toDp() })
+                            } else {
+                                Modifier.wrapContentWidth()
+                            }
+                        )
+                ) {
+                    Text(
+                        text = state.locationName,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = GrayBlue,
+                            fontStyle = FontStyle.Italic
+                        ),
+                        textAlign = TextAlign.Right,
+                        maxLines = 2,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(
+                        // Jika dari GPS gunakan Pin, jika manual gunakan Scope Sniper
+                        imageVector = if (state.isGpsLocation) Icons.Default.LocationOn else Icons.Default.MyLocation,
+                        contentDescription = "Location Type",
+                        tint = GrayBlue,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
 
                 Text(
                     text = state.recommendation,
@@ -146,6 +196,8 @@ fun HomeScreenPreview() {
                 temperature = "24°C",
                 // Tambahkan URL ikon dummy untuk preview
                 weatherIconUrl = "https://openweathermap.org/img/wn/10d@4x.png",
+                locationName = "Jakarta",
+                isGpsLocation = true,
                 recommendation = "pastikan semua cucian disimpan dalam ruang tertutup atau diberi pelindung untuk menghindari pakaian basah atau lembap.",
                 inQueue = 14,
                 onProcess = 3,

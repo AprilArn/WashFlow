@@ -86,7 +86,7 @@ suspend fun getAddressFromLatLng(context: Context, latLng: LatLng): String? {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LocationSelectionPanel(
-    onLocationSelected: (lat: Double, lon: Double) -> Unit,
+    onLocationSelected: (lat: Double, lon: Double, isGps: Boolean) -> Unit,
     onBackClick: () -> Unit,
     isPreview: Boolean = false
 ) {
@@ -106,6 +106,7 @@ fun LocationSelectionPanel(
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(LatLng(-2.357500, 118.203056), 5f)
     }
+    var isGpsPin by remember { mutableStateOf(false) }
 
     // State untuk Search Bar
     var isSearchExpanded by remember { mutableStateOf(false) }
@@ -131,6 +132,7 @@ fun LocationSelectionPanel(
                 if (location != null) {
                     val currentLatLng = LatLng(location.latitude, location.longitude)
                     selectedLatLng = currentLatLng
+                    isGpsPin = true
                     selectedAddressName = "Mencari alamat..."
 
                     coroutineScope.launch {
@@ -174,6 +176,7 @@ fun LocationSelectionPanel(
                             cameraPositionState = cameraPositionState,
                             onMapClick = { latLng ->
                                 selectedLatLng = latLng
+                                isGpsPin = false
                                 focusManager.clearFocus()
                                 searchResults = emptyList()
                                 isSearchExpanded = false
@@ -272,6 +275,7 @@ fun LocationSelectionPanel(
                                                                 searchResults = emptyList()
                                                                 focusManager.clearFocus()
                                                                 isSearchExpanded = false // Tutup otomatis agar peta terlihat
+                                                                isGpsPin = false
 
                                                                 // Set text pin address dengan nama yang dicari
                                                                 selectedAddressName = addressName
@@ -350,7 +354,7 @@ fun LocationSelectionPanel(
                             Button(
                                 onClick = {
                                     selectedLatLng?.let {
-                                        onLocationSelected(it.latitude, it.longitude)
+                                        onLocationSelected(it.latitude, it.longitude, isGpsPin)
                                     }
                                 },
                                 enabled = selectedLatLng != null,
@@ -384,7 +388,7 @@ fun LocationSelectionPanelPreview() {
         )
     ) {
         LocationSelectionPanel(
-            onLocationSelected = { _, _ -> },
+            onLocationSelected = { _, _, _-> },
             onBackClick = {},
             isPreview = true
         )

@@ -346,10 +346,20 @@ fun MainAppScreen(
     val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
 
     // Inisialisasi HomeViewModel di level MainAppScreen agar bisa dibagikan
+    // Inisialisasi HomeViewModel di level MainAppScreen agar bisa dibagikan
     val homeViewModelFactory = object : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return HomeViewModel(OrderRepository()) as T
+            // 1. Buat Retrofit instance untuk Geocoding API
+            val retrofit = retrofit2.Retrofit.Builder()
+                .baseUrl("https://maps.googleapis.com/")
+                .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
+                .build()
+
+            val geocodingService = retrofit.create(com.aprilarn.washflow.data.remote.weather.service.GeocodingApiService::class.java)
+
+            // 2. Masukkan kedua parameter ke dalam HomeViewModel
+            return HomeViewModel(OrderRepository(), geocodingService) as T
         }
     }
     val homeViewModel: HomeViewModel = viewModel(factory = homeViewModelFactory)
@@ -626,12 +636,12 @@ fun MainAppScreen(
                 composable("location_selection") {
                     LocationSelectionPanel(
                         // Sekarang menerima 2 parameter (lat, lon)
-                        onLocationSelected = { lat, lon ->
+                        onLocationSelected = { lat, lon, isGps ->
                             // A. Panggil fungsi baru di SettingsViewModel untuk cari nama tempat & save
                             settingsViewModel.fetchAddressAndSave(lat, lon)
 
                             // B. Tetap update cuaca di Home
-                            homeViewModel.fetchWeatherData(lat, lon)
+                            homeViewModel.fetchWeatherData(lat, lon, isGps)
 
                             // C. Kembali ke layar Settings
                             bottomNavController.popBackStack()
@@ -1050,7 +1060,7 @@ fun LocationAwareHomePage(
             if (homeViewModel.uiState.value.weather == "loading weather...") {
                 fusedLocationClient.lastLocation.addOnSuccessListener { location ->
                     if (location != null) {
-                        homeViewModel.fetchWeatherData(location.latitude, location.longitude)
+                        homeViewModel.fetchWeatherData(location.latitude, location.longitude, isGps = true)
                         onLocationFetched(location.latitude, location.longitude)
                     }
                 }
