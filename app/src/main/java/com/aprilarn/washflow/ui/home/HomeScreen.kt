@@ -17,7 +17,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.aprilarn.washflow.ui.components.Button
 import com.example.app.ui.components.StatusCard
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import androidx.compose.ui.layout.onSizeChanged
@@ -28,6 +27,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.LocationOff
 import androidx.compose.material.icons.filled.MyLocation
 
 @Composable
@@ -136,8 +136,8 @@ fun HomeScreen(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Icon(
-                        // Jika dari GPS gunakan Pin, jika manual gunakan Scope Sniper
-                        imageVector = if (state.isGpsLocation) Icons.Default.LocationOn else Icons.Default.MyLocation,
+                        // Jika Auto (Gps) gunakan LocationOn, jika manual (Map Pin/Sniper) gunakan LocationOff (dicoret)
+                        imageVector = if (state.isGpsLocation) Icons.Default.LocationOn else Icons.Default.LocationOff,
                         contentDescription = "Location Type",
                         tint = GrayBlue,
                         modifier = Modifier.size(14.dp)
