@@ -410,7 +410,7 @@ fun LocationSelectionPanelPreview() {
         LocationSelectionPanel(
             onLocationSelected = { _, _, _-> },
             onBackClick = {},
-            isPreview = true
+            isPreview = false
         )
     }
 }

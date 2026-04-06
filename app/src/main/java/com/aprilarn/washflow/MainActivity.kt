@@ -1,6 +1,7 @@
 package com.aprilarn.washflow
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -634,16 +635,28 @@ fun MainAppScreen(
                 }
 
                 composable("location_selection") {
+                    // Panggil context untuk SharedPreferences
+                    val context = LocalContext.current
+                    val sharedPreferences = remember { context.getSharedPreferences("WashFlowPrefs", Context.MODE_PRIVATE) }
+
                     LocationSelectionPanel(
                         // Sekarang menerima 2 parameter (lat, lon)
                         onLocationSelected = { lat, lon, isGps ->
-                            // A. Panggil fungsi baru di SettingsViewModel untuk cari nama tempat & save
+                            sharedPreferences.edit().apply {
+                                // Jika isGps = true berarti "Auto", jika false berarti "Static/Manual"
+                                putString("LOCATION_MODE", if (isGps) "AUTO" else "STATIC")
+                                putFloat("STATIC_LAT", lat.toFloat())
+                                putFloat("STATIC_LON", lon.toFloat())
+                                apply()
+                            }
+
+                            // Panggil fungsi baru di SettingsViewModel untuk cari nama tempat & save
                             settingsViewModel.fetchAddressAndSave(lat, lon)
 
-                            // B. Tetap update cuaca di Home
+                            // Tetap update cuaca di Home
                             homeViewModel.fetchWeatherData(lat, lon, isGps)
 
-                            // C. Kembali ke layar Settings
+                            // Kembali ke layar Settings
                             bottomNavController.popBackStack()
                         },
                         onBackClick = { bottomNavController.popBackStack() }
@@ -1022,20 +1035,22 @@ fun LocationAwareHomePage(
     onLocationFetched: (Double, Double) -> Unit
 ) {
     val context = LocalContext.current
-//    val factory = object : ViewModelProvider.Factory {
-//        @Suppress("UNCHECKED_CAST")
-//        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-//            return HomeViewModel(OrderRepository()) as T
-//        }
-//    }
-//    val homeViewModel: HomeViewModel = viewModel(factory = factory)
+    val sharedPreferences = remember { context.getSharedPreferences("WashFlowPrefs", Context.MODE_PRIVATE) }
+    val locationMode = sharedPreferences.getString("LOCATION_MODE", "AUTO") ?: "AUTO"
+    val savedLat = sharedPreferences.getFloat("STATIC_LAT", 0f). toDouble()
+    val savedLon = sharedPreferences.getFloat("STATIC_LON", 0f). toDouble()
+
+    // cek apakah user sedang menggunakan mode statis/tembak manual
+    val isStaticMode = locationMode == "STATIC" && savedLat != 0.0 && savedLon != 0.0
+
     var hasLocationPermission by remember { mutableStateOf(false) }
 
     // Launcher untuk meminta izin lokasi
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        if (permissions.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false) ||
+        if (permissions.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false)
+            ||
             permissions.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false)
         ) {
             hasLocationPermission = true
@@ -1045,40 +1060,48 @@ fun LocationAwareHomePage(
     // FusedLocationProviderClient untuk mendapatkan lokasi
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
 
-    // Cek izin dan ambil lokasi saat komponen pertama kali dibuat
-    LaunchedEffect(key1 = hasLocationPermission) {
-        val fineLocationGranted = ContextCompat.checkSelfPermission(
-            context, Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
-        val coarseLocationGranted = ContextCompat.checkSelfPermission(
-            context, Manifest.permission.ACCESS_COARSE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
-
-        if (fineLocationGranted || coarseLocationGranted) {
-            hasLocationPermission = true
-            // Hanya ambil lokasi awal JIKA API belum me-load data (menghindari tumpah tindih dengan lokasi manual dari setelan)
+    // Cek mode dan jalankan logika pengambilan cuaca
+    LaunchedEffect(key1 = hasLocationPermission, key2 = isStaticMode) {
+        if (isStaticMode) {
+            // JIKA MODE STATIC: Langsung gunakan koordinat memori, tidak perlu menyalakan GPS
             if (homeViewModel.uiState.value.weather == "loading weather...") {
-                fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                    if (location != null) {
-                        homeViewModel.fetchWeatherData(location.latitude, location.longitude, isGps = true)
-                        onLocationFetched(location.latitude, location.longitude)
-                    }
-                }
+                homeViewModel.fetchWeatherData(savedLat, savedLon, isGps = false)
+                onLocationFetched(savedLat, savedLon)
             }
         } else {
-            // Jika belum ada, minta izin
-            locationPermissionLauncher.launch(
-                arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
+            // JIKA MODE AUTO: Cek izin dan ambil lokasi GPS saat ini
+            val fineLocationGranted = ContextCompat.checkSelfPermission(
+                context, Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+            val coarseLocationGranted = ContextCompat.checkSelfPermission(
+                context, Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+
+            if (fineLocationGranted || coarseLocationGranted) {
+                hasLocationPermission = true
+                if (homeViewModel.uiState.value.weather == "loading weather...") {
+                    fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                        if (location != null) {
+                            homeViewModel.fetchWeatherData(location.latitude, location.longitude, isGps = true)
+                            onLocationFetched(location.latitude, location.longitude)
+                        }
+                    }
+                }
+            } else {
+                // Jika belum ada izin, minta ke pengguna
+                locationPermissionLauncher.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    )
                 )
-            )
+            }
         }
     }
 
-    // Tentukan UI yang akan ditampilkan berdasarkan state izin
-    if (hasLocationPermission) {
-        val uiState by homeViewModel.uiState.collectAsStateWithLifecycle() // Pastikan mengamati statenya
+    // Tentukan UI yang akan ditampilkan (Jika Static, abaikan pengecekan izin lokasi)
+    if (isStaticMode || hasLocationPermission) {
+        val uiState by homeViewModel.uiState.collectAsStateWithLifecycle()
 
         HomePage(
             homeViewModel = homeViewModel,
@@ -1086,10 +1109,10 @@ fun LocationAwareHomePage(
             onStatusCardClick = onNavigateToManageOrder
         )
     } else {
-        // Tampilan jika pengguna menolak izin
+        // Tampilan jika pengguna menolak izin GPS (dan mereka belum pernah mengeset manual pin)
         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
             Text(
-                text = "Aplikasi memerlukan izin lokasi untuk menampilkan data cuaca.",
+                text = "Aplikasi memerlukan izin lokasi untuk menampilkan data cuaca. Silakan berikan izin atau set lokasi manual di Settings.",
                 color = Color.White,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(32.dp)
