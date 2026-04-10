@@ -21,13 +21,20 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -43,7 +50,7 @@ fun Header(
     navController: NavController,
     workspaceName: String,
     onWorkspaceClick: () -> Unit,
-    dropdownContent: @Composable BoxScope.() -> Unit
+    dropdownContent: @Composable BoxScope.(IntOffset) -> Unit
 ) {
     Row(
         modifier = modifier
@@ -87,7 +94,11 @@ fun Header(
         Spacer(modifier=Modifier.weight(1f)) // Spacer fleksibel untuk mendorong item ke ujung kanan
 
         // 3. Nama Workspace & Dropdown
-        Box {
+        var triggerSize by remember { mutableStateOf(IntSize.Zero) }
+        Box(
+            modifier = Modifier
+                .onGloballyPositioned { coordinates -> triggerSize = coordinates.size }
+        ) {
             Row(
                 modifier = Modifier
                     .clip(RoundedCornerShape(12.dp))
@@ -112,10 +123,9 @@ fun Header(
 
             // --- KONTEN DROPDOWN AKAN DIRENDER DI SINI ---
             // Posisinya akan relatif terhadap Box di atas
-            dropdownContent()
+            dropdownContent(IntOffset(0, triggerSize.height))
         }
-        // icon notification
-        // Ikon notifikasi sekarang menjadi sebuah tombol
+        // 4. Icon Notification
         IconButton(onClick = { /* TODO: Tambahkan aksi saat tombol diklik di sini */ }) {
             Icon(
                 imageVector = Icons.Default.Notifications,
@@ -133,6 +143,6 @@ fun HeaderPreview() {
         workspaceName = "Example",
         navController = rememberNavController(),
         onWorkspaceClick = {},
-        dropdownContent = {}
+        dropdownContent = { _ -> }
     )
 }

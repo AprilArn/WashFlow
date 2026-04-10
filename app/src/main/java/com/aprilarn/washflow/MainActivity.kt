@@ -16,6 +16,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -42,6 +43,7 @@ import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,7 +59,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -107,6 +112,7 @@ import com.aprilarn.washflow.ui.theme.MainBLue
 import com.aprilarn.washflow.ui.theme.MornYellow
 import com.aprilarn.washflow.ui.theme.NoonBlue
 import com.aprilarn.washflow.ui.theme.EveOrange
+import com.aprilarn.washflow.ui.theme.MainFontBlack
 import com.aprilarn.washflow.ui.theme.NightDarkBlue
 import com.aprilarn.washflow.ui.theme.WashFlowTheme
 import com.aprilarn.washflow.ui.workspace.WorkspaceEvent
@@ -373,11 +379,12 @@ fun MainAppScreen(
                 navController = bottomNavController,
                 workspaceName = mainUiState.workspaceName,
                 onWorkspaceClick = { mainViewModel.onWorkspaceNameClicked() }
-            ) {
+            ) { popupOffset ->
                 // --- TERUSKAN INFORMASI OWNER KE DROPDOWN ---
                 WorkspaceOptionsDropdown(
                     expanded = mainUiState.showWorkspaceOptions,
                     isOwner = mainUiState.isCurrentUserOwner,
+                    popupOffset = popupOffset,
                     onDismiss = { mainViewModel.onDismissWorkspaceOptions() },
                     onRenameClicked = { mainViewModel.showRenameDialog() },
                     onContributorsClicked = {
@@ -721,6 +728,7 @@ fun MainAppScreen(
 fun WorkspaceOptionsDropdown(
     expanded: Boolean,
     isOwner: Boolean,
+    popupOffset: IntOffset, // <--- Terima Parameter Baru
     onDismiss: () -> Unit,
     onRenameClicked: () -> Unit,
     onContributorsClicked: () -> Unit,
@@ -728,45 +736,88 @@ fun WorkspaceOptionsDropdown(
     onLeaveWorkspaceClicked: () -> Unit,
     onDeleteWorkspaceClicked: () -> Unit
 ) {
-    DropdownMenu(
-        expanded = expanded,
-        onDismissRequest = onDismiss
-    ) {
-        DropdownMenuItem(
-            text = { Text("Ubah Nama Workspace") },
-            onClick = onRenameClicked,
-            enabled = isOwner // Hanya aktif jika owner
-        )
-        DropdownMenuItem(
-            text = { Text("Contributors") },
-            onClick = onContributorsClicked,
-            //enabled = isOwner // Only owner can add contributors
-        )
-        DropdownMenuItem(
-            text = { Text("Leave Workspace") },
-            onClick = onLeaveWorkspaceClicked,
-            enabled = !isOwner // Hanya aktif jika BUKAN owner
-        )
-        DropdownMenuItem(
-            text = {
-                // Tentukan warna teks berdasarkan apakah 'owner' atau bukan
-                val textColor = if (isOwner) {
-                    // Jika 'owner' (enabled), warnanya merah terang
-                    MaterialTheme.colorScheme.error
-                } else {
-                    // Jika 'member' (disabled), warnanya merah pudar (merah keabu-abuan)
-                    MaterialTheme.colorScheme.error.copy(alpha = 0.4f)
-                }
+    if (expanded) {
+        Popup(
+            alignment = Alignment.TopEnd, // Rata Kanan mengikuti ujung teks
+            offset = popupOffset,         // Posisi persis di bawah teks
+            properties = PopupProperties(focusable = true),
+            onDismissRequest = onDismiss
+        ) {
+            Surface(
+                modifier = Modifier
+                    .wrapContentWidth()
+                    .padding(top = 8.dp),
+                shape = RoundedCornerShape(12.dp),
+                shadowElevation = 8.dp,
+                color = Color.White
+            ) {
+                Column(
+                    modifier = Modifier
+                        .width(IntrinsicSize.Max)
+                ) {
+                    if (isOwner) {
+                        WorkspaceDropdownItem(
+                            text = "Ubah Nama Workspace",
+                            onClick = {
+                                onRenameClicked()
+                                onDismiss()
+                            }
+                        )
+                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
+                    }
 
-                Text(
-                    text = "Delete Workspace",
-                    color = textColor
-                )
-            },
-            onClick = onDeleteWorkspaceClicked,
-            enabled = isOwner
-        )
+                    WorkspaceDropdownItem(
+                        text = "Contributors",
+                        onClick = {
+                            onContributorsClicked()
+                            onDismiss()
+                        }
+                    )
+
+                    if (!isOwner) {
+                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
+                        WorkspaceDropdownItem(
+                            text = "Leave Workspace",
+                            onClick = {
+                                onLeaveWorkspaceClicked()
+                                onDismiss()
+                            }
+                        )
+                    }
+
+                    if (isOwner) {
+                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
+                        WorkspaceDropdownItem(
+                            text = "Delete Workspace",
+                            color = MaterialTheme.colorScheme.error,
+                            onClick = {
+                                onDeleteWorkspaceClicked()
+                                onDismiss()
+                            }
+                        )
+                    }
+                }
+            }
+        }
     }
+}
+
+// Fungsi Bantuan untuk Item Menu (Agar rapi dan tidak mengulang kode)
+@Composable
+fun WorkspaceDropdownItem(
+    text: String,
+    color: Color = MainFontBlack,
+    onClick: () -> Unit
+) {
+    Text(
+        text = text,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(16.dp),
+        style = MaterialTheme.typography.bodyMedium,
+        color = color
+    )
 }
 
 @Composable
