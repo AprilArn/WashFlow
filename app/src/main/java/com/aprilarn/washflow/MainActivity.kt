@@ -997,6 +997,7 @@ fun CreateInviteDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth(),
                     value = maxContributors,
                     onValueChange = { if (it.all { char -> char.isDigit() }) maxContributors = it },
                     label = { Text("Max Contributors") },
