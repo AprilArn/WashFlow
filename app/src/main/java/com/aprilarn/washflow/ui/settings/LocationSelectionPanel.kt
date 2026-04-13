@@ -110,6 +110,8 @@ fun LocationSelectionPanel(
     var isGpsPin by remember { mutableStateOf(false) }
     var gpsTriggerMode by remember { mutableStateOf("AUTO") }
 
+    var showAutoDialog by remember { mutableStateOf(false) }
+
     // State untuk Search Bar
     var isSearchExpanded by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
@@ -134,7 +136,7 @@ fun LocationSelectionPanel(
                 if (location != null) {
                     val currentLatLng = LatLng(location.latitude, location.longitude)
                     selectedLatLng = currentLatLng
-                    isGpsPin = true
+                    isGpsPin = (gpsTriggerMode == "AUTO")
                     selectedAddressName = "Mencari alamat..."
 
                     coroutineScope.launch {
@@ -347,10 +349,8 @@ fun LocationSelectionPanel(
                             // 1. Tombol Auto (Dinamis)
                             OutlinedButton(
                                 onClick = {
-                                    gpsTriggerMode = "AUTO"
-                                    locationPermissionLauncher.launch(
-                                        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
-                                    )
+                                    // Tampilkan dialog konfirmasi
+                                    showAutoDialog = true
                                 },
                                 modifier = Modifier.height(50.dp)
                             ) {
@@ -386,6 +386,46 @@ fun LocationSelectionPanel(
                             }
                         }
                     }
+                }
+
+                // --- DIALOG KONFIRMASI MODE AUTO ---
+                if (showAutoDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showAutoDialog = false },
+                        title = {
+                            Text(
+                                text = "Aktifkan Mode Otomatis?",
+                                style = MaterialTheme.typography.titleLarge
+                            )
+                        },
+                        text = {
+                            Text(
+                                text = "Rekomendasi cuaca akan selalu diperbarui secara dinamis mengikuti lokasi GPS perangkat Anda saat ini ke manapun Anda pergi.",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    showAutoDialog = false
+                                    gpsTriggerMode = "AUTO"
+                                    locationPermissionLauncher.launch(
+                                        arrayOf(
+                                            Manifest.permission.ACCESS_FINE_LOCATION,
+                                            Manifest.permission.ACCESS_COARSE_LOCATION
+                                        )
+                                    )
+                                }
+                            ) {
+                                Text("Aktifkan")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showAutoDialog = false }) {
+                                Text("Batal")
+                            }
+                        }
+                    )
                 }
             } else {
                 Box(modifier = Modifier.fillMaxSize().background(Color.LightGray), contentAlignment = Alignment.Center) {
