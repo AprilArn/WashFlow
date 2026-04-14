@@ -25,8 +25,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -352,7 +350,8 @@ fun MainAppScreen(
     val settingsViewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory)
     val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
 
-    // Inisialisasi HomeViewModel di level MainAppScreen agar bisa dibagikan
+    val context = LocalContext.current
+
     // Inisialisasi HomeViewModel di level MainAppScreen agar bisa dibagikan
     val homeViewModelFactory = object : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
@@ -365,8 +364,11 @@ fun MainAppScreen(
 
             val geocodingService = retrofit.create(com.aprilarn.washflow.data.remote.weather.service.GeocodingApiService::class.java)
 
-            // 2. Masukkan kedua parameter ke dalam HomeViewModel
-            return HomeViewModel(OrderRepository(), geocodingService) as T
+            // 2. Ambil SharedPreferences
+            val sharedPrefs = context.getSharedPreferences("WashFlowPrefs", Context.MODE_PRIVATE)
+
+            // 3. Masukkan ketiganya ke dalam HomeViewModel
+            return HomeViewModel(OrderRepository(), geocodingService, sharedPrefs) as T
         }
     }
     val homeViewModel: HomeViewModel = viewModel(factory = homeViewModelFactory)
