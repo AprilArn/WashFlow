@@ -4,7 +4,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -23,6 +33,9 @@ fun SettingsScreen(
     // Scroll state untuk bagian konten bawah
     val scrollState = rememberScrollState()
 
+    // State baru untuk mengontrol kemunculan dialog logout
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxSize(),
@@ -37,7 +50,6 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         // --- BAGIAN BAWAH (SCROLLABLE) ---
-        // weight(1f) memastikan bagian ini memenuhi sisa ruang layar ke bawah
         Column(
             modifier = Modifier
                 .width(600.dp) // Membatasi lebar bagian list
@@ -51,8 +63,49 @@ fun SettingsScreen(
                 onSetLocationClicked = onSetLocationClicked
             )
 
-            AccountSection(onSignOut = onSignOut)
+            AccountSection(
+                // 1. CEGAT KLIK LOGOUT: Ubah state menjadi true untuk memunculkan dialog
+                onSignOut = { showLogoutDialog = true }
+            )
         }
+    }
+
+    // --- DIALOG KONFIRMASI LOGOUT ---
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = {
+                Text(
+                    text = "Konfirmasi Logout",
+                    style = MaterialTheme.typography.titleLarge
+                )
+            },
+            text = {
+                Text(
+                    text = "Apakah Anda yakin ingin keluar dari akun ini? Anda harus login kembali untuk mengakses workspace Anda.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showLogoutDialog = false
+                        // 2. JALANKAN LOGOUT: Panggil fungsi onSignOut asli dari MainActivity jika user menekan konfirmasi
+                        onSignOut()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error // Warnai tombol konfirmasi dengan warna merah
+                    )
+                ) {
+                    Text("Logout")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text("Batal")
+                }
+            }
+        )
     }
 }
 
