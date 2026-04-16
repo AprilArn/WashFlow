@@ -45,7 +45,7 @@ fun AccountSection(
                     }
                 )
 
-                Divider(color = Color.LightGray.copy(alpha = 0.5f), modifier = Modifier.padding(horizontal = 24.dp))
+                HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f), modifier = Modifier.padding(horizontal = 24.dp))
 
                 // 2. Logout
                 SettingsItem(

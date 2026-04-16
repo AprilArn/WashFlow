@@ -1,5 +1,6 @@
 package com.aprilarn.washflow.ui.settings
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -19,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.aprilarn.washflow.ui.login.UserData
@@ -50,17 +52,27 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         // --- BAGIAN BAWAH (SCROLLABLE) ---
+        val context = LocalContext.current
+        val sharedPrefs = remember { context.getSharedPreferences("WashFlowPrefs", Context.MODE_PRIVATE) }
+        var isSoundEnabled by remember { mutableStateOf(sharedPrefs.getBoolean("SOUND_ENABLED", true)) }
+
         Column(
             modifier = Modifier
-                .width(600.dp) // Membatasi lebar bagian list
+                .width(600.dp)
                 .weight(1f)
                 .verticalScroll(scrollState),
-            verticalArrangement = Arrangement.spacedBy(24.dp) // Jarak antar section
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
 
+            // Masukkan state switch suara ke PreferencesSection
             PreferencesSection(
                 locationName = settingsUiState.locationName,
-                onSetLocationClicked = onSetLocationClicked
+                onSetLocationClicked = onSetLocationClicked,
+                isSoundEnabled = isSoundEnabled,
+                onSoundToggled = { newValue ->
+                    isSoundEnabled = newValue // Update UI Switch
+                    sharedPrefs.edit().putBoolean("SOUND_ENABLED", newValue).apply() // Simpan memori permanen
+                }
             )
 
             AccountSection(

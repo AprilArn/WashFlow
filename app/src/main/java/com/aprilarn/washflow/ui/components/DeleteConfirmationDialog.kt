@@ -1,5 +1,7 @@
 package com.aprilarn.washflow.ui.components
 
+import android.content.Context
+import android.media.MediaPlayer
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -14,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import com.aprilarn.washflow.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -24,6 +28,24 @@ fun DeleteConfirmationDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        val prefs = context.getSharedPreferences("WashFlowPrefs", Context.MODE_PRIVATE)
+        val isSoundEnabled = prefs.getBoolean("SOUND_ENABLED", true)
+
+        if (isSoundEnabled) {
+            try {
+                val mediaPlayer = MediaPlayer.create(context, R.raw.confirmation)
+                mediaPlayer.start()
+
+                // Clear memory when done
+                mediaPlayer.setOnCompletionListener { it.release() }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
     Dialog(onDismissRequest = onDismiss) {
         Card(
             shape = RoundedCornerShape(16.dp),
