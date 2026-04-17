@@ -4,7 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.NotificationsActive
@@ -46,7 +46,7 @@ fun PreferencesSection(
                 // 1. Notifications and sounds (Switch)
                 SettingsItem(
                     icon = Icons.Default.NotificationsActive,
-                    title = "Sound Notifications",
+                    title = "Notifications and sounds",
                     trailingContent = {
                         Switch(
                             modifier = Modifier.height(24.dp),
@@ -69,7 +69,7 @@ fun PreferencesSection(
                     trailingContent = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("English", color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
-                            Icon(Icons.Default.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
                         }
                     }
                 )
@@ -89,7 +89,7 @@ fun PreferencesSection(
                                 color = Color.Gray,
                                 style = MaterialTheme.typography.bodyMedium
                             )
-                            Icon(Icons.Default.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
                         }
                     }
                 )
@@ -103,7 +103,7 @@ fun PreferencesSection(
                     trailingContent = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("Light", color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
-                            Icon(Icons.Default.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
                         }
                     }
                 )

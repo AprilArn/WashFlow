@@ -759,7 +759,7 @@ fun WorkspaceOptionsDropdown(
                 ) {
                     if (isOwner) {
                         WorkspaceDropdownItem(
-                            text = "Ubah Nama Workspace",
+                            text = "Rename workspace",
                             onClick = {
                                 onRenameClicked()
                                 onDismiss()
