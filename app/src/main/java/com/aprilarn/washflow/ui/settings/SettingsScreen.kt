@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.aprilarn.washflow.ui.components.LogoutConfirmationDialog
 import com.aprilarn.washflow.ui.login.UserData
 
 @Composable
@@ -84,39 +85,12 @@ fun SettingsScreen(
 
     // --- DIALOG KONFIRMASI LOGOUT ---
     if (showLogoutDialog) {
-        AlertDialog(
-            onDismissRequest = { showLogoutDialog = false },
-            title = {
-                Text(
-                    text = "Konfirmasi Logout",
-                    style = MaterialTheme.typography.titleLarge
-                )
+        LogoutConfirmationDialog(
+            onLogoutConfirmed = {
+                showLogoutDialog = false
+                onSignOut()
             },
-            text = {
-                Text(
-                    text = "Apakah Anda yakin ingin keluar dari akun ini? Anda harus login kembali untuk mengakses workspace Anda.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showLogoutDialog = false
-                        // 2. JALANKAN LOGOUT: Panggil fungsi onSignOut asli dari MainActivity jika user menekan konfirmasi
-                        onSignOut()
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error // Warnai tombol konfirmasi dengan warna merah
-                    )
-                ) {
-                    Text("Logout")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showLogoutDialog = false }) {
-                    Text("Batal")
-                }
-            }
+            onDismiss = { showLogoutDialog = false }
         )
     }
 }
