@@ -66,3 +66,12 @@ data class Invites (
     val expiresAt: Timestamp? = null,
     val status: String? = null, // "active", "used", "expired"
 )
+
+data class Notifications (
+    val notificationId: String = "",
+    val title: String = "",
+    val message: String = "",
+    val senderUid: String = "",
+    val timestamp: Timestamp = Timestamp.now(),
+    val readBy: List<String> = emptyList() // memisahkan status baca antar-pengguna dalam satu workspace
+)
