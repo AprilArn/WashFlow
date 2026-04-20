@@ -1,11 +1,9 @@
-// File: ui/components/WashFlowTopBar.kt (Updated)
-
+// com/aprilarn/washflow/ui/components/Header.kt
 package com.aprilarn.washflow.ui.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,6 +14,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -41,64 +41,44 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.aprilarn.washflow.ui.theme.GrayBlue
 
-/**
- * Komponen Top Bar yang menampilkan judul aplikasi "WashFlow".
- */
 @Composable
 fun Header(
     modifier: Modifier = Modifier,
     navController: NavController,
     workspaceName: String,
+    unreadCount: Int,
     onWorkspaceClick: () -> Unit,
-    dropdownContent: @Composable BoxScope.(IntOffset) -> Unit
+    onNotifClick: () -> Unit,
+    // 1. PISAHKAN MENJADI DUA LAMBDA
+    workspaceDropdown: @Composable (IntOffset) -> Unit,
+    notificationDropdown: @Composable (IntOffset) -> Unit
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Start
+        modifier = modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        // 1. Judul WashFlow
+        // --- LOGO WASHFLOW ---
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = "Wash",
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    color = GrayBlue,
-                    fontSize = 22.sp,
-                    fontStyle = FontStyle.Normal,
-                ),
-                fontWeight = FontWeight.Normal,
+                style = MaterialTheme.typography.headlineMedium.copy(color = GrayBlue, fontSize = 22.sp)
             )
             Text(
                 text = "Flow",
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    color = Color.White,
-                    fontSize = 22.sp,
-                    fontStyle = FontStyle.Italic
-                ),
-                fontWeight = FontWeight.Normal,
+                style = MaterialTheme.typography.headlineSmall.copy(color = Color.White, fontSize = 22.sp, fontStyle = FontStyle.Italic)
             )
         }
 
-        // Jarak antara Judul dan Navigasi
         Spacer(modifier = Modifier.width(32.dp))
 
-        // 2. Navigation Bar
-        NavigationBar(
-            navController = navController,
-            modifier = Modifier.height(44.dp) // Tinggi yang pas untuk header
-        )
+        // --- NAVIGATION BAR ---
+        NavigationBar(navController = navController, modifier = Modifier.height(44.dp))
 
-        // Jarak antara Navigasi dan Workspace
-        Spacer(modifier=Modifier.weight(1f)) // Spacer fleksibel untuk mendorong item ke ujung kanan
+        Spacer(modifier=Modifier.weight(1f))
 
-        // 3. Nama Workspace & Dropdown
-        var triggerSize by remember { mutableStateOf(IntSize.Zero) }
-        Box(
-            modifier = Modifier
-                .onGloballyPositioned { coordinates -> triggerSize = coordinates.size }
-        ) {
+        // --- WORKSPACE DROPDOWN TRIGGER ---
+        var wsTriggerSize by remember { mutableStateOf(IntSize.Zero) }
+        Box(modifier = Modifier.onGloballyPositioned { wsTriggerSize = it.size }) {
             Row(
                 modifier = Modifier
                     .clip(RoundedCornerShape(12.dp))
@@ -108,30 +88,34 @@ fun Header(
                 Text(
                     modifier = Modifier.padding(start = 8.dp, top = 4.dp, bottom = 4.dp),
                     text = workspaceName,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = Color.White,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Light,
-                    )
+                    style = MaterialTheme.typography.bodyMedium.copy(color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Light)
                 )
-                Icon(
-                    Icons.Default.ArrowDropDown,
-                    contentDescription = "Workspace Options",
-                    tint = Color.White
-                )
+                Icon(Icons.Default.ArrowDropDown, contentDescription = "Workspace Options", tint = Color.White)
             }
 
-            // --- KONTEN DROPDOWN AKAN DIRENDER DI SINI ---
-            // Posisinya akan relatif terhadap Box di atas
-            dropdownContent(IntOffset(0, triggerSize.height))
+            // 2. MASUKKAN LAMBDA TEPAT DI DALAM BOX INI
+            workspaceDropdown(IntOffset(0, wsTriggerSize.height))
         }
-        // 4. Icon Notification
-        IconButton(onClick = { /* TODO: Tambahkan aksi saat tombol diklik di sini */ }) {
-            Icon(
-                imageVector = Icons.Default.Notifications,
-                contentDescription = "Notifikasi", // Penting untuk aksesibilitas
-                tint = Color.White // Warna ikon
-            )
+
+        // --- NOTIFICATION DROPDOWN TRIGGER ---
+        var notifTriggerSize by remember { mutableStateOf(IntSize.Zero) }
+        Box(modifier = Modifier.onGloballyPositioned { notifTriggerSize = it.size }) {
+            IconButton(onClick = onNotifClick) {
+                BadgedBox(
+                    badge = {
+                        if (unreadCount > 0) {
+                            Badge(containerColor = MaterialTheme.colorScheme.error) {
+                                Text("$unreadCount", color = Color.White, fontSize = 10.sp)
+                            }
+                        }
+                    }
+                ) {
+                    Icon(Icons.Default.Notifications, contentDescription = "Notifikasi", tint = Color.White)
+                }
+            }
+
+            // 3. MASUKKAN LAMBDA TEPAT DI DALAM BOX INI
+            notificationDropdown(IntOffset(0, notifTriggerSize.height))
         }
     }
 }
@@ -141,8 +125,11 @@ fun Header(
 fun HeaderPreview() {
     Header(
         workspaceName = "Example",
+        unreadCount = 3,
         navController = rememberNavController(),
         onWorkspaceClick = {},
-        dropdownContent = { _ -> }
+        onNotifClick = {},
+        workspaceDropdown = { _ -> },
+        notificationDropdown = { _ -> }
     )
 }

@@ -4,7 +4,9 @@ package com.aprilarn.washflow.ui
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aprilarn.washflow.data.model.Notifications
 import com.aprilarn.washflow.data.repository.InviteRepository
+import com.aprilarn.washflow.data.repository.NotificationsRepository
 import com.aprilarn.washflow.data.repository.WorkspaceRepository
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
@@ -27,7 +29,8 @@ sealed class MainNavigationEvent {
 
 class MainViewModel(
     private val workspaceRepository: WorkspaceRepository,
-    private val inviteRepository: InviteRepository
+    private val inviteRepository: InviteRepository,
+    private val notificationsRepository: NotificationsRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MainUiState())
@@ -39,6 +42,7 @@ class MainViewModel(
     init {
         listenForWorkspaceChanges()
         listenForActiveInvite()
+        listenForNotifications()
     }
 
     private fun listenForWorkspaceChanges() {
@@ -66,6 +70,21 @@ class MainViewModel(
         viewModelScope.launch {
             inviteRepository.getActiveInviteForCurrentWorkspace().collect { invite ->
                 _uiState.update { it.copy(activeInvite = invite, isInviteLoading = false) }
+            }
+        }
+    }
+
+    private fun listenForNotifications() {
+        viewModelScope.launch {
+            notificationsRepository.getNotificationsRealtime().collect { list ->
+                val currentUid = _uiState.value.currentUserUid
+                // Hitung berapa yang belum dibaca oleh user saat ini
+                val unread = list.count { currentUid !in it.readBy }
+
+                _uiState.update { it.copy(
+                    notifications = list,
+                    unreadCount = unread
+                ) }
             }
         }
     }
@@ -231,6 +250,21 @@ class MainViewModel(
                 _eventFlow.emit(MainNavigationEvent.NavigateToWorkspace)
             }
             // TODO: Tambahkan penanganan error jika 'success' adalah false
+        }
+    }
+
+    // Aksi klik ikon lonceng
+    fun onNotificationIconClicked() {
+        _uiState.update { it.copy(showNotificationOptions = !it.showNotificationOptions, showWorkspaceOptions = false) }
+    }
+
+    fun onDismissNotificationOptions() {
+        _uiState.update { it.copy(showNotificationOptions = false) }
+    }
+
+    fun markNotificationAsRead(notif: Notifications) {
+        viewModelScope.launch {
+            notificationsRepository.markAsRead(notif.notificationId)
         }
     }
 }

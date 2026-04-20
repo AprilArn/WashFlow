@@ -1,7 +1,9 @@
 package com.aprilarn.washflow.data.repository
 
+import com.aprilarn.washflow.data.model.Notifications
 import com.aprilarn.washflow.data.model.Orders
 import com.google.firebase.Firebase
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.Query
@@ -58,16 +60,39 @@ class OrderRepository {
 
     suspend fun createOrder(order: Orders): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
-        return try {
-            val ordersCollection = db.collection("workspaces")
-                .document(workspaceId)
-                .collection("orders")
+        val currentUser = Firebase.auth.currentUser ?: return false
 
-            val newOrderDoc = ordersCollection.document()
-            // Set orderId dari ID dokumen yang baru dibuat
+        // Ambil nama user yang sedang login untuk isi pesan notifikasi
+        val userName = currentUser.displayName ?: "Anggota tim"
+
+        return try {
+            val workspaceRef = db.collection("workspaces").document(workspaceId)
+
+            // Siapkan referensi dokumen baru (ID akan digenerate otomatis oleh Firebase)
+            val newOrderDoc = workspaceRef.collection("orders").document()
+            val newNotifDoc = workspaceRef.collection("notifications").document()
+
+            // 1. Siapkan data Order dengan ID dokumen yang baru
             val finalOrder = order.copy(orderId = newOrderDoc.id)
 
-            newOrderDoc.set(finalOrder).await()
+            // 2. Siapkan data Notifikasi
+            val notification = Notifications(
+                notificationId = newNotifDoc.id,
+                title = "Order Baru",
+                message = "$userName membuat order baru untuk pelanggan ${order.customerName}",
+                senderUid = currentUser.uid,
+                timestamp = Timestamp.now(),
+                // Masukkan UID pembuat ke readBy agar dia tidak mendapat notif buatannya sendiri
+                readBy = listOf(currentUser.uid)
+            )
+
+            // 3. GUNAKAN BATCH: Simpan keduanya secara bersamaan (Atomic)
+            // Ini akan memastikan koleksi 'notifications' otomatis terbuat di Firestore
+            db.runBatch { batch ->
+                batch.set(newOrderDoc, finalOrder)
+                batch.set(newNotifDoc, notification)
+            }.await()
+
             true
         } catch (e: Exception) {
             e.printStackTrace()

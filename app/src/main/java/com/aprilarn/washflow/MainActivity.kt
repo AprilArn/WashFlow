@@ -74,6 +74,7 @@ import com.aprilarn.washflow.data.model.Invites
 import com.aprilarn.washflow.data.repository.CustomerRepository
 import com.aprilarn.washflow.data.repository.InviteRepository
 import com.aprilarn.washflow.data.repository.ItemRepository
+import com.aprilarn.washflow.data.repository.NotificationsRepository
 import com.aprilarn.washflow.data.repository.OrderRepository
 import com.aprilarn.washflow.data.repository.ServiceRepository
 import com.aprilarn.washflow.data.repository.WorkspaceRepository
@@ -82,6 +83,7 @@ import com.aprilarn.washflow.ui.MainViewModel
 import com.aprilarn.washflow.ui.components.Header
 import com.aprilarn.washflow.ui.components.LeaveWorkspaceDialog
 import com.aprilarn.washflow.ui.components.NavigationBar
+import com.aprilarn.washflow.ui.components.NotificationDropdown
 import com.aprilarn.washflow.ui.contributors.ContributorsScreen
 import com.aprilarn.washflow.ui.contributors.ContributorsViewModel
 import com.aprilarn.washflow.ui.customers.CustomersScreen
@@ -268,7 +270,8 @@ class MainActivity : ComponentActivity() {
                                     @Suppress("UNCHECKED_CAST")
                                     return MainViewModel(
                                         WorkspaceRepository(),
-                                        InviteRepository()
+                                        InviteRepository(),
+                                        NotificationsRepository()
                                     ) as T
                                 }
                             }
@@ -379,24 +382,40 @@ fun MainAppScreen(
                 modifier = Modifier.padding(bottom = 30.dp),
                 navController = bottomNavController,
                 workspaceName = mainUiState.workspaceName,
-                onWorkspaceClick = { mainViewModel.onWorkspaceNameClicked() }
-            ) { popupOffset ->
-                // --- TERUSKAN INFORMASI OWNER KE DROPDOWN ---
-                WorkspaceOptionsDropdown(
-                    expanded = mainUiState.showWorkspaceOptions,
-                    isOwner = mainUiState.isCurrentUserOwner,
-                    popupOffset = popupOffset,
-                    onDismiss = { mainViewModel.onDismissWorkspaceOptions() },
-                    onRenameClicked = { mainViewModel.showRenameDialog() },
-                    onContributorsClicked = {
-                        mainViewModel.onDismissWorkspaceOptions()
-                        bottomNavController.navigate(AppNavigation.Contributors.route)
-                    },
-                    onAddContributorClicked = { mainViewModel.onAddNewContributorClicked() },
-                    onLeaveWorkspaceClicked = { mainViewModel.onLeaveWorkspaceClicked() },
-                    onDeleteWorkspaceClicked = { mainViewModel.onDeleteWorkspaceClicked() }
-                )
-            }
+                unreadCount = mainUiState.unreadCount,
+                onWorkspaceClick = { mainViewModel.onWorkspaceNameClicked() },
+                onNotifClick = { mainViewModel.onNotificationIconClicked() },
+                // Lempar ke parameter workspaceDropdown
+                workspaceDropdown = { wsOffset ->
+                    WorkspaceOptionsDropdown(
+                        expanded = mainUiState.showWorkspaceOptions,
+                        isOwner = mainUiState.isCurrentUserOwner,
+                        popupOffset = wsOffset,
+                        onDismiss = { mainViewModel.onDismissWorkspaceOptions() },
+                        onRenameClicked = { mainViewModel.showRenameDialog() },
+                        onContributorsClicked = {
+                            mainViewModel.onDismissWorkspaceOptions()
+                            bottomNavController.navigate(AppNavigation.Contributors.route)
+                        },
+                        onAddContributorClicked = { mainViewModel.onAddNewContributorClicked() },
+                        onLeaveWorkspaceClicked = { mainViewModel.onLeaveWorkspaceClicked() },
+                        onDeleteWorkspaceClicked = { mainViewModel.onDeleteWorkspaceClicked() }
+                    )
+                },
+                // Lempar ke parameter notificationDropdown
+                notificationDropdown = { notifOffset ->
+                    NotificationDropdown(
+                        expanded = mainUiState.showNotificationOptions,
+                        notifications = mainUiState.notifications,
+                        currentUid = mainUiState.currentUserUid,
+                        popupOffset = notifOffset,
+                        onDismiss = { mainViewModel.onDismissNotificationOptions() },
+                        onNotificationClick = { notif ->
+                            mainViewModel.markNotificationAsRead(notif)
+                        }
+                    )
+                }
+            )
         },
 //        bottomBar = {
 //            Box(
