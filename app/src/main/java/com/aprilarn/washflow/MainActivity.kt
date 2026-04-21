@@ -83,7 +83,7 @@ import com.aprilarn.washflow.ui.MainViewModel
 import com.aprilarn.washflow.ui.components.Header
 import com.aprilarn.washflow.ui.components.LeaveWorkspaceDialog
 import com.aprilarn.washflow.ui.components.NavigationBar
-import com.aprilarn.washflow.ui.components.NotificationDropdown
+import com.aprilarn.washflow.ui.components.NotificationPanel
 import com.aprilarn.washflow.ui.contributors.ContributorsScreen
 import com.aprilarn.washflow.ui.contributors.ContributorsViewModel
 import com.aprilarn.washflow.ui.customers.CustomersScreen
@@ -385,7 +385,6 @@ fun MainAppScreen(
                 unreadCount = mainUiState.unreadCount,
                 onWorkspaceClick = { mainViewModel.onWorkspaceNameClicked() },
                 onNotifClick = { mainViewModel.onNotificationIconClicked() },
-                // Lempar ke parameter workspaceDropdown
                 workspaceDropdown = { wsOffset ->
                     WorkspaceOptionsDropdown(
                         expanded = mainUiState.showWorkspaceOptions,
@@ -400,19 +399,6 @@ fun MainAppScreen(
                         onAddContributorClicked = { mainViewModel.onAddNewContributorClicked() },
                         onLeaveWorkspaceClicked = { mainViewModel.onLeaveWorkspaceClicked() },
                         onDeleteWorkspaceClicked = { mainViewModel.onDeleteWorkspaceClicked() }
-                    )
-                },
-                // Lempar ke parameter notificationDropdown
-                notificationDropdown = { notifOffset ->
-                    NotificationDropdown(
-                        expanded = mainUiState.showNotificationOptions,
-                        notifications = mainUiState.notifications,
-                        currentUid = mainUiState.currentUserUid,
-                        popupOffset = notifOffset,
-                        onDismiss = { mainViewModel.onDismissNotificationOptions() },
-                        onNotificationClick = { notif ->
-                            mainViewModel.markNotificationAsRead(notif)
-                        }
                     )
                 }
             )
@@ -692,6 +678,17 @@ fun MainAppScreen(
             }
         }
     }
+
+    // 2. PANEL NOTIFIKASI MELAYANG (Berada paling atas karena ditulis paling akhir)
+    NotificationPanel(
+        expanded = mainUiState.showNotificationOptions,
+        notifications = mainUiState.notifications,
+        currentUid = mainUiState.currentUserUid,
+        onDismiss = { mainViewModel.onDismissNotificationOptions() },
+        onNotificationClick = { notif ->
+            mainViewModel.markNotificationAsRead(notif)
+        }
+    )
 
     // --- DIALOG UNTUK RENAME WORKSPACE ---
     // Ditampilkan di luar Scaffold agar muncul di atas segalanya

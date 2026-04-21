@@ -49,9 +49,7 @@ fun Header(
     unreadCount: Int,
     onWorkspaceClick: () -> Unit,
     onNotifClick: () -> Unit,
-    // 1. PISAHKAN MENJADI DUA LAMBDA
-    workspaceDropdown: @Composable (IntOffset) -> Unit,
-    notificationDropdown: @Composable (IntOffset) -> Unit
+    workspaceDropdown: @Composable (IntOffset) -> Unit
 ) {
     Row(
         modifier = modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
@@ -113,9 +111,6 @@ fun Header(
                     Icon(Icons.Default.Notifications, contentDescription = "Notifikasi", tint = Color.White)
                 }
             }
-
-            // 3. MASUKKAN LAMBDA TEPAT DI DALAM BOX INI
-            notificationDropdown(IntOffset(0, notifTriggerSize.height))
         }
     }
 }
@@ -129,7 +124,6 @@ fun HeaderPreview() {
         navController = rememberNavController(),
         onWorkspaceClick = {},
         onNotifClick = {},
-        workspaceDropdown = { _ -> },
-        notificationDropdown = { _ -> }
+        workspaceDropdown = { _ -> }
     )
 }
