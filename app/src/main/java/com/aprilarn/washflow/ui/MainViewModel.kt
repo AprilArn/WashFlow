@@ -39,6 +39,9 @@ class MainViewModel(
     private val _eventFlow = MutableSharedFlow<MainNavigationEvent>()
     val eventFlow = _eventFlow.asSharedFlow()
 
+    private var isInitialLoad = true
+    private val displayedNotifIds = mutableSetOf<String>()
+
     init {
         listenForWorkspaceChanges()
         listenForActiveInvite()
@@ -78,14 +81,57 @@ class MainViewModel(
         viewModelScope.launch {
             notificationsRepository.getNotificationsRealtime().collect { list ->
                 val currentUid = Firebase.auth.currentUser?.uid ?: ""
-                // Hitung berapa yang belum dibaca oleh user saat ini
-                val unread = list.count { currentUid !in it.readBy }
 
+                // LOGIKA GERBANG AWAL
+                if (isInitialLoad) {
+                    // Jika ini adalah batch data pertama dari Firebase saat aplikasi dibuka,
+                    // masukkan semua ID ke displayedNotifIds TANPA memanggil showNotificationPreview.
+                    list.forEach { displayedNotifIds.add(it.notificationId) }
+                    isInitialLoad = false // Tutup gerbang setelah data awal tercatat
+                } else {
+                    // Untuk batch data selanjutnya (saat aplikasi sedang berjalan),
+                    // barulah kita filter mana yang benar-benar baru masuk.
+                    val newNotifs = list.filter { it.notificationId !in displayedNotifIds }
+
+                    newNotifs.forEach { notif ->
+                        displayedNotifIds.add(notif.notificationId)
+                        showNotificationPreview(notif)
+                    }
+                }
+
+                // Update UI State seperti biasa
+                val unread = list.count { currentUid !in it.readBy }
                 _uiState.update { it.copy(
                     notifications = list,
                     unreadCount = unread,
                     currentUserUid = currentUid
-                ) }
+                )}
+            }
+        }
+    }
+
+    private fun showNotificationPreview(notif: Notifications) {
+        _uiState.update {
+            // Menaruh yang terbaru di index 0 (paling atas di Column)
+            it.copy(notificationPreviews = listOf(notif) + it.notificationPreviews)
+        }
+    }
+
+    fun removeNotificationPreview(notifId: String, wasSwiped: Boolean) {
+        val notif = _uiState.value.notificationPreviews.find { it.notificationId == notifId }
+        val currentUid = _uiState.value.currentUserUid
+
+        _uiState.update { state ->
+            state.copy(notificationPreviews = state.notificationPreviews.filter { it.notificationId != notifId })
+        }
+
+        // Logika Status Read:
+        // 1. Jika pembuat (User A), di database sudah 'read' (karena UID ada di readBy).
+        // 2. Jika penerima (User B) melakukan swipe left, tandai read di DB.
+        if (wasSwiped && notif != null) {
+            // Hanya kirim ke DB jika user belum ada di daftar readBy
+            if (currentUid !in notif.readBy) {
+                markNotificationAsRead(notif)
             }
         }
     }

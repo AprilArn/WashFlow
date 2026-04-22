@@ -383,8 +383,10 @@ fun MainAppScreen(
                 navController = bottomNavController,
                 workspaceName = mainUiState.workspaceName,
                 unreadCount = mainUiState.unreadCount,
+                notificationPreviews = mainUiState.notificationPreviews,
                 onWorkspaceClick = { mainViewModel.onWorkspaceNameClicked() },
                 onNotifClick = { mainViewModel.onNotificationIconClicked() },
+                onRemovePreview = { id, swiped -> mainViewModel.removeNotificationPreview(id, swiped) },
                 workspaceDropdown = { wsOffset ->
                     WorkspaceOptionsDropdown(
                         expanded = mainUiState.showWorkspaceOptions,

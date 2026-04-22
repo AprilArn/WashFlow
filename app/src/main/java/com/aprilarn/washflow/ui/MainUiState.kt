@@ -16,6 +16,7 @@ data class MainUiState(
     val showDeleteWorkspaceDialog: Boolean = false,
     val notifications: List<Notifications> = emptyList(),
     val unreadCount: Int = 0,
+    val notificationPreviews: List<Notifications> = emptyList(),
     val showNotificationOptions: Boolean = false,
     val currentUserUid: String = ""
 )

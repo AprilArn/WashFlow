@@ -4,8 +4,10 @@ package com.aprilarn.washflow.ui.components
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -37,8 +39,11 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.aprilarn.washflow.data.model.Notifications
 import com.aprilarn.washflow.ui.theme.GrayBlue
 
 @Composable
@@ -47,8 +52,10 @@ fun Header(
     navController: NavController,
     workspaceName: String,
     unreadCount: Int,
+    notificationPreviews: List<Notifications> = emptyList(),
     onWorkspaceClick: () -> Unit,
     onNotifClick: () -> Unit,
+    onRemovePreview: (String, Boolean) -> Unit,
     workspaceDropdown: @Composable (IntOffset) -> Unit
 ) {
     Row(
@@ -111,6 +118,37 @@ fun Header(
                     Icon(Icons.Default.Notifications, contentDescription = "Notifikasi", tint = Color.White)
                 }
             }
+            // --- AREA PREVIEW NOTIFIKASI ---
+            if (notificationPreviews.isNotEmpty()) {
+                Popup(
+                    alignment = Alignment.TopEnd,
+                    offset = IntOffset(0, notifTriggerSize.height),
+                    properties = PopupProperties(
+                        focusable = false,
+                        dismissOnClickOutside = false,
+                        dismissOnBackPress = false,
+                        clippingEnabled = false // Mencegah popup bergeser ke atas saat animasi jatuh
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .fillMaxHeight()
+                            .padding(top = 12.dp), // Hanya padding atas agar ada jarak dari lonceng
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalAlignment = Alignment.End
+                    ) {
+                        notificationPreviews.forEach { notif ->
+                            NotificationPreviewItem(
+                                notification = notif,
+                                onRemove = { wasSwiped ->
+                                    onRemovePreview(notif.notificationId, wasSwiped)
+                                }
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -121,9 +159,11 @@ fun HeaderPreview() {
     Header(
         workspaceName = "Example",
         unreadCount = 3,
+        notificationPreviews = emptyList(),
         navController = rememberNavController(),
         onWorkspaceClick = {},
         onNotifClick = {},
+        onRemovePreview = { _, _ -> },
         workspaceDropdown = { _ -> }
     )
 }
