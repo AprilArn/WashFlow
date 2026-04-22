@@ -30,19 +30,18 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aprilarn.washflow.data.model.Notifications
+import com.aprilarn.washflow.ui.theme.Gray
 import com.aprilarn.washflow.ui.theme.MainFontBlack
 import java.text.SimpleDateFormat
 import java.util.Locale
 
-// --- FUNGSI LOGIKA IKON DINAMIS ---
-// Fungsi ini akan memilih ikon secara otomatis berdasarkan Judul Notifikasi
 @Composable
 private fun getNotificationIcon(title: String): ImageVector {
     return when (title) {
-        "Order Baru" -> Icons.Outlined.ShoppingBasket // Ikon Keranjang sesuai request
+        "Order Baru" -> Icons.Outlined.ShoppingBasket
         "Contributor Baru" -> Icons.Outlined.PersonAdd
         "Update Sistem" -> Icons.Outlined.Update
-        else -> Icons.Outlined.Notifications // Fallback jika judul tidak dikenal
+        else -> Icons.Outlined.Notifications
     }
 }
 
@@ -90,11 +89,10 @@ fun NotificationPanel(
                 shadowElevation = 24.dp
             ) {
                 Column(modifier = Modifier.fillMaxSize()) {
-                    // Header Section
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 24.dp, end = 16.dp, top = 24.dp, bottom = 12.dp),
+                            .padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 12.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -108,7 +106,7 @@ fun NotificationPanel(
                         )
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            TextButton(onClick = { /* TODO */ }) {
+                            TextButton(onClick = { /* TODO: Mark all as read */ }) {
                                 Text(
                                     text = "Mark all as read",
                                     color = MaterialTheme.colorScheme.primary,
@@ -116,13 +114,9 @@ fun NotificationPanel(
                                     fontWeight = FontWeight.Medium
                                 )
                             }
-                            IconButton(onClick = onDismiss) {
-                                Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.Gray)
-                            }
                         }
                     }
 
-                    // Tab Navigation (Visual)
                     Row(
                         modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -141,7 +135,7 @@ fun NotificationPanel(
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(12.dp)
+                            contentPadding = PaddingValues(vertical = 4.dp)
                         ) {
                             items(notifications) { notif ->
                                 val isUnread = currentUid !in notif.readBy
@@ -151,7 +145,6 @@ fun NotificationPanel(
                                     isUnread = isUnread,
                                     onClick = { onNotificationClick(notif) }
                                 )
-                                Spacer(Modifier.height(12.dp))
                             }
                         }
                     }
@@ -169,95 +162,99 @@ fun NotificationPanelItem(
 ) {
     val formatter = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault())
     val dateString = notification.timestamp.toDate().let { formatter.format(it) }
-
-    // Memanggil fungsi pemilihan ikon otomatis
     val itemIcon = getNotificationIcon(notification.title)
+    val backgroundColor = if (isUnread) Color(0xFFF8FBFF) else Color.White
 
-    Box(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .background(if (isUnread) Color(0xFFF8FBFF) else Color.White)
-            .clickable { onClick() }
-            .padding(8.dp), // hapus agar ke tepi
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .height(IntrinsicSize.Max)
+            .background(backgroundColor)
+            .clickable { onClick() },
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.Top
+        // --- BAGIAN KIRI: Strip Latar Belakang Ikon ---
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(72.dp)
+                .background(
+                    if (isUnread) MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+                    else Color(0xFFF8FAFC)
+                ),
+            contentAlignment = Alignment.Center
         ) {
-            // Circle Icon Container
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(if (isUnread) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else Color(0xFFF5F5F5)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = itemIcon, // Ikon dinamis
-                    contentDescription = null,
-                    tint = if (isUnread) MaterialTheme.colorScheme.primary else Color.Gray,
-                    modifier = Modifier.size(24.dp)
+            Icon(
+                imageVector = itemIcon,
+                contentDescription = null,
+                tint = if (isUnread) MaterialTheme.colorScheme.primary else Color(0xFF94A3B8),
+                modifier = Modifier.size(26.dp)
+            )
+        }
+
+        // --- BAGIAN TENGAH: Konten Teks ---
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 20.dp, vertical = 12.dp)
+        ) {
+            Text(
+                text = notification.title,
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                ),
+                color = if (isUnread) MainFontBlack else Gray
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = notification.message,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = 13.sp
+                ),
+                color = Color(0xFF64748B),
+                lineHeight = 18.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = dateString,
+                style = MaterialTheme.typography.labelMedium,
+                color = Color(0xFFA0AABF)
+            )
+        }
+
+        // --- BAGIAN KANAN: Indikator & Menu ---
+        Column(
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier
+                .fillMaxHeight()
+                .padding(end = 16.dp, top = 18.dp, bottom = 18.dp)
+        ) {
+            if (isUnread) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .background(MaterialTheme.colorScheme.primary, CircleShape)
                 )
+            } else {
+                Spacer(modifier = Modifier.size(8.dp))
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = notification.title,
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp
-                    ),
-                    color = MainFontBlack
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = notification.message,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF64748B),
-                    lineHeight = 20.sp,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = dateString,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color(0xFFA0AABF)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            // Right side indicators
-            Column(
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.height(64.dp)
-            ) {
-                if (isUnread) {
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .background(MaterialTheme.colorScheme.primary, CircleShape)
-                    )
-                } else {
-                    Spacer(modifier = Modifier.size(10.dp))
-                }
-
-                Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = "Options",
-                    tint = Color.LightGray,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
+            Icon(
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = "Options",
+                tint = Color(0xFFCBD5E1),
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
 }

@@ -77,13 +77,14 @@ class MainViewModel(
     private fun listenForNotifications() {
         viewModelScope.launch {
             notificationsRepository.getNotificationsRealtime().collect { list ->
-                val currentUid = _uiState.value.currentUserUid
+                val currentUid = Firebase.auth.currentUser?.uid ?: ""
                 // Hitung berapa yang belum dibaca oleh user saat ini
                 val unread = list.count { currentUid !in it.readBy }
 
                 _uiState.update { it.copy(
                     notifications = list,
-                    unreadCount = unread
+                    unreadCount = unread,
+                    currentUserUid = currentUid
                 ) }
             }
         }
