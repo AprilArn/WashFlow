@@ -1,19 +1,13 @@
-// com/aprilarn/washflow/ui/components/Header.kt
 package com.aprilarn.washflow.ui.components
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -41,8 +35,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupProperties
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.aprilarn.washflow.data.model.Notifications
@@ -120,37 +112,6 @@ fun Header(
                     Icon(Icons.Default.Notifications, contentDescription = "Notifikasi", tint = Color.White)
                 }
             }
-            // --- AREA PREVIEW NOTIFIKASI ---
-//            if (notificationPreviews.isNotEmpty()) {
-//                Popup(
-//                    alignment = Alignment.TopEnd,
-//                    // Geser sedikit offset X agar tidak terlalu nempel di pinggir kanan layar
-//                    offset = IntOffset(-24, notifTriggerSize.height),
-//                    properties = PopupProperties(
-//                        focusable = false,
-//                        dismissOnClickOutside = false,
-//                        dismissOnBackPress = false,
-//                        clippingEnabled = false // Ini kunci utamanya!
-//                    )
-//                ) {
-//                    Column(
-//                        modifier = Modifier
-//                            .wrapContentSize()
-//                            .padding(top = 12.dp),
-//                        verticalArrangement = Arrangement.spacedBy(8.dp),
-//                        horizontalAlignment = Alignment.End
-//                    ) {
-//                        notificationPreviews.forEach { notif ->
-//                            NotificationPreviewItem(
-//                                notification = notif,
-//                                onRemove = { wasSwiped ->
-//                                    onRemovePreview(notif.notificationId, wasSwiped)
-//                                }
-//                            )
-//                        }
-//                    }
-//                }
-//            }
         }
     }
 }

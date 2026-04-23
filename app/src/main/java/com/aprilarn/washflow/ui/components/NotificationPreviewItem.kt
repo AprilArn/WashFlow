@@ -49,13 +49,25 @@ fun NotificationPreviewItem(
     notification: Notifications,
     onRemove: (wasSwiped: Boolean) -> Unit
 ) {
-    var offsetX by remember { mutableFloatStateOf(0f) }
+    var rawOffsetX by remember { mutableFloatStateOf(0f) }
     var isVisible by remember { mutableStateOf(false) }
     var isFalling by remember { mutableStateOf(false) }
     var isDragging by remember { mutableStateOf(false) }
 
-    val timeoutMillis = 10000L
+    val timeoutMillis = 15000L
     val progress = remember { Animatable(1f) }
+    val deleteThreshold = 240f
+    val fallThreshold = 300f
+
+    // Animasi snap back saat dilepas
+    val offsetX by animateFloatAsState(
+        targetValue = rawOffsetX,
+        animationSpec = if (isDragging || isFalling) snap() else spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "offsetX"
+    )
 
     LaunchedEffect(isDragging, isFalling) {
         if (!isDragging && !isFalling) {
@@ -80,15 +92,24 @@ fun NotificationPreviewItem(
         }
     }
 
+    val fallingX by animateFloatAsState(
+        targetValue = if (isFalling) -1000f else 0f,
+        animationSpec = tween(durationMillis = 800, easing = FastOutLinearInEasing)
+    )
+
     val fallingY by animateFloatAsState(
         targetValue = if (isFalling) 2000f else 0f,
-        animationSpec = tween(durationMillis = 1000, easing = FastOutLinearInEasing)
+        animationSpec = tween(durationMillis = 800, easing = FastOutLinearInEasing)
     )
 
     // Efek miring saat digeser
     val rotationZ by animateFloatAsState(
-        targetValue = if (isFalling) -20f else (offsetX / 20f).coerceIn(-15f, 0f),
-        animationSpec = if (isFalling) tween(500) else spring()
+        targetValue = when {
+            isFalling -> -45f // Lebih miring saat jatuh
+            offsetX < -deleteThreshold -> (offsetX / 20f).coerceIn(-15f, 0f)
+            else -> 0f
+        },
+        animationSpec = if (isFalling) tween(800) else spring()
     )
 
     if (fallingY > 1500f) {
@@ -103,7 +124,7 @@ fun NotificationPreviewItem(
         Box(
             modifier = Modifier
                 .graphicsLayer {
-                    translationX = offsetX
+                    translationX = offsetX + fallingX
                     translationY = fallingY
                     this.rotationZ = rotationZ
                     transformOrigin = TransformOrigin(1f, 0.5f) // Pivot di tengah kanan
@@ -113,19 +134,22 @@ fun NotificationPreviewItem(
                 .pointerInput(Unit) {
                     detectHorizontalDragGestures(
                         onDragStart = { isDragging = true },
-                        onDragCancel = { isDragging = false },
+                        onDragCancel = { 
+                            isDragging = false
+                            rawOffsetX = 0f
+                        },
                         onDragEnd = {
                             isDragging = false
-                            if (offsetX < -80f) { // Toleransi geser 80dp
+                            if (rawOffsetX < -fallThreshold) {
                                 isFalling = true
                             } else {
-                                offsetX = 0f
+                                rawOffsetX = 0f
                             }
                         },
                         onHorizontalDrag = { _, dragAmount ->
                             // Hanya izinkan geser ke kiri
-                            if (offsetX + dragAmount <= 0) {
-                                offsetX += dragAmount
+                            if (rawOffsetX + dragAmount <= 0) {
+                                rawOffsetX += dragAmount
                             }
                         }
                     )

@@ -39,7 +39,7 @@ class MainViewModel(
     private val _eventFlow = MutableSharedFlow<MainNavigationEvent>()
     val eventFlow = _eventFlow.asSharedFlow()
 
-    private var isInitialLoad = true
+    private val appInitTime = Timestamp.now()
     private val displayedNotifIds = mutableSetOf<String>()
 
     init {
@@ -82,24 +82,26 @@ class MainViewModel(
             notificationsRepository.getNotificationsRealtime().collect { list ->
                 val currentUid = Firebase.auth.currentUser?.uid ?: ""
 
-                // LOGIKA GERBANG AWAL
-                if (isInitialLoad) {
-                    // Jika ini adalah batch data pertama dari Firebase saat aplikasi dibuka,
-                    // masukkan semua ID ke displayedNotifIds TANPA memanggil showNotificationPreview.
-                    list.forEach { displayedNotifIds.add(it.notificationId) }
-                    isInitialLoad = false // Tutup gerbang setelah data awal tercatat
-                } else {
-                    // Untuk batch data selanjutnya (saat aplikasi sedang berjalan),
-                    // barulah kita filter mana yang benar-benar baru masuk.
-                    val newNotifs = list.filter { it.notificationId !in displayedNotifIds }
-
-                    newNotifs.forEach { notif ->
-                        displayedNotifIds.add(notif.notificationId)
-                        showNotificationPreview(notif)
-                    }
+                // 2. ROMBAK LOGIKA FILTER NOTIFIKASINYA DI SINI
+                // Kita cari notifikasi yang benar-benar baru masuk SAAT aplikasi sedang aktif
+                val newNotifs = list.filter { notif ->
+                    notif.notificationId !in displayedNotifIds
+                            && // Belum pernah ditampilkan
+                            notif.timestamp > appInitTime
+                            // && // Terjadi SETELAH aplikasi dibuka
+                            // notif.senderUid != currentUid // (Opsional UX) Jangan munculkan popup untuk aksi yang dilakukan user itu sendiri
                 }
 
-                // Update UI State seperti biasa
+                // Tampilkan animasi melayang hanya untuk notifikasi yang lolos filter di atas
+                newNotifs.forEach { notif ->
+                    showNotificationPreview(notif)
+                }
+
+                // 3. Masukkan semua ID notifikasi (baik yang lama maupun yang baru)
+                // ke dalam set agar tidak diproses ulang di masa depan.
+                list.forEach { displayedNotifIds.add(it.notificationId) }
+
+                // Update UI State seperti biasa (ini tetap mempengaruhi angka badge merah di lonceng)
                 val unread = list.count { currentUid !in it.readBy }
                 _uiState.update { it.copy(
                     notifications = list,
