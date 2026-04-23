@@ -84,6 +84,7 @@ import com.aprilarn.washflow.ui.components.Header
 import com.aprilarn.washflow.ui.components.LeaveWorkspaceDialog
 import com.aprilarn.washflow.ui.components.NavigationBar
 import com.aprilarn.washflow.ui.components.NotificationPanel
+import com.aprilarn.washflow.ui.components.NotificationPreviewItem
 import com.aprilarn.washflow.ui.contributors.ContributorsScreen
 import com.aprilarn.washflow.ui.contributors.ContributorsViewModel
 import com.aprilarn.washflow.ui.customers.CustomersScreen
@@ -691,6 +692,33 @@ fun MainAppScreen(
             mainViewModel.markNotificationAsRead(notif)
         }
     )
+
+    // 3. OVERLAY PREVIEW NOTIFIKASI JATUH (TANPA POPUP)
+    if (mainUiState.notificationPreviews.isNotEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize() // Memenuhi layar agar notif bisa jatuh sampai bawah
+                // Box kosong di Compose TIDAK memblokir sentuhan (touch pass-through)
+                .padding(top = 80.dp, end = 24.dp) // Jarak dari atas dan kanan, sesuaikan sedikit agar pas di bawah lonceng
+        ) {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .wrapContentSize(), // Kotak kolom hanya sebesar notifikasinya
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalAlignment = Alignment.End
+            ) {
+                mainUiState.notificationPreviews.forEach { notif ->
+                    NotificationPreviewItem(
+                        notification = notif,
+                        onRemove = { wasSwiped ->
+                            mainViewModel.removeNotificationPreview(notif.notificationId, wasSwiped)
+                        }
+                    )
+                }
+            }
+        }
+    }
 
     // --- DIALOG UNTUK RENAME WORKSPACE ---
     // Ditampilkan di luar Scaffold agar muncul di atas segalanya
