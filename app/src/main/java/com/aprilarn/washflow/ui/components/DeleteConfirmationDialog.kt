@@ -103,8 +103,8 @@ fun LongPressDeleteButton(
     val progress by animateFloatAsState(
         targetValue = if (isPressed) 1f else 0f,
         animationSpec = if (isPressed) {
-            // Jika ditekan (MAJU ke kanan): Durasi 2 detik (lambat/beban berat)
-            tween(durationMillis = 2000, easing = LinearEasing)
+            // Jika ditekan (MAJU ke kanan): Durasi 1 detik (lambat/beban berat)
+            tween(durationMillis = 1000, easing = LinearEasing)
         } else {
             // Jika dilepas/batal (MUNDUR ke kiri): Durasi 0.25 detik (cepat/snappy)
             tween(durationMillis = 250, easing = LinearEasing)
@@ -155,7 +155,7 @@ fun LongPressDeleteButton(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = if (progress >= 1f) "Deleting..." else "Hold to Delete (2s)",
+                text = if (progress >= 1f) "Deleting..." else "Hold to Delete (1s)",
                 color = if (progress > 0.5f) Color.White else Color(0xFFD32F2F),
                 fontWeight = FontWeight.Bold
             )
