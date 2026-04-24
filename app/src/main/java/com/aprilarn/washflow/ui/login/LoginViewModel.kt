@@ -5,10 +5,12 @@ package com.aprilarn.washflow.ui.login
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aprilarn.washflow.data.repository.UserRepository
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 
 class LoginViewModel : ViewModel() {
 
@@ -30,24 +32,49 @@ class LoginViewModel : ViewModel() {
 
     private fun checkUserAndWorkspace(userData: UserData) {
         viewModelScope.launch {
-            _state.update { it.copy(isCheckingWorkspace = true) }
+            _state.update { it.copy(isCheckingWorkspace = true, showTimeoutDialog = false) }
 
-            // Panggil fungsi baru yang lebih aman
-            val workspaceId = userRepository.saveUserAndGetWorkspace(
-                uid = userData.userId,
-                displayName = userData.displayName,
-                email = userData.email,
-                photoUrl = userData.profilePictureUrl
-            )
+            try {
+                // Berikan timeout selama 10 detik
+                val workspaceId = withTimeout(10000L) {
+                    // kotlinx.coroutines.delay(11000L)
+                    userRepository.saveUserAndGetWorkspace(
+                        uid = userData.userId,
+                        displayName = userData.displayName,
+                        email = userData.email,
+                        photoUrl = userData.profilePictureUrl
+                    )
+                }
 
-            // Update state berdasarkan hasil dari fungsi repositori
-            _state.update {
-                it.copy(
-                    isCheckingWorkspace = false,
-                    userHasWorkspace = (workspaceId != null) // true jika workspaceId tidak null
-                )
+                // Update state berdasarkan hasil dari fungsi repositori
+                _state.update {
+                    it.copy(
+                        isCheckingWorkspace = false,
+                        userHasWorkspace = (workspaceId != null) // true jika workspaceId tidak null
+                    )
+                }
+            } catch (e: TimeoutCancellationException) {
+                // Jika sudah 10 detik dan masih loading
+                _state.update {
+                    it.copy(
+                        isCheckingWorkspace = false,
+                        showTimeoutDialog = true
+                    )
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _state.update {
+                    it.copy(
+                        isCheckingWorkspace = false,
+                        signInError = e.message ?: "An unexpected error occurred"
+                    )
+                }
             }
         }
+    }
+
+    fun resetLoginState() {
+        _state.value = LoginUiState()
     }
 
     fun onNavigationComplete() {

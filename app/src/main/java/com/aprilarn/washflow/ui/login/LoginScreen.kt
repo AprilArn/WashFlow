@@ -23,13 +23,27 @@ import com.aprilarn.washflow.ui.theme.GrayBlue
 @Composable
 fun LoginScreen(
     state: LoginUiState = LoginUiState(),
-    onGoogleSignInClick: () -> Unit
+    onGoogleSignInClick: () -> Unit,
+    onTimeoutDialogDismiss: () -> Unit = {}
 ) {
     val context = LocalContext.current
     LaunchedEffect(key1 = state.signInError) {
         state.signInError?.let { error ->
             Toast.makeText(context, error, Toast.LENGTH_LONG).show()
         }
+    }
+
+    if (state.showTimeoutDialog) {
+        AlertDialog(
+            onDismissRequest = { /* Do nothing to force click OK */ },
+            title = { Text("Error") },
+            text = { Text("Stuck in loading, try again later") },
+            confirmButton = {
+                TextButton(onClick = onTimeoutDialogDismiss) {
+                    Text("OK")
+                }
+            }
+        )
     }
 
     Column(
@@ -114,7 +128,7 @@ fun LoginScreenPreview() {
         )
     ) {
         LoginScreen(
-            state = LoginUiState(isCheckingWorkspace = true), // Preview saat loading
+            state = LoginUiState(showTimeoutDialog = true), // Preview saat timeout
             onGoogleSignInClick = {}
         )
     }

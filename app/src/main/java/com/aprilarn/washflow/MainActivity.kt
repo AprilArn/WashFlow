@@ -220,6 +220,9 @@ class MainActivity : ComponentActivity() {
                                                 ).build()
                                             )
                                         }
+                                    },
+                                    onTimeoutDialogDismiss = {
+                                        viewModel.resetLoginState()
                                     }
                                 )
                             }
