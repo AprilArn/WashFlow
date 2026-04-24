@@ -79,6 +79,11 @@ class MainViewModel(
 
     private fun listenForNotifications() {
         viewModelScope.launch {
+            // Jalankan pembersihan notifikasi lama (2 hari+) di background
+            viewModelScope.launch(Dispatchers.IO) {
+                notificationsRepository.cleanupOldNotifications()
+            }
+
             notificationsRepository.getNotificationsRealtime().collect { list ->
                 val currentUid = Firebase.auth.currentUser?.uid ?: ""
 
