@@ -64,7 +64,7 @@ fun NotificationPreviewItem(
         targetValue = rawOffsetX,
         animationSpec = if (isDragging || isFalling) snap() else spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
+            stiffness = Spring.StiffnessMediumLow
         ),
         label = "offsetX"
     )
