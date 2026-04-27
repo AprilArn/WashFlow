@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -47,15 +48,16 @@ private fun getNotificationPreviewIcon(title: String): ImageVector {
 @Composable
 fun NotificationPreviewItem(
     notification: Notifications,
+    isVisibleInitial: Boolean = false,
     onRemove: (wasSwiped: Boolean) -> Unit
 ) {
     var rawOffsetX by remember { mutableFloatStateOf(0f) }
-    var isVisible by remember { mutableStateOf(false) }
+    var isVisible by remember { mutableStateOf(isVisibleInitial) }
     var isFalling by remember { mutableStateOf(false) }
     var isDragging by remember { mutableStateOf(false) }
 
     val timeoutMillis = 15000L
-    val progress = remember { Animatable(1f) }
+    val progress = remember { Animatable(0f) }
     val deleteThreshold = 240f
     val fallThreshold = 300f
 
@@ -72,16 +74,16 @@ fun NotificationPreviewItem(
     LaunchedEffect(isDragging, isFalling) {
         if (!isDragging && !isFalling) {
             isVisible = true
-            val remainingTime = (progress.value * timeoutMillis).toInt()
+            val remainingTime = ((1f - progress.value) * timeoutMillis).toInt()
             if (remainingTime > 0) {
                 progress.animateTo(
-                    targetValue = 0f,
+                    targetValue = 1f,
                     animationSpec = tween(durationMillis = remainingTime, easing = LinearEasing)
                 )
             }
             
-            // Jika progress mencapai 0 dan tidak sedang drag/jatuh, tutup notif
-            if (progress.value <= 0f && !isDragging && !isFalling) {
+            // Jika progress mencapai 100% dan tidak sedang drag/jatuh, tutup notif
+            if (progress.value >= 1f && !isDragging && !isFalling) {
                 isVisible = false
                 delay(400)
                 onRemove(false)
@@ -164,54 +166,59 @@ fun NotificationPreviewItem(
                     .wrapContentHeight()
                     .clip(RoundedCornerShape(16.dp))
             ) {
-                Box(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+                Box(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Max)) {
                     Row(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 12.dp),
+                            .fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Left Icon Area
+                        // Left Icon Area - Full Height Strip
                         Box(
                             modifier = Modifier
-                                .padding(start = 16.dp)
-                                .size(44.dp)
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(12.dp)),
+                                .fillMaxHeight()
+                                .width(72.dp)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = getNotificationPreviewIcon(notification.title),
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(26.dp)
                             )
                         }
 
                         Column(
                             modifier = Modifier
                                 .weight(1f)
-                                .padding(horizontal = 16.dp),
+                                .padding(horizontal = 20.dp, vertical = 12.dp),
                             verticalArrangement = Arrangement.Center
                         ) {
                             Text(
                                 text = notification.title,
-                                color = MainFontBlack,
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 15.sp
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    color = MainFontBlack,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                ),
                             )
-                            Spacer(modifier = Modifier.height(2.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = notification.message,
-                                color = Color.Gray,
-                                fontSize = 13.sp,
-                                lineHeight = 18.sp
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontSize = 13.sp
+                                ),
+                                color = Color(0xFF64748B),
+                                lineHeight = 18.sp,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
 
                         Icon(
                             imageVector = Icons.Default.Notifications,
                             contentDescription = null,
-                            tint = Color.LightGray.copy(alpha = 0.5f),
+                            tint = Color.LightGray.copy(alpha = 0.3f),
                             modifier = Modifier
                                 .padding(end = 16.dp)
                                 .size(20.dp)
@@ -234,7 +241,7 @@ fun NotificationPreviewItem(
     }
 }
 
-@Preview(showBackground = true, backgroundColor = 0xFFF5F5F5)
+@Preview
 @Composable
 fun NotificationPreviewItemPreview() {
     val sampleNotif1 = Notifications(
@@ -258,15 +265,15 @@ fun NotificationPreviewItemPreview() {
             .width(450.dp), // Beri ruang lebih dari 400dp agar bayangan/shadow terlihat
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text("Preview Notifikasi (Normal)", fontWeight = FontWeight.Bold)
         NotificationPreviewItem(
             notification = sampleNotif1,
+            isVisibleInitial = true,
             onRemove = {}
         )
-        
-        Text("Preview Notifikasi (Pesan Panjang)", fontWeight = FontWeight.Bold)
+
         NotificationPreviewItem(
             notification = sampleNotif2,
+            isVisibleInitial = true,
             onRemove = {}
         )
     }
