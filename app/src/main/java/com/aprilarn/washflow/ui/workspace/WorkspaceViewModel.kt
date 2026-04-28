@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 // Event untuk navigasi atau menampilkan pesan
 sealed class WorkspaceEvent {
     object NavigateToDashboard : WorkspaceEvent()
+    object NavigateToLogin : WorkspaceEvent() // New event
     data class ShowError(val message: String) : WorkspaceEvent()
 }
 
@@ -60,6 +61,20 @@ class WorkspaceViewModel : ViewModel() {
                 _eventFlow.emit(WorkspaceEvent.ShowError(result.second))
             }
             _uiState.update { it.copy(isLoading = false) }
+        }
+    }
+
+    fun signOut() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            try {
+                auth.signOut()
+                _eventFlow.emit(WorkspaceEvent.NavigateToLogin)
+            } catch (e: Exception) {
+                _eventFlow.emit(WorkspaceEvent.ShowError(e.message ?: "Failed to sign out"))
+            } finally {
+                _uiState.update { it.copy(isLoading = false) }
+            }
         }
     }
 }

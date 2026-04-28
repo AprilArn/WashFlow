@@ -243,6 +243,12 @@ class MainActivity : ComponentActivity() {
                                                 popUpTo("workspace") { inclusive = true }
                                             }
                                         }
+                                        is WorkspaceEvent.NavigateToLogin -> {
+                                            navController.navigate("login") {
+                                                popUpTo("workspace") { inclusive = true }
+                                            }
+                                            Toast.makeText(applicationContext, "Signed out", Toast.LENGTH_SHORT).show()
+                                        }
                                         is WorkspaceEvent.ShowError -> {
                                             Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
                                         }
@@ -262,7 +268,8 @@ class MainActivity : ComponentActivity() {
                                 WorkspaceScreen(
                                     state = uiState,
                                     onJoinClick = { code -> viewModel.joinWorkspace(code) },
-                                    onCreateWorkspaceClick = { viewModel.createWorkspace() }
+                                    onCreateWorkspaceClick = { viewModel.createWorkspace() },
+                                    onSwitchAccountClick = { viewModel.signOut() }
                                 )
                             }
                         }

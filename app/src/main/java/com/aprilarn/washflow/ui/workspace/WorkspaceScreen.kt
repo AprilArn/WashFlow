@@ -25,16 +25,18 @@ import com.aprilarn.washflow.ui.theme.Gray
 fun WorkspaceScreen(
     state: WorkspaceUiState,
     onJoinClick: (String) -> Unit,
-    onCreateWorkspaceClick: () -> Unit
+    onCreateWorkspaceClick: () -> Unit,
+    onSwitchAccountClick: () -> Unit
 ) {
     // 1. State untuk menampung teks yang diinput oleh pengguna
     var inviteCode by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Spacer(modifier = Modifier.weight(1f))
+
         Text(
             text = "Hi, ${state.displayName}",
             style = MaterialTheme.typography.headlineLarge,
@@ -42,7 +44,7 @@ fun WorkspaceScreen(
             fontWeight = FontWeight.Medium
         )
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(24.dp))
 
         Text(
             text = "Join an existing workspace.",
@@ -51,7 +53,7 @@ fun WorkspaceScreen(
             fontWeight = FontWeight.Light
         )
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(16.dp))
 
         // 3. Gunakan Column di dalam Box agar layout rapi
         Column(
@@ -104,9 +106,11 @@ fun WorkspaceScreen(
             }
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(16.dp))
+
         Text(text = "or", color = Color.White.copy(alpha = 0.8f))
-        Spacer(Modifier.height(24.dp))
+
+        Spacer(Modifier.height(16.dp))
 
         // 4. Tambahkan tombol untuk aksi "Create"
         OutlinedButton(
@@ -126,6 +130,19 @@ fun WorkspaceScreen(
             }
 
         }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        TextButton(
+            onClick = onSwitchAccountClick,
+            modifier = Modifier.padding(bottom = 24.dp)
+        ) {
+            Text(
+                text = "Switch account",
+                color = Color.White,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
     }
 }
 
@@ -142,7 +159,8 @@ fun WorkspaceScreenPreview() {
         WorkspaceScreen(
             state = WorkspaceUiState(displayName = "April Arn"),
             onJoinClick = {}, // Aksi dummy untuk preview
-            onCreateWorkspaceClick = {} // Aksi dummy untuk preview
+            onCreateWorkspaceClick = {}, // Aksi dummy untuk preview
+            onSwitchAccountClick = {} // Aksi dummy untuk preview
         )
     }
 }
