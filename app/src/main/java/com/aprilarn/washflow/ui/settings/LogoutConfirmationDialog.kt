@@ -52,7 +52,13 @@ fun LogoutConfirmationDialog(
     // Animasi Progress (Target 1 detik)
     val progress by animateFloatAsState(
         targetValue = if (isPressed) 1f else 0f,
-        animationSpec = tween(durationMillis = 1000, easing = LinearEasing),
+        animationSpec = if (isPressed) {
+            // Jika ditekan (MAJU ke kanan): Durasi 1 detik (lambat/beban berat)
+            tween(durationMillis = 1000, easing = LinearEasing)
+        } else {
+            // Jika dilepas/batal (MUNDUR ke kiri): Durasi 0.25 detik (cepat/snappy)
+            tween(durationMillis = 250, easing = LinearEasing)
+        },
         label = "LogoutProgress",
         finishedListener = { if (it >= 1f) triggerAction = true }
     )
