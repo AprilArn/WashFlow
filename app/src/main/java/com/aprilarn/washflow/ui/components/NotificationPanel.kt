@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aprilarn.washflow.data.model.Notifications
 import com.aprilarn.washflow.ui.theme.Gray
+import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.MainFontBlack
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -109,7 +110,7 @@ fun NotificationPanel(
                             TextButton(onClick = { /* TODO: Mark all as read */ }) {
                                 Text(
                                     text = "Mark all as read",
-                                    color = MaterialTheme.colorScheme.primary,
+                                    color = GrayBlue,
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Medium
                                 )
@@ -181,7 +182,7 @@ fun NotificationPanelItem(
                 .fillMaxHeight()
                 .width(72.dp)
                 .background(
-                    if (isUnread) MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+                    if (isUnread) GrayBlue.copy(alpha = 0.08f)
                     else Color(0xFFF8FAFC)
                 ),
             contentAlignment = Alignment.Center
@@ -189,7 +190,7 @@ fun NotificationPanelItem(
             Icon(
                 imageVector = itemIcon,
                 contentDescription = null,
-                tint = if (isUnread) MaterialTheme.colorScheme.primary else Color(0xFF94A3B8),
+                tint = if (isUnread) GrayBlue else Color(0xFF94A3B8),
                 modifier = Modifier.size(26.dp)
             )
         }
@@ -243,7 +244,7 @@ fun NotificationPanelItem(
                 Box(
                     modifier = Modifier
                         .size(8.dp)
-                        .background(MaterialTheme.colorScheme.primary, CircleShape)
+                        .background(GrayBlue, CircleShape)
                 )
             } else {
                 Spacer(modifier = Modifier.size(8.dp))

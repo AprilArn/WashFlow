@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aprilarn.washflow.data.model.Notifications
+import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.MainFontBlack
 import com.google.firebase.Timestamp
 import kotlinx.coroutines.delay
@@ -177,13 +178,13 @@ fun NotificationPreviewItem(
                             modifier = Modifier
                                 .fillMaxHeight()
                                 .width(72.dp)
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)),
+                                .background(GrayBlue.copy(alpha = 0.08f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = getNotificationPreviewIcon(notification.title),
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
+                                tint = GrayBlue,
                                 modifier = Modifier.size(26.dp)
                             )
                         }
@@ -213,12 +214,13 @@ fun NotificationPreviewItem(
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis
                             )
+                            Spacer(modifier = Modifier.height(2.dp))
                         }
 
                         Icon(
                             imageVector = Icons.Default.Notifications,
                             contentDescription = null,
-                            tint = Color.LightGray.copy(alpha = 0.3f),
+                            tint = GrayBlue.copy(alpha = 0.3f),
                             modifier = Modifier
                                 .padding(end = 16.dp)
                                 .size(20.dp)
@@ -232,7 +234,7 @@ fun NotificationPreviewItem(
                             .fillMaxWidth()
                             .height(3.dp)
                             .align(Alignment.BottomCenter),
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                        color = GrayBlue.copy(alpha = 0.6f),
                         trackColor = Color.Transparent,
                     )
                 }
