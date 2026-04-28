@@ -219,17 +219,18 @@ private fun LeftDetailPanel(
             )
 
             // Spacer akan mendorong tombol ke bawah
-            Column(
+            
+            LazyColumn(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                InfoRow(Icons.Default.Person, "Nama Pelanggan", order.customerName ?: "N/A")
-                InfoRow(Icons.Default.Phone, "No Telp/WhatsApp", customer?.contact ?: "N/A")
-                InfoRow(Icons.Default.CalendarToday, "Tanggal Order", SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault()).format(order.orderDate.toDate()))
-                InfoRow(Icons.Default.Timer, "Batas Waktu", order.orderDueDate?.let { SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault()).format(it.toDate()) } ?: "N/A")
-                InfoRow(Icons.Default.ConfirmationNumber, "ID Order", order.orderId)
-                InfoRow(Icons.Default.Info, "Status", order.status ?: "N/A")
-                InfoRow(Icons.Default.Category, "Layanan", services.joinToString(" + ") { it.serviceName })
+                item { InfoRow(Icons.Default.Person, "Nama Pelanggan", order.customerName ?: "N/A") }
+                item { InfoRow(Icons.Default.Phone, "No Telp/WhatsApp", customer?.contact ?: "N/A") }
+                item { InfoRow(Icons.Default.CalendarToday, "Tanggal Order", SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault()).format(order.orderDate.toDate())) }
+                item { InfoRow(Icons.Default.Timer, "Batas Waktu", order.orderDueDate?.let { SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault()).format(it.toDate()) } ?: "N/A") }
+                item { InfoRow(Icons.Default.ConfirmationNumber, "ID Order", order.orderId) }
+                item { InfoRow(Icons.Default.Info, "Status", order.status ?: "N/A") }
+                item { InfoRow(Icons.Default.Category, "Layanan", services.joinToString(" + ") { it.serviceName }) }
             }
 
             Row(
