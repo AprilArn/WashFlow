@@ -4,6 +4,7 @@ package com.aprilarn.washflow.ui.components
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -50,6 +51,7 @@ private fun getNotificationPreviewIcon(title: String): ImageVector {
 fun NotificationPreviewItem(
     notification: Notifications,
     isVisibleInitial: Boolean = false,
+    onClick: () -> Unit = {},
     onRemove: (wasSwiped: Boolean) -> Unit
 ) {
     var rawOffsetX by remember { mutableFloatStateOf(0f) }
@@ -166,6 +168,7 @@ fun NotificationPreviewItem(
                     .fillMaxWidth()
                     .wrapContentHeight()
                     .clip(RoundedCornerShape(16.dp))
+                    .clickable { onClick() }
             ) {
                 Box(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Max)) {
                     Row(
@@ -270,12 +273,14 @@ fun NotificationPreviewItemPreview() {
         NotificationPreviewItem(
             notification = sampleNotif1,
             isVisibleInitial = true,
+            onClick = {},
             onRemove = {}
         )
 
         NotificationPreviewItem(
             notification = sampleNotif2,
             isVisibleInitial = true,
+            onClick = {},
             onRemove = {}
         )
     }

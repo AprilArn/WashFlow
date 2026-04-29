@@ -721,6 +721,12 @@ fun MainAppScreen(
                 mainUiState.notificationPreviews.forEach { notif ->
                     NotificationPreviewItem(
                         notification = notif,
+                        onClick = {
+                            if (notif.title == "Order Baru") {
+                                bottomNavController.navigate(AppNavigation.ManageOrder.route)
+                            }
+                            mainViewModel.removeNotificationPreview(notif.notificationId, false)
+                        },
                         onRemove = { wasSwiped ->
                             mainViewModel.removeNotificationPreview(notif.notificationId, wasSwiped)
                         }
