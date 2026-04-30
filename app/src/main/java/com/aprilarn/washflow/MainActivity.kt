@@ -709,7 +709,7 @@ fun MainAppScreen(
             modifier = Modifier
                 .fillMaxSize() // Memenuhi layar agar notif bisa jatuh sampai bawah
                 // Box kosong di Compose TIDAK memblokir sentuhan (touch pass-through)
-                .padding(top = 80.dp, end = 24.dp) // Jarak dari atas dan kanan, sesuaikan sedikit agar pas di bawah lonceng
+                .padding(top = 58.dp, end = 24.dp) // Jarak dari atas dan kanan, sesuaikan sedikit agar pas di bawah lonceng
         ) {
             Column(
                 modifier = Modifier

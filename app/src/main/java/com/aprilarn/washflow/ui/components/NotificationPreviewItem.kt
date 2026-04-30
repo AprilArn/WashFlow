@@ -110,11 +110,11 @@ fun NotificationPreviewItem(
     // Efek miring saat digeser
     val rotationZ by animateFloatAsState(
         targetValue = when {
-            isFalling -> -45f // Lebih miring saat jatuh
+            isFalling -> -55f // Lebih miring saat jatuh
             offsetX < -deleteThreshold -> (offsetX / 20f).coerceIn(-15f, 0f)
             else -> 0f
         },
-        animationSpec = if (isFalling) tween(800) else spring()
+        animationSpec = if (isFalling) tween(1000) else spring()
     )
 
     if (fallingY > 1500f) {
@@ -161,7 +161,7 @@ fun NotificationPreviewItem(
                 }
         ) {
             Surface(
-                shadowElevation = 8.dp,
+                // shadowElevation = 8.dp,
                 shape = RoundedCornerShape(16.dp),
                 color = Color.White,
                 modifier = Modifier
@@ -169,6 +169,7 @@ fun NotificationPreviewItem(
                     .wrapContentHeight()
                     .clip(RoundedCornerShape(16.dp))
                     .clickable { onClick() }
+                    // .padding(horizontal = 8.dp, vertical = 8.dp)
             ) {
                 Box(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Max)) {
                     Row(
