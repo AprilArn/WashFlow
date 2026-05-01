@@ -30,6 +30,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.aprilarn.washflow.data.model.Notifications
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.MainFontBlack
@@ -49,6 +50,7 @@ private fun getNotificationPreviewIcon(title: String): ImageVector {
 
 @Composable
 fun NotificationPreviewItem(
+    modifier: Modifier = Modifier,
     notification: Notifications,
     isVisibleInitial: Boolean = false,
     onClick: () -> Unit = {},
@@ -124,7 +126,8 @@ fun NotificationPreviewItem(
     AnimatedVisibility(
         visible = isVisible,
         enter = slideInHorizontally(initialOffsetX = { it }) + fadeIn(),
-        exit = slideOutHorizontally(targetOffsetX = { it }) + fadeOut()
+        exit = slideOutHorizontally(targetOffsetX = { it }) + fadeOut(),
+        modifier = modifier
     ) {
         Box(
             modifier = Modifier

@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
+import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -719,9 +720,10 @@ fun MainAppScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalAlignment = Alignment.End
             ) {
-                mainUiState.notificationPreviews.forEach { notif ->
+                mainUiState.notificationPreviews.forEachIndexed { index, notif ->
                     key(notif.notificationId) {
                         NotificationPreviewItem(
+                            modifier = Modifier.zIndex(mainUiState.notificationPreviews.size - index.toFloat()),
                             notification = notif,
                             onClick = {
                                 if (notif.title == "Order Baru") {
