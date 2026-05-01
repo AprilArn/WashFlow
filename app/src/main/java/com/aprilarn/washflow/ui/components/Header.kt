@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -46,6 +47,7 @@ fun Header(
     navController: NavController,
     workspaceName: String,
     unreadCount: Int,
+    isWorkspaceExpanded: Boolean = false,
     notificationPreviews: List<Notifications> = emptyList(),
     onWorkspaceClick: () -> Unit,
     onNotifClick: () -> Unit,
@@ -89,7 +91,11 @@ fun Header(
                     text = workspaceName,
                     style = MaterialTheme.typography.bodyMedium.copy(color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Light)
                 )
-                Icon(Icons.Default.ArrowDropDown, contentDescription = "Workspace Options", tint = Color.White)
+                Icon(
+                    imageVector = if (isWorkspaceExpanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                    contentDescription = "Workspace Options",
+                    tint = Color.White
+                )
             }
 
             // 2. MASUKKAN LAMBDA TEPAT DI DALAM BOX INI
@@ -122,6 +128,7 @@ fun HeaderPreview() {
     Header(
         workspaceName = "Example",
         unreadCount = 3,
+        isWorkspaceExpanded = false,
         notificationPreviews = emptyList(),
         navController = rememberNavController(),
         onWorkspaceClick = {},

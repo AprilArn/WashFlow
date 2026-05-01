@@ -394,6 +394,7 @@ fun MainAppScreen(
                 navController = bottomNavController,
                 workspaceName = mainUiState.workspaceName,
                 unreadCount = mainUiState.unreadCount,
+                isWorkspaceExpanded = mainUiState.showWorkspaceOptions,
                 notificationPreviews = mainUiState.notificationPreviews,
                 onWorkspaceClick = { mainViewModel.onWorkspaceNameClicked() },
                 onNotifClick = { mainViewModel.onNotificationIconClicked() },

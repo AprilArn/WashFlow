@@ -163,7 +163,7 @@ class MainViewModel(
     // --- UI INTERACTION HANDLERS ---
 
     fun onWorkspaceNameClicked() {
-        _uiState.update { it.copy(showWorkspaceOptions = true) }
+        _uiState.update { it.copy(showWorkspaceOptions = !it.showWorkspaceOptions) }
     }
 
     fun onDismissWorkspaceOptions() {
