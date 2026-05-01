@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -23,6 +25,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.toSize
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.google.firebase.Timestamp
 import java.text.SimpleDateFormat
@@ -38,6 +47,7 @@ fun OrderCustomerInputPanel(
     var isDropdownExpanded by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
+    var textFieldSize by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
     val calendar = remember { Calendar.getInstance() }
 
     val borderRadius = RoundedCornerShape(24.dp)
@@ -76,10 +86,7 @@ fun OrderCustomerInputPanel(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            ExposedDropdownMenuBox(
-                expanded = isDropdownExpanded && uiState.customerSearchQuery.isNotEmpty(),
-                onExpandedChange = { isDropdownExpanded = !isDropdownExpanded }
-            ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(
                     value = uiState.customerSearchQuery,
                     onValueChange = {
@@ -89,24 +96,46 @@ fun OrderCustomerInputPanel(
                     label = { Text("Nama Pelanggan") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .menuAnchor(),
+                        .onGloballyPositioned { coordinates ->
+                            textFieldSize = coordinates.size.toSize()
+                        },
                     shape = RoundedCornerShape(12.dp)
                 )
-                ExposedDropdownMenu(
-                    expanded = isDropdownExpanded && uiState.customerSearchQuery.isNotEmpty(),
-                    onDismissRequest = { isDropdownExpanded = false }
-                ) {
+
+                if (isDropdownExpanded && uiState.customerSearchQuery.isNotEmpty()) {
                     val filteredCustomers = uiState.customers.filter {
                         it.name.contains(uiState.customerSearchQuery, ignoreCase = true)
                     }
-                    filteredCustomers.forEach { customer ->
-                        DropdownMenuItem(
-                            text = { Text(customer.name) },
-                            onClick = {
-                                viewModel.onCustomerSelected(customer)
-                                isDropdownExpanded = false
+
+                    if (filteredCustomers.isNotEmpty()) {
+                        Popup(
+                            onDismissRequest = { isDropdownExpanded = false },
+                            offset = IntOffset(x = 0, y = textFieldSize.height.toInt()),
+                            properties = PopupProperties(focusable = false)
+                        ) {
+                            Surface(
+                                modifier = Modifier
+                                    .width(with(LocalDensity.current) { textFieldSize.width.toDp() })
+                                    .padding(top = 8.dp)
+                                    .heightIn(max = 200.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                shadowElevation = 4.dp,
+                                color = Color.White
+                            ) {
+                                LazyColumn {
+                                    items(filteredCustomers) { customer ->
+                                        DropdownMenuItem(
+                                            text = { Text(customer.name) },
+                                            onClick = {
+                                                viewModel.onCustomerSelected(customer)
+                                                isDropdownExpanded = false
+                                            }
+                                        )
+                                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
+                                    }
+                                }
                             }
-                        )
+                        }
                     }
                 }
             }
