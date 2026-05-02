@@ -1,4 +1,3 @@
-// com/aprilarn/washflow/ui/MainUiState.kt
 package com.aprilarn.washflow.ui
 
 import com.aprilarn.washflow.data.model.Invites
