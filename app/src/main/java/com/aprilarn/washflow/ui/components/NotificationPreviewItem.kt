@@ -23,7 +23,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -56,6 +58,7 @@ fun NotificationPreviewItem(
     onClick: () -> Unit = {},
     onRemove: (wasSwiped: Boolean) -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
     var rawOffsetX by remember { mutableFloatStateOf(0f) }
     var isVisible by remember { mutableStateOf(isVisibleInitial) }
     var isFalling by remember { mutableStateOf(false) }
@@ -156,8 +159,18 @@ fun NotificationPreviewItem(
                         },
                         onHorizontalDrag = { _, dragAmount ->
                             // Hanya izinkan geser ke kiri
+                            val previousOffset = rawOffsetX
                             if (rawOffsetX + dragAmount <= 0) {
                                 rawOffsetX += dragAmount
+
+                                // Trigger haptic feedback when crossing the fallThreshold (-300f)
+                                val threshold = -fallThreshold
+                                val crossedGoingLeft = previousOffset > threshold && rawOffsetX <= threshold
+                                val crossedGoingRight = previousOffset < threshold && rawOffsetX >= threshold
+
+                                if (crossedGoingLeft || crossedGoingRight) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                }
                             }
                         }
                     )
