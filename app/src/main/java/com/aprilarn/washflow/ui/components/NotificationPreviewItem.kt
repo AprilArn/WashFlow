@@ -66,7 +66,7 @@ fun NotificationPreviewItem(
 
     val timeoutMillis = 15000L
     val progress = remember { Animatable(0f) }
-    val deleteThreshold = 240f
+    val deleteThreshold = 300f
     val fallThreshold = 300f
 
     // Animasi snap back saat dilepas
