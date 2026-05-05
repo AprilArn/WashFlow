@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import java.util.Calendar
 import java.util.Locale
 import kotlin.math.abs
@@ -34,6 +35,7 @@ class HomeViewModel(
 
     init {
         listenForOrderUpdates()
+        startPeriodicRefresh()
     }
 
     private fun listenForOrderUpdates() {
@@ -52,6 +54,24 @@ class HomeViewModel(
                         )
                     }
                 }
+        }
+    }
+
+    private fun startPeriodicRefresh() {
+        viewModelScope.launch {
+            while (true) {
+                delay(30 * 60 * 1000) // 30 minutes
+                Log.d("HomeViewModel", "Triggering auto-refresh...")
+                val lastLat = sharedPreferences.getFloat("LAST_LAT", 0f).toDouble()
+                val lastLon = sharedPreferences.getFloat("LAST_LON", 0f).toDouble()
+                val isGps = _uiState.value.isGpsLocation
+
+                if (lastLat != 0.0 || lastLon != 0.0) {
+                    fetchWeatherData(lastLat, lastLon, isGps)
+                } else {
+                    _uiState.update { it.copy(greeting = getGreetingMessage()) }
+                }
+            }
         }
     }
 
