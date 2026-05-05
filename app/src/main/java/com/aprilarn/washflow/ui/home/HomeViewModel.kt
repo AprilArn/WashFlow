@@ -60,8 +60,19 @@ class HomeViewModel(
     private fun startPeriodicRefresh() {
         viewModelScope.launch {
             while (true) {
-                delay(30 * 60 * 1000) // 30 minutes
-                Log.d("HomeViewModel", "Triggering auto-refresh...")
+                val now = Calendar.getInstance()
+                val minutes = now.get(Calendar.MINUTE)
+                val seconds = now.get(Calendar.SECOND)
+                val millis = now.get(Calendar.MILLISECOND)
+
+                val nextTargetMinute = if (minutes < 30) 30 else 60
+                val delayMinutes = nextTargetMinute - minutes - 1
+                val delaySeconds = 60 - seconds
+                val delayMillis = (delayMinutes * 60 + delaySeconds) * 1000L - millis
+
+                delay(delayMillis)
+
+                Log.d("HomeViewModel", "Triggering scheduled auto-refresh at ${Calendar.getInstance().time}")
                 val lastLat = sharedPreferences.getFloat("LAST_LAT", 0f).toDouble()
                 val lastLon = sharedPreferences.getFloat("LAST_LON", 0f).toDouble()
                 val isGps = _uiState.value.isGpsLocation
@@ -85,6 +96,15 @@ class HomeViewModel(
         }
     }
 
+    private fun getTimestampSlot(timestamp: Long): String {
+        val cal = Calendar.getInstance().apply { timeInMillis = timestamp }
+        val year = cal.get(Calendar.YEAR)
+        val day = cal.get(Calendar.DAY_OF_YEAR)
+        val hour = cal.get(Calendar.HOUR_OF_DAY)
+        val minuteSlot = if (cal.get(Calendar.MINUTE) < 30) "00" else "30"
+        return "$year-$day-$hour-$minuteSlot"
+    }
+
     fun fetchWeatherData(lat: Double, lon: Double, isGps: Boolean = true) {
         val currentTime = System.currentTimeMillis()
         val lastFetchTime = sharedPreferences.getLong("LAST_FETCH_TIME", 0L)
@@ -92,7 +112,10 @@ class HomeViewModel(
         val lastLon = sharedPreferences.getFloat("LAST_LON", 0f).toDouble()
 
         val isSameLocation = abs(lastLat - lat) < 0.01 && abs(lastLon - lon) < 0.01
-        val isCacheValid = (currentTime - lastFetchTime) < 1800000
+
+        val currentSlot = getTimestampSlot(currentTime)
+        val lastSlot = getTimestampSlot(lastFetchTime)
+        val isCacheValid = currentSlot == lastSlot
 
         if (isSameLocation && isCacheValid) {
             Log.d("HomeViewModel", "Menggunakan data cuaca dari Cache Memori")
