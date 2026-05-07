@@ -118,7 +118,7 @@ fun Header(
                 Text(
                     modifier = Modifier.padding(start = 8.dp, top = 4.dp, bottom = 4.dp),
                     text = workspaceName,
-                    style = MaterialTheme.typography.bodyMedium.copy(color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Light)
+                    style = MaterialTheme.typography.bodyMedium.copy(color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Light)
                 )
                 Icon(
                     imageVector = if (isWorkspaceExpanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
@@ -143,11 +143,11 @@ fun Header(
                     style = MaterialTheme.typography.labelMedium.copy(
                         color = Color.White,
                         fontWeight = FontWeight.Medium,
-                        fontSize = 15.sp
+                        fontSize = 14.sp
                     )
                 )
                 Text(
-                    text = "running ${formatDuration(uptimeMillis)}",
+                    text = "active ${formatDuration(uptimeMillis)}",
                     style = MaterialTheme.typography.labelSmall.copy(
                         color = SoftBlue,
                         fontSize = 10.sp,
