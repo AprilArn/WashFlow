@@ -124,7 +124,7 @@ class MainViewModel(
         }
     }
 
-    fun removeNotificationPreview(notifId: String, wasSwiped: Boolean) {
+    fun removeNotificationPreview(notifId: String, wasActioned: Boolean) {
         val notif = _uiState.value.notificationPreviews.find { it.notificationId == notifId }
         val currentUid = _uiState.value.currentUserUid
 
@@ -133,11 +133,12 @@ class MainViewModel(
         }
 
         // Logika Status Read:
-        // 1. Jika pembuat (User A), di database sudah 'read' (karena UID ada di readBy).
-        // 2. Jika penerima (User B) melakukan swipe left, tandai read di DB.
-        if (wasSwiped && notif != null) {
-            // Hanya kirim ke DB jika user belum ada di daftar readBy
-            if (currentUid !in notif.readBy) {
+        // 1. Jika pembuat (User A / Sender), di database sudah 'read' (karena UID ada di readBy secara default).
+        //    Maka jika senderUid == currentUid, tidak perlu kirim update markAsRead lagi.
+        // 2. Jika user lain (User B), tandai read di DB.
+        if (wasActioned && notif != null) {
+            // Hanya kirim ke DB jika user bukan pembuat DAN user belum ada di daftar readBy
+            if (currentUid != notif.senderUid && currentUid !in notif.readBy) {
                 markNotificationAsRead(notif)
             }
         }

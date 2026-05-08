@@ -142,7 +142,7 @@ fun Header(
                     text = timeFormatter.format(Date(currentTime)),
                     style = MaterialTheme.typography.labelMedium.copy(
                         color = Color.White,
-                        fontWeight = FontWeight.Medium,
+                        fontWeight = FontWeight.Light,
                         fontSize = 14.sp
                     )
                 )

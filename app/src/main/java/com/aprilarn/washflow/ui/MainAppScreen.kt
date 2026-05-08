@@ -452,7 +452,7 @@ fun MainAppScreen(
                                 if (notif.title == "Order Baru") {
                                     bottomNavController.navigate(AppNavigation.ManageOrder.route)
                                 }
-                                mainViewModel.removeNotificationPreview(notif.notificationId, false)
+                                mainViewModel.removeNotificationPreview(notif.notificationId, true)
                             },
                             onRemove = { wasSwiped ->
                                 mainViewModel.removeNotificationPreview(notif.notificationId, wasSwiped)

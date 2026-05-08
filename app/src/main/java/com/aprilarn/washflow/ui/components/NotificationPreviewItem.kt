@@ -38,6 +38,7 @@ import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.MainFontBlack
 import com.google.firebase.Timestamp
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @Composable
@@ -63,6 +64,7 @@ fun NotificationPreviewItem(
     var isVisible by remember { mutableStateOf(isVisibleInitial) }
     var isFalling by remember { mutableStateOf(false) }
     var isDragging by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     val timeoutMillis = 15000L
     val progress = remember { Animatable(0f) }
@@ -184,7 +186,13 @@ fun NotificationPreviewItem(
                     .fillMaxWidth()
                     .wrapContentHeight()
                     .clip(RoundedCornerShape(16.dp))
-                    .clickable { onClick() }
+                    .clickable(enabled = isVisible && !isFalling) { 
+                        scope.launch {
+                            isVisible = false
+                            delay(400) // Wait for AnimatedVisibility exit
+                            onClick()
+                        }
+                    }
                     // .padding(horizontal = 8.dp, vertical = 8.dp)
             ) {
                 Box(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Max)) {
