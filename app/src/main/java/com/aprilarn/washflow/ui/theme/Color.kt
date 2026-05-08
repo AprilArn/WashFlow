@@ -11,6 +11,8 @@ val Pink40 = Color(0xFF7D5260)
 val Gray = Color(0xFF767C81)
 val GrayBlue = Color(0xFF5E6B9F)
 val SoftRed = Color(0xFFA25A5A)
+val SoftBlue = Color(0xFF93A0C5)
+val Pinkish = Color(0xFFF48FB1)
 
 val MainFontBlack = Color(0xFF323232) // Soft Black
 

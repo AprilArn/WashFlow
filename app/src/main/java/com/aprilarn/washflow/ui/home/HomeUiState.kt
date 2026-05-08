@@ -5,6 +5,8 @@ data class HomeUiState(
     val greeting: String = "--!",
     val weather: String = "loading weather...",
     val temperature: String = "--°C",
+    val locationName: String = "Mencari lokasi...",
+    val isGpsLocation: Boolean = true, // Penanda Icon
     val recommendation: String = "loading recommendation...",
     val inQueue: Int = 0,
     val onProcess: Int = 0,

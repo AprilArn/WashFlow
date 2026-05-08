@@ -39,7 +39,7 @@ data class Workspaces (
 
     data class Orders (
         val orderId: String = "",
-        val customerId: String = "",  // referensi ke Customers
+        val customerId: String = "",
         val customerName: String? = null,
         val orderDate: Timestamp = Timestamp.now(),
         val orderDueDate: Timestamp? = null,
@@ -49,13 +49,22 @@ data class Workspaces (
     )
 
         data class OrderItem (
-            val itemId: String = "",  // referensi ke Items
+            val itemId: String = "",
             val itemName: String? = null,
             val itemPrice: Double? = 0.0,
             val serviceId: String? = null,
             val itemQuantity: Int? = 0,
             val subtotal: Double? = 0.0
         )
+
+    data class Notifications (
+        val notificationId: String = "",
+        val title: String = "",
+        val message: String = "",
+        val senderUid: String = "",
+        val timestamp: Timestamp = Timestamp.now(),
+        val readBy: List<String> = emptyList() // memisahkan status baca antar-pengguna dalam satu workspace
+    )
 
 data class Invites (
     val inviteId: String? = null,

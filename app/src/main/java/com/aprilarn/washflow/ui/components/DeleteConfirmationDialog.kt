@@ -1,5 +1,7 @@
 package com.aprilarn.washflow.ui.components
 
+import android.content.Context
+import android.media.MediaPlayer
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -14,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import com.aprilarn.washflow.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -24,6 +28,24 @@ fun DeleteConfirmationDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        val prefs = context.getSharedPreferences("WashFlowPrefs", Context.MODE_PRIVATE)
+        val isSoundEnabled = prefs.getBoolean("SOUND_ENABLED", true)
+
+        if (isSoundEnabled) {
+            try {
+                val mediaPlayer = MediaPlayer.create(context, R.raw.confirmation)
+                mediaPlayer.start()
+
+                // Clear memory when done
+                mediaPlayer.setOnCompletionListener { it.release() }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
     Dialog(onDismissRequest = onDismiss) {
         Card(
             shape = RoundedCornerShape(16.dp),
@@ -81,8 +103,8 @@ fun LongPressDeleteButton(
     val progress by animateFloatAsState(
         targetValue = if (isPressed) 1f else 0f,
         animationSpec = if (isPressed) {
-            // Jika ditekan (MAJU ke kanan): Durasi 2 detik (lambat/beban berat)
-            tween(durationMillis = 2000, easing = LinearEasing)
+            // Jika ditekan (MAJU ke kanan): Durasi 1 detik (lambat/beban berat)
+            tween(durationMillis = 1000, easing = LinearEasing)
         } else {
             // Jika dilepas/batal (MUNDUR ke kiri): Durasi 0.25 detik (cepat/snappy)
             tween(durationMillis = 250, easing = LinearEasing)
@@ -133,7 +155,7 @@ fun LongPressDeleteButton(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = if (progress >= 1f) "Deleting..." else "Hold to Delete (2s)",
+                text = if (progress >= 1f) "Deleting..." else "Hold to Delete (1s)",
                 color = if (progress > 0.5f) Color.White else Color(0xFFD32F2F),
                 fontWeight = FontWeight.Bold
             )

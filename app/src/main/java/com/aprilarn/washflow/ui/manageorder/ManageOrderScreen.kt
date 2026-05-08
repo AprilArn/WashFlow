@@ -5,10 +5,21 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.ConfirmationNumber
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -19,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -35,6 +47,7 @@ import com.aprilarn.washflow.ui.components.DeleteConfirmationDialog
 import com.aprilarn.washflow.ui.manageorder.DragDropContainer
 import com.aprilarn.washflow.ui.manageorder.OrderStatusColumn
 import com.aprilarn.washflow.ui.theme.GrayBlue
+import com.aprilarn.washflow.ui.theme.MainFontBlack
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -146,28 +159,34 @@ fun OrderDetailDialog(
             onDismissRequest = onDismiss,
             properties = DialogProperties(usePlatformDefaultWidth = false)
         ) {
-            Row(
+            Surface(
                 modifier = Modifier
                     .width(1000.dp)
-                    .height(600.dp)
+                    .height(600.dp),
+                shape = RoundedCornerShape(24.dp),
+                color = Color.Transparent
             ) {
-                LeftDetailPanel(
-                    modifier = Modifier.weight(6f),
-                    order = order,
-                    customer = customer,
-                    services = groupedItemsByService.keys.toList(),
-                    onCancel = onDismiss,
-                    onDelete = {
-                        // Ubah state untuk memicu dialog konfirmasi
-                        showDeleteConfirmation = true
-                    }
-                )
-                Spacer(Modifier.width(16.dp))
-                RightDetailPanel(
-                    modifier = Modifier.weight(4f),
-                    groupedItems = groupedItemsByService,
-                    totalPrice = order.totalPrice
-                )
+                Row(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    LeftDetailPanel(
+                        modifier = Modifier.weight(6f),
+                        order = order,
+                        customer = customer,
+                        services = groupedItemsByService.keys.toList(),
+                        onCancel = onDismiss,
+                        onDelete = {
+                            // Ubah state untuk memicu dialog konfirmasi
+                            showDeleteConfirmation = true
+                        }
+                    )
+                    Spacer(Modifier.width(16.dp))
+                    RightDetailPanel(
+                        modifier = Modifier.weight(4f),
+                        groupedItems = groupedItemsByService,
+                        totalPrice = order.totalPrice
+                    )
+                }
             }
         }
     }
@@ -182,42 +201,57 @@ private fun LeftDetailPanel(
     onCancel: () -> Unit,
     onDelete: () -> Unit
 ) {
-    // Panel kiri menggunakan Box sebagai dasar
-    Box(
-        modifier = modifier
-            .fillMaxHeight()
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color.White.copy())
+    // Panel kiri menggunakan Card sebagai dasar (efek glassmorphism)
+    Card(
+        modifier = modifier.fillMaxHeight(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
+            Text(
+                text = "Order Detail",
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = GrayBlue
+                ),
+                modifier = Modifier.padding(bottom = 24.dp)
+            )
+
             // Spacer akan mendorong tombol ke bawah
-            Column(
-                modifier = Modifier
-                    .weight(1f)
+            
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                InfoRow("Nama Pelanggan", order.customerName ?: "N/A")
-                InfoRow("No Telp/WhatsApp", customer?.contact ?: "N/A")
-                InfoRow("Tanggal Order Dibuat", SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault()).format(order.orderDate.toDate()))
-                InfoRow("Batas Waktu", order.orderDueDate?.let { SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault()).format(it.toDate()) } ?: "N/A")
-                InfoRow("ID Order", order.orderId)
-                InfoRow("Status", order.status ?: "N/A")
-                InfoRow("Layanan", services.joinToString(" + ") { it.serviceName })
+                item { InfoRow(Icons.Default.Person, "Nama Pelanggan", order.customerName ?: "N/A") }
+                item { InfoRow(Icons.Default.Phone, "No Telp/WhatsApp", customer?.contact ?: "N/A") }
+                item { InfoRow(Icons.Default.CalendarToday, "Tanggal Order", SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault()).format(order.orderDate.toDate())) }
+                item { InfoRow(Icons.Default.Timer, "Batas Waktu", order.orderDueDate?.let { SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault()).format(it.toDate()) } ?: "N/A") }
+                item { InfoRow(Icons.Default.ConfirmationNumber, "ID Order", order.orderId) }
+                item { InfoRow(Icons.Default.Info, "Status", order.status ?: "N/A") }
+                item { InfoRow(Icons.Default.Category, "Layanan", services.joinToString(" + ") { it.serviceName }) }
             }
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End)
             ) {
                 TextButton(
-                    onClick = onCancel
+                    onClick = onCancel,
+                    modifier = Modifier.padding(horizontal = 8.dp)
                 ) {
-                    Text("Cancel")
+                    Text("Cancel", color = GrayBlue)
                 }
                 Button(
                     onClick = onDelete,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)),
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
                 ) {
-                    Text("Delete")
+                    Text("Delete Order", fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -230,24 +264,42 @@ private fun RightDetailPanel(
     groupedItems: Map<Services, List<OrderItem>>,
     totalPrice: Double?
 ) {
-    // Panel kanan menggunakan Box sebagai dasar
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color.White)
+    // Panel kanan menggunakan Card sebagai dasar
+    Card(
+        modifier = modifier.fillMaxHeight(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Column (
-            modifier = Modifier
-                .fillMaxWidth()
+            modifier = Modifier.fillMaxWidth()
         ) {
+            Text(
+                text = "Service Items",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = GrayBlue
+                ),
+                modifier = Modifier.padding(start = 24.dp, top = 24.dp, bottom = 16.dp)
+            )
+
             LazyColumn(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(24.dp)
+                    .padding(horizontal = 24.dp)
             ) {
                 groupedItems.forEach { (service, items) ->
                     item {
-                        Column(modifier = Modifier.padding(bottom = 24.dp)) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 20.dp)
+                                .background(
+                                    Color.LightGray.copy(alpha = 0.2f),
+                                    shape = RoundedCornerShape(16.dp)
+                                )
+                                .padding(16.dp)
+                        ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -255,38 +307,48 @@ private fun RightDetailPanel(
                             ) {
                                 Text(
                                     text = service.serviceName,
-                                    style = MaterialTheme.typography.titleMedium.copy(
+                                    style = MaterialTheme.typography.titleSmall.copy(
                                         color = GrayBlue,
                                         fontWeight = FontWeight.Bold
                                     )
                                 )
                                 Text(
                                     text = "${items.sumOf { it.itemQuantity ?: 0 }} item",
-                                    style = MaterialTheme.typography.titleSmall.copy(
-                                        color = Color.Gray,
-                                        fontWeight = FontWeight.Medium
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        color = Color.Gray
                                     )
                                 )
                             }
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
                             items.forEach { orderItem ->
                                 Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.Start,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = orderItem.itemName ?: "Unknown Item",
+                                            style = MaterialTheme.typography.bodyMedium.copy(
+                                                fontWeight = FontWeight.Medium,
+                                                color = MainFontBlack
+                                            )
+                                        )
+                                        Text(
+                                            text = "${orderItem.itemPrice} x ${orderItem.itemQuantity}",
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                color = Color.Gray
+                                            )
+                                        )
+                                    }
                                     Text(
-                                        modifier = Modifier
-                                            .weight(5f),
-                                        text = "• ${orderItem.itemName} (${orderItem.itemPrice} x ${orderItem.itemQuantity})",
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                    Spacer(modifier = Modifier.weight(1f))
-                                    Text(
-                                        modifier = Modifier
-                                            .weight(2f),
                                         text = "Rp. ${orderItem.subtotal}",
-                                        style = MaterialTheme.typography.bodyMedium
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            color = GrayBlue
+                                        )
                                     )
                                 }
                             }
@@ -295,20 +357,21 @@ private fun RightDetailPanel(
                 }
             }
 
-            Box (
+            Surface(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .background(GrayBlue)
+                    .fillMaxWidth(),
+                color = GrayBlue,
+                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 18.dp, bottom = 36.dp, start = 24.dp, end = 24.dp),
+                        .padding(horizontal = 24.dp, vertical = 28.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Total harga:",
+                        text = "Total Amount",
                         style = MaterialTheme.typography.titleMedium.copy(
                             color = Color.White,
                             fontWeight = FontWeight.Medium
@@ -316,9 +379,9 @@ private fun RightDetailPanel(
                     )
                     Text(
                         text = "Rp. ${totalPrice ?: 0.0}",
-                        style = MaterialTheme.typography.titleLarge.copy(
+                        style = MaterialTheme.typography.headlineSmall.copy(
                             color = Color.White,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.ExtraBold
                         )
                     )
                 }
@@ -328,21 +391,41 @@ private fun RightDetailPanel(
 }
 
 @Composable
-private fun InfoRow(label: String, value: String) {
-    Column(modifier = Modifier.padding(bottom = 16.dp)) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = Color.Gray
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyLarge.copy(
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                color = GrayBlue
+private fun InfoRow(icon: ImageVector, label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Surface(
+            modifier = Modifier.size(40.dp),
+            shape = RoundedCornerShape(12.dp),
+            color = GrayBlue.copy(alpha = 0.1f)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = GrayBlue,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+
+        Column {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.Gray
             )
-        )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    color = MainFontBlack
+                )
+            )
+        }
     }
 }
 

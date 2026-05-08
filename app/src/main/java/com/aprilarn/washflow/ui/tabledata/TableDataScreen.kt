@@ -22,7 +22,7 @@ import com.aprilarn.washflow.AppNavigation
 @Composable
 fun TableDataScreen(
     uiState: TableDataUiState,
-    onNavigate: (route: String) -> Unit // Callback untuk navigasi
+    onNavigate: (route: String) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -33,7 +33,6 @@ fun TableDataScreen(
     ) {
         // Kartu untuk Customers
         item {
-            // Hapus Box pembungkus, panggil Card langsung
             TableDataCard(
                 text = "Customers",
                 subText = "Pelanggan",

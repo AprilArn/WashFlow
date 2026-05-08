@@ -4,7 +4,9 @@ package com.aprilarn.washflow.ui
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aprilarn.washflow.data.model.Notifications
 import com.aprilarn.washflow.data.repository.InviteRepository
+import com.aprilarn.washflow.data.repository.NotificationsRepository
 import com.aprilarn.washflow.data.repository.WorkspaceRepository
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
@@ -27,7 +29,8 @@ sealed class MainNavigationEvent {
 
 class MainViewModel(
     private val workspaceRepository: WorkspaceRepository,
-    private val inviteRepository: InviteRepository
+    private val inviteRepository: InviteRepository,
+    private val notificationsRepository: NotificationsRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MainUiState())
@@ -36,9 +39,13 @@ class MainViewModel(
     private val _eventFlow = MutableSharedFlow<MainNavigationEvent>()
     val eventFlow = _eventFlow.asSharedFlow()
 
+    private val appInitTime = Timestamp.now()
+    private val displayedNotifIds = mutableSetOf<String>()
+
     init {
         listenForWorkspaceChanges()
         listenForActiveInvite()
+        listenForNotifications()
     }
 
     private fun listenForWorkspaceChanges() {
@@ -70,6 +77,73 @@ class MainViewModel(
         }
     }
 
+    private fun listenForNotifications() {
+        viewModelScope.launch {
+            // Jalankan pembersihan notifikasi lama (2 hari+) di background
+            viewModelScope.launch(Dispatchers.IO) {
+                notificationsRepository.cleanupOldNotifications()
+            }
+
+            notificationsRepository.getNotificationsRealtime().collect { list ->
+                val currentUid = Firebase.auth.currentUser?.uid ?: ""
+
+                // 2. ROMBAK LOGIKA FILTER NOTIFIKASINYA DI SINI
+                // Kita cari notifikasi yang benar-benar baru masuk SAAT aplikasi sedang aktif
+                val newNotifs = list.filter { notif ->
+                    notif.notificationId !in displayedNotifIds
+                            && // Belum pernah ditampilkan
+                            notif.timestamp > appInitTime
+                            // && // Terjadi SETELAH aplikasi dibuka
+                            // notif.senderUid != currentUid // (Opsional UX) Jangan munculkan popup untuk aksi yang dilakukan user itu sendiri
+                }
+
+                // Tampilkan animasi melayang hanya untuk notifikasi yang lolos filter di atas
+                newNotifs.forEach { notif ->
+                    showNotificationPreview(notif)
+                }
+
+                // 3. Masukkan semua ID notifikasi (baik yang lama maupun yang baru)
+                // ke dalam set agar tidak diproses ulang di masa depan.
+                list.forEach { displayedNotifIds.add(it.notificationId) }
+
+                // Update UI State seperti biasa (ini tetap mempengaruhi angka badge merah di lonceng)
+                val unread = list.count { currentUid !in it.readBy }
+                _uiState.update { it.copy(
+                    notifications = list,
+                    unreadCount = unread,
+                    currentUserUid = currentUid
+                )}
+            }
+        }
+    }
+
+    private fun showNotificationPreview(notif: Notifications) {
+        _uiState.update {
+            // Menaruh yang terbaru di index 0 (paling atas di Column)
+            it.copy(notificationPreviews = listOf(notif) + it.notificationPreviews)
+        }
+    }
+
+    fun removeNotificationPreview(notifId: String, wasActioned: Boolean) {
+        val notif = _uiState.value.notificationPreviews.find { it.notificationId == notifId }
+        val currentUid = _uiState.value.currentUserUid
+
+        _uiState.update { state ->
+            state.copy(notificationPreviews = state.notificationPreviews.filter { it.notificationId != notifId })
+        }
+
+        // Logika Status Read:
+        // 1. Jika pembuat (User A / Sender), di database sudah 'read' (karena UID ada di readBy secara default).
+        //    Maka jika senderUid == currentUid, tidak perlu kirim update markAsRead lagi.
+        // 2. Jika user lain (User B), tandai read di DB.
+        if (wasActioned && notif != null) {
+            // Hanya kirim ke DB jika user bukan pembuat DAN user belum ada di daftar readBy
+            if (currentUid != notif.senderUid && currentUid !in notif.readBy) {
+                markNotificationAsRead(notif)
+            }
+        }
+    }
+
     fun createInvitation(maxContributors: Int, expiresAt: Date) {
         viewModelScope.launch {
             // Convert Date to Firebase Timestamp before sending to repository
@@ -90,7 +164,7 @@ class MainViewModel(
     // --- UI INTERACTION HANDLERS ---
 
     fun onWorkspaceNameClicked() {
-        _uiState.update { it.copy(showWorkspaceOptions = true) }
+        _uiState.update { it.copy(showWorkspaceOptions = !it.showWorkspaceOptions) }
     }
 
     fun onDismissWorkspaceOptions() {
@@ -231,6 +305,21 @@ class MainViewModel(
                 _eventFlow.emit(MainNavigationEvent.NavigateToWorkspace)
             }
             // TODO: Tambahkan penanganan error jika 'success' adalah false
+        }
+    }
+
+    // Aksi klik ikon lonceng
+    fun onNotificationIconClicked() {
+        _uiState.update { it.copy(showNotificationOptions = !it.showNotificationOptions, showWorkspaceOptions = false) }
+    }
+
+    fun onDismissNotificationOptions() {
+        _uiState.update { it.copy(showNotificationOptions = false) }
+    }
+
+    fun markNotificationAsRead(notif: Notifications) {
+        viewModelScope.launch {
+            notificationsRepository.markAsRead(notif.notificationId)
         }
     }
 }

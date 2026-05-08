@@ -7,13 +7,12 @@ plugins {
     alias(libs.plugins.google.gms.google.services)
 }
 
-// Tambahkan kode ini untuk membaca file local.properties
+// Read local.properties for API keys
 val properties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
     properties.load(localPropertiesFile.inputStream())
 }
-// Ambil nilai API_KEY dari properties, beri nilai kosong jika tidak ada
 val GoogleApiKey = properties.getProperty("google-api-key")?.replace("\"", "") ?: ""
 
 android {
@@ -28,7 +27,6 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
         manifestPlaceholders["MAPS_API_KEY"] = GoogleApiKey
     }
 
@@ -55,55 +53,65 @@ android {
     }
     flavorDimensions += "env"
     productFlavors {
-        create("production"){
-            buildConfigField(
-                type = "String",
-                name = "BASE_URL",
-//                value = "\"https://api.openweathermap.org/data/2.5/\""
-                value = "\"https://weather.googleapis.com/\""
-            )
-            buildConfigField(
-                type = "String",
-                name = "API_KEY",
-                value = "\"$GoogleApiKey\""
-            )
+        create("production") {
+            buildConfigField("String", "BASE_URL", "\"https://weather.googleapis.com/\"")
+            buildConfigField("String", "API_KEY", "\"$GoogleApiKey\"")
         }
         create("integration") {
-            buildConfigField(
-                type = "String",
-                name = "BASE_URL",
-//                value = "\"https://api.openweathermap.org/data/2.5/\""
-                value = "\"https://weather.googleapis.com/\""
-            )
-            buildConfigField(
-                type = "String",
-                name = "API_KEY",
-                value = "\"$GoogleApiKey\""
-            )
+            buildConfigField("String", "BASE_URL", "\"https://weather.googleapis.com/\"")
+            buildConfigField("String", "API_KEY", "\"$GoogleApiKey\"")
         }
     }
 }
 
 dependencies {
-
+    // AndroidX Core & Lifecycle
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+
+    // Compose
     implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.foundation)
     implementation(libs.androidx.foundation.layout)
+    implementation(libs.androidx.material.icons.extended)
+
+    // Navigation
+    implementation(libs.androidx.navigation.compose)
+
+    // Firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
+
+    // Networking
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.gson)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging)
+
+    // Image Loading
+    implementation(libs.coil.compose)
+    implementation(libs.coil.svg)
+
+    // Maps & Location
+    implementation(libs.maps.compose)
+    implementation(libs.play.services.maps)
+    implementation(libs.play.services.location)
+
+    // Authentication (Identity)
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
     implementation(libs.play.services.auth)
-    implementation(libs.androidx.foundation)
-    implementation(libs.material3)
-    implementation(libs.ui.graphics)
-    implementation(libs.androidx.compose.material3)
+
+    // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -111,29 +119,4 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    implementation(libs.retrofit)
-    implementation(libs.retrofit.gson)
-    implementation(libs.okhttp)
-    implementation(libs.http.logging)
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.3")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.3")
-    implementation("androidx.navigation:navigation-compose:2.9.3")
-    implementation("androidx.compose.material:material-icons-extended-android:1.7.8")
-    implementation("androidx.compose.ui:ui-android:1.9.3")
-
-    // Firebase
-    implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
-    implementation("com.google.firebase:firebase-auth-ktx")
-    implementation("com.google.firebase:firebase-firestore-ktx")
-    //implementation("com.google.firebase:firebase-auth-play-services:23.2.1")
-    implementation(libs.firebase.firestore)
-
-    // url image
-    implementation("io.coil-kt:coil-compose:2.6.0")
-    implementation("io.coil-kt:coil-svg:2.6.0")
-
-    // Google Maps
-    implementation("com.google.maps.android:maps-compose:4.3.3")
-    implementation("com.google.android.gms:play-services-maps:18.2.0")
-    implementation("com.google.android.gms:play-services-location:21.2.0")
 }

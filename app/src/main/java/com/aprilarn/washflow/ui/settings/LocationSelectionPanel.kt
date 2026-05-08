@@ -86,7 +86,7 @@ suspend fun getAddressFromLatLng(context: Context, latLng: LatLng): String? {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LocationSelectionPanel(
-    onLocationSelected: (lat: Double, lon: Double) -> Unit,
+    onLocationSelected: (lat: Double, lon: Double, isGps: Boolean) -> Unit,
     onBackClick: () -> Unit,
     isPreview: Boolean = false
 ) {
@@ -106,6 +106,11 @@ fun LocationSelectionPanel(
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(LatLng(-2.357500, 118.203056), 5f)
     }
+
+    var isGpsPin by remember { mutableStateOf(false) }
+    var gpsTriggerMode by remember { mutableStateOf("AUTO") }
+
+    var showAutoDialog by remember { mutableStateOf(false) }
 
     // State untuk Search Bar
     var isSearchExpanded by remember { mutableStateOf(false) }
@@ -131,6 +136,7 @@ fun LocationSelectionPanel(
                 if (location != null) {
                     val currentLatLng = LatLng(location.latitude, location.longitude)
                     selectedLatLng = currentLatLng
+                    isGpsPin = (gpsTriggerMode == "AUTO")
                     selectedAddressName = "Mencari alamat..."
 
                     coroutineScope.launch {
@@ -174,6 +180,7 @@ fun LocationSelectionPanel(
                             cameraPositionState = cameraPositionState,
                             onMapClick = { latLng ->
                                 selectedLatLng = latLng
+                                isGpsPin = false
                                 focusManager.clearFocus()
                                 searchResults = emptyList()
                                 isSearchExpanded = false
@@ -197,7 +204,7 @@ fun LocationSelectionPanel(
                                 .then(if (isSearchExpanded) Modifier.fillMaxWidth(0.4f) else Modifier.wrapContentSize())
                         ) {
                             if (!isSearchExpanded) {
-                                // TAMPILAN 1: HANYA IKON BULAT (MINIMIZED)
+                                // HANYA IKON BULAT (MINIMIZED)
                                 Surface(
                                     shape = CircleShape,
                                     // shadowElevation = 6.dp,
@@ -210,7 +217,7 @@ fun LocationSelectionPanel(
                                     }
                                 }
                             } else {
-                                // TAMPILAN 2: SEARCH BAR UTUH (EXPANDED)
+                                // SEARCH BAR UTUH (EXPANDED)
                                 Column(modifier = Modifier.fillMaxWidth()) {
                                     OutlinedTextField(
                                         value = searchQuery,
@@ -272,6 +279,7 @@ fun LocationSelectionPanel(
                                                                 searchResults = emptyList()
                                                                 focusManager.clearFocus()
                                                                 isSearchExpanded = false // Tutup otomatis agar peta terlihat
+                                                                isGpsPin = false
 
                                                                 // Set text pin address dengan nama yang dicari
                                                                 selectedAddressName = addressName
@@ -304,7 +312,7 @@ fun LocationSelectionPanel(
                                 modifier = Modifier
                                     .align(Alignment.BottomStart)
                                     .padding(16.dp)
-                                    .fillMaxWidth(0.9f) // Maksimal 90% layar agar tidak mentok
+                                    .fillMaxWidth(0.4f) // Maksimal 40% layar agar tidak mentok
                             ) {
                                 Box(
                                     modifier = Modifier
@@ -323,7 +331,7 @@ fun LocationSelectionPanel(
                         }
                     }
 
-                    // --- BAGIAN BAWAH: TOMBOL KONFIRMASI ---
+                    // --- BAGIAN BAWAH: 3 TOMBOL (AUTO, STATIC, CONFIRM) ---
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shadowElevation = 8.dp,
@@ -333,35 +341,91 @@ fun LocationSelectionPanel(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            // Menggunakan spasi yang lebih kecil agar 3 tombol muat
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+
+                            // 1. Tombol Auto (Dinamis)
                             OutlinedButton(
                                 onClick = {
+                                    // Tampilkan dialog konfirmasi
+                                    showAutoDialog = true
+                                },
+                                modifier = Modifier.height(50.dp)
+                            ) {
+                                Text("Auto")
+                            }
+
+                            // 2. Tombol Sniper (Statis / Lock Coordinate)
+                            OutlinedButton(
+                                onClick = {
+                                    gpsTriggerMode = "STATIC"
                                     locationPermissionLauncher.launch(
                                         arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
                                     )
                                 },
                                 modifier = Modifier.height(50.dp)
                             ) {
-                                Icon(Icons.Default.MyLocation, contentDescription = "Current Location")
+                                Icon(Icons.Default.MyLocation, contentDescription = "Current Location (Static)")
                             }
 
+                            // 3. Tombol Confirm
                             Button(
                                 onClick = {
                                     selectedLatLng?.let {
-                                        onLocationSelected(it.latitude, it.longitude)
+                                        onLocationSelected(it.latitude, it.longitude, isGpsPin)
                                     }
                                 },
                                 enabled = selectedLatLng != null,
                                 modifier = Modifier
-                                    .weight(1f)
+                                    .weight(1f) // Ambil sisa lebar
                                     .height(50.dp)
                             ) {
-                                Text("Confirm Location")
+                                Text("Confirm")
                             }
                         }
                     }
+                }
+
+                // --- DIALOG KONFIRMASI MODE AUTO ---
+                if (showAutoDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showAutoDialog = false },
+                        title = {
+                            Text(
+                                text = "Aktifkan Mode Otomatis?",
+                                style = MaterialTheme.typography.titleLarge
+                            )
+                        },
+                        text = {
+                            Text(
+                                text = "Rekomendasi cuaca akan selalu diperbarui secara dinamis mengikuti lokasi GPS perangkat Anda saat ini ke manapun Anda pergi.",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    showAutoDialog = false
+                                    gpsTriggerMode = "AUTO"
+                                    locationPermissionLauncher.launch(
+                                        arrayOf(
+                                            Manifest.permission.ACCESS_FINE_LOCATION,
+                                            Manifest.permission.ACCESS_COARSE_LOCATION
+                                        )
+                                    )
+                                }
+                            ) {
+                                Text("Aktifkan")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showAutoDialog = false }) {
+                                Text("Batal")
+                            }
+                        }
+                    )
                 }
             } else {
                 Box(modifier = Modifier.fillMaxSize().background(Color.LightGray), contentAlignment = Alignment.Center) {
@@ -384,9 +448,9 @@ fun LocationSelectionPanelPreview() {
         )
     ) {
         LocationSelectionPanel(
-            onLocationSelected = { _, _ -> },
+            onLocationSelected = { _, _, _-> },
             onBackClick = {},
-            isPreview = true
+            isPreview = false
         )
     }
 }

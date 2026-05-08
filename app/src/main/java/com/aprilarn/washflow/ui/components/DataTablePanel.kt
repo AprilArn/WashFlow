@@ -136,7 +136,7 @@ fun <T> DataTablePanel(
                         )
                     }
                 }
-                Divider(color = Color.White.copy(alpha = 0.5f))
+                HorizontalDivider(color = Color.White.copy(alpha = 0.5f))
 
                 // Table Rows
                 LazyColumn {
@@ -172,7 +172,7 @@ fun <T> DataTablePanel(
                                     }
                                 }
                             }
-                            Divider(
+                            HorizontalDivider(
                                 color = Color.White.copy(alpha = 0.5f),
                                 modifier = Modifier.padding(horizontal = 18.dp)
                             )
