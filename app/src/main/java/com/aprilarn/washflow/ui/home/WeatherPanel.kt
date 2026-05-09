@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -15,10 +15,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Air
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.Thermostat
+import androidx.compose.material.icons.filled.Thunderstorm
+import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +36,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -93,57 +102,89 @@ fun TemperatureChartSegment(
 }
 
 @Composable
-fun WeatherForecastPanel(forecasts: List<HourlyForecastUiState>) {
-    Column(modifier = Modifier.padding(16.dp)) {
+fun WeatherDetailsPanel(state: HomeUiState) {
+    Column(
+        modifier = Modifier
+            .padding(20.dp)
+            .fillMaxHeight(),
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
         Text(
-            text = "Weather Forecast",
+            text = "Current Details",
             color = Color.White,
-            fontSize = 20.sp,
+            fontSize = 18.sp,
             fontWeight = FontWeight.Bold
         )
-        Spacer(modifier = Modifier.height(16.dp))
-        if (forecasts.isEmpty()) {
-            Text(
-                text = "loading weather forecast...",
-                color = Color.White.copy(alpha = 0.8f),
-                fontSize = 14.sp
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Grid-like layout for details
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            WeatherDetailRow(
+                icon = Icons.Default.Thermostat,
+                label = "Feels Like",
+                value = state.feelsLike
             )
-        } else {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                forecasts.forEach { forecast ->
-                    HourlyForecastItem(forecast = forecast)
-                }
-            }
+            WeatherDetailRow(
+                icon = Icons.Default.WaterDrop,
+                label = "Humidity",
+                value = state.humidity
+            )
+            WeatherDetailRow(
+                icon = Icons.Default.Cloud,
+                label = "Precipitation",
+                value = state.precipitationProb
+            )
+            WeatherDetailRow(
+                icon = Icons.Default.WbSunny,
+                label = "UV Index",
+                value = state.uvIndex
+            )
+            WeatherDetailRow(
+                icon = Icons.Default.Air,
+                label = "Wind Speed",
+                value = state.windSpeed
+            )
+            WeatherDetailRow(
+                icon = Icons.Default.Explore,
+                label = "Wind Direction",
+                value = state.windDirection
+            )
+            WeatherDetailRow(
+                icon = Icons.Default.Thunderstorm,
+                label = "Thunderstorm",
+                value = state.thunderstormProb
+            )
         }
     }
 }
 
 @Composable
-fun HourlyForecastItem(forecast: HourlyForecastUiState) {
+fun WeatherDetailRow(icon: ImageVector, label: String, value: String) {
     Row(
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(
-            text = forecast.time,
-            color = Color.White,
-            fontSize = 16.sp,
-            modifier = Modifier.weight(1f)
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size(20.dp)
         )
-        AsyncImage(
-            model = forecast.iconUrl,
-            contentDescription = "Weather Icon",
-            modifier = Modifier.size(40.dp)
-        )
-        Text(
-            text = forecast.temperature,
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.weight(1f)
-        )
+        Column {
+            Text(
+                text = label,
+                color = Color.White.copy(alpha = 0.7f),
+                fontSize = 11.sp
+            )
+            Text(
+                text = value,
+                color = Color.White,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
     }
 }
 
@@ -253,6 +294,30 @@ fun HorizontalForecastItem(
     }
 }
 
+@Preview(showBackground = true, name = "Weather Details")
+@Composable
+fun WeatherDetailsPanelPreview() {
+    Box(
+        modifier = Modifier.background(
+            Brush.verticalGradient(
+                colors = listOf(Color(0xFF2C3E50), Color(0xFF4A6DA7))
+            )
+        )
+    ) {
+        WeatherDetailsPanel(
+            state = HomeUiState(
+                feelsLike = "26°C",
+                humidity = "80%",
+                uvIndex = "5",
+                precipitationProb = "20%",
+                windSpeed = "12 km/h",
+                windDirection = "North",
+                thunderstormProb = "5%"
+            )
+        )
+    }
+}
+
 @Preview(showBackground = true, name = "Horizontal Forecast")
 @Composable
 fun HorizontalWeatherForecastPreview() {
@@ -272,43 +337,5 @@ fun HorizontalWeatherForecastPreview() {
             .padding(20.dp)
     ) {
         HorizontalWeatherForecast(forecasts = sampleForecasts)
-    }
-}
-
-@Preview(showBackground = true, name = "Panel with Data")
-@Composable
-fun WeatherForecastPanelPreview() {
-    // Data dummy untuk preview
-    val sampleForecasts = listOf(
-        HourlyForecastUiState("19:00", "https://openweathermap.org/img/wn/10d@2x.png", "25°"),
-        HourlyForecastUiState("22:00", "https://openweathermap.org/img/wn/04n@2x.png", "23°"),
-        HourlyForecastUiState("01:00", "https://openweathermap.org/img/wn/02n@2x.png", "22°"),
-        HourlyForecastUiState("04:00", "https://openweathermap.org/img/wn/01n@2x.png", "21°")
-    )
-
-    // Memberi background agar teks putih terlihat jelas di preview
-    Box(
-        modifier = Modifier.background(
-            Brush.verticalGradient(
-                colors = listOf(Color(0xFF2C3E50), Color(0xFF4A6DA7))
-            )
-        )
-    ) {
-        WeatherForecastPanel(forecasts = sampleForecasts)
-    }
-}
-
-@Preview(showBackground = true, name = "Panel Loading")
-@Composable
-fun WeatherForecastPanelEmptyPreview() {
-    Box(
-        modifier = Modifier.background(
-            Brush.verticalGradient(
-                colors = listOf(Color(0xFF2C3E50), Color(0xFF4A6DA7))
-            )
-        )
-    ) {
-        // Mengirimkan list kosong untuk mensimulasikan kondisi loading
-        WeatherForecastPanel(forecasts = emptyList())
     }
 }

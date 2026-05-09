@@ -126,6 +126,14 @@ class HomeViewModel(
             val savedLocName = sharedPreferences.getString("LOCATION_NAME", "Unknown Location") ?: "Unknown Location"
             val savedRec = sharedPreferences.getString("RECOMMENDATION", "Rekomendasi dimuat...") ?: "Rekomendasi dimuat..."
 
+            val savedHumidity = sharedPreferences.getString("HUMIDITY", "--%") ?: "--%"
+            val savedUV = sharedPreferences.getString("UV_INDEX", "--") ?: "--"
+            val savedPrecip = sharedPreferences.getString("PRECIP_PROB", "--%") ?: "--%"
+            val savedWind = sharedPreferences.getString("WIND_SPEED", "-- km/h") ?: "-- km/h"
+            val savedFeels = sharedPreferences.getString("FEELS_LIKE", "--°C") ?: "--°C"
+            val savedThunder = sharedPreferences.getString("THUNDER_PROB", "--%") ?: "--%"
+            val savedWindDir = sharedPreferences.getString("WIND_DIRECTION", "--") ?: "--"
+
             val savedHourlyJson = sharedPreferences.getString("HOURLY_JSON", "[]")
             val type = object : TypeToken<List<HourlyForecastUiState>>() {}.type
             val savedHourly: List<HourlyForecastUiState> = try {
@@ -142,7 +150,14 @@ class HomeViewModel(
                     locationName = savedLocName,
                     recommendation = savedRec,
                     isGpsLocation = isGps,
-                    hourlyForecasts = savedHourly
+                    hourlyForecasts = savedHourly,
+                    humidity = savedHumidity,
+                    uvIndex = savedUV,
+                    precipitationProb = savedPrecip,
+                    windSpeed = savedWind,
+                    feelsLike = savedFeels,
+                    thunderstormProb = savedThunder,
+                    windDirection = savedWindDir
                 )
             }
             return
@@ -192,6 +207,15 @@ class HomeViewModel(
                     putString("LOCATION_NAME", addressText)
                     putString("RECOMMENDATION", newRecommendation)
                     putString("HOURLY_JSON", gson.toJson(hourlyForecasts))
+
+                    putString("HUMIDITY", "${weatherResponse.relativeHumidity}%")
+                    putString("UV_INDEX", "${weatherResponse.uvIndex}")
+                    putString("PRECIP_PROB", "${weatherResponse.precipitation.probability.percent}%")
+                    putString("WIND_SPEED", "${weatherResponse.wind.speed.value.roundToInt()} km/h")
+                    putString("FEELS_LIKE", "${weatherResponse.feelsLikeTemperature.degrees.roundToInt()}°C")
+                    putString("THUNDER_PROB", "${weatherResponse.thunderstormProbability}%")
+                    putString("WIND_DIRECTION", "${weatherResponse.wind.direction.cardinal} (${weatherResponse.wind.direction.degrees}°)")
+
                     apply()
                 }
 
@@ -205,7 +229,14 @@ class HomeViewModel(
                         locationName = addressText,
                         isGpsLocation = isGps,
                         recommendation = newRecommendation,
-                        hourlyForecasts = hourlyForecasts
+                        hourlyForecasts = hourlyForecasts,
+                        humidity = "${weatherResponse.relativeHumidity}%",
+                        uvIndex = "${weatherResponse.uvIndex}",
+                        precipitationProb = "${weatherResponse.precipitation.probability.percent}%",
+                        windSpeed = "${weatherResponse.wind.speed.value.roundToInt()} km/h",
+                        feelsLike = "${weatherResponse.feelsLikeTemperature.degrees.roundToInt()}°C",
+                        thunderstormProb = "${weatherResponse.thunderstormProbability}%",
+                        windDirection = "${weatherResponse.wind.direction.cardinal} (${weatherResponse.wind.direction.degrees}°)"
                     )
                 }
             } catch (e: Exception) {

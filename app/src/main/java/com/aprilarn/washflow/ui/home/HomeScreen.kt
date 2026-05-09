@@ -47,7 +47,7 @@ fun HomeScreen(
                 .weight(1f),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Left panel: Weather Forecast
+            // Left panel: Weather Details
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -55,7 +55,7 @@ fun HomeScreen(
                     .clip(RoundedCornerShape(24.dp))
                     .background(Color.White.copy(alpha = 0.25f)),
             ) {
-                WeatherForecastPanel(forecasts = state.hourlyForecasts)
+                WeatherDetailsPanel(state = state)
             }
 
             // Right panel: main content
