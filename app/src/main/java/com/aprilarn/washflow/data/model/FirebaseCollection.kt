@@ -16,7 +16,9 @@ data class Workspaces (
     val workspaceName: String? = null,
     val ownerUid: String? = null,
     val createdAt: Timestamp = Timestamp.now(),
-    val contributors: Map<String, String>? = null // Daftar UID pengguna yang berkontribusi (uid, role)
+    val contributors: Map<String, String>? = null, // Daftar UID pengguna yang berkontribusi (uid, role)
+    val openTime: String? = null,
+    val closeTime: String? = null
 )
 
     data class Customers (

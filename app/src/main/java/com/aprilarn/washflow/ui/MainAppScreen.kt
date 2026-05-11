@@ -68,6 +68,7 @@ import com.aprilarn.washflow.ui.theme.MornYellow
 import com.aprilarn.washflow.ui.workspace.ActiveInviteDialog
 import com.aprilarn.washflow.ui.workspace.CreateInviteDialog
 import com.aprilarn.washflow.ui.workspace.DeleteWorkspaceDialog
+import com.aprilarn.washflow.ui.workspace.OperationalHoursDialog
 import com.aprilarn.washflow.ui.workspace.RenameWorkspaceDialog
 import com.aprilarn.washflow.ui.workspace.WorkspaceOptionsDropdown
 
@@ -134,6 +135,7 @@ fun MainAppScreen(
                             mainViewModel.onDismissWorkspaceOptions()
                             bottomNavController.navigate(AppNavigation.Contributors.route)
                         },
+                        onOperationalHoursClicked = { mainViewModel.showOperationalHoursDialog() },
                         onAddContributorClicked = { mainViewModel.onAddNewContributorClicked() },
                         onLeaveWorkspaceClicked = { mainViewModel.onLeaveWorkspaceClicked() },
                         onDeleteWorkspaceClicked = { mainViewModel.onDeleteWorkspaceClicked() }
@@ -471,6 +473,15 @@ fun MainAppScreen(
             currentName = mainUiState.workspaceName,
             onDismiss = { mainViewModel.onDismissRenameDialog() },
             onApply = { newName -> mainViewModel.renameWorkspace(newName) }
+        )
+    }
+
+    if (mainUiState.showOperationalHoursDialog) {
+        OperationalHoursDialog(
+            openTime = mainUiState.openTime,
+            closeTime = mainUiState.closeTime,
+            onDismiss = { mainViewModel.onDismissOperationalHoursDialog() },
+            onApply = { open, close -> mainViewModel.updateOperationalHours(open, close) }
         )
     }
 

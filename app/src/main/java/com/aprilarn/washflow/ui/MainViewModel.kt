@@ -62,7 +62,10 @@ class MainViewModel(
                     it.copy(
                         // Tampilkan "Loading..." jika workspace null (misal: saat user baru 'leave')
                         workspaceName = workspace?.workspaceName ?: "Loading...",
-                        isCurrentUserOwner = isOwner
+                        isCurrentUserOwner = isOwner,
+                        currentUserUid = currentUser?.uid ?: "",
+                        openTime = workspace?.openTime,
+                        closeTime = workspace?.closeTime
                     )
                 }
             }
@@ -315,6 +318,21 @@ class MainViewModel(
 
     fun onDismissNotificationOptions() {
         _uiState.update { it.copy(showNotificationOptions = false) }
+    }
+
+    fun showOperationalHoursDialog() {
+        _uiState.update { it.copy(showWorkspaceOptions = false, showOperationalHoursDialog = true) }
+    }
+
+    fun onDismissOperationalHoursDialog() {
+        _uiState.update { it.copy(showOperationalHoursDialog = false) }
+    }
+
+    fun updateOperationalHours(openTime: String?, closeTime: String?) {
+        viewModelScope.launch {
+            workspaceRepository.updateOperationalHours(openTime ?: "", closeTime ?: "")
+            onDismissOperationalHoursDialog()
+        }
     }
 
     fun markNotificationAsRead(notif: Notifications) {

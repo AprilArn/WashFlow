@@ -124,6 +124,25 @@ class WorkspaceRepository {
         }
     }
 
+    suspend fun updateOperationalHours(openTime: String?, closeTime: String?): Boolean {
+        val user = Firebase.auth.currentUser ?: return false
+        val workspaceId = usersCollection.document(user.uid).get().await().getString("workspaceId")
+        if (workspaceId.isNullOrEmpty()) return false
+
+        return try {
+            workspacesCollection.document(workspaceId).update(
+                mapOf(
+                    "openTime" to openTime,
+                    "closeTime" to closeTime
+                )
+            ).await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
     /**
      * Menghapus pengguna dari workspace saat ini.
      * @return Boolean true jika sukses.

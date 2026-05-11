@@ -69,6 +69,7 @@ fun WorkspaceOptionsDropdown(
     onDismiss: () -> Unit,
     onRenameClicked: () -> Unit,
     onContributorsClicked: () -> Unit,
+    onOperationalHoursClicked: () -> Unit, // <--- Parameter Baru
     onAddContributorClicked: () -> Unit,
     onLeaveWorkspaceClicked: () -> Unit,
     onDeleteWorkspaceClicked: () -> Unit
@@ -97,6 +98,15 @@ fun WorkspaceOptionsDropdown(
                             text = "Rename workspace",
                             onClick = {
                                 onRenameClicked()
+                                onDismiss()
+                            }
+                        )
+                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
+
+                        WorkspaceDropdownItem(
+                            text = "Jam Operasional",
+                            onClick = {
+                                onOperationalHoursClicked()
                                 onDismiss()
                             }
                         )
@@ -358,6 +368,124 @@ fun CreateInviteDialog(
                 onGenerate(maxUsers, expiryDate)
             }) {
                 Text("Generate")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun OperationalHoursDialog(
+    openTime: String?,
+    closeTime: String?,
+    onDismiss: () -> Unit,
+    onApply: (String?, String?) -> Unit
+) {
+    var useOperationalHours by remember { mutableStateOf(openTime != null && closeTime != null) }
+    var isEditingOpenTime by remember { mutableStateOf(false) }
+    var isEditingCloseTime by remember { mutableStateOf(false) }
+
+    val openParts = (openTime ?: "08:00").split(":").map { it.toIntOrNull() ?: 0 }
+    val closeParts = (closeTime ?: "20:00").split(":").map { it.toIntOrNull() ?: 0 }
+
+    val openTimeState = rememberTimePickerState(
+        initialHour = if (openParts.size >= 2) openParts[0] else 8,
+        initialMinute = if (openParts.size >= 2) openParts[1] else 0,
+        is24Hour = true
+    )
+
+    val closeTimeState = rememberTimePickerState(
+        initialHour = if (closeParts.size >= 2) closeParts[0] else 20,
+        initialMinute = if (closeParts.size >= 2) closeParts[1] else 0,
+        is24Hour = true
+    )
+
+    if (isEditingOpenTime) {
+        AlertDialog(
+            onDismissRequest = { isEditingOpenTime = false },
+            title = { Text("Set Jam Buka") },
+            text = {
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    TimePicker(state = openTimeState)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { isEditingOpenTime = false }) { Text("OK") }
+            }
+        )
+    }
+
+    if (isEditingCloseTime) {
+        AlertDialog(
+            onDismissRequest = { isEditingCloseTime = false },
+            title = { Text("Set Jam Tutup") },
+            text = {
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    TimePicker(state = closeTimeState)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { isEditingCloseTime = false }) { Text("OK") }
+            }
+        )
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Jam Operasional") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Gunakan Jam Operasional", style = MaterialTheme.typography.bodyMedium)
+                    androidx.compose.material3.Switch(
+                        checked = useOperationalHours,
+                        onCheckedChange = { useOperationalHours = it }
+                    )
+                }
+
+                if (useOperationalHours) {
+                    Column {
+                        Text("Jam Buka:", style = MaterialTheme.typography.labelMedium)
+                        OutlinedButton(
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = { isEditingOpenTime = true }
+                        ) {
+                            Text(String.format(Locale.getDefault(), "%02d:%02d", openTimeState.hour, openTimeState.minute))
+                        }
+                    }
+
+                    Column {
+                        Text("Jam Tutup:", style = MaterialTheme.typography.labelMedium)
+                        OutlinedButton(
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = { isEditingCloseTime = true }
+                        ) {
+                            Text(String.format(Locale.getDefault(), "%02d:%02d", closeTimeState.hour, closeTimeState.minute))
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                if (useOperationalHours) {
+                    val newOpen = String.format(Locale.getDefault(), "%02d:%02d", openTimeState.hour, openTimeState.minute)
+                    val newClose = String.format(Locale.getDefault(), "%02d:%02d", closeTimeState.hour, closeTimeState.minute)
+                    onApply(newOpen, newClose)
+                } else {
+                    onApply(null, null)
+                }
+            }) {
+                Text("Apply")
             }
         },
         dismissButton = {
