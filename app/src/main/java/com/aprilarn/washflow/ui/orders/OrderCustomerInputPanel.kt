@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -222,12 +223,19 @@ fun OrderCustomerInputPanel(
     if (showTimePicker) {
         val timePickerState = rememberTimePickerState(
             initialHour = calendar.get(Calendar.HOUR_OF_DAY),
-            initialMinute = calendar.get(Calendar.MINUTE)
+            initialMinute = calendar.get(Calendar.MINUTE),
+            is24Hour = true
         )
-        TimePickerDialog( // Ini adalah implementasi custom kecil untuk Time Picker Dialog
+        AlertDialog(
             onDismissRequest = { showTimePicker = false },
+            title = { Text("Set Batas Waktu") },
+            text = {
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    TimePicker(state = timePickerState)
+                }
+            },
             confirmButton = {
-                Button(
+                TextButton(
                     onClick = {
                         // Gabungkan tanggal yang sudah ada di Calendar dengan waktu yang baru dipilih
                         calendar.set(Calendar.HOUR_OF_DAY, timePickerState.hour)
@@ -242,35 +250,10 @@ fun OrderCustomerInputPanel(
                 }
             },
             dismissButton = {
-                Button(onClick = { showTimePicker = false }) {
+                TextButton(onClick = { showTimePicker = false }) {
                     Text("Cancel")
                 }
             }
-        ) {
-            TimePicker(state = timePickerState)
-        }
-    }
-}
-
-// Composable helper untuk Time Picker Dialog (karena tidak ada bawaan di M3)
-@Composable
-private fun TimePickerDialog(
-    onDismissRequest: () -> Unit,
-    confirmButton: @Composable () -> Unit,
-    dismissButton: @Composable () -> Unit,
-    content: @Composable () -> Unit
-) {
-    Dialog(onDismissRequest = onDismissRequest) {
-        Card {
-            Column(modifier = Modifier.padding(16.dp)) {
-                content()
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    dismissButton()
-                    Spacer(modifier = Modifier.width(8.dp))
-                    confirmButton()
-                }
-            }
-        }
+        )
     }
 }

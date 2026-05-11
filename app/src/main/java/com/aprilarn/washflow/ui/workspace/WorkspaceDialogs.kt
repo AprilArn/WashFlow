@@ -390,17 +390,17 @@ fun OperationalHoursDialog(
     var isEditingOpenTime by remember { mutableStateOf(false) }
     var isEditingCloseTime by remember { mutableStateOf(false) }
 
-    val openParts = (openTime ?: "08:00").split(":").map { it.toIntOrNull() ?: 0 }
-    val closeParts = (closeTime ?: "20:00").split(":").map { it.toIntOrNull() ?: 0 }
+    val openParts = (openTime ?: "09:00").split(":").map { it.toIntOrNull() ?: 0 }
+    val closeParts = (closeTime ?: "17:00").split(":").map { it.toIntOrNull() ?: 0 }
 
     val openTimeState = rememberTimePickerState(
-        initialHour = if (openParts.size >= 2) openParts[0] else 8,
+        initialHour = if (openParts.size >= 2) openParts[0] else 9,
         initialMinute = if (openParts.size >= 2) openParts[1] else 0,
         is24Hour = true
     )
 
     val closeTimeState = rememberTimePickerState(
-        initialHour = if (closeParts.size >= 2) closeParts[0] else 20,
+        initialHour = if (closeParts.size >= 2) closeParts[0] else 17,
         initialMinute = if (closeParts.size >= 2) closeParts[1] else 0,
         is24Hour = true
     )
@@ -445,7 +445,7 @@ fun OperationalHoursDialog(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Gunakan Jam Operasional", style = MaterialTheme.typography.bodyMedium)
+                    Text("Gunakan jam operasional", style = MaterialTheme.typography.bodyMedium)
                     androidx.compose.material3.Switch(
                         checked = useOperationalHours,
                         onCheckedChange = { useOperationalHours = it }
