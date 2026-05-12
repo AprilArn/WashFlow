@@ -4,5 +4,6 @@ data class HourlyForecastUiState(
     val time: String,
     val iconUrl: String,
     val temperature: String,
-    //val precipitationProbability: String
+    val isEvent: Boolean = false,
+    val eventLabel: String? = null
 )

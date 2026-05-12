@@ -202,7 +202,8 @@ class MainActivity : ComponentActivity() {
                                     return MainViewModel(
                                         WorkspaceRepository(),
                                         InviteRepository(),
-                                        NotificationsRepository()
+                                        NotificationsRepository(),
+                                        applicationContext.getSharedPreferences("WashFlowPrefs", MODE_PRIVATE)
                                     ) as T
                                 }
                             }

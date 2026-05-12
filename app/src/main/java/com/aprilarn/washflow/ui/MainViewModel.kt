@@ -30,7 +30,8 @@ sealed class MainNavigationEvent {
 class MainViewModel(
     private val workspaceRepository: WorkspaceRepository,
     private val inviteRepository: InviteRepository,
-    private val notificationsRepository: NotificationsRepository
+    private val notificationsRepository: NotificationsRepository,
+    private val sharedPreferences: android.content.SharedPreferences
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MainUiState())
@@ -67,6 +68,13 @@ class MainViewModel(
                         openTime = workspace?.openTime,
                         closeTime = workspace?.closeTime
                     )
+                }
+
+                // Save operational hours to shared preferences for HomeViewModel to access
+                sharedPreferences.edit().apply {
+                    putString("WS_OPEN_TIME", workspace?.openTime)
+                    putString("WS_CLOSE_TIME", workspace?.closeTime)
+                    apply()
                 }
             }
         }

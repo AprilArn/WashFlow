@@ -105,6 +105,59 @@ class HomeViewModel(
         return "$year-$day-$hour-$minuteSlot"
     }
 
+    private fun injectOperationalHours(
+        forecasts: List<HourlyForecastUiState>,
+        openTime: String?,
+        closeTime: String?
+    ): List<HourlyForecastUiState> {
+        if (forecasts.isEmpty()) return forecasts
+
+        val result = forecasts.toMutableList()
+
+        fun timeToMinutes(timeStr: String): Int {
+            val parts = timeStr.split(":").map { it.toIntOrNull() ?: 0 }
+            return if (parts.size >= 2) parts[0] * 60 + parts[1] else 0
+        }
+
+        val startMin = timeToMinutes(forecasts.first().time)
+        val endMin = timeToMinutes(forecasts.last().time)
+
+        fun isInWindow(time: String): Boolean {
+            val min = timeToMinutes(time)
+            return min >= startMin && min <= endMin
+        }
+
+        if (openTime != null && isInWindow(openTime)) {
+            result.add(
+                HourlyForecastUiState(
+                    time = openTime,
+                    iconUrl = "WS_OPEN",
+                    temperature = "--",
+                    isEvent = true,
+                    eventLabel = "Open"
+                )
+            )
+        }
+
+        if (closeTime != null && isInWindow(closeTime)) {
+            result.add(
+                HourlyForecastUiState(
+                    time = closeTime,
+                    iconUrl = "WS_CLOSE",
+                    temperature = "--",
+                    isEvent = true,
+                    eventLabel = "Closed"
+                )
+            )
+        }
+
+        // Sort: Chronological, then Weather before Event if times are equal
+        return result.sortedWith(
+            compareBy<HourlyForecastUiState> { timeToMinutes(it.time) }
+                .thenBy { if (it.isEvent) 1 else 0 }
+        ).take(6)
+    }
+
     fun fetchWeatherData(lat: Double, lon: Double, isGps: Boolean = true) {
         val currentTime = System.currentTimeMillis()
         val lastFetchTime = sharedPreferences.getLong("LAST_FETCH_TIME", 0L)
@@ -140,6 +193,11 @@ class HomeViewModel(
                 gson.fromJson(savedHourlyJson, type)
             } catch (e: Exception) { emptyList() }
 
+            // Inject operational hours into cached data as well
+            val openTime = sharedPreferences.getString("WS_OPEN_TIME", null)
+            val closeTime = sharedPreferences.getString("WS_CLOSE_TIME", null)
+            val combinedForecast = injectOperationalHours(savedHourly, openTime, closeTime)
+
             _uiState.update {
                 it.copy(
                     isLoading = false,
@@ -150,7 +208,7 @@ class HomeViewModel(
                     locationName = savedLocName,
                     recommendation = savedRec,
                     isGpsLocation = isGps,
-                    hourlyForecasts = savedHourly,
+                    hourlyForecasts = combinedForecast,
                     humidity = savedHumidity,
                     uvIndex = savedUV,
                     precipitationProb = savedPrecip,
@@ -194,6 +252,11 @@ class HomeViewModel(
                     )
                 }
 
+                // Inject operational hours
+                val openTime = sharedPreferences.getString("WS_OPEN_TIME", null)
+                val closeTime = sharedPreferences.getString("WS_CLOSE_TIME", null)
+                val combinedForecast = injectOperationalHours(hourlyForecasts, openTime, closeTime)
+
                 // Logika rekomendasi (bisa kamu ganti dengan engine AI nantinya)
                 val newRecommendation = "Pastikan semua cucian disimpan dalam ruang tertutup atau diberi pelindung."
 
@@ -206,7 +269,7 @@ class HomeViewModel(
                     putString("ICON_URL", "${weatherResponse.weatherCondition.iconBaseUri}.png")
                     putString("LOCATION_NAME", addressText)
                     putString("RECOMMENDATION", newRecommendation)
-                    putString("HOURLY_JSON", gson.toJson(hourlyForecasts))
+                    putString("HOURLY_JSON", gson.toJson(hourlyForecasts)) // Keep weather-only JSON for cleaner caching
 
                     putString("HUMIDITY", "${weatherResponse.relativeHumidity}%")
                     putString("UV_INDEX", "${weatherResponse.uvIndex}")
@@ -229,7 +292,7 @@ class HomeViewModel(
                         locationName = addressText,
                         isGpsLocation = isGps,
                         recommendation = newRecommendation,
-                        hourlyForecasts = hourlyForecasts,
+                        hourlyForecasts = combinedForecast,
                         humidity = "${weatherResponse.relativeHumidity}%",
                         uvIndex = "${weatherResponse.uvIndex}",
                         precipitationProb = "${weatherResponse.precipitation.probability.percent}%",
