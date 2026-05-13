@@ -30,6 +30,9 @@ class HomeViewModel(
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState = _uiState.asStateFlow()
 
+    private var currentWeatherOnlyForecast: List<HourlyForecastUiState> = emptyList()
+    private var todayDeadlines: List<HourlyForecastUiState> = emptyList()
+
     private val weatherApiService = WeatherApiService()
     private val gson = Gson()
 
@@ -46,11 +49,35 @@ class HomeViewModel(
                 }
                 .collect { orders ->
                     val groupedOrders = orders.groupBy { it.status }
+                    
+                    // Filter for today's deadlines
+                    val now = Calendar.getInstance()
+                    val todayYear = now.get(Calendar.YEAR)
+                    val todayDay = now.get(Calendar.DAY_OF_YEAR)
+
+                    todayDeadlines = orders.filter { order ->
+                        order.orderDueDate != null && order.status != "Done" && order.status != "Canceled"
+                    }.filter { order ->
+                        val dueCal = Calendar.getInstance().apply { time = order.orderDueDate!!.toDate() }
+                        dueCal.get(Calendar.YEAR) == todayYear && dueCal.get(Calendar.DAY_OF_YEAR) == todayDay
+                    }.map { order ->
+                        val dueCal = Calendar.getInstance().apply { time = order.orderDueDate!!.toDate() }
+                        val timeStr = String.format(Locale.US, "%02d:%02d", dueCal.get(Calendar.HOUR_OF_DAY), dueCal.get(Calendar.MINUTE))
+                        HourlyForecastUiState(
+                            time = timeStr,
+                            iconUrl = "WS_DEADLINE",
+                            temperature = "--",
+                            isEvent = true,
+                            eventLabel = "Deadline"
+                        )
+                    }
+
                     _uiState.update {
                         it.copy(
                             inQueue = groupedOrders["On Queue"]?.size ?: 0,
                             onProcess = groupedOrders["On Process"]?.size ?: 0,
-                            done = groupedOrders["Done"]?.size ?: 0
+                            done = groupedOrders["Done"]?.size ?: 0,
+                            hourlyForecasts = injectEvents(currentWeatherOnlyForecast)
                         )
                     }
                 }
@@ -105,57 +132,76 @@ class HomeViewModel(
         return "$year-$day-$hour-$minuteSlot"
     }
 
-    private fun injectOperationalHours(
-        forecasts: List<HourlyForecastUiState>,
-        openTime: String?,
-        closeTime: String?
+    private fun injectEvents(
+        weatherForecasts: List<HourlyForecastUiState>
     ): List<HourlyForecastUiState> {
-        if (forecasts.isEmpty()) return forecasts
-
-        val result = forecasts.toMutableList()
+        val result = weatherForecasts.toMutableList()
 
         fun timeToMinutes(timeStr: String): Int {
             val parts = timeStr.split(":").map { it.toIntOrNull() ?: 0 }
             return if (parts.size >= 2) parts[0] * 60 + parts[1] else 0
         }
 
-        val startMin = timeToMinutes(forecasts.first().time)
-        val endMin = timeToMinutes(forecasts.last().time)
+        val openTime = sharedPreferences.getString("WS_OPEN_TIME", null)
+        val closeTime = sharedPreferences.getString("WS_CLOSE_TIME", null)
 
-        fun isInWindow(time: String): Boolean {
-            val min = timeToMinutes(time)
-            return min >= startMin && min <= endMin
-        }
+        if (weatherForecasts.isNotEmpty()) {
+            val startMin = timeToMinutes(weatherForecasts.first().time)
+            val endMin = timeToMinutes(weatherForecasts.last().time)
 
-        if (openTime != null && isInWindow(openTime)) {
-            result.add(
-                HourlyForecastUiState(
-                    time = openTime,
-                    iconUrl = "WS_OPEN",
-                    temperature = "--",
-                    isEvent = true,
-                    eventLabel = "Open"
+            fun isInWindow(time: String): Boolean {
+                val min = timeToMinutes(time)
+                return min >= startMin && min <= endMin
+            }
+
+            if (openTime != null && isInWindow(openTime)) {
+                result.add(
+                    HourlyForecastUiState(
+                        time = openTime,
+                        iconUrl = "WS_OPEN",
+                        temperature = "--",
+                        isEvent = true,
+                        eventLabel = "Open"
+                    )
                 )
-            )
-        }
+            }
 
-        if (closeTime != null && isInWindow(closeTime)) {
-            result.add(
-                HourlyForecastUiState(
-                    time = closeTime,
-                    iconUrl = "WS_CLOSE",
-                    temperature = "--",
-                    isEvent = true,
-                    eventLabel = "Closed"
+            if (closeTime != null && isInWindow(closeTime)) {
+                result.add(
+                    HourlyForecastUiState(
+                        time = closeTime,
+                        iconUrl = "WS_CLOSE",
+                        temperature = "--",
+                        isEvent = true,
+                        eventLabel = "Closed"
+                    )
                 )
-            )
+            }
+            
+            // Add deadlines that are within the forecast window
+            todayDeadlines.forEach { deadline ->
+                if (isInWindow(deadline.time)) {
+                    result.add(deadline)
+                }
+            }
         }
 
-        // Sort: Chronological, then Weather before Event if times are equal
-        return result.sortedWith(
+        // Sort: Chronological, then Weather (0) -> Open/Close (1) -> Deadline (2)
+        val sortedAll = result.sortedWith(
             compareBy<HourlyForecastUiState> { timeToMinutes(it.time) }
-                .thenBy { if (it.isEvent) 1 else 0 }
-        ).take(6)
+                .thenBy { item ->
+                    when {
+                        !item.isEvent -> 0
+                        item.iconUrl == "WS_OPEN" || item.iconUrl == "WS_CLOSE" -> 1
+                        item.iconUrl == "WS_DEADLINE" -> 2
+                        else -> 3
+                    }
+                }
+        )
+
+        // Always return exactly 8 items. 
+        // If events were added and total > 8, the items furthest in time are dropped.
+        return sortedAll.take(8)
     }
 
     fun fetchWeatherData(lat: Double, lon: Double, isGps: Boolean = true) {
@@ -193,10 +239,19 @@ class HomeViewModel(
                 gson.fromJson(savedHourlyJson, type)
             } catch (e: Exception) { emptyList() }
 
+            val now = Calendar.getInstance()
+            val currentHour = now.get(Calendar.HOUR_OF_DAY)
+            // Filter out items that are from the current hour (or past)
+            // HourlyForecastUiState only has "HH:00" string, so we parse it or rely on sorting.
+            // Since cache might be old, we filter by comparing with currentHour.
+            val filteredHourly = savedHourly.filter { item ->
+                val itemHour = item.time.split(":")[0].toIntOrNull() ?: -1
+                itemHour > currentHour || (currentHour == 23 && itemHour == 0) // Basic next-day check
+            }.take(8)
+
             // Inject operational hours into cached data as well
-            val openTime = sharedPreferences.getString("WS_OPEN_TIME", null)
-            val closeTime = sharedPreferences.getString("WS_CLOSE_TIME", null)
-            val combinedForecast = injectOperationalHours(savedHourly, openTime, closeTime)
+            currentWeatherOnlyForecast = filteredHourly
+            val combinedForecast = injectEvents(filteredHourly)
 
             _uiState.update {
                 it.copy(
@@ -227,7 +282,7 @@ class HomeViewModel(
         viewModelScope.launch {
             try {
                 val weatherResponse = weatherApiService.getCurrentConditions(lat = lat, lon = lon)
-                val forecastResponse = weatherApiService.getHourlyForecastData(lat = lat, lon = lon)
+                val forecastResponse = weatherApiService.getHourlyForecastData(lat = lat, lon = lon, hours = 12)
 
                 val geoResponse = geocodingApiService.getAddressFromLocation("$lat,$lon", BuildConfig.API_KEY)
                 var addressText = "Lokasi tidak diketahui"
@@ -241,21 +296,33 @@ class HomeViewModel(
                     }
                 }
 
-                val hourlyForecasts = forecastResponse.forecastHours.take(6).map { forecastItem ->
-                    val time = String.format(Locale.US, "%02d:00", forecastItem.displayDateTime.hours)
-                    val iconUrl = "${forecastItem.weatherCondition.iconBaseUri}.png"
+                val now = Calendar.getInstance()
+                val currentHour = now.get(Calendar.HOUR_OF_DAY)
+                val currentDay = now.get(Calendar.DAY_OF_MONTH)
 
-                    HourlyForecastUiState(
-                        time = time,
-                        iconUrl = iconUrl,
-                        temperature = "${forecastItem.temperature.degrees.roundToInt()}°"
-                    )
-                }
+                val hourlyForecasts = forecastResponse.forecastHours
+                    .filter { forecastItem ->
+                        if (forecastItem.displayDateTime.day == currentDay) {
+                            forecastItem.displayDateTime.hours > currentHour
+                        } else {
+                            true // Next day(s)
+                        }
+                    }
+                    .take(8)
+                    .map { forecastItem ->
+                        val time = String.format(Locale.US, "%02d:00", forecastItem.displayDateTime.hours)
+                        val iconUrl = "${forecastItem.weatherCondition.iconBaseUri}.png"
 
-                // Inject operational hours
-                val openTime = sharedPreferences.getString("WS_OPEN_TIME", null)
-                val closeTime = sharedPreferences.getString("WS_CLOSE_TIME", null)
-                val combinedForecast = injectOperationalHours(hourlyForecasts, openTime, closeTime)
+                        HourlyForecastUiState(
+                            time = time,
+                            iconUrl = iconUrl,
+                            temperature = "${forecastItem.temperature.degrees.roundToInt()}°"
+                        )
+                    }
+
+                // Inject events
+                currentWeatherOnlyForecast = hourlyForecasts
+                val combinedForecast = injectEvents(hourlyForecasts)
 
                 // Logika rekomendasi (bisa kamu ganti dengan engine AI nantinya)
                 val newRecommendation = "Pastikan semua cucian disimpan dalam ruang tertutup atau diberi pelindung."

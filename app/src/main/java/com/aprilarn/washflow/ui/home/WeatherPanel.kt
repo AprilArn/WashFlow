@@ -22,10 +22,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Air
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.DoorBack
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.Thunderstorm
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.Icon
@@ -41,6 +43,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -312,7 +316,12 @@ fun HorizontalForecastItem(
 
         // 2. Ikon (Cuaca atau Event)
         if (forecast.isEvent) {
-            val icon = if (forecast.iconUrl == "WS_OPEN") Icons.Default.Storefront else Icons.Default.DoorBack
+            val icon = when (forecast.iconUrl) {
+                "WS_OPEN" -> Icons.Default.Storefront
+                "WS_CLOSE" -> Icons.Default.DoorBack
+                "WS_DEADLINE" -> Icons.Default.Timer
+                else -> Icons.Default.Event
+            }
             Icon(
                 imageVector = icon,
                 contentDescription = null,
@@ -339,7 +348,10 @@ fun HorizontalForecastItem(
             else MaterialTheme.typography.bodyLarge.copy(
                 color = Color.White,
                 fontWeight = FontWeight.Bold
-            )
+            ),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -386,11 +398,14 @@ fun HorizontalWeatherForecastEventsPreview() {
     val sampleForecasts = listOf(
         HourlyForecastUiState("09:00", "https://openweathermap.org/img/wn/01d@2x.png", "26°"),
         HourlyForecastUiState("09:00", "WS_OPEN", "--", isEvent = true, eventLabel = "Open"),
+        HourlyForecastUiState("09:00", "WS_DEADLINE", "--", isEvent = true, eventLabel = "Deadline"),
         HourlyForecastUiState("10:00", "https://openweathermap.org/img/wn/02d@2x.png", "32°"),
+        HourlyForecastUiState("11:00", "https://openweathermap.org/img/wn/02d@2x.png", "33°"),
+        HourlyForecastUiState("12:00", "https://openweathermap.org/img/wn/02d@2x.png", "34°"),
+        HourlyForecastUiState("13:00", "https://openweathermap.org/img/wn/02d@2x.png", "35°"),
         HourlyForecastUiState("17:00", "https://openweathermap.org/img/wn/04d@2x.png", "24°"),
-        HourlyForecastUiState("17:00", "WS_CLOSE", "--", isEvent = true, eventLabel = "Closed"),
-        //HourlyForecastUiState("18:00", "https://openweathermap.org/img/wn/04n@2x.png", "25°")
-    )
+        HourlyForecastUiState("17:00", "WS_CLOSE", "--", isEvent = true, eventLabel = "Closed")
+    ).take(8)
 
     Box(
         modifier = Modifier
