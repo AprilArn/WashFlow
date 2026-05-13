@@ -50,16 +50,17 @@ class HomeViewModel(
                 .collect { orders ->
                     val groupedOrders = orders.groupBy { it.status }
                     
-                    // Filter for today's deadlines
+                    // Filter for deadlines that fall within our forecast window
                     val now = Calendar.getInstance()
-                    val todayYear = now.get(Calendar.YEAR)
-                    val todayDay = now.get(Calendar.DAY_OF_YEAR)
+                    val windowEnd = Calendar.getInstance().apply { 
+                        add(Calendar.HOUR_OF_DAY, 12) // Buffer matching weather fetch
+                    }
 
                     todayDeadlines = orders.filter { order ->
                         order.orderDueDate != null && order.status != "Done" && order.status != "Canceled"
                     }.filter { order ->
                         val dueCal = Calendar.getInstance().apply { time = order.orderDueDate!!.toDate() }
-                        dueCal.get(Calendar.YEAR) == todayYear && dueCal.get(Calendar.DAY_OF_YEAR) == todayDay
+                        dueCal.after(now) && dueCal.before(windowEnd)
                     }.map { order ->
                         val dueCal = Calendar.getInstance().apply { time = order.orderDueDate!!.toDate() }
                         val timeStr = String.format(Locale.US, "%02d:%02d", dueCal.get(Calendar.HOUR_OF_DAY), dueCal.get(Calendar.MINUTE))
