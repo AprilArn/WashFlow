@@ -105,7 +105,7 @@ fun TemperatureChartSegment(
         // Draw dot
         drawCircle(
             color = Color.White,
-            radius = (if (isEvent) 2.dp else 3.5.dp).toPx(),
+            radius = (if (isEvent) 1.75.dp else 3.5.dp).toPx(),
             center = Offset(centerX, currentY)
         )
     }
