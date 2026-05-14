@@ -2,6 +2,7 @@ package com.aprilarn.washflow.ui.home
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -350,8 +351,8 @@ fun HorizontalForecastItem(
                 fontWeight = FontWeight.Bold
             ),
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            modifier = Modifier.basicMarquee()
         )
 
         Spacer(modifier = Modifier.height(8.dp))
