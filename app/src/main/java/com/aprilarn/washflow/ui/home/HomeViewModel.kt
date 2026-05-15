@@ -202,7 +202,7 @@ class HomeViewModel(
 
         // Always return exactly 8 items. 
         // If events were added and total > 8, the items furthest in time are dropped.
-        return sortedAll.take(8)
+        return sortedAll.take(8) // ubah pada bagian WeatherApiService juga jika nilai ini diubah
     }
 
     fun fetchWeatherData(lat: Double, lon: Double, isGps: Boolean = true) {

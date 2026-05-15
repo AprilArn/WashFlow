@@ -1,5 +1,6 @@
 package com.aprilarn.washflow.ui.settings
 
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -82,12 +83,20 @@ fun PreferencesSection(
                     title = "Set location",
                     onClick = onSetLocationClicked,
                     trailingContent = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.widthIn(max = 200.dp) // Membatasi lebar agar marquee aktif jika teks panjang
+                        ) {
+                            Spacer(modifier = Modifier.width(16.dp)) // Jarak agar tidak terlalu menempel dengan title
                             // Gunakan locationName yang diteruskan dari State
                             Text(
                                 text = locationName,
                                 color = Color.Gray,
-                                style = MaterialTheme.typography.bodyMedium
+                                style = MaterialTheme.typography.bodyMedium,
+                                maxLines = 1,
+                                modifier = Modifier
+                                    .weight(1f, fill = false)
+                                    .basicMarquee()
                             )
                             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
                         }
