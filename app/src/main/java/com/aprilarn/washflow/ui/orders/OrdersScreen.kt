@@ -8,11 +8,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 
 import com.aprilarn.washflow.data.model.Items
 import com.aprilarn.washflow.ui.theme.GrayBlue
+import com.aprilarn.washflow.ui.theme.WashFlowTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,40 +67,75 @@ private fun QuantityInputDialog(
     onDismiss: () -> Unit,
     onConfirm: (Int) -> Unit
 ) {
+    Dialog(onDismissRequest = onDismiss) {
+        QuantityInputDialogContent(
+            item = item,
+            onDismiss = onDismiss,
+            onConfirm = onConfirm
+        )
+    }
+}
+
+@Composable
+private fun QuantityInputDialogContent(
+    item: Items,
+    onDismiss: () -> Unit,
+    onConfirm: (Int) -> Unit
+) {
     var quantityText by remember { mutableStateOf("1") }
 
-    Dialog(onDismissRequest = onDismiss) {
-        Card {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+    Card(
+        modifier = Modifier
+            .width(360.dp) // Mengatur lebar maksimal dialog agar lebih compact
+            .wrapContentHeight()
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text("Enter Quantity for", style = MaterialTheme.typography.labelMedium)
+            Text(item.itemName, style = MaterialTheme.typography.titleLarge)
+            OutlinedTextField(
+                value = quantityText,
+                onValueChange = { if (it.all { char -> char.isDigit() }) quantityText = it },
+                label = { Text("Quantity") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+                modifier = Modifier.width(100.dp)
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
             ) {
-                Text("Enter Quantity for", style = MaterialTheme.typography.labelMedium)
-                Text(item.itemName, style = MaterialTheme.typography.titleLarge)
-                OutlinedTextField(
-                    value = quantityText,
-                    onValueChange = { quantityText = it },
-                    label = { Text("Quantity") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel", color = GrayBlue)
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = { onConfirm(quantityText.toIntOrNull() ?: 1) },
+                    colors = ButtonDefaults.buttonColors(containerColor = GrayBlue)
                 ) {
-                    TextButton(onClick = onDismiss) {
-                        Text("Cancel", color = GrayBlue)
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = { onConfirm(quantityText.toIntOrNull() ?: 1) },
-                        colors = ButtonDefaults.buttonColors(containerColor = GrayBlue)
-                    ) {
-                        Text("Done", color = Color.White)
-                    }
+                    Text("Done", color = Color.White)
                 }
             }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun QuantityInputDialogPreview() {
+    WashFlowTheme {
+        Box(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            QuantityInputDialogContent(
+                item = Items(itemId = "1", itemName = "Jas Pria", itemPrice = 50000.0, serviceId = "s1"),
+                onDismiss = {},
+                onConfirm = {}
+            )
         }
     }
 }

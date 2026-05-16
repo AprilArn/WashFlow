@@ -38,7 +38,7 @@ import com.aprilarn.washflow.ui.MainViewModel
 import com.aprilarn.washflow.ui.login.GoogleAuthUiClient
 import com.aprilarn.washflow.ui.login.LoginScreen
 import com.aprilarn.washflow.ui.login.LoginViewModel
-import com.aprilarn.washflow.ui.theme.MainBLue
+import com.aprilarn.washflow.ui.theme.MainBlue
 import com.aprilarn.washflow.ui.theme.MornYellow
 import com.aprilarn.washflow.ui.theme.WashFlowTheme
 import com.aprilarn.washflow.ui.workspace.WorkspaceEvent
@@ -123,7 +123,7 @@ class MainActivity : ComponentActivity() {
                                     .fillMaxSize()
                                     .background(
                                         Brush.linearGradient(
-                                            colors = listOf(MainBLue, MornYellow),
+                                            colors = listOf(MainBlue, MornYellow),
                                             start = Offset(0f, Float.POSITIVE_INFINITY),
                                             end = Offset(Float.POSITIVE_INFINITY, 0f)
                                         )

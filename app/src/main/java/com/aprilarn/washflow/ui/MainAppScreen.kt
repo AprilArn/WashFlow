@@ -64,7 +64,7 @@ import com.aprilarn.washflow.ui.settings.SettingsScreen
 import com.aprilarn.washflow.ui.settings.SettingsViewModel
 import com.aprilarn.washflow.ui.tabledata.TableDataScreen
 import com.aprilarn.washflow.ui.tabledata.TableDataViewModel
-import com.aprilarn.washflow.ui.theme.MainBLue
+import com.aprilarn.washflow.ui.theme.MainBlue
 import com.aprilarn.washflow.ui.theme.MornYellow
 import com.aprilarn.washflow.ui.workspace.ActiveInviteDialog
 import com.aprilarn.washflow.ui.workspace.CreateInviteDialog
@@ -163,7 +163,7 @@ fun MainAppScreen(
                 .fillMaxSize()
                 .background(
                     Brush.linearGradient(
-                        colors = listOf(MainBLue, MornYellow),
+                        colors = listOf(MainBlue, MornYellow),
                         start = Offset(0f, Float.POSITIVE_INFINITY),
                         end = Offset(Float.POSITIVE_INFINITY, 0f)
                     )
