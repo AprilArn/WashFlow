@@ -19,6 +19,10 @@ data class MainUiState(
     val showNotificationOptions: Boolean = false,
     val currentUserUid: String = "",
 
+    // Status Kick
+    val showKickedDialog: Boolean = false,
+    val kickedFromWorkspaceName: String = "",
+
     // Jam Operasional
     val showOperationalHoursDialog: Boolean = false,
     val openTime: String? = null,

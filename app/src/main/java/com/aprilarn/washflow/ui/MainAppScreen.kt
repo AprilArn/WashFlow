@@ -40,6 +40,7 @@ import com.aprilarn.washflow.data.repository.OrderRepository
 import com.aprilarn.washflow.data.repository.ServiceRepository
 import com.aprilarn.washflow.data.repository.WorkspaceRepository
 import com.aprilarn.washflow.ui.components.Header
+import com.aprilarn.washflow.ui.components.KickedDialog
 import com.aprilarn.washflow.ui.components.LeaveWorkspaceDialog
 import com.aprilarn.washflow.ui.components.NotificationPanel
 import com.aprilarn.washflow.ui.components.NotificationPreviewItem
@@ -522,6 +523,14 @@ fun MainAppScreen(
         DeleteWorkspaceDialog(
             onDismiss = { mainViewModel.onDismissDeleteWorkspaceDialog() },
             onConfirm = { mainViewModel.confirmDeleteWorkspace() }
+        )
+    }
+
+    // --- DIALOG BARU UNTUK KICKED ---
+    if (mainUiState.showKickedDialog) {
+        KickedDialog(
+            workspaceName = mainUiState.kickedFromWorkspaceName,
+            onConfirm = { mainViewModel.onKickedDialogConfirm() }
         )
     }
 }

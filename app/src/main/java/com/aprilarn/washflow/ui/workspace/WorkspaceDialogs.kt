@@ -30,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
@@ -54,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.aprilarn.washflow.data.model.Invites
+import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.MainFontBlack
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -358,21 +360,26 @@ fun CreateInviteDialog(
                     onClick = { showDatePicker = true },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(formatter.format(expiryDate))
+                    Text(formatter.format(expiryDate), color = GrayBlue)
                 }
             }
         },
         confirmButton = {
-            Button(onClick = {
+            Button(
+                onClick = {
                 val maxUsers = maxContributors.toIntOrNull() ?: 1
                 onGenerate(maxUsers, expiryDate)
-            }) {
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = GrayBlue)
+            ) {
                 Text("Generate")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text("Cancel", color = GrayBlue)
             }
         }
     )
@@ -448,7 +455,11 @@ fun OperationalHoursDialog(
                     Text("Gunakan jam operasional", style = MaterialTheme.typography.bodyMedium)
                     androidx.compose.material3.Switch(
                         checked = useOperationalHours,
-                        onCheckedChange = { useOperationalHours = it }
+                        onCheckedChange = { useOperationalHours = it },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = GrayBlue
+                        )
                     )
                 }
 
@@ -459,7 +470,7 @@ fun OperationalHoursDialog(
                             modifier = Modifier.fillMaxWidth(),
                             onClick = { isEditingOpenTime = true }
                         ) {
-                            Text(String.format(Locale.getDefault(), "%02d:%02d", openTimeState.hour, openTimeState.minute))
+                            Text(String.format(Locale.getDefault(), "%02d:%02d", openTimeState.hour, openTimeState.minute), color = GrayBlue)
                         }
                     }
 
@@ -469,28 +480,33 @@ fun OperationalHoursDialog(
                             modifier = Modifier.fillMaxWidth(),
                             onClick = { isEditingCloseTime = true }
                         ) {
-                            Text(String.format(Locale.getDefault(), "%02d:%02d", closeTimeState.hour, closeTimeState.minute))
+                            Text(String.format(Locale.getDefault(), "%02d:%02d", closeTimeState.hour, closeTimeState.minute), color = GrayBlue)
                         }
                     }
                 }
             }
         },
         confirmButton = {
-            Button(onClick = {
-                if (useOperationalHours) {
-                    val newOpen = String.format(Locale.getDefault(), "%02d:%02d", openTimeState.hour, openTimeState.minute)
-                    val newClose = String.format(Locale.getDefault(), "%02d:%02d", closeTimeState.hour, closeTimeState.minute)
-                    onApply(newOpen, newClose)
-                } else {
-                    onApply(null, null)
-                }
-            }) {
+            Button(
+                onClick = {
+                    if (useOperationalHours) {
+                        val newOpen = String.format(Locale.getDefault(), "%02d:%02d", openTimeState.hour, openTimeState.minute)
+                        val newClose = String.format(Locale.getDefault(), "%02d:%02d", closeTimeState.hour, closeTimeState.minute)
+                        onApply(newOpen, newClose)
+                    } else {
+                        onApply(null, null)
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = GrayBlue)
+            ) {
                 Text("Apply")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text("Cancel", color = GrayBlue)
             }
         }
     )
@@ -539,7 +555,7 @@ fun DeleteWorkspaceDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text("Cancel", color = GrayBlue)
             }
         }
     )

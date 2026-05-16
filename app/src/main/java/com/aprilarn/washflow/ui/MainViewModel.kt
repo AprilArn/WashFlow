@@ -43,6 +43,8 @@ class MainViewModel(
     private val appInitTime = Timestamp.now()
     private val displayedNotifIds = mutableSetOf<String>()
 
+    private var isExpectingWorkspaceRemoval = false
+
     init {
         listenForWorkspaceChanges()
         listenForActiveInvite()
@@ -53,28 +55,54 @@ class MainViewModel(
         viewModelScope.launch {
             workspaceRepository.getCurrentWorkspaceRealtime().collect { workspace ->
                 val currentUser = Firebase.auth.currentUser
-                val isOwner = if (workspace != null && currentUser != null) {
-                    workspace.contributors?.get(currentUser.uid) == "owner"
+                if (currentUser == null) return@collect
+
+                val previousState = _uiState.value
+                val previouslyHadWorkspace = previousState.workspaceName != "Loading..." && previousState.workspaceName.isNotEmpty()
+
+                if (workspace == null) {
+                    if (previouslyHadWorkspace && !isExpectingWorkspaceRemoval) {
+                        // User was kicked!
+                        _uiState.update {
+                            it.copy(
+                                showKickedDialog = true,
+                                kickedFromWorkspaceName = previousState.workspaceName,
+                                workspaceName = "" // Clear the loading state
+                            )
+                        }
+                    } else {
+                        _uiState.update {
+                            it.copy(
+                                workspaceName = "Loading...",
+                                isCurrentUserOwner = false,
+                                openTime = null,
+                                closeTime = null
+                            )
+                        }
+                    }
                 } else {
-                    false
-                }
+                    val isOwner = if (currentUser != null) {
+                        workspace.contributors?.get(currentUser.uid) == "owner"
+                    } else {
+                        false
+                    }
 
-                _uiState.update {
-                    it.copy(
-                        // Tampilkan "Loading..." jika workspace null (misal: saat user baru 'leave')
-                        workspaceName = workspace?.workspaceName ?: "Loading...",
-                        isCurrentUserOwner = isOwner,
-                        currentUserUid = currentUser?.uid ?: "",
-                        openTime = workspace?.openTime,
-                        closeTime = workspace?.closeTime
-                    )
-                }
+                    _uiState.update {
+                        it.copy(
+                            workspaceName = workspace.workspaceName ?: "Loading...",
+                            isCurrentUserOwner = isOwner,
+                            currentUserUid = currentUser.uid,
+                            openTime = workspace.openTime,
+                            closeTime = workspace.closeTime
+                        )
+                    }
 
-                // Save operational hours to shared preferences for HomeViewModel to access
-                sharedPreferences.edit().apply {
-                    putString("WS_OPEN_TIME", workspace?.openTime)
-                    putString("WS_CLOSE_TIME", workspace?.closeTime)
-                    apply()
+                    // Save operational hours to shared preferences for HomeViewModel to access
+                    sharedPreferences.edit().apply {
+                        putString("WS_OPEN_TIME", workspace.openTime)
+                        putString("WS_CLOSE_TIME", workspace.closeTime)
+                        apply()
+                    }
                 }
             }
         }
@@ -285,13 +313,15 @@ class MainViewModel(
 
     fun confirmLeaveWorkspace() {
         viewModelScope.launch {
+            isExpectingWorkspaceRemoval = true
             _uiState.update { it.copy(showLeaveWorkspaceDialog = false) }
             val success = workspaceRepository.leaveWorkspace()
             if (success) {
                 // Kirim event untuk navigasi
                 _eventFlow.emit(MainNavigationEvent.NavigateToWorkspace)
+            } else {
+                isExpectingWorkspaceRemoval = false
             }
-            // Jika gagal, bisa tambahkan event untuk menampilkan error
         }
     }
 
@@ -309,13 +339,15 @@ class MainViewModel(
 
     fun confirmDeleteWorkspace() {
         viewModelScope.launch {
+            isExpectingWorkspaceRemoval = true
             _uiState.update { it.copy(showDeleteWorkspaceDialog = false) }
             val success = workspaceRepository.deleteCurrentWorkspace()
             if (success) {
                 // Kirim event untuk navigasi kembali ke WorkspaceScreen
                 _eventFlow.emit(MainNavigationEvent.NavigateToWorkspace)
+            } else {
+                isExpectingWorkspaceRemoval = false
             }
-            // TODO: Tambahkan penanganan error jika 'success' adalah false
         }
     }
 
@@ -334,6 +366,13 @@ class MainViewModel(
 
     fun onDismissOperationalHoursDialog() {
         _uiState.update { it.copy(showOperationalHoursDialog = false) }
+    }
+
+    fun onKickedDialogConfirm() {
+        _uiState.update { it.copy(showKickedDialog = false) }
+        viewModelScope.launch {
+            _eventFlow.emit(MainNavigationEvent.NavigateToWorkspace)
+        }
     }
 
     fun updateOperationalHours(openTime: String?, closeTime: String?) {

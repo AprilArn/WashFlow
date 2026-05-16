@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 
 import com.aprilarn.washflow.data.model.Items
+import com.aprilarn.washflow.ui.theme.GrayBlue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,9 +90,10 @@ private fun QuantityInputDialog(
                         Text("Cancel")
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    Button(onClick = {
-                        onConfirm(quantityText.toIntOrNull() ?: 1)
-                    }) {
+                    Button(
+                        onClick = { onConfirm(quantityText.toIntOrNull() ?: 1) },
+                        colors = ButtonDefaults.buttonColors(containerColor = GrayBlue)
+                    ) {
                         Text("Done")
                     }
                 }
