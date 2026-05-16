@@ -1,11 +1,19 @@
 package com.aprilarn.washflow.ui.components
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowLeft
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -55,42 +63,79 @@ fun KickedDialogContent(
 
             // Pesan
             Text(
-                text = "Anda telah dikeluarkan dari workspace \"$workspaceName\".",
+                text = "Anda telah dikeluarkan dari workspace",
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = Color.Gray,
                     textAlign = TextAlign.Center
                 )
             )
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "\"$workspaceName\"",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = Color.Gray,
+                    textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.Medium
+                )
+            )
+
+
             Spacer(modifier = Modifier.height(32.dp))
 
             // Tombol Konfirmasi
-            Button(
+            OutlinedButton(
                 onClick = onConfirm,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = GrayBlue),
-                shape = RoundedCornerShape(12.dp)
+                border = BorderStroke(1.dp, GrayBlue)
             ) {
-                Text("Kembali ke halaman Workspace", color = Color.White)
+                Row (
+                    verticalAlignment = Alignment.CenterVertically
+                ){
+                    Icon(
+                        modifier = Modifier.size(18.dp),
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Create Icon",
+                        tint = GrayBlue
+                    )
+                    Spacer(modifier = Modifier.width(8.dp) )
+                    Text("Back to workspace screen", color = GrayBlue)
+                }
             }
+//            Button(
+//                onClick = onConfirm,
+//                modifier = Modifier.fillMaxWidth(),
+//                colors = ButtonDefaults.buttonColors(containerColor = GrayBlue),
+//                shape = RoundedCornerShape(12.dp)
+//            ) {
+//                Text("Kembali ke halaman Workspace", color = Color.White)
+//            }
         }
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, widthDp = 1200, heightDp = 800)
 @Composable
 fun KickedDialogPreview() {
-    WashFlowTheme {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            KickedDialogContent(
-                workspaceName = "WashFlow Central",
-                onConfirm = {}
+    Box(
+        modifier = Modifier.background(
+            Brush.linearGradient(
+                colors = listOf(Color(0xFFB9E9FF), Color(0xFFFFD6BF))
             )
+        )
+    ) {
+        WashFlowTheme {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                KickedDialogContent(
+                    workspaceName = "WashFlow Central",
+                    onConfirm = {}
+                )
+            }
         }
     }
 }

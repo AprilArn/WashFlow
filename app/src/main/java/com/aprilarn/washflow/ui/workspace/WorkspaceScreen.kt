@@ -125,7 +125,7 @@ fun WorkspaceScreen(
                     contentDescription = "Create Icon",
                     tint = Color.White
                 )
-                Spacer(modifier = Modifier.width(4.dp) )
+                Spacer(modifier = Modifier.width(8.dp) )
                 Text("Create new workspace", color = Color.White)
             }
 

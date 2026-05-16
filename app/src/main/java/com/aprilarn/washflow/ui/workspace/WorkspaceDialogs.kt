@@ -67,11 +67,11 @@ import java.util.TimeZone
 fun WorkspaceOptionsDropdown(
     expanded: Boolean,
     isOwner: Boolean,
-    popupOffset: IntOffset, // <--- Terima Parameter Baru
+    popupOffset: IntOffset,
     onDismiss: () -> Unit,
     onRenameClicked: () -> Unit,
     onContributorsClicked: () -> Unit,
-    onOperationalHoursClicked: () -> Unit, // <--- Parameter Baru
+    onOperationalHoursClicked: () -> Unit,
     onAddContributorClicked: () -> Unit,
     onLeaveWorkspaceClicked: () -> Unit,
     onDeleteWorkspaceClicked: () -> Unit
@@ -106,7 +106,7 @@ fun WorkspaceOptionsDropdown(
                         HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
 
                         WorkspaceDropdownItem(
-                            text = "Jam Operasional",
+                            text = "Operational hours",
                             onClick = {
                                 onOperationalHoursClicked()
                                 onDismiss()
@@ -191,13 +191,16 @@ fun RenameWorkspaceDialog(
             )
         },
         confirmButton = {
-            Button(onClick = { onApply(newName) }) {
-                Text("Apply")
+            Button(
+                onClick = { onApply(newName) },
+                colors = ButtonDefaults.buttonColors(containerColor = GrayBlue)
+            ) {
+                Text("Apply", color = Color.White)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text("Cancel", color = GrayBlue)
             }
         }
     )
