@@ -253,8 +253,11 @@ fun ActiveInviteDialog(
             }
         },
         confirmButton = {
-            Button(onClick = onDismiss) {
-                Text("Close")
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(containerColor = GrayBlue)
+            ) {
+                Text("Close", color = Color.White)
             }
         },
         dismissButton = {
@@ -372,7 +375,7 @@ fun CreateInviteDialog(
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = GrayBlue)
             ) {
-                Text("Generate")
+                Text("Generate", color = Color.White)
             }
         },
         dismissButton = {
@@ -499,7 +502,7 @@ fun OperationalHoursDialog(
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = GrayBlue)
             ) {
-                Text("Apply")
+                Text("Apply", color = Color.White)
             }
         },
         dismissButton = {
@@ -550,7 +553,7 @@ fun DeleteWorkspaceDialog(
                     disabledContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.3f)
                 )
             ) {
-                Text("Delete")
+                Text("Delete", color = Color.White)
             }
         },
         dismissButton = {

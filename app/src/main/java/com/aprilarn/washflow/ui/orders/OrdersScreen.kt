@@ -6,6 +6,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -87,14 +88,14 @@ private fun QuantityInputDialog(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("Cancel")
+                        Text("Cancel", color = GrayBlue)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
                         onClick = { onConfirm(quantityText.toIntOrNull() ?: 1) },
                         colors = ButtonDefaults.buttonColors(containerColor = GrayBlue)
                     ) {
-                        Text("Done")
+                        Text("Done", color = Color.White)
                     }
                 }
             }
