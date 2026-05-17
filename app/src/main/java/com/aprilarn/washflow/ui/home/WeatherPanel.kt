@@ -63,8 +63,16 @@ fun TemperatureChartSegment(
     nextTemp: Float?,
     minTemp: Int,
     maxTemp: Int,
-    isEvent: Boolean = false
+    isEvent: Boolean = false,
+    isVisible: Boolean = true
 ) {
+    if (!isVisible) {
+        Spacer(modifier = modifier
+            .fillMaxWidth()
+            .height(40.dp))
+        return
+    }
+
     Canvas(modifier = modifier
         .fillMaxWidth()
         .height(40.dp)) {
@@ -276,13 +284,18 @@ fun HorizontalWeatherForecast(
                     val prevTemp = if (index > 0) effectiveTemps[index - 1] else null
                     val nextTemp = if (index < forecasts.size - 1) effectiveTemps[index + 1] else null
 
+                    val firstWeatherIdx = forecasts.indexOfFirst { !it.isEvent }
+                    val lastWeatherIdx = forecasts.indexOfLast { !it.isEvent }
+                    val showChart = firstWeatherIdx != -1 && index >= firstWeatherIdx && index <= lastWeatherIdx
+
                     HorizontalForecastItem(
                         forecast = forecast,
                         currentTemp = currentTemp,
-                        prevTemp = prevTemp,
-                        nextTemp = nextTemp,
+                        prevTemp = if (index > firstWeatherIdx) prevTemp else null,
+                        nextTemp = if (index < lastWeatherIdx) nextTemp else null,
                         minTemp = minTemp,
-                        maxTemp = maxTemp
+                        maxTemp = maxTemp,
+                        showChart = showChart
                     )
                 }
             }
@@ -297,7 +310,8 @@ fun HorizontalForecastItem(
     prevTemp: Float?,
     nextTemp: Float?,
     minTemp: Int,
-    maxTemp: Int
+    maxTemp: Int,
+    showChart: Boolean = true
 ) {
     Column(
         modifier = Modifier.width(64.dp),
@@ -364,7 +378,8 @@ fun HorizontalForecastItem(
             nextTemp = nextTemp,
             minTemp = minTemp,
             maxTemp = maxTemp,
-            isEvent = forecast.isEvent
+            isEvent = forecast.isEvent,
+            isVisible = showChart
         )
     }
 }
@@ -393,27 +408,40 @@ fun WeatherDetailsPanelPreview() {
     }
 }
 
-@Preview(showBackground = true, name = "Horizontal Forecast with Events")
+@Preview(showBackground = true, name = "Horizontal Forecast Scenarios")
 @Composable
-fun HorizontalWeatherForecastEventsPreview() {
-    val sampleForecasts = listOf(
-        HourlyForecastUiState("09:00", "https://openweathermap.org/img/wn/01d@2x.png", "26°"),
-        HourlyForecastUiState("09:00", "WS_OPEN", "--", isEvent = true, eventLabel = "Open"),
-        HourlyForecastUiState("09:00", "WS_DEADLINE", "--", isEvent = true, eventLabel = "Deadline"),
-        HourlyForecastUiState("10:00", "https://openweathermap.org/img/wn/02d@2x.png", "32°"),
-        HourlyForecastUiState("11:00", "https://openweathermap.org/img/wn/02d@2x.png", "33°"),
-        HourlyForecastUiState("12:00", "https://openweathermap.org/img/wn/02d@2x.png", "34°"),
-        HourlyForecastUiState("13:00", "https://openweathermap.org/img/wn/02d@2x.png", "35°"),
-        HourlyForecastUiState("17:00", "https://openweathermap.org/img/wn/04d@2x.png", "24°"),
-        HourlyForecastUiState("17:00", "WS_CLOSE", "--", isEvent = true, eventLabel = "Closed")
-    ).take(8)
+fun HorizontalWeatherForecastScenariosPreview() {
+    val scenarios = listOf(
+        // Scenario 1: event -> weather -> weather -> event -> event -> weather
+        listOf(
+            HourlyForecastUiState("09:00", "WS_OPEN", "--", isEvent = true, eventLabel = "E1"),
+            HourlyForecastUiState("10:00", "https://openweathermap.org/img/wn/01d@2x.png", "26°"),
+            HourlyForecastUiState("11:00", "https://openweathermap.org/img/wn/01d@2x.png", "28°"),
+            HourlyForecastUiState("12:00", "WS_DEADLINE", "--", isEvent = true, eventLabel = "E2"),
+            HourlyForecastUiState("13:00", "WS_CLOSE", "--", isEvent = true, eventLabel = "E3"),
+            HourlyForecastUiState("14:00", "https://openweathermap.org/img/wn/01d@2x.png", "30°"),
+        ),
+        // Scenario 2: weather -> weather -> weather -> weather -> event -> event
+        listOf(
+            HourlyForecastUiState("09:00", "https://openweathermap.org/img/wn/01d@2x.png", "26°"),
+            HourlyForecastUiState("10:00", "https://openweathermap.org/img/wn/01d@2x.png", "28°"),
+            HourlyForecastUiState("11:00", "https://openweathermap.org/img/wn/01d@2x.png", "30°"),
+            HourlyForecastUiState("12:00", "https://openweathermap.org/img/wn/01d@2x.png", "32°"),
+            HourlyForecastUiState("13:00", "WS_DEADLINE", "--", isEvent = true, eventLabel = "E1"),
+            HourlyForecastUiState("14:00", "WS_CLOSE", "--", isEvent = true, eventLabel = "E2"),
+        )
+    )
 
-    Box(
+    Column(
         modifier = Modifier
             .background(Color(0xFF34495E))
-            .wrapContentWidth()
-            .padding(20.dp)
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        HorizontalWeatherForecast(forecasts = sampleForecasts)
+        scenarios.forEachIndexed { index, forecast ->
+            Text("Scenario ${index + 1}", color = Color.White)
+            HorizontalWeatherForecast(forecasts = forecast)
+        }
     }
 }
+
