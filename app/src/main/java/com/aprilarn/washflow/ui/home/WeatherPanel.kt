@@ -115,7 +115,7 @@ fun TemperatureChartSegment(
         // Draw dot
         drawCircle(
             color = Color.White,
-            radius = (if (isEvent) 1.75.dp else 3.5.dp).toPx(),
+            radius = (if (isEvent) 0.dp else 3.5.dp).toPx(),
             center = Offset(centerX, currentY)
         )
     }
@@ -424,14 +424,14 @@ fun HorizontalWeatherForecastScenariosPreview() {
             HourlyForecastUiState("13:00", "WS_CLOSE", "--", isEvent = true, eventLabel = "E3"),
             HourlyForecastUiState("14:00", "https://openweathermap.org/img/wn/01d@2x.png", "30°"),
         ),
-        // Scenario 2: weather -> weather -> weather -> weather -> event -> event
+        // Scenario 2: Sunrise and Sunset
         listOf(
-            HourlyForecastUiState("09:00", "https://openweathermap.org/img/wn/01d@2x.png", "26°"),
-            HourlyForecastUiState("10:00", "https://openweathermap.org/img/wn/01d@2x.png", "28°"),
-            HourlyForecastUiState("11:00", "https://openweathermap.org/img/wn/01d@2x.png", "30°"),
-            HourlyForecastUiState("12:00", "https://openweathermap.org/img/wn/01d@2x.png", "32°"),
-            HourlyForecastUiState("13:00", "WS_DEADLINE", "--", isEvent = true, eventLabel = "E1"),
-            HourlyForecastUiState("14:00", "WS_CLOSE", "--", isEvent = true, eventLabel = "E2"),
+            HourlyForecastUiState("05:00", "https://openweathermap.org/img/wn/01d@2x.png", "22°"),
+            HourlyForecastUiState("05:45", "WS_SUNRISE", "--", isEvent = true, eventLabel = "Sunrise"),
+            HourlyForecastUiState("06:00", "https://openweathermap.org/img/wn/01d@2x.png", "23°"),
+            HourlyForecastUiState("17:30", "https://openweathermap.org/img/wn/01d@2x.png", "28°"),
+            HourlyForecastUiState("18:15", "WS_SUNSET", "--", isEvent = true, eventLabel = "Sunset"),
+            HourlyForecastUiState("19:00", "https://openweathermap.org/img/wn/01d@2x.png", "26°"),
         )
     )
 

@@ -29,7 +29,7 @@ interface WeatherApiService {
         @Query("location.latitude") lat: Double,
         @Query("location.longitude") lon: Double,
         @Query("key") key: String = BuildConfig.API_KEY,
-        @Query("hours") hours: Int = 8,
+        @Query("hours") hours: Int = 24,
         @Query("languageCode") lang: String = "en"
     ): GoogleHourlyForecastResponse
 
@@ -38,7 +38,7 @@ interface WeatherApiService {
         @Query("location.latitude") lat: Double,
         @Query("location.longitude") lon: Double,
         @Query("key") key: String = BuildConfig.API_KEY,
-        @Query("days") days: Int = 1,
+        @Query("days") days: Int = 2,
         @Query("languageCode") lang: String = "en"
     ): GoogleDailyForecastResponse
 

@@ -17,7 +17,9 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -49,10 +51,10 @@ class HomeViewModel(
                 }
                 .collect { orders ->
                     val groupedOrders = orders.groupBy { it.status }
-                    
+
                     // Filter for deadlines that fall within our forecast window
                     val now = Calendar.getInstance()
-                    val windowEnd = Calendar.getInstance().apply { 
+                    val windowEnd = Calendar.getInstance().apply {
                         add(Calendar.HOUR_OF_DAY, 12) // Buffer matching weather fetch
                     }
 
@@ -133,100 +135,131 @@ class HomeViewModel(
         return "$year-$day-$hour-$minuteSlot"
     }
 
+    private fun parseIsoToTimestamp(isoString: String): Long {
+        return try {
+            // Contoh input API: "2025-02-10T15:02:35.703929582Z"
+
+            // 1. Buang bagian pecahan detik dan huruf Z agar sesuai dengan format SimpleDateFormat
+            val cleanString = isoString.substringBefore(".")
+
+            val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US)
+
+            // 2. Beritahu sistem bahwa string ini adalah waktu UTC
+            format.timeZone = java.util.TimeZone.getTimeZone("UTC")
+
+            format.parse(cleanString)?.time ?: 0L
+        } catch (e: Exception) {
+            Log.e("HomeViewModel", "Gagal parse waktu: $isoString", e)
+            0L
+        }
+    }
+
+    private fun formatTimestampToTime(timestamp: Long): String {
+        val sdf = SimpleDateFormat("HH:mm", Locale.US)
+        return sdf.format(Date(timestamp))
+    }
+
     private fun injectEvents(
         weatherForecasts: List<HourlyForecastUiState>
     ): List<HourlyForecastUiState> {
         val result = weatherForecasts.toMutableList()
+        if (weatherForecasts.isEmpty()) return result
 
-        fun timeToMinutes(timeStr: String): Int {
-            val parts = timeStr.split(":").map { it.toIntOrNull() ?: 0 }
-            return if (parts.size >= 2) parts[0] * 60 + parts[1] else 0
-        }
+        val startTs = weatherForecasts.first().timestamp
+        val endTs = startTs + (12 * 60 * 60 * 1000L) // Window 12 jam kedepan dari ramalan pertama
 
         val openTime = sharedPreferences.getString("WS_OPEN_TIME", null)
         val closeTime = sharedPreferences.getString("WS_CLOSE_TIME", null)
-        val sunriseTime = sharedPreferences.getString("SUNRISE_TIME", null)
-        val sunsetTime = sharedPreferences.getString("SUNSET_TIME", null)
 
-        if (weatherForecasts.isNotEmpty()) {
-            val startMin = timeToMinutes(weatherForecasts.first().time)
-            val endMin = timeToMinutes(weatherForecasts.last().time)
+        val sunriseJson = sharedPreferences.getString("SUNRISE_TIMESTAMPS", "[]")
+        val sunsetJson = sharedPreferences.getString("SUNSET_TIMESTAMPS", "[]")
+        val sunriseTimestamps: List<Long> = try {
+            gson.fromJson(sunriseJson, object : TypeToken<List<Long>>() {}.type)
+        } catch (e: Exception) { emptyList() }
+        val sunsetTimestamps: List<Long> = try {
+            gson.fromJson(sunsetJson, object : TypeToken<List<Long>>() {}.type)
+        } catch (e: Exception) { emptyList() }
 
-            fun isInWindow(time: String): Boolean {
-                val min = timeToMinutes(time)
-                return min >= startMin && min <= endMin
-            }
+        fun getTimestampsInWindow(timeStr: String?): List<Long> {
+            if (timeStr == null) return emptyList()
+            val parts = timeStr.split(":").map { it.toIntOrNull() ?: 0 }
+            val hour = if (parts.isNotEmpty()) parts[0] else 0
+            val minute = if (parts.size >= 2) parts[1] else 0
 
-            fun getEventTimestamp(timeStr: String): Long {
-                val parts = timeStr.split(":").map { it.toIntOrNull() ?: 0 }
-                val hour = if (parts.isNotEmpty()) parts[0] else 0
-                val minute = if (parts.size >= 2) parts[1] else 0
-                
-                return Calendar.getInstance().apply {
+            val results = mutableListOf<Long>()
+            val baseCal = Calendar.getInstance().apply { timeInMillis = startTs }
+
+            // Check yesterday, today, and tomorrow to be safe
+            for (offset in -1..1) {
+                val cal = (baseCal.clone() as Calendar).apply {
+                    add(Calendar.DAY_OF_YEAR, offset)
                     set(Calendar.HOUR_OF_DAY, hour)
                     set(Calendar.MINUTE, minute)
                     set(Calendar.SECOND, 0)
                     set(Calendar.MILLISECOND, 0)
-                }.timeInMillis
-            }
-
-            if (openTime != null && isInWindow(openTime)) {
-                result.add(
-                    HourlyForecastUiState(
-                        time = openTime,
-                        iconUrl = "WS_OPEN",
-                        temperature = "--",
-                        isEvent = true,
-                        eventLabel = "Open",
-                        timestamp = getEventTimestamp(openTime)
-                    )
-                )
-            }
-
-            if (closeTime != null && isInWindow(closeTime)) {
-                result.add(
-                    HourlyForecastUiState(
-                        time = closeTime,
-                        iconUrl = "WS_CLOSE",
-                        temperature = "--",
-                        isEvent = true,
-                        eventLabel = "Closed",
-                        timestamp = getEventTimestamp(closeTime)
-                    )
-                )
-            }
-            
-            if (sunriseTime != null && isInWindow(sunriseTime)) {
-                result.add(
-                    HourlyForecastUiState(
-                        time = sunriseTime,
-                        iconUrl = "WS_SUNRISE",
-                        temperature = "--",
-                        isEvent = true,
-                        eventLabel = "Sunrise",
-                        timestamp = getEventTimestamp(sunriseTime)
-                    )
-                )
-            }
-
-            if (sunsetTime != null && isInWindow(sunsetTime)) {
-                result.add(
-                    HourlyForecastUiState(
-                        time = sunsetTime,
-                        iconUrl = "WS_SUNSET",
-                        temperature = "--",
-                        isEvent = true,
-                        eventLabel = "Sunset",
-                        timestamp = getEventTimestamp(sunsetTime)
-                    )
-                )
-            }
-            
-            // Add deadlines that are within the forecast window
-            todayDeadlines.forEach { deadline ->
-                if (isInWindow(deadline.time)) {
-                    result.add(deadline.copy(timestamp = getEventTimestamp(deadline.time)))
                 }
+                val ts = cal.timeInMillis
+                if (ts in startTs..endTs) {
+                    results.add(ts)
+                }
+            }
+            return results
+        }
+
+        // Inject Shop Hours
+        getTimestampsInWindow(openTime).forEach { ts ->
+            result.add(HourlyForecastUiState(
+                time = formatTimestampToTime(ts),
+                iconUrl = "WS_OPEN",
+                temperature = "--",
+                isEvent = true,
+                eventLabel = "Open",
+                timestamp = ts
+            ))
+        }
+
+        getTimestampsInWindow(closeTime).forEach { ts ->
+            result.add(HourlyForecastUiState(
+                time = formatTimestampToTime(ts),
+                iconUrl = "WS_CLOSE",
+                temperature = "--",
+                isEvent = true,
+                eventLabel = "Closed",
+                timestamp = ts
+            ))
+        }
+
+        // Inject Sunrise/Sunset
+        sunriseTimestamps.forEach { ts ->
+            if (ts in startTs..endTs) {
+                result.add(HourlyForecastUiState(
+                    time = formatTimestampToTime(ts),
+                    iconUrl = "WS_SUNRISE",
+                    temperature = "--",
+                    isEvent = true,
+                    eventLabel = "Sunrise",
+                    timestamp = ts
+                ))
+            }
+        }
+
+        sunsetTimestamps.forEach { ts ->
+            if (ts in startTs..endTs) {
+                result.add(HourlyForecastUiState(
+                    time = formatTimestampToTime(ts),
+                    iconUrl = "WS_SUNSET",
+                    temperature = "--",
+                    isEvent = true,
+                    eventLabel = "Sunset",
+                    timestamp = ts
+                ))
+            }
+        }
+
+        // Add deadlines that are within the forecast window
+        todayDeadlines.forEach { deadline ->
+            getTimestampsInWindow(deadline.time).forEach { ts ->
+                result.add(deadline.copy(timestamp = ts))
             }
         }
 
@@ -244,9 +277,7 @@ class HomeViewModel(
                 }
         )
 
-        // Always return exactly 8 items. 
-        // If events were added and total > 8, the items furthest in time are dropped.
-        return sortedAll.take(8) // ubah pada bagian WeatherApiService juga jika nilai ini diubah
+        return sortedAll.take(8)
     }
 
     fun fetchWeatherData(lat: Double, lon: Double, isGps: Boolean = true) {
@@ -285,11 +316,11 @@ class HomeViewModel(
             } catch (e: Exception) { emptyList() }
 
             val currentTimeMillis = System.currentTimeMillis()
-            
+
             // Filter out items that are past
             val filteredHourly = savedHourly.filter { item ->
                 item.timestamp > currentTimeMillis
-            }.take(12)
+            }.take(8)
 
             // Inject operational hours into cached data as well
             currentWeatherOnlyForecast = filteredHourly
@@ -324,8 +355,8 @@ class HomeViewModel(
         viewModelScope.launch {
             try {
                 val weatherResponse = weatherApiService.getCurrentConditions(lat = lat, lon = lon)
-                val forecastResponse = weatherApiService.getHourlyForecastData(lat = lat, lon = lon, hours = 12)
-                val dailyResponse = weatherApiService.getDailyForecastData(lat = lat, lon = lon, days = 1)
+                val forecastResponse = weatherApiService.getHourlyForecastData(lat = lat, lon = lon, hours = 24)
+                val dailyResponse = weatherApiService.getDailyForecastData(lat = lat, lon = lon, days = 2)
 
                 val geoResponse = geocodingApiService.getAddressFromLocation("$lat,$lon", BuildConfig.API_KEY)
                 var addressText = "Lokasi tidak diketahui"
@@ -340,22 +371,13 @@ class HomeViewModel(
                 }
 
                 val now = Calendar.getInstance()
-                val currentHour = now.get(Calendar.HOUR_OF_DAY)
-                val currentDay = now.get(Calendar.DAY_OF_MONTH)
+                val currentTimeMillis = now.timeInMillis
 
                 val hourlyForecasts = forecastResponse.forecastHours
-                    .filter { forecastItem ->
-                        if (forecastItem.displayDateTime.day == currentDay) {
-                            forecastItem.displayDateTime.hours > currentHour
-                        } else {
-                            true // Next day(s)
-                        }
-                    }
-                    .take(12) // Get more items initially to account for event injections
                     .map { forecastItem ->
                         val time = String.format(Locale.US, "%02d:00", forecastItem.displayDateTime.hours)
                         val iconUrl = "${forecastItem.weatherCondition.iconBaseUri}.png"
-                        
+
                         // Create a timestamp for reliable sorting
                         val calendar = Calendar.getInstance().apply {
                             set(Calendar.YEAR, forecastItem.displayDateTime.year)
@@ -374,6 +396,8 @@ class HomeViewModel(
                             timestamp = calendar.timeInMillis
                         )
                     }
+                    .filter { it.timestamp > currentTimeMillis }
+                    .take(8) // Limit to 8 items as required for the UI
 
                 // Inject events
                 currentWeatherOnlyForecast = hourlyForecasts
@@ -383,22 +407,13 @@ class HomeViewModel(
                 val newRecommendation = "Pastikan semua cucian disimpan dalam ruang tertutup atau diberi pelindung."
 
                 // Extract Sunrise & Sunset
-                var formattedSunrise: String? = null
-                var formattedSunset: String? = null
-                if (dailyResponse.forecastDays.isNotEmpty()) {
-                    val sunEvents = dailyResponse.forecastDays[0].sunEvents
-                    // Assumed format from API: "2024-03-20T06:12:00" or similar.
-                    // Let's extract the time part (HH:mm)
-                    fun parseSunTime(timeStr: String): String {
-                        return try {
-                            val timePart = timeStr.substringAfter("T").take(5)
-                            timePart // "HH:mm"
-                        } catch (e: Exception) {
-                            "00:00"
-                        }
-                    }
-                    formattedSunrise = parseSunTime(sunEvents.sunriseTime)
-                    formattedSunset = parseSunTime(sunEvents.sunsetTime)
+                val sunriseTimestamps = mutableListOf<Long>()
+                val sunsetTimestamps = mutableListOf<Long>()
+                dailyResponse.forecastDays.forEach { day ->
+                    val sunrise = parseIsoToTimestamp(day.sunEvents.sunriseTime)
+                    val sunset = parseIsoToTimestamp(day.sunEvents.sunsetTime)
+                    if (sunrise > 0L) sunriseTimestamps.add(sunrise)
+                    if (sunset > 0L) sunsetTimestamps.add(sunset)
                 }
 
                 sharedPreferences.edit().apply {
@@ -420,8 +435,8 @@ class HomeViewModel(
                     putString("THUNDER_PROB", "${weatherResponse.thunderstormProbability}%")
                     putString("WIND_DIRECTION", "${weatherResponse.wind.direction.cardinal} (${weatherResponse.wind.direction.degrees}°)")
 
-                    putString("SUNRISE_TIME", formattedSunrise)
-                    putString("SUNSET_TIME", formattedSunset)
+                    putString("SUNRISE_TIMESTAMPS", gson.toJson(sunriseTimestamps))
+                    putString("SUNSET_TIMESTAMPS", gson.toJson(sunsetTimestamps))
 
                     apply()
                 }
