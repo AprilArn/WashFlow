@@ -1,24 +1,24 @@
 package com.aprilarn.washflow.data.remote.weather.api
 
 // Data class utama untuk response forecast
-data class GoogleForecastResponse(
-    val forecastHours: List<ForecastHour>,
-    val timeZone: TimeZONE // Bisa pakai ulang dari GoogleWeatherResponse.kt
+data class GoogleHourlyForecastResponse(
+    val forecastHours: List<ForecastHours>,
+    val timeZone: TimeZONE // Bisa pakai ulang dari GoogleCurrentWeatherResponse.kt
 )
 
 // Data class untuk setiap jam dalam forecast
-data class ForecastHour(
+data class ForecastHours(
     val interval: Interval,
     val displayDateTime: DisplayDateTime,
     val isDaytime: Boolean,
-    val weatherCondition: WeatherCondition, // Bisa pakai ulang dari GoogleWeatherResponse.kt
-    val temperature: Temperature, // Bisa pakai ulang dari GoogleWeatherResponse.kt
+    val weatherCondition: WeatherCondition, // Bisa pakai ulang dari GoogleCurrentWeatherResponse.kt
+    val temperature: Temperature, // Bisa pakai ulang dari GoogleCurrentWeatherResponse.kt
     val feelsLikeTemperature: Temperature, // Direkomendasikan pakai ulang kelas Temperature
     val relativeHumidity: Int,
     val uvIndex: Int,
     val precipitation: ForecastPrecipitation, // Perlu dimodifikasi dari sebelumnya
     val thunderstormProbability: Int,
-    val wind: Wind, // Bisa pakai ulang dari GoogleWeatherResponse.kt
+    val wind: Wind, // Bisa pakai ulang dari GoogleCurrentWeatherResponse.kt
     val cloudCover: Int
 )
 
@@ -39,7 +39,7 @@ data class DisplayDateTime(
 
 // Data class untuk presipitasi dalam forecast (ada tambahan qpf)
 data class ForecastPrecipitation(
-    val probability: Probability, // Bisa pakai ulang dari GoogleWeatherResponse.kt
+    val probability: Probability, // Bisa pakai ulang dari GoogleCurrentWeatherResponse.kt
     val qpf: Qpf
 )
 

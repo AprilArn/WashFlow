@@ -2,9 +2,8 @@ package com.aprilarn.washflow.data.remote.weather.service
 
 import com.aprilarn.washflow.BuildConfig
 import com.aprilarn.washflow.BuildConfig.API_KEY
-// Ganti import response dengan data class yang baru
-import com.aprilarn.washflow.data.remote.weather.api.GoogleForecastResponse
-import com.aprilarn.washflow.data.remote.weather.api.GoogleWeatherResponse
+import com.aprilarn.washflow.data.remote.weather.api.GoogleCurrentWeatherResponse
+import com.aprilarn.washflow.data.remote.weather.api.GoogleHourlyForecastResponse
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -21,7 +20,7 @@ interface WeatherApiService {
         @Query("location.longitude") lon: Double,
         @Query("key") key: String = BuildConfig.API_KEY,
         @Query("languageCode") lang: String = "en"
-    ): GoogleWeatherResponse
+    ): GoogleCurrentWeatherResponse
 
     // Tambahkan "v1/" di awal path
     @GET("v1/forecast/hours:lookup")
@@ -31,7 +30,7 @@ interface WeatherApiService {
         @Query("key") key: String = BuildConfig.API_KEY,
         @Query("hours") hours: Int = 8,
         @Query("languageCode") lang: String = "en"
-    ): GoogleForecastResponse
+    ): GoogleHourlyForecastResponse
 
     companion object {
         @JvmStatic

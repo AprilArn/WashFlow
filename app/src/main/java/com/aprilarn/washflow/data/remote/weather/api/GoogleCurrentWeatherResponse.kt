@@ -1,7 +1,7 @@
 package com.aprilarn.washflow.data.remote.weather.api
 
 
-data class GoogleWeatherResponse(
+data class GoogleCurrentWeatherResponse(
     val currentTime: String,
     val timeZone: TimeZONE,
     val weatherCondition: WeatherCondition,
