@@ -3,6 +3,7 @@ package com.aprilarn.washflow.data.remote.weather.service
 import com.aprilarn.washflow.BuildConfig
 import com.aprilarn.washflow.BuildConfig.API_KEY
 import com.aprilarn.washflow.data.remote.weather.api.GoogleCurrentWeatherResponse
+import com.aprilarn.washflow.data.remote.weather.api.GoogleDailyForecastResponse
 import com.aprilarn.washflow.data.remote.weather.api.GoogleHourlyForecastResponse
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -31,6 +32,15 @@ interface WeatherApiService {
         @Query("hours") hours: Int = 8,
         @Query("languageCode") lang: String = "en"
     ): GoogleHourlyForecastResponse
+
+    @GET("v1/forecast/days:lookup")
+    suspend fun getDailyForecastData(
+        @Query("location.latitude") lat: Double,
+        @Query("location.longitude") lon: Double,
+        @Query("key") key: String = BuildConfig.API_KEY,
+        @Query("days") days: Int = 1,
+        @Query("languageCode") lang: String = "en"
+    ): GoogleDailyForecastResponse
 
     companion object {
         @JvmStatic

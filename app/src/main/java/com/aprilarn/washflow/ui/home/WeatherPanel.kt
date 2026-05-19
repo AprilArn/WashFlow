@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Thunderstorm
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material.icons.filled.WbTwilight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -335,6 +336,8 @@ fun HorizontalForecastItem(
                 "WS_OPEN" -> Icons.Default.Storefront
                 "WS_CLOSE" -> Icons.Default.DoorBack
                 "WS_DEADLINE" -> Icons.Default.Timer
+                "WS_SUNRISE" -> Icons.Default.WbSunny
+                "WS_SUNSET" -> Icons.Default.WbTwilight
                 else -> Icons.Default.Event
             }
             Icon(

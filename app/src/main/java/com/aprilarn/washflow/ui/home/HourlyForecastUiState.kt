@@ -5,5 +5,6 @@ data class HourlyForecastUiState(
     val iconUrl: String,
     val temperature: String,
     val isEvent: Boolean = false,
-    val eventLabel: String? = null
+    val eventLabel: String? = null,
+    val timestamp: Long = 0L // To help with sorting across days
 )
