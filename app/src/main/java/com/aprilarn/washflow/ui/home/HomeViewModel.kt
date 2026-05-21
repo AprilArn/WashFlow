@@ -163,10 +163,9 @@ class HomeViewModel(
         weatherForecasts: List<HourlyForecastUiState>
     ): List<HourlyForecastUiState> {
         val result = weatherForecasts.toMutableList()
-        if (weatherForecasts.isEmpty()) return result
 
-        val startTs = weatherForecasts.first().timestamp
-        val endTs = startTs + (12 * 60 * 60 * 1000L) // Window 12 jam kedepan dari ramalan pertama
+        val startTs = System.currentTimeMillis()
+        val endTs = startTs + (12 * 60 * 60 * 1000L) // Window 12 jam kedepan dari sekarang
 
         val openTime = sharedPreferences.getString("WS_OPEN_TIME", null)
         val closeTime = sharedPreferences.getString("WS_CLOSE_TIME", null)

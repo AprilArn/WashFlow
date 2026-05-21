@@ -220,7 +220,7 @@ fun HorizontalWeatherForecast(
             .wrapContentHeight() // Tinggi area forecast
             .clip(RoundedCornerShape(16.dp))
             .background(Color.White.copy(alpha = 0.15f)) // Background tipis
-            .padding(vertical = 12.dp),
+            .padding(vertical = 12.dp, horizontal = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         if (forecasts.isEmpty()) {
