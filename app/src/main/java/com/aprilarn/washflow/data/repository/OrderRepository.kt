@@ -117,6 +117,22 @@ class OrderRepository {
         }
     }
 
+    suspend fun updateOrderPaymentStatus(orderId: String, isPaid: Boolean): Boolean {
+        val workspaceId = getWorkspaceId() ?: return false
+        return try {
+            db.collection("workspaces")
+                .document(workspaceId)
+                .collection("orders")
+                .document(orderId)
+                .update("alreadyPaid", isPaid)
+                .await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
     suspend fun deleteOrder(orderId: String): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
         return try {

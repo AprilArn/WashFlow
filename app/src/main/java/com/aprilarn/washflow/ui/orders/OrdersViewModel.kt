@@ -147,7 +147,8 @@ class OrdersViewModel(
                 orderDueDate = state.dueDate,
                 orderItems = orderItems, // Gunakan list yang sudah benar
                 totalPrice = totalPrice, // Gunakan total harga yang sudah benar
-                status = "On Queue"
+                status = "On Queue",
+                alreadyPaid = false
             )
 
             val success = orderRepository.createOrder(newOrder)

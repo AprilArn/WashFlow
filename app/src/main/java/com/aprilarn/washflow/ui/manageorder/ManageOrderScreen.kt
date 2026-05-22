@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -22,6 +23,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
@@ -56,6 +59,7 @@ fun ManageOrderScreen(
     uiState: ManageOrderUiState,
     onDrop: (orderId: String, newStatus: String) -> Unit,
     onOrderClick: (Orders) -> Unit,
+    onTogglePayment: (String, Boolean) -> Unit,
     onDismissDialog: () -> Unit,
     onDeleteOrder: (String) -> Unit
 ) {
@@ -113,6 +117,7 @@ fun ManageOrderScreen(
             OrderDetailDialog(
                 order = order,
                 uiState = uiState,
+                onTogglePayment = onTogglePayment,
                 onDismiss = onDismissDialog,
                 onDelete = { onDeleteOrder(order.orderId) }
             )
@@ -124,6 +129,7 @@ fun ManageOrderScreen(
 fun OrderDetailDialog(
     order: Orders,
     uiState: ManageOrderUiState,
+    onTogglePayment: (String, Boolean) -> Unit,
     onDismiss: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -174,6 +180,7 @@ fun OrderDetailDialog(
                         order = order,
                         customer = customer,
                         services = groupedItemsByService.keys.toList(),
+                        onTogglePayment = onTogglePayment,
                         onCancel = onDismiss,
                         onDelete = {
                             // Ubah state untuk memicu dialog konfirmasi
@@ -198,6 +205,7 @@ private fun LeftDetailPanel(
     order: Orders,
     customer: Customers?,
     services: List<Services>,
+    onTogglePayment: (String, Boolean) -> Unit,
     onCancel: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -231,6 +239,14 @@ private fun LeftDetailPanel(
                 item { InfoRow(Icons.Default.ConfirmationNumber, "ID Order", order.orderId) }
                 item { InfoRow(Icons.Default.Info, "Status", order.status ?: "N/A") }
                 item { InfoRow(Icons.Default.Category, "Layanan", services.joinToString(" + ") { it.serviceName }) }
+                
+                // --- TOGGLE PEMBAYARAN ---
+                item {
+                    PaymentStatusRow(
+                        isPaid = order.alreadyPaid,
+                        onToggle = { isPaid -> onTogglePayment(order.orderId, isPaid) }
+                    )
+                }
             }
 
             Row(
@@ -429,6 +445,68 @@ private fun InfoRow(icon: ImageVector, label: String, value: String) {
     }
 }
 
+@Composable
+private fun PaymentStatusRow(isPaid: Boolean, onToggle: (Boolean) -> Unit) {
+    val backgroundColor = if (isPaid) Color(0xFFE8F5E9) else Color(0xFFFFF3E0)
+    val contentColor = if (isPaid) Color(0xFF2E7D32) else Color(0xFFEF6C00)
+    val statusText = if (isPaid) "Lunas" else "Belum Dibayar"
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = backgroundColor
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Surface(
+                modifier = Modifier.size(40.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = contentColor.copy(alpha = 0.1f)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Payments,
+                        contentDescription = null,
+                        tint = contentColor,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Status Pembayaran",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = contentColor.copy(alpha = 0.7f)
+                )
+                Text(
+                    text = statusText,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = contentColor
+                    )
+                )
+            }
+
+            Switch(
+                checked = isPaid,
+                onCheckedChange = onToggle,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = Color(0xFF4CAF50),
+                    uncheckedThumbColor = Color.White,
+                    uncheckedTrackColor = Color(0xFFB0BEC5),
+                    uncheckedBorderColor = Color.Transparent
+                )
+            )
+        }
+    }
+}
+
 // --- PREVIEW BARU DITAMBAHKAN DI SINI ---
 @Preview(showBackground = true, widthDp = 1200, heightDp = 800)
 @Composable
@@ -466,6 +544,7 @@ fun ManageOrderScreenPreview() {
                 uiState = previewState,
                 onDrop = { _, _ -> },
                 onOrderClick = {},
+                onTogglePayment = { _, _ -> },
                 onDismissDialog = {},
                 onDeleteOrder = {}
             )
@@ -506,6 +585,7 @@ fun LeftDetailPanelPreview() {
             order = sampleOrder,
             customer = sampleCustomer,
             services = sampleServices,
+            onTogglePayment = { _, _ -> },
             onCancel = {},
             onDelete = {}
         )
@@ -573,6 +653,7 @@ fun OrderDetailDialogPreview() {
         OrderDetailDialog(
             order = sampleOrder,
             uiState = sampleUiState,
+            onTogglePayment = { _, _ -> },
             onDismiss = {},
             onDelete = {}
         )

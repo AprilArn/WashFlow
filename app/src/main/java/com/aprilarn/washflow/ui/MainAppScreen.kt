@@ -241,6 +241,9 @@ fun MainAppScreen(
                             viewModel.changeOrderStatus(orderId, newStatus)
                         },
                         onOrderClick = { order -> viewModel.onOrderCardClicked(order) },
+                        onTogglePayment = { orderId, isPaid ->
+                            viewModel.toggleOrderPaymentStatus(orderId, isPaid)
+                        },
                         onDismissDialog = { viewModel.onDismissOrderDetailDialog() },
                         onDeleteOrder = { orderId -> viewModel.deleteOrder(orderId) }
                     )

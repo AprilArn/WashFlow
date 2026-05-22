@@ -39,14 +39,20 @@ class ManageOrderViewModel(
             // Gabungkan data orders dan services secara real-time
             combine(ordersFlow, customersFlow, servicesFlow) { orders, customers, services  ->
                 val groupedOrders = orders.groupBy { it.status }
-                _uiState.update {
-                    it.copy(
+                _uiState.update { currentState ->
+                    // Sinkronkan selectedOrderForDetail dengan data terbaru dari Firestore
+                    val updatedSelectedOrder = currentState.selectedOrderForDetail?.let { current ->
+                        orders.find { it.orderId == current.orderId }
+                    }
+
+                    currentState.copy(
                         isLoading = false,
                         ordersOnQueue = groupedOrders["On Queue"] ?: emptyList(),
                         ordersOnProcess = groupedOrders["On Process"] ?: emptyList(),
                         ordersDone = groupedOrders["Done"] ?: emptyList(),
                         customers = customers,
-                        services = services
+                        services = services,
+                        selectedOrderForDetail = updatedSelectedOrder ?: currentState.selectedOrderForDetail
                     )
                 }
             }.catch { e ->
@@ -80,6 +86,15 @@ class ManageOrderViewModel(
                 // Tampilkan pesan error. UI akan otomatis sinkron kembali dengan
                 // data server yang lama pada pembaruan listener berikutnya.
                 _uiState.update { it.copy(errorMessage = "Failed to update order status.") }
+            }
+        }
+    }
+
+    fun toggleOrderPaymentStatus(orderId: String, isPaid: Boolean) {
+        viewModelScope.launch {
+            val success = orderRepository.updateOrderPaymentStatus(orderId, isPaid)
+            if (!success) {
+                _uiState.update { it.copy(errorMessage = "Failed to update payment status.") }
             }
         }
     }
