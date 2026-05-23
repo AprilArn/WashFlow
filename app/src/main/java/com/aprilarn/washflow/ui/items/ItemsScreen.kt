@@ -27,6 +27,7 @@ import com.aprilarn.washflow.ui.components.DataTablePanel
 import com.aprilarn.washflow.ui.components.DeleteConfirmationDialog
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.MainFontBlack
+import com.aprilarn.washflow.utils.CurrencyUtils
 
 @Composable
 fun ItemsScreen (
@@ -187,7 +188,7 @@ fun ItemsScreen (
                 ColumnConfig<Items>(
                     header = "Item Price",
                     weight = 0.3f,
-                    content = { item -> Text(item.itemPrice.toString(), color = GrayBlue) }
+                    content = { item -> Text(CurrencyUtils.formatRupiah(item.itemPrice), color = GrayBlue) }
                 ),
                 ColumnConfig<Items>(
                     header = "Edit", // Ubah header menjadi "Actions"

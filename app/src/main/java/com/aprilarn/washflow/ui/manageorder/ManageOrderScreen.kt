@@ -51,6 +51,7 @@ import com.aprilarn.washflow.ui.manageorder.DragDropContainer
 import com.aprilarn.washflow.ui.manageorder.OrderStatusColumn
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.MainFontBlack
+import com.aprilarn.washflow.utils.CurrencyUtils
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -353,14 +354,14 @@ private fun RightDetailPanel(
                                             )
                                         )
                                         Text(
-                                            text = "${orderItem.itemPrice} x ${orderItem.itemQuantity}",
+                                            text = "${CurrencyUtils.formatRupiah(orderItem.itemPrice)} x ${orderItem.itemQuantity}",
                                             style = MaterialTheme.typography.labelSmall.copy(
                                                 color = Color.Gray
                                             )
                                         )
                                     }
                                     Text(
-                                        text = "Rp. ${orderItem.subtotal}",
+                                        text = CurrencyUtils.formatRupiahWithSymbol(orderItem.subtotal),
                                         style = MaterialTheme.typography.bodyMedium.copy(
                                             fontWeight = FontWeight.Bold,
                                             color = GrayBlue
@@ -394,7 +395,7 @@ private fun RightDetailPanel(
                         )
                     )
                     Text(
-                        text = "Rp. ${totalPrice ?: 0.0}",
+                        text = CurrencyUtils.formatRupiahWithSymbol(totalPrice),
                         style = MaterialTheme.typography.headlineSmall.copy(
                             color = Color.White,
                             fontWeight = FontWeight.ExtraBold

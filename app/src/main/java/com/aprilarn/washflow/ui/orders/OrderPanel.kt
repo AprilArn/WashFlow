@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aprilarn.washflow.data.model.Items
 import com.aprilarn.washflow.ui.theme.GrayBlue
+import com.aprilarn.washflow.utils.CurrencyUtils
 
 @Composable
 fun OrderPanel(
@@ -149,7 +150,7 @@ private fun ItemCheckRow(
             modifier = Modifier.weight(1f)
         )
         Text(
-            text = "Rp ${item.itemPrice}",
+            text = CurrencyUtils.formatRupiahWithSymbol(item.itemPrice),
             style = MaterialTheme.typography.bodyMedium.copy(
                 color = GrayBlue,
                 fontSize = 16.sp
