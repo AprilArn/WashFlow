@@ -9,9 +9,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -378,6 +382,44 @@ fun OrderCardContent(
                 )
             )
         }
+
+        // --- TAG PAID ---
+        if (order.alreadyPaid) {
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(18.dp),
+//                    .border(
+//                        width = 1.dp,
+//                        color = borderColor,
+//                        shape = RoundedCornerShape(6.dp)
+//                    ),
+                shape = RoundedCornerShape(6.dp),
+                // shadowElevation = 8.dp,
+                color = Color(0xFFE3F2FD) // Biru Pastel Sangat Muda
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = "Paid",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF1976D2), // Biru Tua
+                            fontSize = 10.sp
+                        )
+                    )
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        modifier = Modifier.size(12.dp),
+                        tint = Color(0xFF1976D2)
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -393,6 +435,7 @@ fun OrderCardContentPreview() {
     val sampleOrder = Orders(
         orderId = "1",
         customerName = "Budi Santoso",
+        alreadyPaid = true,
         orderDate = Timestamp.now(),
         orderDueDate = Timestamp(Date(System.currentTimeMillis() + 86400000)), // Besok
         orderItems = listOf(
@@ -424,6 +467,8 @@ fun OrderStatusColumnPreview() {
         Orders(orderId = "1", customerName = "Budi", status = "On Queue", orderItems = listOf(OrderItem(serviceId = "L-01", itemQuantity = 3))),
         Orders(orderId = "2", customerName = "Citra", status = "On Queue", orderItems = listOf(OrderItem(serviceId = "L-01", itemQuantity = 1)))
     )
+
+    
 
     MaterialTheme {
         // DragDropContainer dibutuhkan karena komponen di dalamnya menggunakan state dari sana

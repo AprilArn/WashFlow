@@ -231,7 +231,7 @@ private fun LeftDetailPanel(
             
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 item { InfoRow(Icons.Default.Person, "Nama Pelanggan", order.customerName ?: "N/A") }
                 item { InfoRow(Icons.Default.Phone, "No Telp/WhatsApp", customer?.contact ?: "N/A") }
@@ -409,47 +409,54 @@ private fun RightDetailPanel(
 
 @Composable
 private fun InfoRow(icon: ImageVector, label: String, value: String) {
-    Row(
+    Surface(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+        shape = RoundedCornerShape(16.dp),
+        color = Color.LightGray.copy(alpha = 0.1f)
     ) {
-        Surface(
-            modifier = Modifier.size(40.dp),
-            shape = RoundedCornerShape(12.dp),
-            color = GrayBlue.copy(alpha = 0.1f)
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = GrayBlue,
-                    modifier = Modifier.size(20.dp)
+            Surface(
+                modifier = Modifier.size(40.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = GrayBlue.copy(alpha = 0.1f)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = GrayBlue,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
+            Column {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Gray
+                )
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        color = MainFontBlack
+                    )
                 )
             }
-        }
-
-        Column {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.Gray
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    color = MainFontBlack
-                )
-            )
         }
     }
 }
 
 @Composable
 private fun PaymentStatusRow(isPaid: Boolean, onToggle: (Boolean) -> Unit) {
-    val backgroundColor = if (isPaid) Color(0xFFE8F5E9) else Color(0xFFFFF3E0)
-    val contentColor = if (isPaid) Color(0xFF2E7D32) else Color(0xFFEF6C00)
+    val backgroundColor = if (isPaid) Color(0xFFE3F2FD) else Color(0xFFFFF3E0)
+    val contentColor = if (isPaid) Color(0xFF1976D2) else Color(0xFFEF6C00)
     val statusText = if (isPaid) "Lunas" else "Belum Dibayar"
 
     Surface(
@@ -498,7 +505,7 @@ private fun PaymentStatusRow(isPaid: Boolean, onToggle: (Boolean) -> Unit) {
                 onCheckedChange = onToggle,
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = Color.White,
-                    checkedTrackColor = Color(0xFF4CAF50),
+                    checkedTrackColor = Color(0xFF42A5F5),
                     uncheckedThumbColor = Color.White,
                     uncheckedTrackColor = Color(0xFFB0BEC5),
                     uncheckedBorderColor = Color.Transparent
