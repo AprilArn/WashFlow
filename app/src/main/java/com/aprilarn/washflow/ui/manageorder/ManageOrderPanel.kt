@@ -2,7 +2,9 @@ package com.aprilarn.washflow.ui.manageorder
 
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -119,10 +121,17 @@ fun DragDropContainer(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
         ),
-        label = "dragScale",
+        label = "dragScale"
+    )
+
+    // Animasi alpha untuk efek fade saat item di-drop
+    val dragAlpha by animateFloatAsState(
+        targetValue = if (state.isDragging) 1f else 0f,
+        animationSpec = if (state.isDragging) snap() else tween(300),
+        label = "dragAlpha",
         finishedListener = {
-            // Jika animasi kembali ke 1.0 (release) selesai, bersihkan state
-            if (!state.isDragging && state.isFinishing) {
+            // Jika animasi fade-out selesai dan tidak sedang dragging, bersihkan state
+            if (it == 0f && !state.isDragging && state.isFinishing) {
                 state.clear()
             }
         }
@@ -153,9 +162,10 @@ fun DragDropContainer(
                                 translationX = topLeft.x
                                 translationY = topLeft.y
 
-                                // Terapkan animasi scale dan shadow agar terlihat "melayang"
+                                // Terapkan animasi scale, alpha, dan shadow agar terlihat "melayang"
                                 scaleX = scale
                                 scaleY = scale
+                                alpha = dragAlpha
                                 shadowElevation = 8.dp.toPx()
                                 shape = borderRadius
                             }
@@ -294,6 +304,13 @@ fun DraggableOrderCard(
     var startPosition by remember { mutableStateOf(Offset.Zero) }
     var itemSize by remember { mutableStateOf(IntSize.Zero) } // <- State untuk menyimpan ukuran kartu ini
 
+    val isCurrentlyDragged = (dragDropState.isDragging || dragDropState.isFinishing) && dragDropState.itemData?.orderId == order.orderId
+    val contentAlpha by animateFloatAsState(
+        targetValue = if (isCurrentlyDragged) 0f else 1f,
+        animationSpec = if (dragDropState.isDragging) snap() else tween(300),
+        label = "contentAlpha"
+    )
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -329,7 +346,7 @@ fun DraggableOrderCard(
                 )
             }
             .graphicsLayer {
-                alpha = if ((dragDropState.isDragging || dragDropState.isFinishing) && dragDropState.itemData?.orderId == order.orderId) 0.0f else 1f
+                alpha = contentAlpha
             }
             .clip(borderRadius)
             .clickable(onClick = onClick)
