@@ -1,9 +1,11 @@
 package com.aprilarn.washflow.ui.manageorder
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -92,6 +94,16 @@ fun DragDropContainer(
     val density = LocalDensity.current
     var containerPositionInWindow by remember { mutableStateOf(Offset.Zero) }
 
+    // Animasi scale untuk memberikan efek "bounce" saat item mulai di-drag
+    val scale by animateFloatAsState(
+        targetValue = if (state.isDragging) 1.05f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "dragScale"
+    )
+
     CompositionLocalProvider(LocalDragDropState provides state) {
         Box(
             modifier = modifier
@@ -116,6 +128,12 @@ fun DragDropContainer(
                                 val topLeft = localTouchPosition - state.dragStartOffsetInItem
                                 translationX = topLeft.x
                                 translationY = topLeft.y
+
+                                // Terapkan animasi scale dan shadow agar terlihat "melayang"
+                                scaleX = scale
+                                scaleY = scale
+                                shadowElevation = 8.dp.toPx()
+                                shape = borderRadius
                             }
                             .size(width = draggedItemWidthDp, height = draggedItemHeightDp)
                     ) {
@@ -199,7 +217,7 @@ fun OrderStatusColumn(
                         .weight(1f)
                 ) {
                     Text(
-                        text = "${title}",
+                        text = title,
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold,
                             fontSize = 22.sp,
@@ -207,7 +225,7 @@ fun OrderStatusColumn(
                         )
                     )
                     Text(
-                        text = "${subTitle}",
+                        text = subTitle,
                         style = MaterialTheme.typography.bodyMedium,
                         color = GrayBlue
                     )
@@ -230,6 +248,7 @@ fun OrderStatusColumn(
             ) {
                 items(orders, key = { it.orderId }) { order ->
                     DraggableOrderCard(
+                        modifier = Modifier.animateItem(),
                         order = order,
                         services = services,
                         onClick = { onOrderClick(order) }
@@ -242,6 +261,7 @@ fun OrderStatusColumn(
 
 @Composable
 fun DraggableOrderCard(
+    modifier: Modifier = Modifier,
     order: Orders,
     services: List<Services>,
     onClick: () -> Unit
@@ -251,7 +271,7 @@ fun DraggableOrderCard(
     var itemSize by remember { mutableStateOf(IntSize.Zero) } // <- State untuk menyimpan ukuran kartu ini
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .onSizeChanged { itemSize = it }
             .onGloballyPositioned {
@@ -374,7 +394,7 @@ fun OrderCardContent(
                 )
             }
             Text(
-                text = "${totalItemTypes}",
+                text = totalItemTypes.toString(),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = GrayBlue,
                     fontWeight = FontWeight.Bold,
