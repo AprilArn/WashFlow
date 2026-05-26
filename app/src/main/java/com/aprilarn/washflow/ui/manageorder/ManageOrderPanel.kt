@@ -396,7 +396,7 @@ fun OrderCardContent(
 //                    ),
                 shape = RoundedCornerShape(6.dp),
                 // shadowElevation = 8.dp,
-                color = Color(0xFFE3F2FD) // Biru Pastel Sangat Muda
+                color = Color(0xFF4EB0FF) // Biru Pastel Sangat Muda
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
@@ -406,8 +406,7 @@ fun OrderCardContent(
                     Text(
                         text = "Paid",
                         style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFF1976D2), // Biru Tua
+                            color = Color.White, // Biru Tua
                             fontSize = 10.sp
                         )
                     )
@@ -415,7 +414,7 @@ fun OrderCardContent(
                         imageVector = Icons.Default.Check,
                         contentDescription = null,
                         modifier = Modifier.size(12.dp),
-                        tint = Color(0xFF1976D2)
+                        tint = Color.White
                     )
                 }
             }
