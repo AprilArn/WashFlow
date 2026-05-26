@@ -59,17 +59,34 @@ internal class DropTarget(
 // STATE MANAGEMENT
 internal class DragDropState<T> {
     var isDragging: Boolean by mutableStateOf(false)
+    var isFinishing: Boolean by mutableStateOf(false) // State baru untuk animasi drop
     var itemData: T? by mutableStateOf(null)
     var fingerPosition: Offset by mutableStateOf(Offset.Zero)
     val dropTargets = mutableStateListOf<DropTarget>()
     var dragStartOffsetInItem: Offset by mutableStateOf(Offset.Zero)
     var draggedItemSize: IntSize by mutableStateOf(IntSize.Zero)
+
+    fun startDrag(data: T, position: Offset, size: IntSize, offsetInItem: Offset) {
+        itemData = data
+        fingerPosition = position
+        draggedItemSize = size
+        dragStartOffsetInItem = offsetInItem
+        isDragging = true
+        isFinishing = false
+    }
+
     fun stopDrag() {
         isDragging = false
+        isFinishing = true // Mulai fase finishing (reverse bounce)
+    }
+
+    fun clear() {
+        isDragging = false
+        isFinishing = false
         itemData = null
         fingerPosition = Offset.Zero
-        dragStartOffsetInItem = Offset.Zero // Reset offset
-        draggedItemSize = IntSize.Zero // Reset ukuran
+        dragStartOffsetInItem = Offset.Zero
+        draggedItemSize = IntSize.Zero
     }
 }
 
@@ -95,13 +112,20 @@ fun DragDropContainer(
     var containerPositionInWindow by remember { mutableStateOf(Offset.Zero) }
 
     // Animasi scale untuk memberikan efek "bounce" saat item mulai di-drag
+    // Dan "reverse bounce" saat item di-drop
     val scale by animateFloatAsState(
         targetValue = if (state.isDragging) 1.05f else 1.0f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
         ),
-        label = "dragScale"
+        label = "dragScale",
+        finishedListener = {
+            // Jika animasi kembali ke 1.0 (release) selesai, bersihkan state
+            if (!state.isDragging && state.isFinishing) {
+                state.clear()
+            }
+        }
     )
 
     CompositionLocalProvider(LocalDragDropState provides state) {
@@ -115,7 +139,7 @@ fun DragDropContainer(
         ) {
             content()
 
-            if (state.isDragging) {
+            if (state.isDragging || state.isFinishing) {
                 state.itemData?.let { data ->
                     // Konversi ukuran dari pixel ke Dp
                     val draggedItemWidthDp = with(density) { state.draggedItemSize.width.toDp() }
@@ -280,11 +304,12 @@ fun DraggableOrderCard(
             .pointerInput(Unit) {
                 detectDragGesturesAfterLongPress (
                     onDragStart = { offset ->
-                        dragDropState.isDragging = true
-                        dragDropState.itemData = order
-                        dragDropState.fingerPosition = startPosition + offset
-                        dragDropState.draggedItemSize = itemSize
-                        dragDropState.dragStartOffsetInItem = offset
+                        dragDropState.startDrag(
+                            data = order,
+                            position = startPosition + offset,
+                            size = itemSize,
+                            offsetInItem = offset
+                        )
                     },
                     onDragEnd = {
                         dragDropState.itemData?.let { draggedItem ->
@@ -304,7 +329,7 @@ fun DraggableOrderCard(
                 )
             }
             .graphicsLayer {
-                alpha = if (dragDropState.isDragging && dragDropState.itemData?.orderId == order.orderId) 0.0f else 1f
+                alpha = if ((dragDropState.isDragging || dragDropState.isFinishing) && dragDropState.itemData?.orderId == order.orderId) 0.0f else 1f
             }
             .clip(borderRadius)
             .clickable(onClick = onClick)
