@@ -1,5 +1,8 @@
 package com.aprilarn.washflow.ui.manageorder
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -123,6 +126,9 @@ fun OrderStatusColumn(
     val dragDropState = LocalDragDropState.current
     val currentOnDrop by rememberUpdatedState(onDrop)
     val haptic = LocalHapticFeedback.current
+    val density = LocalDensity.current
+
+    var centerX by remember { mutableStateOf(0f) }
 
     val isHighlighted by remember(dragDropState.isDragging, dragDropState.fingerPosition) {
         derivedStateOf {
@@ -130,6 +136,23 @@ fun OrderStatusColumn(
                     dragDropState.dropTargets.find { it.id == title }?.bounds?.contains(dragDropState.fingerPosition) == true
         }
     }
+
+    // Animasi Tilt: Kolom miring ke arah finger jika tidak sedang di-highlight
+    val targetRotation = if (dragDropState.isDragging && !isHighlighted) {
+        val distance = dragDropState.fingerPosition.x - centerX
+        (distance / 150f).coerceIn(-10f, 10f) // Max tilt 10 derajat
+    } else {
+        0f
+    }
+
+    val animatedRotation by animateFloatAsState(
+        targetValue = targetRotation,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "columnTilt"
+    )
 
     // Efek getar saat kolom disorot
     LaunchedEffect(isHighlighted) {
@@ -149,6 +172,10 @@ fun OrderStatusColumn(
     Box(
         modifier = modifier
             .fillMaxSize()
+            .graphicsLayer {
+                rotationY = animatedRotation
+                cameraDistance = 12f * density.density
+            }
             .background(if (isHighlighted) Color.LightGray.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.25f), shape = borderRadius)
             .border(
                 width = 1.dp,
@@ -158,6 +185,7 @@ fun OrderStatusColumn(
             .onGloballyPositioned {
                 val windowPosition = it.positionInWindow()
                 val bounds = Rect(windowPosition, it.size.toSize())
+                centerX = windowPosition.x + it.size.width / 2f
 
                 // Hapus pendaftaran lama & daftarkan yang baru dengan bounds terbaru
                 dragDropState.dropTargets.removeAll { t -> t.id == title }
