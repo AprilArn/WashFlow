@@ -1,6 +1,8 @@
 package com.aprilarn.washflow.ui.manageorder
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
@@ -154,6 +156,30 @@ fun OrderStatusColumn(
         label = "columnTilt"
     )
 
+    val backgroundColor by animateColorAsState(
+        targetValue = if (isHighlighted) GrayBlue.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.25f),
+        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        label = "columnHighlightColor"
+    )
+
+    val animatedBorderColor by animateColorAsState(
+        targetValue = if (isHighlighted) GrayBlue.copy(alpha = 0.8f) else borderColor.copy(alpha = 0.5f),
+        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        label = "columnBorderColor"
+    )
+
+    val animatedBorderWidth by animateDpAsState(
+        targetValue = if (isHighlighted) 2.dp else 1.dp,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "columnBorderWidth"
+    )
+
+    val columnScale by animateFloatAsState(
+        targetValue = if (isHighlighted) 1.01f else 1.0f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "columnScale"
+    )
+
     // Efek getar saat kolom disorot
     LaunchedEffect(isHighlighted) {
         if (isHighlighted) {
@@ -174,12 +200,14 @@ fun OrderStatusColumn(
             .fillMaxSize()
             .graphicsLayer {
                 rotationY = animatedRotation
+                scaleX = columnScale
+                scaleY = columnScale
                 cameraDistance = 12f * density.density
             }
-            .background(if (isHighlighted) Color.LightGray.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.25f), shape = borderRadius)
+            .background(backgroundColor, shape = borderRadius)
             .border(
-                width = 1.dp,
-                color = borderColor,
+                width = animatedBorderWidth,
+                color = animatedBorderColor,
                 shape = borderRadius
             )
             .onGloballyPositioned {
@@ -470,6 +498,8 @@ fun OrderCardContentPreview() {
         )
     )
 
+    val isHighlighted = true // Force true for preview
+
     MaterialTheme {
         Box(modifier = Modifier.padding(8.dp)) {
             // Panggil komponen konten dengan data sampel
@@ -495,6 +525,8 @@ fun OrderStatusColumnPreview() {
     )
 
     
+
+    val isHighlighted = true // Force true for preview
 
     MaterialTheme {
         // DragDropContainer dibutuhkan karena komponen di dalamnya menggunakan state dari sana
