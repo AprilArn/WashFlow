@@ -1,10 +1,5 @@
 package com.aprilarn.washflow.ui.manageorder
 
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.snap
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -51,56 +46,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-// DATA CLASS UNTUK MENYIMPAN INFORMASI TARGET DROP (diubah menjadi internal)
-internal class DropTarget(
-    val id: String,
-    val bounds: Rect,
-    val onDrop: (String) -> Unit
-)
-
-// STATE MANAGEMENT
-internal class DragDropState<T> {
-    var isDragging: Boolean by mutableStateOf(false)
-    var isFinishing: Boolean by mutableStateOf(false) // State baru untuk animasi drop
-    var itemData: T? by mutableStateOf(null)
-    var fingerPosition: Offset by mutableStateOf(Offset.Zero)
-    val dropTargets = mutableStateListOf<DropTarget>()
-    var dragStartOffsetInItem: Offset by mutableStateOf(Offset.Zero)
-    var draggedItemSize: IntSize by mutableStateOf(IntSize.Zero)
-
-    fun startDrag(data: T, position: Offset, size: IntSize, offsetInItem: Offset) {
-        itemData = data
-        fingerPosition = position
-        draggedItemSize = size
-        dragStartOffsetInItem = offsetInItem
-        isDragging = true
-        isFinishing = false
-    }
-
-    fun stopDrag() {
-        isDragging = false
-        isFinishing = true // Mulai fase finishing (reverse bounce)
-    }
-
-    fun clear() {
-        isDragging = false
-        isFinishing = false
-        itemData = null
-        fingerPosition = Offset.Zero
-        dragStartOffsetInItem = Offset.Zero
-        draggedItemSize = IntSize.Zero
-    }
-}
-
-@Composable
-internal fun <T> rememberDragDropState(): DragDropState<T> {
-    return remember { DragDropState() }
-}
-
-internal val LocalDragDropState = compositionLocalOf { DragDropState<Orders>() }
-
-val borderRadius = RoundedCornerShape(24.dp)
-val borderColor = Color.White
 
 // Main Container
 @Composable
@@ -113,29 +58,8 @@ fun DragDropContainer(
     val density = LocalDensity.current
     var containerPositionInWindow by remember { mutableStateOf(Offset.Zero) }
 
-    // Animasi scale untuk memberikan efek "bounce" saat item mulai di-drag
-    // Dan "reverse bounce" saat item di-drop
-    val scale by animateFloatAsState(
-        targetValue = if (state.isDragging) 1.05f else 1.0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "dragScale"
-    )
-
-    // Animasi alpha untuk efek fade saat item di-drop
-    val dragAlpha by animateFloatAsState(
-        targetValue = if (state.isDragging) 1f else 0f,
-        animationSpec = if (state.isDragging) snap() else tween(300),
-        label = "dragAlpha",
-        finishedListener = {
-            // Jika animasi fade-out selesai dan tidak sedang dragging, bersihkan state
-            if (it == 0f && !state.isDragging && state.isFinishing) {
-                state.clear()
-            }
-        }
-    )
+    // Menggunakan helper animation dari DragDropManager
+    val transition = rememberDragDropTransition(state)
 
     CompositionLocalProvider(LocalDragDropState provides state) {
         Box(
@@ -163,9 +87,9 @@ fun DragDropContainer(
                                 translationY = topLeft.y
 
                                 // Terapkan animasi scale, alpha, dan shadow agar terlihat "melayang"
-                                scaleX = scale
-                                scaleY = scale
-                                alpha = dragAlpha
+                                scaleX = transition.scale
+                                scaleY = transition.scale
+                                alpha = transition.alpha
                                 shadowElevation = 8.dp.toPx()
                                 shape = borderRadius
                             }
@@ -305,10 +229,11 @@ fun DraggableOrderCard(
     var itemSize by remember { mutableStateOf(IntSize.Zero) } // <- State untuk menyimpan ukuran kartu ini
 
     val isCurrentlyDragged = (dragDropState.isDragging || dragDropState.isFinishing) && dragDropState.itemData?.orderId == order.orderId
-    val contentAlpha by animateFloatAsState(
-        targetValue = if (isCurrentlyDragged) 0f else 1f,
-        animationSpec = if (dragDropState.isDragging) snap() else tween(300),
-        label = "contentAlpha"
+    
+    // Menggunakan helper animation dari DragDropManager
+    val contentAlpha by rememberDragContentAlpha(
+        isCurrentlyDragged = isCurrentlyDragged,
+        isDragging = dragDropState.isDragging
     )
 
     Box(
