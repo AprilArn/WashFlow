@@ -29,6 +29,8 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntSize
@@ -120,19 +122,27 @@ fun OrderStatusColumn(
 ) {
     val dragDropState = LocalDragDropState.current
     val currentOnDrop by rememberUpdatedState(onDrop)
+    val haptic = LocalHapticFeedback.current
+
+    val isHighlighted by remember(dragDropState.isDragging, dragDropState.fingerPosition) {
+        derivedStateOf {
+            dragDropState.isDragging &&
+                    dragDropState.dropTargets.find { it.id == title }?.bounds?.contains(dragDropState.fingerPosition) == true
+        }
+    }
+
+    // Efek getar saat kolom disorot
+    LaunchedEffect(isHighlighted) {
+        if (isHighlighted) {
+            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        }
+    }
 
     // Efek untuk mendaftarkan & menghapus diri sebagai target drop
     DisposableEffect(key1 = title) {
         var dropTarget: DropTarget? = null
         onDispose {
             dropTarget?.let { dragDropState.dropTargets.remove(it) }
-        }
-    }
-
-    val isHighlighted by remember(dragDropState.isDragging, dragDropState.fingerPosition) {
-        derivedStateOf {
-            dragDropState.isDragging &&
-                    dragDropState.dropTargets.find { it.id == title }?.bounds?.contains(dragDropState.fingerPosition) == true
         }
     }
 
@@ -225,6 +235,7 @@ fun DraggableOrderCard(
     onClick: () -> Unit
 ) {
     val dragDropState = LocalDragDropState.current
+    val haptic = LocalHapticFeedback.current
     var startPosition by remember { mutableStateOf(Offset.Zero) }
     var itemSize by remember { mutableStateOf(IntSize.Zero) } // <- State untuk menyimpan ukuran kartu ini
 
@@ -246,6 +257,7 @@ fun DraggableOrderCard(
             .pointerInput(Unit) {
                 detectDragGesturesAfterLongPress (
                     onDragStart = { offset ->
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         dragDropState.startDrag(
                             data = order,
                             position = startPosition + offset,

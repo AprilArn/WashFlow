@@ -34,6 +34,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -455,6 +457,7 @@ private fun InfoRow(icon: ImageVector, label: String, value: String) {
 
 @Composable
 private fun PaymentStatusRow(isPaid: Boolean, onToggle: (Boolean) -> Unit) {
+    val haptic = LocalHapticFeedback.current
     val backgroundColor = if (isPaid) Color(0xFFE3F2FD) else Color(0xFFFFF3E0)
     val contentColor = if (isPaid) Color(0xFF1976D2) else Color(0xFFEF6C00)
     val statusText = if (isPaid) "Lunas" else "Belum Dibayar"
@@ -502,7 +505,10 @@ private fun PaymentStatusRow(isPaid: Boolean, onToggle: (Boolean) -> Unit) {
 
             Switch(
                 checked = isPaid,
-                onCheckedChange = onToggle,
+                onCheckedChange = {
+                    haptic.performHapticFeedback(if (it) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff)
+                    onToggle(it)
+                },
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = Color.White,
                     checkedTrackColor = Color(0xFF42A5F5),
