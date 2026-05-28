@@ -70,6 +70,8 @@ fun NotificationPreviewItem(
     val progress = remember { Animatable(0f) }
     val deleteThreshold = 300f
     val fallThreshold = 300f
+    val maxDragLimit = -500f // Batas maksimal geser ke kiri
+    val resistanceThreshold = -350f // Titik mulai terasa berat (resistance)
 
     // Animasi snap back saat dilepas
     val offsetX by animateFloatAsState(
@@ -160,10 +162,20 @@ fun NotificationPreviewItem(
                             }
                         },
                         onHorizontalDrag = { _, dragAmount ->
-                            // Hanya izinkan geser ke kiri
                             val previousOffset = rawOffsetX
-                            if (rawOffsetX + dragAmount <= 0) {
-                                rawOffsetX += dragAmount
+                            
+                            // Hitung dragAmount dengan resistensi jika sudah melewati ambang batas
+                            val effectiveDrag = if (rawOffsetX < resistanceThreshold && dragAmount < 0) {
+                                dragAmount * 0.4f // Beri beban 60% lebih berat
+                            } else {
+                                dragAmount
+                            }
+
+                            // Batasi agar hanya bisa geser ke kiri dan tidak melewati maxDragLimit
+                            val newOffset = (rawOffsetX + effectiveDrag).coerceIn(maxDragLimit, 0f)
+                            
+                            if (newOffset != rawOffsetX) {
+                                rawOffsetX = newOffset
 
                                 // Trigger haptic feedback when crossing the fallThreshold (-300f)
                                 val threshold = -fallThreshold
