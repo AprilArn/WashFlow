@@ -52,7 +52,14 @@ fun EditDataPanel(
                     onValueChange = field.onValueChange,
                     label = { Text(field.label) },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Gray,
+                        focusedBorderColor = GrayBlue,
+                        focusedLabelColor = GrayBlue,
+                        cursorColor = GrayBlue
+                    )
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }

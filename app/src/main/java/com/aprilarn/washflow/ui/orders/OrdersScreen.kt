@@ -102,7 +102,14 @@ private fun QuantityInputDialogContent(
                 label = { Text("Quantity") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
-                modifier = Modifier.width(100.dp)
+                modifier = Modifier.width(100.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Gray,
+                    focusedBorderColor = GrayBlue,
+                    focusedLabelColor = GrayBlue,
+                    cursorColor = GrayBlue
+                )
             )
             Row(
                 modifier = Modifier.fillMaxWidth(),

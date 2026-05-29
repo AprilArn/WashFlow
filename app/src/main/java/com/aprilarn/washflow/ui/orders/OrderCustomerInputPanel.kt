@@ -56,6 +56,13 @@ fun OrderCustomerInputPanel(
 
     val borderRadius = RoundedCornerShape(24.dp)
     val borderColor = Color.White
+    val textFieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = Color.Black,
+        unfocusedTextColor = Color.Gray,
+        focusedBorderColor = GrayBlue,
+        focusedLabelColor = GrayBlue,
+        cursorColor = GrayBlue
+    )
 
     Box(
         modifier = Modifier
@@ -111,6 +118,7 @@ fun OrderCustomerInputPanel(
                             )
                         }
                     },
+                    colors = textFieldColors,
                     shape = RoundedCornerShape(12.dp)
                 )
 
@@ -161,6 +169,7 @@ fun OrderCustomerInputPanel(
                 label = { Text("No WA/Telp") },
                 modifier = Modifier
                     .fillMaxWidth(),
+                colors = textFieldColors,
                 shape = RoundedCornerShape(12.dp)
             )
 
@@ -179,6 +188,7 @@ fun OrderCustomerInputPanel(
                     label = { Text("Batas Waktu") },
                     modifier = Modifier
                         .fillMaxWidth(),
+                    colors = textFieldColors,
                     shape = RoundedCornerShape(12.dp),
                 )
                 // Kotak transparan di atasnya untuk menangkap klik (MASIH ADA KECACATAN UI)

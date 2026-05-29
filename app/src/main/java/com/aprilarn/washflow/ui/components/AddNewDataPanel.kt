@@ -17,6 +17,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.MainFontBlack
 
@@ -24,7 +26,8 @@ import com.aprilarn.washflow.ui.theme.MainFontBlack
 data class AddNewDataInputField(
     val value: String,
     val onValueChange: (String) -> Unit,
-    val label: String
+    val label: String,
+    val keyboardOptions: KeyboardOptions = KeyboardOptions.Default
 )
 
 @Composable
@@ -80,10 +83,13 @@ fun AddNewDataPanel(
                     label = { Text(field.label) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
+                    keyboardOptions = field.keyboardOptions,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = MainFontBlack,
                         unfocusedTextColor = Color.Gray,
-                        cursorColor = Color.White,
+                        focusedBorderColor = GrayBlue,
+                        focusedLabelColor = GrayBlue,
+                        cursorColor = GrayBlue
                     )
                 )
                 Spacer(modifier = Modifier.height(4.dp))
