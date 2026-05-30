@@ -21,6 +21,13 @@ data class Workspaces (
     val closeTime: String? = null
 )
 
+    data class WorkspaceMetadata(
+        val customerCount: Int = 0,
+        val serviceCount: Int = 0,
+        val itemCount: Int = 0,
+        val orderCount: Int = 0
+    )
+
     data class Customers (
         val customerId: String = "",
         val name: String = "",

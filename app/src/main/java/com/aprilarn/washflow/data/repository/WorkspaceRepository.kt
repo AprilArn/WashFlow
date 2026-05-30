@@ -3,9 +3,11 @@
 package com.aprilarn.washflow.data.repository
 
 import com.aprilarn.washflow.data.model.Workspaces
+import com.aprilarn.washflow.data.model.WorkspaceMetadata
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.AggregateSource
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.firestore
@@ -244,6 +246,48 @@ class WorkspaceRepository {
                 // 2. Hapus workspaceId dari User yang di-kick
                 batch.update(targetUserRef, "workspaceId", null)
             }.await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    fun getMetadataRealtime(workspaceId: String): Flow<WorkspaceMetadata> = callbackFlow {
+        val listener = workspacesCollection
+            .document(workspaceId)
+            .collection("metadata")
+            .document("counts")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                val metadata = snapshot?.toObject(WorkspaceMetadata::class.java) ?: WorkspaceMetadata()
+                trySend(metadata).isSuccess
+            }
+        awaitClose { listener.remove() }
+    }
+
+    suspend fun syncMetadata(workspaceId: String): Boolean {
+        return try {
+            val workspaceRef = workspacesCollection.document(workspaceId)
+            
+            // Menggunakan Aggregation Query (Sangat Hemat Biaya)
+            val customerCount = workspaceRef.collection("customers").count().get(AggregateSource.SERVER).await().count
+            val serviceCount = workspaceRef.collection("services").count().get(AggregateSource.SERVER).await().count
+            val itemCount = workspaceRef.collection("items").count().get(AggregateSource.SERVER).await().count
+            val orderCount = workspaceRef.collection("orders").count().get(AggregateSource.SERVER).await().count
+
+            val metadata = WorkspaceMetadata(
+                customerCount = customerCount.toInt(),
+                serviceCount = serviceCount.toInt(),
+                itemCount = itemCount.toInt(),
+                orderCount = orderCount.toInt()
+            )
+
+            // Gunakan set dengan merge agar tidak menimpa data lain jika ada
+            workspaceRef.collection("metadata").document("counts").set(metadata).await()
             true
         } catch (e: Exception) {
             e.printStackTrace()

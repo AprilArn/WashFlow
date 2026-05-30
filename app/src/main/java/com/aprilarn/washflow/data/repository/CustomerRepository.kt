@@ -3,6 +3,7 @@ package com.aprilarn.washflow.data.repository
 import com.aprilarn.washflow.data.model.Customers
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.firestore
 import com.google.firebase.firestore.toObjects
@@ -64,23 +65,22 @@ class CustomerRepository {
         val workspaceId = getWorkspaceId() ?: return false
 
         return try {
-            // 2. Buat referensi ke sub-koleksi 'customers'
-            val customersCollection = db.collection("workspaces")
-                .document(workspaceId)
-                .collection("customers")
+            val workspaceRef = db.collection("workspaces").document(workspaceId)
+            val customersCollection = workspaceRef.collection("customers")
+            val metadataDocRef = workspaceRef.collection("metadata").document("counts")
 
-            // 3. Buat dokumen baru untuk mendapatkan ID unik
             val newCustomerDocRef = customersCollection.document()
 
-            // 4. Siapkan objek Customer dengan ID yang baru dibuat
             val newCustomer = Customers(
                 customerId = newCustomerDocRef.id,
                 name = customerName,
                 contact = customerContact
             )
 
-            // 5. Simpan objek ke Firestore
-            newCustomerDocRef.set(newCustomer).await()
+            db.runBatch { batch ->
+                batch.set(newCustomerDocRef, newCustomer)
+                batch.update(metadataDocRef, "customerCount", FieldValue.increment(1))
+            }.await()
             true
         } catch (e: Exception) {
             e.printStackTrace()
@@ -113,12 +113,14 @@ class CustomerRepository {
     suspend fun deleteCustomer(customerId: String): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
         return try {
-            db.collection("workspaces")
-                .document(workspaceId)
-                .collection("customers")
-                .document(customerId)
-                .delete()
-                .await()
+            val workspaceRef = db.collection("workspaces").document(workspaceId)
+            val customerDocRef = workspaceRef.collection("customers").document(customerId)
+            val metadataDocRef = workspaceRef.collection("metadata").document("counts")
+
+            db.runBatch { batch ->
+                batch.delete(customerDocRef)
+                batch.update(metadataDocRef, "customerCount", FieldValue.increment(-1))
+            }.await()
             true
         } catch (e: Exception) {
             e.printStackTrace()

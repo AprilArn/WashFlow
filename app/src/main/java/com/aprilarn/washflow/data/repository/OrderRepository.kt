@@ -5,6 +5,7 @@ import com.aprilarn.washflow.data.model.Orders
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.firestore
@@ -86,11 +87,14 @@ class OrderRepository {
                 readBy = listOf(currentUser.uid)
             )
 
+            val metadataDocRef = workspaceRef.collection("metadata").document("counts")
+
             // 3. GUNAKAN BATCH: Simpan keduanya secara bersamaan (Atomic)
             // Ini akan memastikan koleksi 'notifications' otomatis terbuat di Firestore
             db.runBatch { batch ->
                 batch.set(newOrderDoc, finalOrder)
                 batch.set(newNotifDoc, notification)
+                batch.update(metadataDocRef, "orderCount", FieldValue.increment(1))
             }.await()
 
             true
@@ -136,17 +140,18 @@ class OrderRepository {
     suspend fun deleteOrder(orderId: String): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
         return try {
-            db.collection("workspaces")
-                .document(workspaceId)
-                .collection("orders")
-                .document(orderId)
-                .delete()
-                .await()
+            val workspaceRef = db.collection("workspaces").document(workspaceId)
+            val orderDocRef = workspaceRef.collection("orders").document(orderId)
+            val metadataDocRef = workspaceRef.collection("metadata").document("counts")
+
+            db.runBatch { batch ->
+                batch.delete(orderDocRef)
+                batch.update(metadataDocRef, "orderCount", FieldValue.increment(-1))
+            }.await()
             true
         } catch (e: Exception) {
             e.printStackTrace()
             false
         }
     }
-
 }
