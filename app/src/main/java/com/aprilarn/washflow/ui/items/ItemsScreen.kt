@@ -42,7 +42,7 @@ fun ItemsScreen (
 ) {
     var newItemService by remember { mutableStateOf("") }
     var newItemName by remember { mutableStateOf("") }
-    var newItemPrice by remember { mutableStateOf(0.0) }
+    var newItemPrice by remember { mutableStateOf("") }
 
     var showDeleteConfirmation by remember { mutableStateOf(false) }
 
@@ -61,13 +61,13 @@ fun ItemsScreen (
         // State untuk field di dalam dialog edit
         var editedService by remember { mutableStateOf(itemToEdit.serviceId) }
         var editedName by remember { mutableStateOf(itemToEdit.itemName) }
-        var editedPrice by remember { mutableStateOf(itemToEdit.itemPrice) }
+        var editedPrice by remember { mutableStateOf(itemToEdit.itemPrice.toString().replace(".0", "")) }
 
         // LaunchedEffect untuk mereset state jika item yang dipilih berganti
         LaunchedEffect(itemToEdit) {
             editedService = itemToEdit.serviceId
             editedName = itemToEdit.itemName
-            editedPrice = itemToEdit.itemPrice
+            editedPrice = itemToEdit.itemPrice.toString().replace(".0", "")
             showDeleteConfirmation = false
         }
 
@@ -121,10 +121,10 @@ fun ItemsScreen (
                             )
                         )
                         OutlinedTextField(
-                            value = editedPrice.toString(),
+                            value = editedPrice,
                             onValueChange = { newValue ->
                                 if (newValue.all { it.isDigit() }) {
-                                    editedPrice = newValue.toDoubleOrNull() ?: 0.0
+                                    editedPrice = newValue
                                 }
                             },
                             label = { Text("Item Price") },
@@ -169,7 +169,7 @@ fun ItemsScreen (
                                     val updatedItem = itemToEdit.copy(
                                         serviceId = editedService,
                                         itemName = editedName,
-                                        itemPrice = editedPrice
+                                        itemPrice = editedPrice.toDoubleOrNull() ?: 0.0
                                     )
                                     onEditItemClick(updatedItem)
                                 },
@@ -295,10 +295,10 @@ fun ItemsScreen (
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     OutlinedTextField(
-                        value = if (newItemPrice == 0.0) "" else newItemPrice.toString().replace(".0", ""),
+                        value = newItemPrice,
                         onValueChange = { newValue ->
                             if (newValue.all { it.isDigit() }) {
-                                newItemPrice = newValue.toDoubleOrNull() ?: 0.0
+                                newItemPrice = newValue
                             }
                         },
                         label = { Text("Harga Barang") },
@@ -316,10 +316,10 @@ fun ItemsScreen (
                     Spacer(modifier = Modifier.height(18.dp))
                     Button(
                         onClick = {
-                            onAddItemClick(newItemService, newItemName, newItemPrice)
+                            onAddItemClick(newItemService, newItemName, newItemPrice.toDoubleOrNull() ?: 0.0)
                             newItemService = ""
                             newItemName = ""
-                            newItemPrice = 0.0
+                            newItemPrice = ""
                         },
                         modifier = Modifier.fillMaxWidth().height(48.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = GrayBlue),
