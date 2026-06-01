@@ -195,7 +195,16 @@ fun OrderCustomerInputPanel(
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .clickable { showDatePicker = true }
+                        .clickable {
+                            if (uiState.dueDate == null) {
+                                // Jika belum ada tanggal, set default ke 1 hari setelah sekarang
+                                val defaultDate = Calendar.getInstance().apply {
+                                    add(Calendar.DAY_OF_YEAR, 1)
+                                }
+                                viewModel.onDueDateChanged(Timestamp(defaultDate.time))
+                            }
+                            showDatePicker = true
+                        }
                         .clip(RoundedCornerShape(12.dp))
                 )
             }
@@ -204,14 +213,25 @@ fun OrderCustomerInputPanel(
 
     // --- DIALOG BARU UNTUK DATE PICKER ---
     if (showDatePicker) {
-        val datePickerState = rememberDatePickerState()
+        // Gunakan tanggal yang ada di uiState atau default 1 hari ke depan
+        val initialDateMillis = uiState.dueDate?.toDate()?.time ?: (System.currentTimeMillis() + 24 * 60 * 60 * 1000L)
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = initialDateMillis
+        )
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 Button(onClick = {
                     datePickerState.selectedDateMillis?.let { millis ->
-                        // Simpan tanggal yang dipilih ke Calendar
+                        // Ambil jam/menit yang sudah ada di uiState atau default sekarang
+                        val currentDue = uiState.dueDate?.toDate() ?: Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }.time
+                        val timeCal = Calendar.getInstance().apply { time = currentDue }
+                        
                         calendar.timeInMillis = millis
+                        calendar.set(Calendar.HOUR_OF_DAY, timeCal.get(Calendar.HOUR_OF_DAY))
+                        calendar.set(Calendar.MINUTE, timeCal.get(Calendar.MINUTE))
+                        
+                        viewModel.onDueDateChanged(Timestamp(calendar.time))
                     }
                     showDatePicker = false
                     showTimePicker = true // Setelah tanggal dipilih, tampilkan Time Picker
@@ -231,9 +251,18 @@ fun OrderCustomerInputPanel(
 
     // --- DIALOG BARU UNTUK TIME PICKER ---
     if (showTimePicker) {
+        // Ambil jam dan menit dari uiState atau default dari calendar yang sudah diset di DatePicker
+        val initialHour = uiState.dueDate?.toDate()?.let {
+            Calendar.getInstance().apply { time = it }.get(Calendar.HOUR_OF_DAY)
+        } ?: calendar.get(Calendar.HOUR_OF_DAY)
+
+        val initialMinute = uiState.dueDate?.toDate()?.let {
+            Calendar.getInstance().apply { time = it }.get(Calendar.MINUTE)
+        } ?: calendar.get(Calendar.MINUTE)
+
         val timePickerState = rememberTimePickerState(
-            initialHour = calendar.get(Calendar.HOUR_OF_DAY),
-            initialMinute = calendar.get(Calendar.MINUTE),
+            initialHour = initialHour,
+            initialMinute = initialMinute,
             is24Hour = true
         )
         AlertDialog(
@@ -247,7 +276,7 @@ fun OrderCustomerInputPanel(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        // Gabungkan tanggal yang sudah ada di Calendar dengan waktu yang baru dipilih
+                        // Pastikan kita menggunakan tanggal yang sudah dipilih di DatePicker (yang ada di 'calendar')
                         calendar.set(Calendar.HOUR_OF_DAY, timePickerState.hour)
                         calendar.set(Calendar.MINUTE, timePickerState.minute)
 
