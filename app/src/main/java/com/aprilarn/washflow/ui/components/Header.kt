@@ -231,7 +231,7 @@ fun AnalogClockIcon(millis: Long, modifier: Modifier = Modifier) {
         // Draw Second Hand (Pinkish/Red)
         val secondAngle = seconds * 6f - 90f
         drawLine(
-            color = SoftBlue, // Pinkish color
+            color = SoftBlue,
             start = center,
             end = Offset(
                 center.x + (radius * 0.85f) * cos(Math.toRadians(secondAngle.toDouble())).toFloat(),

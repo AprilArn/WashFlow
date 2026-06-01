@@ -3,6 +3,7 @@ package com.aprilarn.washflow.data.repository
 import com.aprilarn.washflow.data.model.Items
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.firestore
 import com.google.firebase.firestore.toObjects
@@ -65,15 +66,12 @@ class ItemRepository {
         val workspaceId = getWorkspaceId() ?: return false
 
         return try {
-            // 2. Buat referensi ke sub-koleksi 'items'
-            val itemsCollection = db.collection("workspaces")
-                .document(workspaceId)
-                .collection("items")
+            val workspaceRef = db.collection("workspaces").document(workspaceId)
+            val itemsCollection = workspaceRef.collection("items")
+            val metadataDocRef = workspaceRef.collection("metadata").document("counts")
 
-            // 3. Buat dokumen baru untuk mendapatkan ID unik
             val newItemDocRef = itemsCollection.document()
 
-            // 4. Siapkan objek Customer dengan ID yang baru dibuat
             val newItem = Items(
                 itemId = newItemDocRef.id,
                 itemName = itemName,
@@ -81,8 +79,10 @@ class ItemRepository {
                 serviceId = serviceId
             )
 
-            // 5. Simpan objek ke Firestore
-            newItemDocRef.set(newItem).await()
+            db.runBatch { batch ->
+                batch.set(newItemDocRef, newItem)
+                batch.update(metadataDocRef, "itemCount", FieldValue.increment(1))
+            }.await()
             true
         } catch (e: Exception) {
             e.printStackTrace()
@@ -116,12 +116,14 @@ class ItemRepository {
     suspend fun deleteItems(itemId: String): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
         return try {
-            db.collection("workspaces")
-                .document(workspaceId)
-                .collection("items")
-                .document(itemId)
-                .delete()
-                .await()
+            val workspaceRef = db.collection("workspaces").document(workspaceId)
+            val itemDocRef = workspaceRef.collection("items").document(itemId)
+            val metadataDocRef = workspaceRef.collection("metadata").document("counts")
+
+            db.runBatch { batch ->
+                batch.delete(itemDocRef)
+                batch.update(metadataDocRef, "itemCount", FieldValue.increment(-1))
+            }.await()
             true
         } catch (e: Exception) {
             e.printStackTrace()

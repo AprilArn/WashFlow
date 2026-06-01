@@ -69,9 +69,11 @@ fun ServiceDropdown(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = MainFontBlack,
                     unfocusedTextColor = Color.Gray,
-                    cursorColor = Color.White,
+                    focusedBorderColor = Color.Gray,
+                    focusedLabelColor = Color.Gray,
+                    cursorColor = Color.Transparent,
                     focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White.copy(alpha = 0f) // Transparan saat tidak fokus
+                    unfocusedContainerColor = Color.White.copy(alpha = 0f)
                 )
             )
 

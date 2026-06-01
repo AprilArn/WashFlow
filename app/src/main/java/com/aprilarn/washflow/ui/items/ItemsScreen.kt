@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
@@ -17,6 +18,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -27,6 +29,7 @@ import com.aprilarn.washflow.ui.components.DataTablePanel
 import com.aprilarn.washflow.ui.components.DeleteConfirmationDialog
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.MainFontBlack
+import com.aprilarn.washflow.utils.CurrencyUtils
 
 @Composable
 fun ItemsScreen (
@@ -108,14 +111,33 @@ fun ItemsScreen (
                             onValueChange = { editedName = it },
                             label = { Text("Item Name") },
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.Black,
+                                unfocusedTextColor = Color.Gray,
+                                focusedBorderColor = GrayBlue,
+                                focusedLabelColor = GrayBlue,
+                                cursorColor = GrayBlue
+                            )
                         )
                         OutlinedTextField(
                             value = editedPrice.toString(),
-                            onValueChange = { editedPrice = it.toDoubleOrNull() ?: 0.0 },
+                            onValueChange = { newValue ->
+                                if (newValue.all { it.isDigit() }) {
+                                    editedPrice = newValue.toDoubleOrNull() ?: 0.0
+                                }
+                            },
                             label = { Text("Item Price") },
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.Black,
+                                unfocusedTextColor = Color.Gray,
+                                focusedBorderColor = GrayBlue,
+                                focusedLabelColor = GrayBlue,
+                                cursorColor = GrayBlue
+                            )
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -187,7 +209,7 @@ fun ItemsScreen (
                 ColumnConfig<Items>(
                     header = "Item Price",
                     weight = 0.3f,
-                    content = { item -> Text(item.itemPrice.toString(), color = GrayBlue) }
+                    content = { item -> Text(CurrencyUtils.formatRupiah(item.itemPrice), color = GrayBlue) }
                 ),
                 ColumnConfig<Items>(
                     header = "Edit", // Ubah header menjadi "Actions"
@@ -266,20 +288,29 @@ fun ItemsScreen (
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = MainFontBlack,
                             unfocusedTextColor = Color.Gray,
-                            cursorColor = Color.White,
+                            focusedBorderColor = GrayBlue,
+                            focusedLabelColor = GrayBlue,
+                            cursorColor = GrayBlue
                         )
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     OutlinedTextField(
-                        value = if (newItemPrice == 0.0) "" else newItemPrice.toString(),
-                        onValueChange = { newItemPrice = it.toDoubleOrNull() ?: 0.0 },
+                        value = if (newItemPrice == 0.0) "" else newItemPrice.toString().replace(".0", ""),
+                        onValueChange = { newValue ->
+                            if (newValue.all { it.isDigit() }) {
+                                newItemPrice = newValue.toDoubleOrNull() ?: 0.0
+                            }
+                        },
                         label = { Text("Harga Barang") },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = MainFontBlack,
                             unfocusedTextColor = Color.Gray,
-                            cursorColor = Color.White,
+                            focusedBorderColor = GrayBlue,
+                            focusedLabelColor = GrayBlue,
+                            cursorColor = GrayBlue
                         )
                     )
                     Spacer(modifier = Modifier.height(18.dp))

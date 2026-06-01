@@ -2,6 +2,7 @@
 package com.aprilarn.washflow.ui.settings
 
 import android.Manifest
+import android.R
 import android.annotation.SuppressLint
 import android.content.Context
 import android.location.Address
@@ -9,6 +10,7 @@ import android.location.Geocoder
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -33,6 +35,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -354,7 +357,7 @@ fun LocationSelectionPanel(
                                 },
                                 modifier = Modifier.height(50.dp)
                             ) {
-                                Text("Auto")
+                                Text("Auto", color = GrayBlue)
                             }
 
                             // 2. Tombol Sniper (Statis / Lock Coordinate)
@@ -367,7 +370,7 @@ fun LocationSelectionPanel(
                                 },
                                 modifier = Modifier.height(50.dp)
                             ) {
-                                Icon(Icons.Default.MyLocation, contentDescription = "Current Location (Static)")
+                                Icon(Icons.Default.MyLocation, contentDescription = "Current Location (Static)", tint = GrayBlue)
                             }
 
                             // 3. Tombol Confirm
@@ -380,7 +383,11 @@ fun LocationSelectionPanel(
                                 enabled = selectedLatLng != null,
                                 modifier = Modifier
                                     .weight(1f) // Ambil sisa lebar
-                                    .height(50.dp)
+                                    .height(50.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = GrayBlue,
+                                    contentColor = Color.White
+                                )
                             ) {
                                 Text("Confirm")
                             }
@@ -415,14 +422,15 @@ fun LocationSelectionPanel(
                                             Manifest.permission.ACCESS_COARSE_LOCATION
                                         )
                                     )
-                                }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = GrayBlue)
                             ) {
-                                Text("Aktifkan")
+                                Text("Aktifkan", color = Color.White)
                             }
                         },
                         dismissButton = {
                             TextButton(onClick = { showAutoDialog = false }) {
-                                Text("Batal")
+                                Text("Batal", color = GrayBlue)
                             }
                         }
                     )

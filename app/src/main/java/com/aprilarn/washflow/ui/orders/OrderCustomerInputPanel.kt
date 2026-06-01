@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -55,6 +56,13 @@ fun OrderCustomerInputPanel(
 
     val borderRadius = RoundedCornerShape(24.dp)
     val borderColor = Color.White
+    val textFieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = Color.Black,
+        unfocusedTextColor = Color.Gray,
+        focusedBorderColor = GrayBlue,
+        focusedLabelColor = GrayBlue,
+        cursorColor = GrayBlue
+    )
 
     Box(
         modifier = Modifier
@@ -110,6 +118,7 @@ fun OrderCustomerInputPanel(
                             )
                         }
                     },
+                    colors = textFieldColors,
                     shape = RoundedCornerShape(12.dp)
                 )
 
@@ -160,6 +169,7 @@ fun OrderCustomerInputPanel(
                 label = { Text("No WA/Telp") },
                 modifier = Modifier
                     .fillMaxWidth(),
+                colors = textFieldColors,
                 shape = RoundedCornerShape(12.dp)
             )
 
@@ -178,13 +188,23 @@ fun OrderCustomerInputPanel(
                     label = { Text("Batas Waktu") },
                     modifier = Modifier
                         .fillMaxWidth(),
+                    colors = textFieldColors,
                     shape = RoundedCornerShape(12.dp),
                 )
                 // Kotak transparan di atasnya untuk menangkap klik (MASIH ADA KECACATAN UI)
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .clickable { showDatePicker = true }
+                        .clickable {
+                            if (uiState.dueDate == null) {
+                                // Jika belum ada tanggal, set default ke 1 hari setelah sekarang
+                                val defaultDate = Calendar.getInstance().apply {
+                                    add(Calendar.DAY_OF_YEAR, 1)
+                                }
+                                viewModel.onDueDateChanged(Timestamp(defaultDate.time))
+                            }
+                            showDatePicker = true
+                        }
                         .clip(RoundedCornerShape(12.dp))
                 )
             }
@@ -193,14 +213,25 @@ fun OrderCustomerInputPanel(
 
     // --- DIALOG BARU UNTUK DATE PICKER ---
     if (showDatePicker) {
-        val datePickerState = rememberDatePickerState()
+        // Gunakan tanggal yang ada di uiState atau default 1 hari ke depan
+        val initialDateMillis = uiState.dueDate?.toDate()?.time ?: (System.currentTimeMillis() + 24 * 60 * 60 * 1000L)
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = initialDateMillis
+        )
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 Button(onClick = {
                     datePickerState.selectedDateMillis?.let { millis ->
-                        // Simpan tanggal yang dipilih ke Calendar
+                        // Ambil jam/menit yang sudah ada di uiState atau default sekarang
+                        val currentDue = uiState.dueDate?.toDate() ?: Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }.time
+                        val timeCal = Calendar.getInstance().apply { time = currentDue }
+                        
                         calendar.timeInMillis = millis
+                        calendar.set(Calendar.HOUR_OF_DAY, timeCal.get(Calendar.HOUR_OF_DAY))
+                        calendar.set(Calendar.MINUTE, timeCal.get(Calendar.MINUTE))
+                        
+                        viewModel.onDueDateChanged(Timestamp(calendar.time))
                     }
                     showDatePicker = false
                     showTimePicker = true // Setelah tanggal dipilih, tampilkan Time Picker
@@ -220,16 +251,32 @@ fun OrderCustomerInputPanel(
 
     // --- DIALOG BARU UNTUK TIME PICKER ---
     if (showTimePicker) {
+        // Ambil jam dan menit dari uiState atau default dari calendar yang sudah diset di DatePicker
+        val initialHour = uiState.dueDate?.toDate()?.let {
+            Calendar.getInstance().apply { time = it }.get(Calendar.HOUR_OF_DAY)
+        } ?: calendar.get(Calendar.HOUR_OF_DAY)
+
+        val initialMinute = uiState.dueDate?.toDate()?.let {
+            Calendar.getInstance().apply { time = it }.get(Calendar.MINUTE)
+        } ?: calendar.get(Calendar.MINUTE)
+
         val timePickerState = rememberTimePickerState(
-            initialHour = calendar.get(Calendar.HOUR_OF_DAY),
-            initialMinute = calendar.get(Calendar.MINUTE)
+            initialHour = initialHour,
+            initialMinute = initialMinute,
+            is24Hour = true
         )
-        TimePickerDialog( // Ini adalah implementasi custom kecil untuk Time Picker Dialog
+        AlertDialog(
             onDismissRequest = { showTimePicker = false },
+            title = { Text("Set Batas Waktu") },
+            text = {
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    TimePicker(state = timePickerState)
+                }
+            },
             confirmButton = {
-                Button(
+                TextButton(
                     onClick = {
-                        // Gabungkan tanggal yang sudah ada di Calendar dengan waktu yang baru dipilih
+                        // Pastikan kita menggunakan tanggal yang sudah dipilih di DatePicker (yang ada di 'calendar')
                         calendar.set(Calendar.HOUR_OF_DAY, timePickerState.hour)
                         calendar.set(Calendar.MINUTE, timePickerState.minute)
 
@@ -242,35 +289,10 @@ fun OrderCustomerInputPanel(
                 }
             },
             dismissButton = {
-                Button(onClick = { showTimePicker = false }) {
+                TextButton(onClick = { showTimePicker = false }) {
                     Text("Cancel")
                 }
             }
-        ) {
-            TimePicker(state = timePickerState)
-        }
-    }
-}
-
-// Composable helper untuk Time Picker Dialog (karena tidak ada bawaan di M3)
-@Composable
-private fun TimePickerDialog(
-    onDismissRequest: () -> Unit,
-    confirmButton: @Composable () -> Unit,
-    dismissButton: @Composable () -> Unit,
-    content: @Composable () -> Unit
-) {
-    Dialog(onDismissRequest = onDismissRequest) {
-        Card {
-            Column(modifier = Modifier.padding(16.dp)) {
-                content()
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    dismissButton()
-                    Spacer(modifier = Modifier.width(8.dp))
-                    confirmButton()
-                }
-            }
-        }
+        )
     }
 }

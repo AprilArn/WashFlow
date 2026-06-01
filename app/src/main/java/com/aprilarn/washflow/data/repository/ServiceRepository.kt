@@ -3,6 +3,7 @@ package com.aprilarn.washflow.data.repository
 import com.aprilarn.washflow.data.model.Services
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.firestore
 import com.google.firebase.firestore.toObjects
@@ -68,20 +69,21 @@ class ServiceRepository {
         val workspaceId = getWorkspaceId() ?: return false
 
         return try {
-            // Referensi ke koleksi 'services'
-            val servicesCollection = db.collection("workspaces")
-                .document(workspaceId)
-                .collection("services")
+            val workspaceRef = db.collection("workspaces").document(workspaceId)
+            val servicesCollection = workspaceRef.collection("services")
+            val metadataDocRef = workspaceRef.collection("metadata").document("counts")
 
-            // **KUNCI UTAMA**: Gunakan .document(serviceId) untuk menetapkan ID kustom
             val newServiceDocRef = servicesCollection.document(serviceId)
 
             val newService = Services(
-                serviceId = serviceId, // ID dari input pengguna
+                serviceId = serviceId,
                 serviceName = serviceName
             )
 
-            newServiceDocRef.set(newService).await()
+            db.runBatch { batch ->
+                batch.set(newServiceDocRef, newService)
+                batch.update(metadataDocRef, "serviceCount", FieldValue.increment(1))
+            }.await()
             true
         } catch (e: Exception) {
             e.printStackTrace()
@@ -119,6 +121,7 @@ class ServiceRepository {
 
             // 3. Eksekusi query untuk mendapatkan daftar item yang akan dihapus
             val itemsSnapshot = itemsToDeleteQuery.get().await()
+            val itemCountToDelete = itemsSnapshot.size().toLong()
 
             // 4. Mulai Batched Write
             db.runBatch { batch ->
@@ -130,7 +133,14 @@ class ServiceRepository {
                     batch.delete(document.reference)
                 }
 
-            }.await() // 7. Jalankan semua operasi dalam batch
+                // 7. Update counter
+                val metadataDocRef = workspaceRef.collection("metadata").document("counts")
+                batch.update(metadataDocRef, "serviceCount", FieldValue.increment(-1))
+                if (itemCountToDelete > 0) {
+                    batch.update(metadataDocRef, "itemCount", FieldValue.increment(-itemCountToDelete))
+                }
+
+            }.await() // 8. Jalankan semua operasi dalam batch
 
             true // Operasi berhasil
         } catch (e: Exception) {

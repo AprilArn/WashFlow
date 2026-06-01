@@ -16,8 +16,17 @@ data class Workspaces (
     val workspaceName: String? = null,
     val ownerUid: String? = null,
     val createdAt: Timestamp = Timestamp.now(),
-    val contributors: Map<String, String>? = null // Daftar UID pengguna yang berkontribusi (uid, role)
+    val contributors: Map<String, String>? = null, // Daftar UID pengguna yang berkontribusi (uid, role)
+    val openTime: String? = null,
+    val closeTime: String? = null
 )
+
+    data class WorkspaceMetadata(
+        val customerCount: Int = 0,
+        val serviceCount: Int = 0,
+        val itemCount: Int = 0,
+        val orderCount: Int = 0
+    )
 
     data class Customers (
         val customerId: String = "",
@@ -46,6 +55,7 @@ data class Workspaces (
         val orderItems: List<OrderItem> = emptyList(),
         val totalPrice: Double? = 0.0,
         val status: String? = null,  // e.g., "in queue", "in progress", "ready for pickup", "completed"
+        val alreadyPaid: Boolean = false
     )
 
         data class OrderItem (

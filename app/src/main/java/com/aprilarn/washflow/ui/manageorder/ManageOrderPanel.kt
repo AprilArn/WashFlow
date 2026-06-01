@@ -1,17 +1,25 @@
 package com.aprilarn.washflow.ui.manageorder
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,6 +34,8 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntSize
@@ -43,39 +53,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-// DATA CLASS UNTUK MENYIMPAN INFORMASI TARGET DROP (diubah menjadi internal)
-internal class DropTarget(
-    val id: String,
-    val bounds: Rect,
-    val onDrop: (String) -> Unit
-)
-
-// STATE MANAGEMENT
-internal class DragDropState<T> {
-    var isDragging: Boolean by mutableStateOf(false)
-    var itemData: T? by mutableStateOf(null)
-    var fingerPosition: Offset by mutableStateOf(Offset.Zero)
-    val dropTargets = mutableStateListOf<DropTarget>()
-    var dragStartOffsetInItem: Offset by mutableStateOf(Offset.Zero)
-    var draggedItemSize: IntSize by mutableStateOf(IntSize.Zero)
-    fun stopDrag() {
-        isDragging = false
-        itemData = null
-        fingerPosition = Offset.Zero
-        dragStartOffsetInItem = Offset.Zero // Reset offset
-        draggedItemSize = IntSize.Zero // Reset ukuran
-    }
-}
-
-@Composable
-internal fun <T> rememberDragDropState(): DragDropState<T> {
-    return remember { DragDropState() }
-}
-
-internal val LocalDragDropState = compositionLocalOf { DragDropState<Orders>() }
-
-val borderRadius = RoundedCornerShape(24.dp)
-val borderColor = Color.White
 
 // Main Container
 @Composable
@@ -88,6 +65,9 @@ fun DragDropContainer(
     val density = LocalDensity.current
     var containerPositionInWindow by remember { mutableStateOf(Offset.Zero) }
 
+    // Menggunakan helper animation dari DragDropManager
+    val transition = rememberDragDropTransition(state)
+
     CompositionLocalProvider(LocalDragDropState provides state) {
         Box(
             modifier = modifier
@@ -99,7 +79,7 @@ fun DragDropContainer(
         ) {
             content()
 
-            if (state.isDragging) {
+            if (state.isDragging || state.isFinishing) {
                 state.itemData?.let { data ->
                     // Konversi ukuran dari pixel ke Dp
                     val draggedItemWidthDp = with(density) { state.draggedItemSize.width.toDp() }
@@ -112,6 +92,13 @@ fun DragDropContainer(
                                 val topLeft = localTouchPosition - state.dragStartOffsetInItem
                                 translationX = topLeft.x
                                 translationY = topLeft.y
+
+                                // Terapkan animasi scale, alpha, dan shadow agar terlihat "melayang"
+                                scaleX = transition.scale
+                                scaleY = transition.scale
+                                alpha = transition.alpha
+                                shadowElevation = 8.dp.toPx()
+                                shape = borderRadius
                             }
                             .size(width = draggedItemWidthDp, height = draggedItemHeightDp)
                     ) {
@@ -140,6 +127,65 @@ fun OrderStatusColumn(
 ) {
     val dragDropState = LocalDragDropState.current
     val currentOnDrop by rememberUpdatedState(onDrop)
+    val haptic = LocalHapticFeedback.current
+    val density = LocalDensity.current
+
+    var centerX by remember { mutableStateOf(0f) }
+
+    val isHighlighted by remember(dragDropState.isDragging, dragDropState.fingerPosition) {
+        derivedStateOf {
+            dragDropState.isDragging &&
+                    dragDropState.dropTargets.find { it.id == title }?.bounds?.contains(dragDropState.fingerPosition) == true
+        }
+    }
+
+    // Animasi Tilt: Kolom miring ke arah finger jika tidak sedang di-highlight
+    val targetRotation = if (dragDropState.isDragging && !isHighlighted) {
+        val distance = dragDropState.fingerPosition.x - centerX
+        (distance / 150f).coerceIn(-10f, 10f) // Max tilt 10 derajat
+    } else {
+        0f
+    }
+
+    val animatedRotation by animateFloatAsState(
+        targetValue = targetRotation,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "columnTilt"
+    )
+
+    val backgroundColor by animateColorAsState(
+        targetValue = if (isHighlighted) GrayBlue.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.25f),
+        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        label = "columnHighlightColor"
+    )
+
+    val animatedBorderColor by animateColorAsState(
+        targetValue = if (isHighlighted) GrayBlue.copy(alpha = 0.8f) else borderColor.copy(alpha = 0.5f),
+        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        label = "columnBorderColor"
+    )
+
+    val animatedBorderWidth by animateDpAsState(
+        targetValue = if (isHighlighted) 2.dp else 1.dp,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "columnBorderWidth"
+    )
+
+    val columnScale by animateFloatAsState(
+        targetValue = if (isHighlighted) 1.01f else 1.0f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "columnScale"
+    )
+
+    // Efek getar saat kolom disorot
+    LaunchedEffect(isHighlighted) {
+        if (isHighlighted) {
+            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        }
+    }
 
     // Efek untuk mendaftarkan & menghapus diri sebagai target drop
     DisposableEffect(key1 = title) {
@@ -149,25 +195,25 @@ fun OrderStatusColumn(
         }
     }
 
-    val isHighlighted by remember(dragDropState.isDragging, dragDropState.fingerPosition) {
-        derivedStateOf {
-            dragDropState.isDragging &&
-                    dragDropState.dropTargets.find { it.id == title }?.bounds?.contains(dragDropState.fingerPosition) == true
-        }
-    }
-
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(if (isHighlighted) Color.LightGray.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.25f), shape = borderRadius)
+            .graphicsLayer {
+                rotationY = animatedRotation
+                scaleX = columnScale
+                scaleY = columnScale
+                cameraDistance = 12f * density.density
+            }
+            .background(backgroundColor, shape = borderRadius)
             .border(
-                width = 1.dp,
-                color = borderColor,
+                width = animatedBorderWidth,
+                color = animatedBorderColor,
                 shape = borderRadius
             )
             .onGloballyPositioned {
                 val windowPosition = it.positionInWindow()
                 val bounds = Rect(windowPosition, it.size.toSize())
+                centerX = windowPosition.x + it.size.width / 2f
 
                 // Hapus pendaftaran lama & daftarkan yang baru dengan bounds terbaru
                 dragDropState.dropTargets.removeAll { t -> t.id == title }
@@ -195,7 +241,7 @@ fun OrderStatusColumn(
                         .weight(1f)
                 ) {
                     Text(
-                        text = "${title}",
+                        text = title,
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold,
                             fontSize = 22.sp,
@@ -203,7 +249,7 @@ fun OrderStatusColumn(
                         )
                     )
                     Text(
-                        text = "${subTitle}",
+                        text = subTitle,
                         style = MaterialTheme.typography.bodyMedium,
                         color = GrayBlue
                     )
@@ -226,6 +272,7 @@ fun OrderStatusColumn(
             ) {
                 items(orders, key = { it.orderId }) { order ->
                     DraggableOrderCard(
+                        modifier = Modifier.animateItem(),
                         order = order,
                         services = services,
                         onClick = { onOrderClick(order) }
@@ -238,16 +285,26 @@ fun OrderStatusColumn(
 
 @Composable
 fun DraggableOrderCard(
+    modifier: Modifier = Modifier,
     order: Orders,
     services: List<Services>,
     onClick: () -> Unit
 ) {
     val dragDropState = LocalDragDropState.current
+    val haptic = LocalHapticFeedback.current
     var startPosition by remember { mutableStateOf(Offset.Zero) }
     var itemSize by remember { mutableStateOf(IntSize.Zero) } // <- State untuk menyimpan ukuran kartu ini
 
+    val isCurrentlyDragged = (dragDropState.isDragging || dragDropState.isFinishing) && dragDropState.itemData?.orderId == order.orderId
+    
+    // Menggunakan helper animation dari DragDropManager
+    val contentAlpha by rememberDragContentAlpha(
+        isCurrentlyDragged = isCurrentlyDragged,
+        isDragging = dragDropState.isDragging
+    )
+
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .onSizeChanged { itemSize = it }
             .onGloballyPositioned {
@@ -256,11 +313,13 @@ fun DraggableOrderCard(
             .pointerInput(Unit) {
                 detectDragGesturesAfterLongPress (
                     onDragStart = { offset ->
-                        dragDropState.isDragging = true
-                        dragDropState.itemData = order
-                        dragDropState.fingerPosition = startPosition + offset
-                        dragDropState.draggedItemSize = itemSize
-                        dragDropState.dragStartOffsetInItem = offset
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        dragDropState.startDrag(
+                            data = order,
+                            position = startPosition + offset,
+                            size = itemSize,
+                            offsetInItem = offset
+                        )
                     },
                     onDragEnd = {
                         dragDropState.itemData?.let { draggedItem ->
@@ -280,7 +339,7 @@ fun DraggableOrderCard(
                 )
             }
             .graphicsLayer {
-                alpha = if (dragDropState.isDragging && dragDropState.itemData?.orderId == order.orderId) 0.0f else 1f
+                alpha = contentAlpha
             }
             .clip(borderRadius)
             .clickable(onClick = onClick)
@@ -370,13 +429,50 @@ fun OrderCardContent(
                 )
             }
             Text(
-                text = "${totalItemTypes}",
+                text = totalItemTypes.toString(),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = GrayBlue,
                     fontWeight = FontWeight.Bold,
                     fontSize = 24.sp
                 )
             )
+        }
+
+        // --- TAG PAID ---
+        if (order.alreadyPaid) {
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(18.dp),
+//                    .border(
+//                        width = 1.dp,
+//                        color = borderColor,
+//                        shape = RoundedCornerShape(6.dp)
+//                    ),
+                shape = RoundedCornerShape(6.dp),
+                // shadowElevation = 8.dp,
+                color = Color(0xFF4EB0FF) // Biru Pastel Sangat Muda
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = "Paid",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = Color.White, // Biru Tua
+                            fontSize = 10.sp
+                        )
+                    )
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        modifier = Modifier.size(12.dp),
+                        tint = Color.White
+                    )
+                }
+            }
         }
     }
 }
@@ -393,6 +489,7 @@ fun OrderCardContentPreview() {
     val sampleOrder = Orders(
         orderId = "1",
         customerName = "Budi Santoso",
+        alreadyPaid = true,
         orderDate = Timestamp.now(),
         orderDueDate = Timestamp(Date(System.currentTimeMillis() + 86400000)), // Besok
         orderItems = listOf(
@@ -400,6 +497,8 @@ fun OrderCardContentPreview() {
             OrderItem(itemId = "item_4", serviceId = "D-01", itemQuantity = 1)
         )
     )
+
+    val isHighlighted = true // Force true for preview
 
     MaterialTheme {
         Box(modifier = Modifier.padding(8.dp)) {
@@ -424,6 +523,10 @@ fun OrderStatusColumnPreview() {
         Orders(orderId = "1", customerName = "Budi", status = "On Queue", orderItems = listOf(OrderItem(serviceId = "L-01", itemQuantity = 3))),
         Orders(orderId = "2", customerName = "Citra", status = "On Queue", orderItems = listOf(OrderItem(serviceId = "L-01", itemQuantity = 1)))
     )
+
+    
+
+    val isHighlighted = true // Force true for preview
 
     MaterialTheme {
         // DragDropContainer dibutuhkan karena komponen di dalamnya menggunakan state dari sana

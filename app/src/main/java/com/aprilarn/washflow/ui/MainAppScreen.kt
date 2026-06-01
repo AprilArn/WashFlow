@@ -40,6 +40,7 @@ import com.aprilarn.washflow.data.repository.OrderRepository
 import com.aprilarn.washflow.data.repository.ServiceRepository
 import com.aprilarn.washflow.data.repository.WorkspaceRepository
 import com.aprilarn.washflow.ui.components.Header
+import com.aprilarn.washflow.ui.components.KickedDialog
 import com.aprilarn.washflow.ui.components.LeaveWorkspaceDialog
 import com.aprilarn.washflow.ui.components.NotificationPanel
 import com.aprilarn.washflow.ui.components.NotificationPreviewItem
@@ -63,11 +64,12 @@ import com.aprilarn.washflow.ui.settings.SettingsScreen
 import com.aprilarn.washflow.ui.settings.SettingsViewModel
 import com.aprilarn.washflow.ui.tabledata.TableDataScreen
 import com.aprilarn.washflow.ui.tabledata.TableDataViewModel
-import com.aprilarn.washflow.ui.theme.MainBLue
+import com.aprilarn.washflow.ui.theme.MainBlue
 import com.aprilarn.washflow.ui.theme.MornYellow
 import com.aprilarn.washflow.ui.workspace.ActiveInviteDialog
 import com.aprilarn.washflow.ui.workspace.CreateInviteDialog
 import com.aprilarn.washflow.ui.workspace.DeleteWorkspaceDialog
+import com.aprilarn.washflow.ui.workspace.OperationalHoursDialog
 import com.aprilarn.washflow.ui.workspace.RenameWorkspaceDialog
 import com.aprilarn.washflow.ui.workspace.WorkspaceOptionsDropdown
 
@@ -134,6 +136,7 @@ fun MainAppScreen(
                             mainViewModel.onDismissWorkspaceOptions()
                             bottomNavController.navigate(AppNavigation.Contributors.route)
                         },
+                        onOperationalHoursClicked = { mainViewModel.showOperationalHoursDialog() },
                         onAddContributorClicked = { mainViewModel.onAddNewContributorClicked() },
                         onLeaveWorkspaceClicked = { mainViewModel.onLeaveWorkspaceClicked() },
                         onDeleteWorkspaceClicked = { mainViewModel.onDeleteWorkspaceClicked() }
@@ -160,7 +163,7 @@ fun MainAppScreen(
                 .fillMaxSize()
                 .background(
                     Brush.linearGradient(
-                        colors = listOf(MainBLue, MornYellow),
+                        colors = listOf(MainBlue, MornYellow),
                         start = Offset(0f, Float.POSITIVE_INFINITY),
                         end = Offset(Float.POSITIVE_INFINITY, 0f)
                     )
@@ -238,6 +241,9 @@ fun MainAppScreen(
                             viewModel.changeOrderStatus(orderId, newStatus)
                         },
                         onOrderClick = { order -> viewModel.onOrderCardClicked(order) },
+                        onTogglePayment = { orderId, isPaid ->
+                            viewModel.toggleOrderPaymentStatus(orderId, isPaid)
+                        },
                         onDismissDialog = { viewModel.onDismissOrderDetailDialog() },
                         onDeleteOrder = { orderId -> viewModel.deleteOrder(orderId) }
                     )
@@ -474,6 +480,15 @@ fun MainAppScreen(
         )
     }
 
+    if (mainUiState.showOperationalHoursDialog) {
+        OperationalHoursDialog(
+            openTime = mainUiState.openTime,
+            closeTime = mainUiState.closeTime,
+            onDismiss = { mainViewModel.onDismissOperationalHoursDialog() },
+            onApply = { open, close -> mainViewModel.updateOperationalHours(open, close) }
+        )
+    }
+
     // Conditional logic for Invite Dialogs
     if (mainUiState.showCreateInviteDialog) {
         // Copy the value to a local variable
@@ -511,6 +526,14 @@ fun MainAppScreen(
         DeleteWorkspaceDialog(
             onDismiss = { mainViewModel.onDismissDeleteWorkspaceDialog() },
             onConfirm = { mainViewModel.confirmDeleteWorkspace() }
+        )
+    }
+
+    // --- DIALOG BARU UNTUK KICKED ---
+    if (mainUiState.showKickedDialog) {
+        KickedDialog(
+            workspaceName = mainUiState.kickedFromWorkspaceName,
+            onConfirm = { mainViewModel.onKickedDialogConfirm() }
         )
     }
 }

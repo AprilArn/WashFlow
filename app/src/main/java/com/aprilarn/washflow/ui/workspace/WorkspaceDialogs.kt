@@ -30,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
@@ -46,14 +47,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.aprilarn.washflow.data.model.Invites
+import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.MainFontBlack
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -65,10 +70,11 @@ import java.util.TimeZone
 fun WorkspaceOptionsDropdown(
     expanded: Boolean,
     isOwner: Boolean,
-    popupOffset: IntOffset, // <--- Terima Parameter Baru
+    popupOffset: IntOffset,
     onDismiss: () -> Unit,
     onRenameClicked: () -> Unit,
     onContributorsClicked: () -> Unit,
+    onOperationalHoursClicked: () -> Unit,
     onAddContributorClicked: () -> Unit,
     onLeaveWorkspaceClicked: () -> Unit,
     onDeleteWorkspaceClicked: () -> Unit
@@ -97,6 +103,15 @@ fun WorkspaceOptionsDropdown(
                             text = "Rename workspace",
                             onClick = {
                                 onRenameClicked()
+                                onDismiss()
+                            }
+                        )
+                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
+
+                        WorkspaceDropdownItem(
+                            text = "Operational hours",
+                            onClick = {
+                                onOperationalHoursClicked()
                                 onDismiss()
                             }
                         )
@@ -179,13 +194,16 @@ fun RenameWorkspaceDialog(
             )
         },
         confirmButton = {
-            Button(onClick = { onApply(newName) }) {
-                Text("Apply")
+            Button(
+                onClick = { onApply(newName) },
+                colors = ButtonDefaults.buttonColors(containerColor = GrayBlue)
+            ) {
+                Text("Apply", color = Color.White)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text("Cancel", color = GrayBlue)
             }
         }
     )
@@ -241,8 +259,11 @@ fun ActiveInviteDialog(
             }
         },
         confirmButton = {
-            Button(onClick = onDismiss) {
-                Text("Close")
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(containerColor = GrayBlue)
+            ) {
+                Text("Close", color = Color.White)
             }
         },
         dismissButton = {
@@ -348,21 +369,157 @@ fun CreateInviteDialog(
                     onClick = { showDatePicker = true },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(formatter.format(expiryDate))
+                    Text(formatter.format(expiryDate), color = GrayBlue)
                 }
             }
         },
         confirmButton = {
-            Button(onClick = {
+            Button(
+                onClick = {
                 val maxUsers = maxContributors.toIntOrNull() ?: 1
                 onGenerate(maxUsers, expiryDate)
-            }) {
-                Text("Generate")
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = GrayBlue)
+            ) {
+                Text("Generate", color = Color.White)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text("Cancel", color = GrayBlue)
+            }
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun OperationalHoursDialog(
+    openTime: String?,
+    closeTime: String?,
+    onDismiss: () -> Unit,
+    onApply: (String?, String?) -> Unit
+) {
+    val haptic = LocalHapticFeedback.current
+    var useOperationalHours by remember { mutableStateOf(openTime != null && closeTime != null) }
+    var isEditingOpenTime by remember { mutableStateOf(false) }
+    var isEditingCloseTime by remember { mutableStateOf(false) }
+
+    val openParts = (openTime ?: "09:00").split(":").map { it.toIntOrNull() ?: 0 }
+    val closeParts = (closeTime ?: "17:00").split(":").map { it.toIntOrNull() ?: 0 }
+
+    val openTimeState = rememberTimePickerState(
+        initialHour = if (openParts.size >= 2) openParts[0] else 9,
+        initialMinute = if (openParts.size >= 2) openParts[1] else 0,
+        is24Hour = true
+    )
+
+    val closeTimeState = rememberTimePickerState(
+        initialHour = if (closeParts.size >= 2) closeParts[0] else 17,
+        initialMinute = if (closeParts.size >= 2) closeParts[1] else 0,
+        is24Hour = true
+    )
+
+    if (isEditingOpenTime) {
+        AlertDialog(
+            onDismissRequest = { isEditingOpenTime = false },
+            title = { Text("Set Jam Buka") },
+            text = {
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    TimePicker(state = openTimeState)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { isEditingOpenTime = false }) { Text("OK") }
+            }
+        )
+    }
+
+    if (isEditingCloseTime) {
+        AlertDialog(
+            onDismissRequest = { isEditingCloseTime = false },
+            title = { Text("Set Jam Tutup") },
+            text = {
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    TimePicker(state = closeTimeState)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { isEditingCloseTime = false }) { Text("OK") }
+            }
+        )
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Jam Operasional") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Gunakan jam operasional", style = MaterialTheme.typography.bodyMedium)
+                    androidx.compose.material3.Switch(
+                        checked = useOperationalHours,
+                        onCheckedChange = {
+                            haptic.performHapticFeedback(if (it) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff)
+                            useOperationalHours = it
+                        },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = GrayBlue
+                        )
+                    )
+                }
+
+                if (useOperationalHours) {
+                    Column {
+                        Text("Jam Buka:", style = MaterialTheme.typography.labelMedium)
+                        OutlinedButton(
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = { isEditingOpenTime = true }
+                        ) {
+                            Text(String.format(Locale.getDefault(), "%02d:%02d", openTimeState.hour, openTimeState.minute), color = GrayBlue)
+                        }
+                    }
+
+                    Column {
+                        Text("Jam Tutup:", style = MaterialTheme.typography.labelMedium)
+                        OutlinedButton(
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = { isEditingCloseTime = true }
+                        ) {
+                            Text(String.format(Locale.getDefault(), "%02d:%02d", closeTimeState.hour, closeTimeState.minute), color = GrayBlue)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (useOperationalHours) {
+                        val newOpen = String.format(Locale.getDefault(), "%02d:%02d", openTimeState.hour, openTimeState.minute)
+                        val newClose = String.format(Locale.getDefault(), "%02d:%02d", closeTimeState.hour, closeTimeState.minute)
+                        onApply(newOpen, newClose)
+                    } else {
+                        onApply(null, null)
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = GrayBlue)
+            ) {
+                Text("Apply", color = Color.White)
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text("Cancel", color = GrayBlue)
             }
         }
     )
@@ -379,12 +536,24 @@ fun DeleteWorkspaceDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Are you sure want to delete current workspace?") },
+        title = {
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Text(
+                    "Are you sure want to delete current workspace?",
+                    textAlign = TextAlign.Center
+                )
+            }
+        },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Text(
                     "This action will kick/delete all contributors in this workspace and than delete this workspace.",
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center
                 )
                 // Field untuk konfirmasi
                 OutlinedTextField(
@@ -406,12 +575,12 @@ fun DeleteWorkspaceDialog(
                     disabledContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.3f)
                 )
             ) {
-                Text("Delete")
+                Text("Delete", color = Color.White)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text("Cancel", color = GrayBlue)
             }
         }
     )

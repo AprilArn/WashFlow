@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
@@ -32,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aprilarn.washflow.data.model.Items
 import com.aprilarn.washflow.ui.theme.GrayBlue
+import com.aprilarn.washflow.utils.CurrencyUtils
 
 @Composable
 fun OrderPanel(
@@ -111,12 +113,13 @@ fun OrderPanel(
                 Text("${uiState.selectedItems.size} item selected", modifier = Modifier.weight(1f))
                 Button(
                     onClick = { viewModel.createOrder() },
-                    enabled = !uiState.isCreatingOrder
+                    enabled = !uiState.isCreatingOrder,
+                    colors = ButtonDefaults.buttonColors(containerColor = GrayBlue)
                 ) {
                     if (uiState.isCreatingOrder) {
                         CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
                     } else {
-                        Text("Create Order")
+                        Text("Create Order", color = Color.White)
                     }
                 }
             }
@@ -147,7 +150,7 @@ private fun ItemCheckRow(
             modifier = Modifier.weight(1f)
         )
         Text(
-            text = "Rp ${item.itemPrice}",
+            text = CurrencyUtils.formatRupiahWithSymbol(item.itemPrice),
             style = MaterialTheme.typography.bodyMedium.copy(
                 color = GrayBlue,
                 fontSize = 16.sp

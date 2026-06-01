@@ -2,9 +2,9 @@ package com.aprilarn.washflow.data.remote.weather.service
 
 import com.aprilarn.washflow.BuildConfig
 import com.aprilarn.washflow.BuildConfig.API_KEY
-// Ganti import response dengan data class yang baru
-import com.aprilarn.washflow.data.remote.weather.api.GoogleForecastResponse
-import com.aprilarn.washflow.data.remote.weather.api.GoogleWeatherResponse
+import com.aprilarn.washflow.data.remote.weather.api.GoogleCurrentWeatherResponse
+import com.aprilarn.washflow.data.remote.weather.api.GoogleDailyForecastResponse
+import com.aprilarn.washflow.data.remote.weather.api.GoogleHourlyForecastResponse
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -21,7 +21,7 @@ interface WeatherApiService {
         @Query("location.longitude") lon: Double,
         @Query("key") key: String = BuildConfig.API_KEY,
         @Query("languageCode") lang: String = "en"
-    ): GoogleWeatherResponse
+    ): GoogleCurrentWeatherResponse
 
     // Tambahkan "v1/" di awal path
     @GET("v1/forecast/hours:lookup")
@@ -29,9 +29,18 @@ interface WeatherApiService {
         @Query("location.latitude") lat: Double,
         @Query("location.longitude") lon: Double,
         @Query("key") key: String = BuildConfig.API_KEY,
-        @Query("hours") hours: Int = 6,
+        @Query("hours") hours: Int = 24,
         @Query("languageCode") lang: String = "en"
-    ): GoogleForecastResponse
+    ): GoogleHourlyForecastResponse
+
+    @GET("v1/forecast/days:lookup")
+    suspend fun getDailyForecastData(
+        @Query("location.latitude") lat: Double,
+        @Query("location.longitude") lon: Double,
+        @Query("key") key: String = BuildConfig.API_KEY,
+        @Query("days") days: Int = 2,
+        @Query("languageCode") lang: String = "en"
+    ): GoogleDailyForecastResponse
 
     companion object {
         @JvmStatic

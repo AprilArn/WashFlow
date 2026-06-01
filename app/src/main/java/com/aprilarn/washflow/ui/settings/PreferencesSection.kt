@@ -1,5 +1,6 @@
 package com.aprilarn.washflow.ui.settings
 
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,6 +14,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -27,6 +30,7 @@ fun PreferencesSection(
     onSoundToggled: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val haptic = LocalHapticFeedback.current
     Column(modifier = modifier) {
         Text(
             text = "Preferences",
@@ -51,7 +55,10 @@ fun PreferencesSection(
                         Switch(
                             modifier = Modifier.height(24.dp),
                             checked = isSoundEnabled,
-                            onCheckedChange = { onSoundToggled(it) },
+                            onCheckedChange = {
+                                haptic.performHapticFeedback(if (it) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff)
+                                onSoundToggled(it)
+                            },
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = Color.White,
                                 checkedTrackColor = GrayBlue
@@ -82,12 +89,20 @@ fun PreferencesSection(
                     title = "Set location",
                     onClick = onSetLocationClicked,
                     trailingContent = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.widthIn(max = 200.dp) // Membatasi lebar agar marquee aktif jika teks panjang
+                        ) {
+                            Spacer(modifier = Modifier.width(16.dp)) // Jarak agar tidak terlalu menempel dengan title
                             // Gunakan locationName yang diteruskan dari State
                             Text(
                                 text = locationName,
                                 color = Color.Gray,
-                                style = MaterialTheme.typography.bodyMedium
+                                style = MaterialTheme.typography.bodyMedium,
+                                maxLines = 1,
+                                modifier = Modifier
+                                    .weight(1f, fill = false)
+                                    .basicMarquee()
                             )
                             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
                         }

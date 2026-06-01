@@ -17,5 +17,14 @@ data class MainUiState(
     val unreadCount: Int = 0,
     val notificationPreviews: List<Notifications> = emptyList(),
     val showNotificationOptions: Boolean = false,
-    val currentUserUid: String = ""
+    val currentUserUid: String = "",
+
+    // Status Kick
+    val showKickedDialog: Boolean = false,
+    val kickedFromWorkspaceName: String = "",
+
+    // Jam Operasional
+    val showOperationalHoursDialog: Boolean = false,
+    val openTime: String? = null,
+    val closeTime: String? = null
 )
