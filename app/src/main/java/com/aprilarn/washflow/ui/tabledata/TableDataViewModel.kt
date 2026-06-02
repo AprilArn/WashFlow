@@ -30,22 +30,18 @@ class TableDataViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             
-            val workspaceId = workspaceRepository.getCurrentWorkspaceId() ?: run {
-                _uiState.update { it.copy(isLoading = false) }
-                return@launch
-            }
-
-            workspaceRepository.getMetadataRealtime(workspaceId)
+            workspaceRepository.getMetadataRealtime()
                 .catch { e ->
                     _uiState.update { it.copy(isLoading = false) }
                     e.printStackTrace()
                 }
                 .collect { metadata ->
                     // Jika metadata kosong (misal baru pertama kali), jalankan sync
-                    // Catatan: Jika memang datanya 0 semua, sync tetap dijalankan sekali.
-                    // Idealnya ada flag khusus atau pengecekan eksistensi dokumen.
                     if (metadata.customerCount == 0 && metadata.serviceCount == 0 && metadata.itemCount == 0) {
-                        workspaceRepository.syncMetadata(workspaceId)
+                        val workspaceId = workspaceRepository.getCurrentWorkspaceId()
+                        if (workspaceId != null) {
+                            workspaceRepository.syncMetadata(workspaceId)
+                        }
                     }
 
                     _uiState.update {

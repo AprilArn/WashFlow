@@ -88,7 +88,11 @@ class WorkspaceRepository {
             )
             val workspaceDocRef = workspacesCollection.add(newWorkspace).await()
 
-            // 2. Update dokumen pengguna dengan workspaceId yang baru
+            // 2. Inisialisasi metadata
+            val metadata = WorkspaceMetadata()
+            workspaceDocRef.collection("metadata").document("counts").set(metadata).await()
+
+            // 3. Update dokumen pengguna dengan workspaceId yang baru
             usersCollection.document(user.uid).update("workspaceId", workspaceDocRef.id).await()
             true
         } catch (e: Exception) {
@@ -253,20 +257,48 @@ class WorkspaceRepository {
         }
     }
 
-    fun getMetadataRealtime(workspaceId: String): Flow<WorkspaceMetadata> = callbackFlow {
-        val listener = workspacesCollection
-            .document(workspaceId)
-            .collection("metadata")
-            .document("counts")
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    close(error)
-                    return@addSnapshotListener
-                }
-                val metadata = snapshot?.toObject(WorkspaceMetadata::class.java) ?: WorkspaceMetadata()
-                trySend(metadata).isSuccess
+    fun getMetadataRealtime(): Flow<WorkspaceMetadata> = callbackFlow {
+        val user = Firebase.auth.currentUser
+        if (user == null) {
+            trySend(WorkspaceMetadata())
+            close()
+            return@callbackFlow
+        }
+
+        var metadataListener: ListenerRegistration? = null
+        val userDocRef = usersCollection.document(user.uid)
+
+        val userListener = userDocRef.addSnapshotListener { userSnapshot, userError ->
+            if (userError != null) {
+                trySend(WorkspaceMetadata())
+                return@addSnapshotListener
             }
-        awaitClose { listener.remove() }
+
+            metadataListener?.remove()
+            val workspaceId = userSnapshot?.getString("workspaceId")
+
+            if (workspaceId.isNullOrEmpty()) {
+                trySend(WorkspaceMetadata())
+            } else {
+                metadataListener = workspacesCollection
+                    .document(workspaceId)
+                    .collection("metadata")
+                    .document("counts")
+                    .addSnapshotListener { snapshot, error ->
+                        if (error != null) {
+                            trySend(WorkspaceMetadata())
+                            return@addSnapshotListener
+                        }
+                        val metadata = snapshot?.toObject(WorkspaceMetadata::class.java) ?: WorkspaceMetadata()
+                        trySend(metadata).isSuccess
+                    }
+            }
+        }
+
+        awaitClose {
+            userListener.remove()
+            metadataListener?.remove()
+        }
     }
 
     suspend fun syncMetadata(workspaceId: String): Boolean {
@@ -279,11 +311,18 @@ class WorkspaceRepository {
             val itemCount = workspaceRef.collection("items").count().get(AggregateSource.SERVER).await().count
             val orderCount = workspaceRef.collection("orders").count().get(AggregateSource.SERVER).await().count
 
+            val orderOnQueueCount = workspaceRef.collection("orders").whereEqualTo("status", "On Queue").count().get(AggregateSource.SERVER).await().count
+            val orderOnProcessCount = workspaceRef.collection("orders").whereEqualTo("status", "On Process").count().get(AggregateSource.SERVER).await().count
+            val orderDoneCount = workspaceRef.collection("orders").whereEqualTo("status", "Done").count().get(AggregateSource.SERVER).await().count
+
             val metadata = WorkspaceMetadata(
                 customerCount = customerCount.toInt(),
                 serviceCount = serviceCount.toInt(),
                 itemCount = itemCount.toInt(),
-                orderCount = orderCount.toInt()
+                orderCount = orderCount.toInt(),
+                orderOnQueueCount = orderOnQueueCount.toInt(),
+                orderOnProcessCount = orderOnProcessCount.toInt(),
+                orderDoneCount = orderDoneCount.toInt()
             )
 
             // Gunakan set dengan merge agar tidak menimpa data lain jika ada

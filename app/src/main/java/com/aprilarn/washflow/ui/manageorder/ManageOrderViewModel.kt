@@ -77,7 +77,7 @@ class ManageOrderViewModel(
             Log.d("ManageOrderVM", "Attempting to change order '$orderId' to status '$newStatus'.")
 
             // 3. Lakukan pembaruan status
-            val success = orderRepository.updateOrderStatus(orderId, newStatus)
+            val success = orderRepository.updateOrderStatus(orderId, orderToUpdate!!.status!!, newStatus)
 
             if (success) {
                 Log.d("ManageOrderVM", "Successfully requested status update for order '$orderId'. Waiting for listener to reflect changes.")
@@ -109,7 +109,11 @@ class ManageOrderViewModel(
 
     fun deleteOrder(orderId: String) {
         viewModelScope.launch {
-            val success = orderRepository.deleteOrder(orderId)
+            val currentState = _uiState.value
+            val allOrders = currentState.ordersOnQueue + currentState.ordersOnProcess + currentState.ordersDone
+            val orderToDelete = allOrders.find { it.orderId == orderId }
+
+            val success = orderRepository.deleteOrder(orderId, orderToDelete?.status)
             if (success) {
                 // Tutup dialog setelah berhasil dihapus
                 _uiState.update { it.copy(selectedOrderForDetail = null) }

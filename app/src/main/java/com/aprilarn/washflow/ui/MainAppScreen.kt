@@ -107,7 +107,7 @@ fun MainAppScreen(
             val sharedPrefs = context.getSharedPreferences("WashFlowPrefs", Context.MODE_PRIVATE)
 
             // 3. Masukkan ketiganya ke dalam HomeViewModel
-            return HomeViewModel(OrderRepository(), geocodingService, sharedPrefs) as T
+            return HomeViewModel(OrderRepository(), WorkspaceRepository(), geocodingService, sharedPrefs) as T
         }
     }
     val homeViewModel: HomeViewModel = viewModel(factory = homeViewModelFactory)
