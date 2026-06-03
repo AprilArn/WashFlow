@@ -1,5 +1,4 @@
-// com/aprilarn/washflow/ui/components/NotificationPanel.kt
-package com.aprilarn.washflow.ui.components
+package com.aprilarn.washflow.ui.notifications
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
@@ -11,7 +10,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.PersonAdd

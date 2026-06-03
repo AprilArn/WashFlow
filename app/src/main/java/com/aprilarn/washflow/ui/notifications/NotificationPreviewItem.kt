@@ -1,5 +1,4 @@
-// com/aprilarn/washflow/ui/components/NotificationPreviewItem.kt
-package com.aprilarn.washflow.ui.components
+package com.aprilarn.washflow.ui.notifications
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -29,7 +28,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex

@@ -36,14 +36,16 @@ import androidx.navigation.compose.rememberNavController
 import com.aprilarn.washflow.AppNavigation
 import com.aprilarn.washflow.data.repository.CustomerRepository
 import com.aprilarn.washflow.data.repository.ItemRepository
+import com.aprilarn.washflow.data.repository.NotificationsRepository
 import com.aprilarn.washflow.data.repository.OrderRepository
 import com.aprilarn.washflow.data.repository.ServiceRepository
 import com.aprilarn.washflow.data.repository.WorkspaceRepository
 import com.aprilarn.washflow.ui.components.Header
 import com.aprilarn.washflow.ui.components.KickedDialog
 import com.aprilarn.washflow.ui.components.LeaveWorkspaceDialog
-import com.aprilarn.washflow.ui.components.NotificationPanel
-import com.aprilarn.washflow.ui.components.NotificationPreviewItem
+import com.aprilarn.washflow.ui.notifications.NotificationPanel
+import com.aprilarn.washflow.ui.notifications.NotificationPreviewItem
+import com.aprilarn.washflow.ui.notifications.NotificationsViewModel
 import com.aprilarn.washflow.ui.contributors.ContributorsScreen
 import com.aprilarn.washflow.ui.contributors.ContributorsViewModel
 import com.aprilarn.washflow.ui.customers.CustomersScreen
@@ -85,6 +87,16 @@ fun MainAppScreen(
     val currentRoute = navBackStackEntry?.destination?.route
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
 
+    // Inisialisasi NotificationsViewModel
+    val notificationsViewModelFactory = object : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            return NotificationsViewModel(NotificationsRepository()) as T
+        }
+    }
+    val notificationsViewModel: NotificationsViewModel = viewModel(factory = notificationsViewModelFactory)
+    val notificationsUiState by notificationsViewModel.uiState.collectAsStateWithLifecycle()
+
     // Inisialisasi SettingsViewModel di level MainAppScreen
     val settingsViewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory)
     val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
@@ -119,12 +131,12 @@ fun MainAppScreen(
                 modifier = Modifier.padding(bottom = 30.dp),
                 navController = bottomNavController,
                 workspaceName = mainUiState.workspaceName,
-                unreadCount = mainUiState.unreadCount,
+                unreadCount = notificationsUiState.unreadCount,
                 isWorkspaceExpanded = mainUiState.showWorkspaceOptions,
-                notificationPreviews = mainUiState.notificationPreviews,
+                notificationPreviews = notificationsUiState.notificationPreviews,
                 onWorkspaceClick = { mainViewModel.onWorkspaceNameClicked() },
-                onNotifClick = { mainViewModel.onNotificationIconClicked() },
-                onRemovePreview = { id, swiped -> mainViewModel.removeNotificationPreview(id, swiped) },
+                onNotifClick = { notificationsViewModel.onNotificationIconClicked() },
+                onRemovePreview = { id, swiped -> notificationsViewModel.removeNotificationPreview(id, swiped) },
                 workspaceDropdown = { wsOffset ->
                     WorkspaceOptionsDropdown(
                         expanded = mainUiState.showWorkspaceOptions,
@@ -425,17 +437,17 @@ fun MainAppScreen(
 
     // 2. PANEL NOTIFIKASI MELAYANG (Berada paling atas karena ditulis paling akhir)
     NotificationPanel(
-        expanded = mainUiState.showNotificationOptions,
-        notifications = mainUiState.notifications,
-        currentUid = mainUiState.currentUserUid,
-        onDismiss = { mainViewModel.onDismissNotificationOptions() },
+        expanded = notificationsUiState.showNotificationOptions,
+        notifications = notificationsUiState.notifications,
+        currentUid = notificationsUiState.currentUserUid,
+        onDismiss = { notificationsViewModel.onDismissNotificationOptions() },
         onNotificationClick = { notif ->
-            mainViewModel.markNotificationAsRead(notif)
+            notificationsViewModel.markNotificationAsRead(notif)
         }
     )
 
     // 3. OVERLAY PREVIEW NOTIFIKASI JATUH (TANPA POPUP)
-    if (mainUiState.notificationPreviews.isNotEmpty()) {
+    if (notificationsUiState.notificationPreviews.isNotEmpty()) {
         Box(
             modifier = Modifier
                 .fillMaxSize() // Memenuhi layar agar notif bisa jatuh sampai bawah
@@ -449,19 +461,19 @@ fun MainAppScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalAlignment = Alignment.End
             ) {
-                mainUiState.notificationPreviews.forEachIndexed { index, notif ->
+                notificationsUiState.notificationPreviews.forEachIndexed { index, notif ->
                     key(notif.notificationId) {
                         NotificationPreviewItem(
-                            modifier = Modifier.zIndex(mainUiState.notificationPreviews.size - index.toFloat()),
+                            modifier = Modifier.zIndex(notificationsUiState.notificationPreviews.size - index.toFloat()),
                             notification = notif,
                             onClick = {
                                 if (notif.title == "Order Baru") {
                                     bottomNavController.navigate(AppNavigation.ManageOrder.route)
                                 }
-                                mainViewModel.removeNotificationPreview(notif.notificationId, true)
+                                notificationsViewModel.removeNotificationPreview(notif.notificationId, true)
                             },
                             onRemove = { wasSwiped ->
-                                mainViewModel.removeNotificationPreview(notif.notificationId, wasSwiped)
+                                notificationsViewModel.removeNotificationPreview(notif.notificationId, wasSwiped)
                             }
                         )
                     }
