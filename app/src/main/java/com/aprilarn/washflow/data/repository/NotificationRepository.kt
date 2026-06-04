@@ -78,6 +78,28 @@ class NotificationsRepository {
         }
     }
 
+    // Menandai banyak notifikasi sekaligus sebagai sudah dibaca
+    suspend fun markAllAsRead(notificationIds: List<String>): Boolean {
+        val workspaceId = getWorkspaceId() ?: return false
+        val currentUserUid = Firebase.auth.currentUser?.uid ?: return false
+
+        return try {
+            val batch = db.batch()
+            notificationIds.forEach { id ->
+                val ref = db.collection("workspaces")
+                    .document(workspaceId)
+                    .collection("notifications")
+                    .document(id)
+                batch.update(ref, "readBy", FieldValue.arrayUnion(currentUserUid))
+            }
+            batch.commit().await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
     /**
      * Menghapus notifikasi yang lebih tua dari 2 hari dari database workspace ini.
      */

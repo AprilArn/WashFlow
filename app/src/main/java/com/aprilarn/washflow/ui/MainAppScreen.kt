@@ -438,8 +438,11 @@ fun MainAppScreen(
     // 2. PANEL NOTIFIKASI MELAYANG (Berada paling atas karena ditulis paling akhir)
     NotificationPanel(
         expanded = notificationsUiState.showNotificationOptions,
-        notifications = notificationsUiState.notifications,
+        notifications = notificationsUiState.filteredNotifications,
         currentUid = notificationsUiState.currentUserUid,
+        filter = notificationsUiState.filter,
+        onFilterChange = { notificationsViewModel.onFilterChanged(it) },
+        onMarkAllAsRead = { notificationsViewModel.markAllAsRead() },
         onDismiss = { notificationsViewModel.onDismissNotificationOptions() },
         onNotificationClick = { notif ->
             notificationsViewModel.markNotificationAsRead(notif)

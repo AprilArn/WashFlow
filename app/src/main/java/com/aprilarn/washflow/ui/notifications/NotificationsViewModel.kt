@@ -92,6 +92,22 @@ class NotificationsViewModel(
         _uiState.update { it.copy(showNotificationOptions = false) }
     }
 
+    fun onFilterChanged(newFilter: NotificationFilter) {
+        _uiState.update { it.copy(filter = newFilter) }
+    }
+
+    fun markAllAsRead() {
+        val unreadIds = _uiState.value.notifications
+            .filter { _uiState.value.currentUserUid !in it.readBy }
+            .map { it.notificationId }
+
+        if (unreadIds.isNotEmpty()) {
+            viewModelScope.launch {
+                notificationsRepository.markAllAsRead(unreadIds)
+            }
+        }
+    }
+
     fun markNotificationAsRead(notif: Notifications) {
         viewModelScope.launch {
             notificationsRepository.markAsRead(notif.notificationId)

@@ -49,6 +49,9 @@ fun NotificationPanel(
     expanded: Boolean,
     notifications: List<Notifications>,
     currentUid: String,
+    filter: NotificationFilter,
+    onFilterChange: (NotificationFilter) -> Unit,
+    onMarkAllAsRead: () -> Unit,
     onDismiss: () -> Unit,
     onNotificationClick: (Notifications) -> Unit
 ) {
@@ -105,7 +108,7 @@ fun NotificationPanel(
                         )
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            TextButton(onClick = { /* TODO: Mark all as read */ }) {
+                            TextButton(onClick = onMarkAllAsRead) {
                                 Text(
                                     text = "Mark all as read",
                                     color = GrayBlue,
@@ -120,8 +123,20 @@ fun NotificationPanel(
                         modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Text("All", color = MainFontBlack, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        Text("Unread", color = Color.Gray, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                        Text(
+                            text = "Unread",
+                            color = if (filter == NotificationFilter.UNREAD) MainFontBlack else Color.Gray,
+                            fontWeight = if (filter == NotificationFilter.UNREAD) FontWeight.Bold else FontWeight.Medium,
+                            fontSize = 14.sp,
+                            modifier = Modifier.clickable { onFilterChange(NotificationFilter.UNREAD) }
+                        )
+                        Text(
+                            text = "All",
+                            color = if (filter == NotificationFilter.ALL) MainFontBlack else Color.Gray,
+                            fontWeight = if (filter == NotificationFilter.ALL) FontWeight.Bold else FontWeight.Medium,
+                            fontSize = 14.sp,
+                            modifier = Modifier.clickable { onFilterChange(NotificationFilter.ALL) }
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -299,6 +314,9 @@ fun NotificationPanelPreview() {
             )
         ),
         currentUid = "user123",
+        filter = NotificationFilter.UNREAD,
+        onFilterChange = {},
+        onMarkAllAsRead = {},
         onDismiss = {},
         onNotificationClick = {}
     )
