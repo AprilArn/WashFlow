@@ -43,6 +43,8 @@ import com.aprilarn.washflow.data.repository.WorkspaceRepository
 import com.aprilarn.washflow.ui.components.Header
 import com.aprilarn.washflow.ui.components.KickedDialog
 import com.aprilarn.washflow.ui.components.LeaveWorkspaceDialog
+import com.aprilarn.washflow.ui.aiagent.AiAgentPanel
+import com.aprilarn.washflow.ui.aiagent.AiAgentViewModel
 import com.aprilarn.washflow.ui.notifications.NotificationPanel
 import com.aprilarn.washflow.ui.notifications.NotificationPreviewItem
 import com.aprilarn.washflow.ui.notifications.NotificationsViewModel
@@ -97,6 +99,10 @@ fun MainAppScreen(
     val notificationsViewModel: NotificationsViewModel = viewModel(factory = notificationsViewModelFactory)
     val notificationsUiState by notificationsViewModel.uiState.collectAsStateWithLifecycle()
 
+    // Inisialisasi AiAgentViewModel
+    val aiAgentViewModel: AiAgentViewModel = viewModel()
+    val aiAgentUiState by aiAgentViewModel.uiState.collectAsStateWithLifecycle()
+
     // Inisialisasi SettingsViewModel di level MainAppScreen
     val settingsViewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory)
     val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
@@ -136,6 +142,7 @@ fun MainAppScreen(
                 notificationPreviews = notificationsUiState.notificationPreviews,
                 onWorkspaceClick = { mainViewModel.onWorkspaceNameClicked() },
                 onNotifClick = { notificationsViewModel.onNotificationIconClicked() },
+                onAiAgentClick = { aiAgentViewModel.onToggleAiAgent() },
                 onRemovePreview = { id, swiped -> notificationsViewModel.removeNotificationPreview(id, swiped) },
                 workspaceDropdown = { wsOffset ->
                     WorkspaceOptionsDropdown(
@@ -447,6 +454,16 @@ fun MainAppScreen(
         onNotificationClick = { notif ->
             notificationsViewModel.markNotificationAsRead(notif)
         }
+    )
+
+    // 2.5 PANEL AI AGENT (Berada paling atas karena ditulis paling akhir)
+    AiAgentPanel(
+        expanded = aiAgentUiState.expanded,
+        userName = userData?.displayName ?: "April",
+        inputMessage = aiAgentUiState.inputMessage,
+        onInputChange = { aiAgentViewModel.onInputChange(it) },
+        onSendMessage = { aiAgentViewModel.onSendMessage() },
+        onDismiss = { aiAgentViewModel.onDismissAiAgent() }
     )
 
     // 3. OVERLAY PREVIEW NOTIFIKASI JATUH (TANPA POPUP)

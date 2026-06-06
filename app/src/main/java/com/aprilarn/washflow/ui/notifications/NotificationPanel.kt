@@ -100,9 +100,9 @@ fun NotificationPanel(
                     ) {
                         Text(
                             text = "Notifications",
-                            style = MaterialTheme.typography.headlineSmall.copy(
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 22.sp
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 19.sp
                             ),
                             color = MainFontBlack
                         )

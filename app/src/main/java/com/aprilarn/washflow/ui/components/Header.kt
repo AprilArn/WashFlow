@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -66,6 +67,7 @@ fun Header(
     notificationPreviews: List<Notifications> = emptyList(),
     onWorkspaceClick: () -> Unit,
     onNotifClick: () -> Unit,
+    onAiAgentClick: () -> Unit = {},
     onRemovePreview: (String, Boolean) -> Unit,
     workspaceDropdown: @Composable (IntOffset) -> Unit
 ) {
@@ -158,6 +160,15 @@ fun Header(
         }
 
         Spacer(modifier = Modifier.width(8.dp))
+
+        // --- AI AGENT BUTTON ---
+        IconButton(onClick = onAiAgentClick) {
+            Icon(
+                imageVector = Icons.Default.AutoAwesome,
+                contentDescription = "AI Agent",
+                tint = Color.White
+            )
+        }
 
         // --- NOTIFICATION DROPDOWN TRIGGER ---
         var notifTriggerSize by remember { mutableStateOf(IntSize.Zero) }
