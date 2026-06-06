@@ -459,8 +459,11 @@ fun MainAppScreen(
     // 2.5 PANEL AI AGENT (Berada paling atas karena ditulis paling akhir)
     AiAgentPanel(
         expanded = aiAgentUiState.expanded,
-        userName = userData?.displayName ?: "April",
+        userName = userData?.displayName ?: "Unknown",
+        profilePictureUrl = userData?.profilePictureUrl,
         inputMessage = aiAgentUiState.inputMessage,
+        messages = aiAgentUiState.messages,
+        isAiThinking = aiAgentUiState.isAiThinking,
         onInputChange = { aiAgentViewModel.onInputChange(it) },
         onSendMessage = { aiAgentViewModel.onSendMessage() },
         onDismiss = { aiAgentViewModel.onDismissAiAgent() }

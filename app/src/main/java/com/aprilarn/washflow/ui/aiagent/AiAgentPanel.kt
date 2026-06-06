@@ -8,22 +8,30 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.pointer.motionEventSpy
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.aprilarn.washflow.ui.theme.Gray
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.MainFontBlack
@@ -32,11 +40,25 @@ import com.aprilarn.washflow.ui.theme.MainFontBlack
 fun AiAgentPanel(
     expanded: Boolean,
     userName: String,
+    profilePictureUrl: String?,
     inputMessage: String,
+    messages: List<ChatMessage>,
+    isAiThinking: Boolean,
     onInputChange: (String) -> Unit,
     onSendMessage: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+
+    // Auto-scroll to bottom when messages change or AI starts thinking
+    LaunchedEffect(messages.size, isAiThinking) {
+        if (messages.isNotEmpty() || isAiThinking) {
+            listState.animateScrollToItem(
+                index = if (isAiThinking) messages.size else messages.size - 1
+            )
+        }
+    }
+
     AnimatedVisibility(
         visible = expanded,
         enter = fadeIn(animationSpec = tween(300)),
@@ -89,98 +111,123 @@ fun AiAgentPanel(
                             ),
                             color = MainFontBlack
                         )
-                        Box(
-                            modifier = Modifier.height(48.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "0",
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontWeight = FontWeight.Normal
-                                ),
-                                color = MainFontBlack
+                        IconButton(onClick = { /* Handle more options */ }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "More Options",
+                                tint = MainFontBlack
                             )
                         }
                     }
 
                     LazyColumn(
+                        state = listState,
                         modifier = Modifier
                             .weight(1f)
                             .padding(horizontal = 24.dp)
                     ) {
-                        item {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 24.dp)
-                            ) {
-                                Spacer(modifier = Modifier.height(24.dp))
-                                Text(
-                                    text = "Hi, $userName",
-                                    style = MaterialTheme.typography.headlineLarge.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = GrayBlue,
-                                        fontSize = 32.sp
-                                    )
-                                )
-                                Text(
-                                    text = "What can I help you today?",
-                                    style = MaterialTheme.typography.headlineSmall.copy(
-                                        fontWeight = FontWeight.Medium,
-                                        color = Gray,
-                                        fontSize = 20.sp
-                                    )
-                                )
-                                Spacer(modifier = Modifier.height(32.dp))
-
-                                // Info Card
-                                Box(
+                        if (messages.isEmpty()) {
+                            item {
+                                Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .background(Color(0xFF1E2124)) // Dark background from image
-                                        .padding(16.dp)
+                                        .padding(bottom = 24.dp)
                                 ) {
-                                    Column {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(
-                                                Icons.Default.Refresh,
-                                                contentDescription = null,
-                                                tint = Color.White,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(8.dp))
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    Text(
+                                        text = "Hi, $userName",
+                                        style = MaterialTheme.typography.headlineLarge.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            color = GrayBlue,
+                                            fontSize = 32.sp
+                                        )
+                                    )
+                                    Text(
+                                        text = "What can I help you today?",
+                                        style = MaterialTheme.typography.headlineSmall.copy(
+                                            fontWeight = FontWeight.Medium,
+                                            color = Gray,
+                                            fontSize = 20.sp
+                                        )
+                                    )
+                                    Spacer(modifier = Modifier.height(32.dp))
+
+                                    // Info Card
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(Color(0xFF1E2124)) // Dark background from image
+                                            .padding(16.dp)
+                                    ) {
+                                        Column {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Icon(
+                                                    Icons.Default.Refresh,
+                                                    contentDescription = null,
+                                                    tint = Color.White,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(
+                                                    "More ways to access AI",
+                                                    color = Color.White,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 14.sp
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.height(8.dp))
                                             Text(
-                                                "More ways to access AI",
-                                                color = Color.White,
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 14.sp
+                                                "Upgrade to a qualified Google AI plan for subscription access to Gemini, or provide API keys to use Anthropic, OpenAI, and Gemini via AI Studio. For offline development, run local models via local LLM hosts.",
+                                                color = Color(0xFFB0B0B0),
+                                                fontSize = 12.sp,
+                                                lineHeight = 16.sp
                                             )
                                         }
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Text(
-                                            "Upgrade to a qualified Google AI plan for subscription access to Gemini, or provide API keys to use Anthropic, OpenAI, and Gemini via AI Studio. For offline development, run local models via local LLM hosts.",
-                                            color = Color(0xFFB0B0B0),
-                                            fontSize = 12.sp,
-                                            lineHeight = 16.sp
-                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(32.dp))
+
+                                    Text(
+                                        "Prompts to try",
+                                        fontWeight = FontWeight.Bold,
+                                        color = MainFontBlack,
+                                        fontSize = 14.sp
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+
+                                    PromptItem("Extract all hardcoded strings from this class and move them into strings.xml")
+                                    PromptItem("Add documentation to my current file")
+                                    PromptItem("Update kotlin in @libs.version.toml to the latest version")
+                                    PromptItem("Make my Theme's color scheme warmer")
+                                }
+                            }
+                        } else {
+                            items(messages.size) { index ->
+                                val message = messages[index]
+                                key(message.hashCode() + index) {
+                                    var visible by remember { mutableStateOf(false) }
+                                    LaunchedEffect(Unit) { visible = true }
+
+                                    AnimatedVisibility(
+                                        visible = visible,
+                                        enter = fadeIn(animationSpec = tween(400)) + 
+                                                expandVertically(animationSpec = tween(400)) +
+                                                scaleIn(initialScale = 0.9f, animationSpec = tween(400)),
+                                    ) {
+                                        Column {
+                                            ChatMessageItem(message, profilePictureUrl)
+                                            Spacer(modifier = Modifier.height(16.dp))
+                                        }
                                     }
                                 }
+                            }
 
-                                Spacer(modifier = Modifier.height(32.dp))
-
-                                Text(
-                                    "Prompts to try",
-                                    fontWeight = FontWeight.Bold,
-                                    color = MainFontBlack,
-                                    fontSize = 14.sp
-                                )
-                                Spacer(modifier = Modifier.height(12.dp))
-
-                                PromptItem("Extract all hardcoded strings from this class and move them into strings.xml")
-                                PromptItem("Add documentation to my current file")
-                                PromptItem("Update kotlin in @libs.version.toml to the latest version")
-                                PromptItem("Make my Theme's color scheme warmer")
+                            if (isAiThinking) {
+                                item {
+                                    ThinkingIndicator()
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                }
                             }
                         }
                     }
@@ -203,6 +250,12 @@ fun AiAgentPanel(
                                     onValueChange = onInputChange,
                                     modifier = Modifier.fillMaxWidth(),
                                     placeholder = { Text("Ask WashFlow AI...", color = Color.Gray) },
+                                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                                        imeAction = androidx.compose.ui.text.input.ImeAction.Send
+                                    ),
+                                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(
+                                        onSend = { onSendMessage() }
+                                    ),
                                     colors = OutlinedTextFieldDefaults.colors(
                                         focusedBorderColor = Color.Transparent,
                                         unfocusedBorderColor = Color.Transparent,
@@ -276,6 +329,92 @@ fun AiAgentPanel(
 }
 
 @Composable
+fun ChatMessageItem(message: ChatMessage, profilePictureUrl: String?) {
+    if (message.isUser) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.Top
+        ) {
+            Box(
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .clip(RoundedCornerShape(topStart = 16.dp, bottomEnd = 16.dp, bottomStart = 16.dp))
+                    .background(Color(0xFFF0F2F5))
+                    .padding(12.dp)
+            ) {
+                Text(
+                    text = message.text,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MainFontBlack
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            AsyncImage(
+                model = profilePictureUrl,
+                contentDescription = "User Profile",
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(GrayBlue.copy(alpha = 0.1f)),
+                contentScale = ContentScale.Crop
+            )
+        }
+    } else {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = null,
+                    tint = GrayBlue,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "WashFlow AI",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = GrayBlue
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = message.text,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MainFontBlack,
+                lineHeight = 20.sp
+            )
+        }
+    }
+}
+
+@Composable
+fun ThinkingIndicator() {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Default.AutoAwesome,
+                contentDescription = null,
+                tint = GrayBlue,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "WashFlow AI",
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                color = GrayBlue
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Thinking...",
+            style = MaterialTheme.typography.bodyMedium.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic),
+            color = Gray,
+            lineHeight = 20.sp
+        )
+    }
+}
+
+@Composable
 fun PromptItem(text: String) {
     Box(
         modifier = Modifier
@@ -305,7 +444,13 @@ fun AiAgentPanelPreview() {
     AiAgentPanel(
         expanded = true,
         userName = "April",
+        profilePictureUrl = null,
         inputMessage = "",
+        messages = listOf(
+            ChatMessage("Hello AI!", true),
+            ChatMessage("You asked: Hello AI!", false)
+        ),
+        isAiThinking = true,
         onInputChange = {},
         onSendMessage = {},
         onDismiss = {}
