@@ -11,16 +11,21 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,13 +54,17 @@ fun AiAgentPanel(
     onDismiss: () -> Unit
 ) {
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
 
     // Auto-scroll to bottom when messages change or AI starts thinking
     LaunchedEffect(messages.size, isAiThinking) {
         if (messages.isNotEmpty() || isAiThinking) {
-            listState.animateScrollToItem(
-                index = if (isAiThinking) messages.size else messages.size - 1
-            )
+            coroutineScope.launch {
+                val lastIndex = if (isAiThinking) messages.size else messages.size - 1
+                if (lastIndex >= 0) {
+                    listState.animateScrollToItem(lastIndex)
+                }
+            }
         }
     }
 
@@ -203,30 +212,34 @@ fun AiAgentPanel(
                                 }
                             }
                         } else {
-                            items(messages.size) { index ->
-                                val message = messages[index]
-                                key(message.hashCode() + index) {
-                                    var visible by remember { mutableStateOf(false) }
-                                    LaunchedEffect(Unit) { visible = true }
+                            items(
+                                items = messages,
+                                key = { it.id }
+                            ) { message ->
+                                val hasAnimated = rememberSaveable { mutableStateOf(false) }
+                                LaunchedEffect(Unit) { hasAnimated.value = true }
 
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .animateItem(
+                                            fadeInSpec = null,
+                                            placementSpec = tween(400),
+                                            fadeOutSpec = null
+                                        )
+                                ) {
                                     AnimatedVisibility(
-                                        visible = visible,
-                                        enter = fadeIn(animationSpec = tween(400)) + 
-                                                expandVertically(animationSpec = tween(400)) +
-                                                scaleIn(initialScale = 0.9f, animationSpec = tween(400)),
+                                        visible = hasAnimated.value,
+                                        enter = fadeIn(animationSpec = tween(500)) +
+                                                expandVertically(animationSpec = tween(500)) +
+                                                scaleIn(initialScale = 0.9f, animationSpec = tween(500)),
+                                        exit = fadeOut(animationSpec = tween(100))
                                     ) {
                                         Column {
                                             ChatMessageItem(message, profilePictureUrl)
                                             Spacer(modifier = Modifier.height(16.dp))
                                         }
                                     }
-                                }
-                            }
-
-                            if (isAiThinking) {
-                                item {
-                                    ThinkingIndicator()
-                                    Spacer(modifier = Modifier.height(16.dp))
                                 }
                             }
                         }
@@ -329,6 +342,24 @@ fun AiAgentPanel(
 }
 
 @Composable
+fun AiMessageHeader() {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            imageVector = Icons.Default.AutoAwesome,
+            contentDescription = null,
+            tint = GrayBlue,
+            modifier = Modifier.size(16.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = "WashFlow AI",
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+            color = GrayBlue
+        )
+    }
+}
+
+@Composable
 fun ChatMessageItem(message: ChatMessage, profilePictureUrl: String?) {
     if (message.isUser) {
         Row(
@@ -362,27 +393,41 @@ fun ChatMessageItem(message: ChatMessage, profilePictureUrl: String?) {
         }
     } else {
         Column(modifier = Modifier.fillMaxWidth()) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.AutoAwesome,
-                    contentDescription = null,
-                    tint = GrayBlue,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "WashFlow AI",
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                    color = GrayBlue
-                )
-            }
+            AiMessageHeader()
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = message.text,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MainFontBlack,
-                lineHeight = 20.sp
-            )
+            
+            // Seamless content transition
+            AnimatedContent(
+                targetState = message.isThinking,
+                transitionSpec = {
+                    if (targetState) {
+                        // Entrance for thinking
+                        (fadeIn(animationSpec = tween(400)) + expandVertically(animationSpec = tween(400)))
+                            .togetherWith(ExitTransition.None)
+                    } else {
+                        // Transition from thinking to response
+                        (fadeIn(animationSpec = tween(400, delayMillis = 100)) + expandVertically(animationSpec = tween(400, delayMillis = 100)))
+                            .togetherWith(fadeOut(animationSpec = tween(100)))
+                    }
+                },
+                label = "AiContentTransition"
+            ) { thinking ->
+                if (thinking) {
+                    Text(
+                        text = "Thinking...",
+                        style = MaterialTheme.typography.bodyMedium.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic),
+                        color = Gray,
+                        lineHeight = 20.sp
+                    )
+                } else {
+                    Text(
+                        text = message.text,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MainFontBlack,
+                        lineHeight = 20.sp
+                    )
+                }
+            }
         }
     }
 }
@@ -390,20 +435,7 @@ fun ChatMessageItem(message: ChatMessage, profilePictureUrl: String?) {
 @Composable
 fun ThinkingIndicator() {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Default.AutoAwesome,
-                contentDescription = null,
-                tint = GrayBlue,
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "WashFlow AI",
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                color = GrayBlue
-            )
-        }
+        AiMessageHeader()
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "Thinking...",
@@ -447,8 +479,8 @@ fun AiAgentPanelPreview() {
         profilePictureUrl = null,
         inputMessage = "",
         messages = listOf(
-            ChatMessage("Hello AI!", true),
-            ChatMessage("You asked: Hello AI!", false)
+            ChatMessage(text = "Hello AI!", isUser = true),
+            ChatMessage(text = "You asked: Hello AI!", isUser = false)
         ),
         isAiThinking = true,
         onInputChange = {},

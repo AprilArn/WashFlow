@@ -36,23 +36,32 @@ class AiAgentViewModel : ViewModel() {
             )
         }
 
-        // Jalankan proses AI setelah animasi bubble user selesai
+        // Jalankan proses AI
         viewModelScope.launch {
-            // Tunggu animasi bubble user selesai (sekitar 500-600ms)
+            // Tunggu sebentar agar animasi bubble user muncul
             kotlinx.coroutines.delay(600) 
             
-            _uiState.update { it.copy(isAiThinking = true) }
+            // Tambahkan placeholder AI yang sedang "berpikir"
+            val aiPlaceholder = ChatMessage(text = "", isUser = false, isThinking = true)
+            _uiState.update { state ->
+                state.copy(messages = state.messages + aiPlaceholder)
+            }
             
             // Simulasi proses berpikir AI
             kotlinx.coroutines.delay(1500)
             
-            val aiResponse = ChatMessage(text = "You asked: $currentInput", isUser = false)
+            val finalResponseText = "You asked: $currentInput"
             
+            // UPDATE placeholder tadi menjadi response final
             _uiState.update { state ->
-                state.copy(
-                    messages = state.messages + aiResponse,
-                    isAiThinking = false
-                )
+                val updatedMessages = state.messages.map { msg ->
+                    if (msg.id == aiPlaceholder.id) {
+                        msg.copy(text = finalResponseText, isThinking = false)
+                    } else {
+                        msg
+                    }
+                }
+                state.copy(messages = updatedMessages)
             }
         }
     }
