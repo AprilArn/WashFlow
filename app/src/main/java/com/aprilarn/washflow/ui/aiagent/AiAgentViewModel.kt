@@ -66,6 +66,10 @@ class AiAgentViewModel : ViewModel() {
         }
     }
 
+    fun onClearHistory() {
+        _uiState.update { it.copy(messages = emptyList(), isAiThinking = false) }
+    }
+
     fun setUserInfo(name: String, photoUrl: String?) {
         _uiState.update { it.copy(userName = name, profilePictureUrl = photoUrl) }
     }

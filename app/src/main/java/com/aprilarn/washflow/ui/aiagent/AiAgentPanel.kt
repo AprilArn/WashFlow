@@ -26,6 +26,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,10 +54,12 @@ fun AiAgentPanel(
     isAiThinking: Boolean,
     onInputChange: (String) -> Unit,
     onSendMessage: () -> Unit,
+    onClearHistory: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
+    var showMenu by remember { mutableStateOf(false) }
 
     // Auto-scroll to bottom when messages change or AI starts thinking
     LaunchedEffect(messages.size, isAiThinking) {
@@ -120,12 +125,49 @@ fun AiAgentPanel(
                             ),
                             color = MainFontBlack
                         )
-                        IconButton(onClick = { /* Handle more options */ }) {
-                            Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = "More Options",
-                                tint = MainFontBlack
-                            )
+                        Box {
+                            IconButton(onClick = { showMenu = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = "More Options",
+                                    tint = MainFontBlack
+                                )
+                            }
+                            
+                            if (showMenu) {
+                                Popup(
+                                    alignment = Alignment.TopEnd,
+                                    offset = IntOffset(x = 0, y = 120), // Adjusted to be below the button
+                                    onDismissRequest = { showMenu = false },
+                                    properties = PopupProperties(focusable = true)
+                                ) {
+                                    Surface(
+                                        modifier = Modifier
+                                            .wrapContentWidth()
+                                            .padding(end = 24.dp),
+                                        shape = RoundedCornerShape(12.dp),
+                                        shadowElevation = 8.dp,
+                                        color = Color.White
+                                    ) {
+                                        Column(modifier = Modifier.width(IntrinsicSize.Max)) {
+                                            Text(
+                                                text = "Delete History",
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clickable { 
+                                                        onClearHistory()
+                                                        showMenu = false 
+                                                    }
+                                                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                                                style = MaterialTheme.typography.bodyMedium.copy(
+                                                    fontWeight = FontWeight.Medium
+                                                ),
+                                                color = MaterialTheme.colorScheme.error
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
 
@@ -142,7 +184,7 @@ fun AiAgentPanel(
                                         .fillMaxWidth()
                                         .padding(bottom = 24.dp)
                                 ) {
-                                    Spacer(modifier = Modifier.height(24.dp))
+                                    Spacer(modifier = Modifier.height(64.dp))
                                     Text(
                                         text = "Hi, $userName",
                                         style = MaterialTheme.typography.headlineLarge.copy(
@@ -159,7 +201,7 @@ fun AiAgentPanel(
                                             fontSize = 20.sp
                                         )
                                     )
-                                    Spacer(modifier = Modifier.height(32.dp))
+                                    Spacer(modifier = Modifier.height(64.dp))
 
                                     // Info Card
                                     Box(
@@ -485,6 +527,7 @@ fun AiAgentPanelPreview() {
         isAiThinking = true,
         onInputChange = {},
         onSendMessage = {},
+        onClearHistory = {},
         onDismiss = {}
     )
 }

@@ -466,6 +466,7 @@ fun MainAppScreen(
         isAiThinking = aiAgentUiState.isAiThinking,
         onInputChange = { aiAgentViewModel.onInputChange(it) },
         onSendMessage = { aiAgentViewModel.onSendMessage() },
+        onClearHistory = { aiAgentViewModel.onClearHistory() },
         onDismiss = { aiAgentViewModel.onDismissAiAgent() }
     )
 
