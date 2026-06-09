@@ -14,6 +14,7 @@ if (localPropertiesFile.exists()) {
     properties.load(localPropertiesFile.inputStream())
 }
 val GoogleApiKey = properties.getProperty("google-api-key")?.replace("\"", "") ?: ""
+val GeminiApiKey = properties.getProperty("google-gemini-api-key")?.replace("\"", "") ?: ""
 
 android {
     namespace = "com.aprilarn.washflow"
@@ -56,10 +57,12 @@ android {
         create("production") {
             buildConfigField("String", "BASE_URL", "\"https://weather.googleapis.com/\"")
             buildConfigField("String", "API_KEY", "\"$GoogleApiKey\"")
+            buildConfigField("String", "GEMINI_API_KEY", "\"$GeminiApiKey\"")
         }
         create("integration") {
             buildConfigField("String", "BASE_URL", "\"https://weather.googleapis.com/\"")
             buildConfigField("String", "API_KEY", "\"$GoogleApiKey\"")
+            buildConfigField("String", "GEMINI_API_KEY", "\"$GeminiApiKey\"")
         }
     }
 }
@@ -110,6 +113,9 @@ dependencies {
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
     implementation(libs.play.services.auth)
+
+    // Gemini AI
+    implementation(libs.generativeai)
 
     // Testing
     testImplementation(libs.junit)

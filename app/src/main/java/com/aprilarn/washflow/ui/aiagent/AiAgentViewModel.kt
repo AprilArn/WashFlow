@@ -2,12 +2,14 @@ package com.aprilarn.washflow.ui.aiagent
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aprilarn.washflow.ai.Brain
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class AiAgentViewModel : ViewModel() {
+    private val brain = Brain()
     private val _uiState = MutableStateFlow(AiAgentUiState())
     val uiState = _uiState.asStateFlow()
 
@@ -38,19 +40,14 @@ class AiAgentViewModel : ViewModel() {
 
         // Jalankan proses AI
         viewModelScope.launch {
-            // Tunggu sebentar agar animasi bubble user muncul
-            kotlinx.coroutines.delay(600) 
-            
             // Tambahkan placeholder AI yang sedang "berpikir"
             val aiPlaceholder = ChatMessage(text = "", isUser = false, isThinking = true)
             _uiState.update { state ->
                 state.copy(messages = state.messages + aiPlaceholder)
             }
             
-            // Simulasi proses berpikir AI
-            kotlinx.coroutines.delay(1500)
-            
-            val finalResponseText = "You asked: $currentInput"
+            // Panggil Gemini via Brain
+            val finalResponseText = brain.sendMessage(currentInput)
             
             // UPDATE placeholder tadi menjadi response final
             _uiState.update { state ->
@@ -67,6 +64,7 @@ class AiAgentViewModel : ViewModel() {
     }
 
     fun onClearHistory() {
+        brain.clearHistory()
         _uiState.update { it.copy(messages = emptyList(), isAiThinking = false) }
     }
 
