@@ -46,16 +46,24 @@ class Brain {
     suspend fun sendMessage(prompt: String): String {
         return try {
             val response = chatHistory.sendMessage(prompt)
-            response.text ?: "Maaf, AI tidak memberikan respon."
+            // Jika response.text null, kemungkinan besar terkena filter keamanan (Safety)
+            response.text ?: "Maaf, pesan Anda tidak dapat diproses karena melanggar kebijakan keamanan atau filter AI."
         } catch (e: Exception) {
             val errorMsg = e.localizedMessage ?: ""
-            // Menangani error agar lebih user-friendly sesuai instruksi
             when {
                 errorMsg.contains("429") || errorMsg.contains("RESOURCE_EXHAUSTED") ->
-                    "Mohon maaf, layanan sedang sibuk atau kuota harian habis. Silakan tunggu beberapa saat lagi atau hubungi WashFlow Support."
+                    "Mohon maaf, kuota harian AI sudah habis atau layanan sedang sibuk. Silakan coba lagi besok atau hubungi Support. (Error: 429)"
+
+                errorMsg.contains("401") || errorMsg.contains("API_KEY_INVALID") ->
+                    "Terjadi masalah otentikasi pada sistem AI. Silakan hubungi WashFlow Support. (Error: 401)"
+
                 errorMsg.contains("404") ->
-                    "Terjadi kesalahan konfigurasi pada sistem AI. Silakan hubungi WashFlow Support."
-                else -> "Terjadi gangguan pada sistem AI. Silakan coba beberapa saat lagi atau hubungi WashFlow Support."
+                    "Model AI tidak ditemukan atau terjadi kesalahan konfigurasi sistem. (Error: 404)"
+
+                errorMsg.contains("500") || errorMsg.contains("INTERNAL") ->
+                    "Server AI sedang mengalami gangguan teknis. Silakan coba beberapa saat lagi. (Error: 500)"
+
+                else -> "Koneksi ke WashFlow AI terputus. Pastikan internet Anda stabil atau coba lagi nanti."
             }
         }
     }

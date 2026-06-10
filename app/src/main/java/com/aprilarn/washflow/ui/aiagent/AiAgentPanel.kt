@@ -23,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -310,7 +311,11 @@ fun AiAgentPanel(
                                         imeAction = androidx.compose.ui.text.input.ImeAction.Send
                                     ),
                                     keyboardActions = androidx.compose.foundation.text.KeyboardActions(
-                                        onSend = { onSendMessage() }
+                                        onSend = { 
+                                            if (inputMessage.isNotBlank() && !isAiThinking) {
+                                                onSendMessage() 
+                                            }
+                                        }
                                     ),
                                     colors = OutlinedTextFieldDefaults.colors(
                                         focusedBorderColor = Color.Transparent,
@@ -338,10 +343,10 @@ fun AiAgentPanel(
                                         }
                                         IconButton(
                                             onClick = onSendMessage,
-                                            enabled = inputMessage.isNotBlank(),
+                                            enabled = inputMessage.isNotBlank() && !isAiThinking,
                                             modifier = Modifier
                                                 .clip(RoundedCornerShape(8.dp))
-                                                .background(if (inputMessage.isNotBlank()) GrayBlue else Color(0xFFE0E0E0))
+                                                .background(if (inputMessage.isNotBlank() && !isAiThinking) GrayBlue else Color(0xFFE0E0E0))
                                                 .height(38.dp)
                                                 .width(52.dp)
                                         ) {
@@ -445,14 +450,15 @@ fun ChatMessageItem(message: ChatMessage, profilePictureUrl: String?) {
                 transitionSpec = {
                     if (targetState) {
                         // Entrance for thinking
-                        (fadeIn(animationSpec = tween(400)) + expandVertically(animationSpec = tween(400)))
+                        (fadeIn(animationSpec = tween(300)) + expandVertically(animationSpec = tween(300)))
                             .togetherWith(ExitTransition.None)
                     } else {
-                        // Transition from thinking to response
-                        (fadeIn(animationSpec = tween(400, delayMillis = 100)) + expandVertically(animationSpec = tween(400, delayMillis = 100)))
-                            .togetherWith(fadeOut(animationSpec = tween(100)))
+                        // Transition from thinking to response - subtle crossfade
+                        fadeIn(animationSpec = tween(300))
+                            .togetherWith(fadeOut(animationSpec = tween(200)))
                     }
                 },
+                modifier = Modifier.fillMaxWidth(),
                 label = "AiContentTransition"
             ) { thinking ->
                 if (thinking) {
@@ -463,12 +469,7 @@ fun ChatMessageItem(message: ChatMessage, profilePictureUrl: String?) {
                         lineHeight = 20.sp
                     )
                 } else {
-                    Text(
-                        text = MarkdownUtils.parseMarkdown(message.text),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MainFontBlack,
-                        lineHeight = 20.sp
-                    )
+                    TypewriterText(text = message.text)
                 }
             }
         }
@@ -476,17 +477,44 @@ fun ChatMessageItem(message: ChatMessage, profilePictureUrl: String?) {
 }
 
 @Composable
-fun ThinkingIndicator() {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        AiMessageHeader()
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Thinking...",
-            style = MaterialTheme.typography.bodyMedium.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic),
-            color = Gray,
-            lineHeight = 20.sp
-        )
+fun TypewriterText(
+    text: String,
+    modifier: Modifier = Modifier,
+    delayMillis: Long = 10L,
+    isNewMessage: Boolean = true
+) {
+    // Start with the first character if it's a new message to prevent 0-height layout shift
+    var displayedText by rememberSaveable(text) { 
+        mutableStateOf(if (isNewMessage && text.isNotEmpty()) text.take(1) else text) 
     }
+    var animationFinished by rememberSaveable(text) { mutableStateOf(!isNewMessage) }
+
+    LaunchedEffect(text) {
+        if (!animationFinished) {
+            if (text.isEmpty()) {
+                displayedText = ""
+            } else {
+                displayedText = text.take(1)
+                text.forEachIndexed { index, _ ->
+                    if (index > 0) {
+                        displayedText = text.substring(0, index + 1)
+                        delay(delayMillis)
+                    }
+                }
+            }
+            animationFinished = true
+        } else {
+            displayedText = text
+        }
+    }
+
+    Text(
+        text = MarkdownUtils.parseMarkdown(displayedText),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MainFontBlack,
+        lineHeight = 20.sp,
+        modifier = modifier.fillMaxWidth()
+    )
 }
 
 @Composable
@@ -515,17 +543,35 @@ private fun CustomIcon(imageVector: ImageVector, contentDescription: String?, si
 
 @Preview(showBackground = true)
 @Composable
-fun AiAgentPanelPreview() {
+fun AiAgentPanelThinkingPreview() {
     AiAgentPanel(
         expanded = true,
         userName = "April",
         profilePictureUrl = null,
-        inputMessage = "",
+        inputMessage = "Already typed something",
         messages = listOf(
-            ChatMessage(text = "Hello AI!", isUser = true),
-            ChatMessage(text = "You asked: Hello AI!", isUser = false)
+            ChatMessage(text = "Hello AI!", isUser = true)
         ),
         isAiThinking = true,
+        onInputChange = {},
+        onSendMessage = {},
+        onClearHistory = {},
+        onDismiss = {}
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun AiAgentPanelActivePreview() {
+    AiAgentPanel(
+        expanded = true,
+        userName = "April",
+        profilePictureUrl = null,
+        inputMessage = "Ready to send",
+        messages = listOf(
+            ChatMessage(text = "Hello AI!", isUser = true)
+        ),
+        isAiThinking = false,
         onInputChange = {},
         onSendMessage = {},
         onClearHistory = {},
