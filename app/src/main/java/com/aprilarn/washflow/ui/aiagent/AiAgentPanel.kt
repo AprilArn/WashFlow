@@ -43,6 +43,7 @@ import coil.compose.AsyncImage
 import com.aprilarn.washflow.ui.theme.Gray
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.MainFontBlack
+import com.aprilarn.washflow.utils.MarkdownUtils
 
 @Composable
 fun AiAgentPanel(
@@ -417,7 +418,7 @@ fun ChatMessageItem(message: ChatMessage, profilePictureUrl: String?) {
                     .padding(12.dp)
             ) {
                 Text(
-                    text = message.text,
+                    text = MarkdownUtils.parseMarkdown(message.text),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MainFontBlack
                 )
@@ -463,7 +464,7 @@ fun ChatMessageItem(message: ChatMessage, profilePictureUrl: String?) {
                     )
                 } else {
                     Text(
-                        text = message.text,
+                        text = MarkdownUtils.parseMarkdown(message.text),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MainFontBlack,
                         lineHeight = 20.sp
