@@ -12,7 +12,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
@@ -54,6 +57,8 @@ fun AiAgentPanel(
     inputMessage: String,
     messages: List<ChatMessage>,
     isAiThinking: Boolean,
+    currentModelName: String? = null,
+    modelStatus: AiModelStatus = AiModelStatus.IDLE,
     onInputChange: (String) -> Unit,
     onSendMessage: () -> Unit,
     onClearHistory: () -> Unit,
@@ -331,14 +336,67 @@ fun AiAgentPanel(
                                 ) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Spacer(modifier = Modifier.weight(1f))
-                                        TextButton(
-                                            onClick = {},
+                                        Box(
                                             modifier = Modifier
+                                                .padding(horizontal = 12.dp)
                                                 .clip(RoundedCornerShape(8.dp))
                                         ) {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Text("Default", color = Gray, fontSize = 12.sp)
-                                                CustomIcon(Icons.Default.KeyboardArrowDown, contentDescription = null, size = 12.dp, tint = Gray)
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.padding(vertical = 8.dp)
+                                            ) {
+                                                Text(
+                                                    text = if (modelStatus == AiModelStatus.IDLE) "Idle" else (currentModelName ?: ""),
+                                                    color = Gray,
+                                                    fontSize = 12.sp
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                AnimatedContent(
+                                                    targetState = modelStatus,
+                                                    label = "ModelStatusIcon"
+                                                ) { status ->
+                                                    when (status) {
+                                                        AiModelStatus.IDLE -> {
+                                                            Icon(
+                                                                imageVector = Icons.Default.MoreHoriz,
+                                                                contentDescription = "Idle",
+                                                                modifier = Modifier.size(14.dp),
+                                                                tint = Gray
+                                                            )
+                                                        }
+                                                        AiModelStatus.THINKING -> {
+                                                            CircularProgressIndicator(
+                                                                modifier = Modifier.size(12.dp),
+                                                                strokeWidth = 2.dp,
+                                                                color = GrayBlue
+                                                            )
+                                                        }
+                                                        AiModelStatus.SUCCESS -> {
+                                                            Icon(
+                                                                imageVector = Icons.Default.Check,
+                                                                contentDescription = "Success",
+                                                                modifier = Modifier.size(14.dp),
+                                                                tint = Color(0xFF4CAF50)
+                                                            )
+                                                        }
+                                                        AiModelStatus.FAILURE -> {
+                                                            Icon(
+                                                                imageVector = Icons.Default.Close,
+                                                                contentDescription = "Failed",
+                                                                modifier = Modifier.size(14.dp),
+                                                                tint = Color.Red
+                                                            )
+                                                        }
+                                                        AiModelStatus.SWITCHING -> {
+                                                            Icon(
+                                                                imageVector = Icons.Default.Refresh,
+                                                                contentDescription = "Switching",
+                                                                modifier = Modifier.size(14.dp),
+                                                                tint = GrayBlue
+                                                            )
+                                                        }
+                                                    }
+                                                }
                                             }
                                         }
                                         IconButton(
@@ -531,28 +589,24 @@ fun PromptItem(text: String) {
     }
 }
 
-@Composable
-private fun CustomIcon(imageVector: ImageVector, contentDescription: String?, size: androidx.compose.ui.unit.Dp, tint: Color) {
-    Icon(
-        imageVector = imageVector,
-        contentDescription = contentDescription,
-        modifier = Modifier.size(size),
-        tint = tint
-    )
-}
 
 @Preview(showBackground = true)
 @Composable
-fun AiAgentPanelThinkingPreview() {
+fun AiAgentPanelBulletPointPreview() {
     AiAgentPanel(
         expanded = true,
         userName = "April",
         profilePictureUrl = null,
-        inputMessage = "Already typed something",
+        inputMessage = "",
         messages = listOf(
-            ChatMessage(text = "Hello AI!", isUser = true)
+            ChatMessage(
+                text = "I can assist you with:\n\n* **Tracking your orders**: Get real-time updates.\n* **Managing your account**: Help with navigation.\n* **Answering general questions**: Provide information.",
+                isUser = false
+            )
         ),
-        isAiThinking = true,
+        isAiThinking = false,
+        currentModelName = "Gemini Flash",
+        modelStatus = AiModelStatus.IDLE,
         onInputChange = {},
         onSendMessage = {},
         onClearHistory = {},
@@ -562,16 +616,16 @@ fun AiAgentPanelThinkingPreview() {
 
 @Preview(showBackground = true)
 @Composable
-fun AiAgentPanelActivePreview() {
+fun AiAgentPanelIdlePreview() {
     AiAgentPanel(
         expanded = true,
         userName = "April",
         profilePictureUrl = null,
-        inputMessage = "Ready to send",
-        messages = listOf(
-            ChatMessage(text = "Hello AI!", isUser = true)
-        ),
+        inputMessage = "",
+        messages = emptyList(),
         isAiThinking = false,
+        currentModelName = null,
+        modelStatus = AiModelStatus.IDLE,
         onInputChange = {},
         onSendMessage = {},
         onClearHistory = {},

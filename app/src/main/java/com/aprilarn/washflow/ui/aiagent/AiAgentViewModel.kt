@@ -47,7 +47,9 @@ class AiAgentViewModel : ViewModel() {
             }
             
             // Panggil Gemini via Brain
-            val finalResponseText = brain.sendMessage(currentInput)
+            val finalResponseText = brain.sendMessage(currentInput) { name, status ->
+                _uiState.update { it.copy(currentModelName = name, modelStatus = status) }
+            }
             
             // UPDATE placeholder tadi menjadi response final
             _uiState.update { state ->
@@ -58,8 +60,15 @@ class AiAgentViewModel : ViewModel() {
                         msg
                     }
                 }
-                state.copy(messages = updatedMessages)
+                state.copy(
+                    messages = updatedMessages,
+                    modelStatus = if (finalResponseText.startsWith("Maaf, semua layanan")) AiModelStatus.FAILURE else AiModelStatus.SUCCESS
+                )
             }
+
+            // Reset status setelah beberapa detik jika sukses/gagal agar tidak stuck di ikon centang/X selamanya
+            kotlinx.coroutines.delay(3000)
+            _uiState.update { it.copy(modelStatus = AiModelStatus.IDLE, currentModelName = null) }
         }
     }
 

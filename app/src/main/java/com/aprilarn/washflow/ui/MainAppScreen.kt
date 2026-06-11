@@ -464,6 +464,8 @@ fun MainAppScreen(
         inputMessage = aiAgentUiState.inputMessage,
         messages = aiAgentUiState.messages,
         isAiThinking = aiAgentUiState.isAiThinking,
+        currentModelName = aiAgentUiState.currentModelName,
+        modelStatus = aiAgentUiState.modelStatus,
         onInputChange = { aiAgentViewModel.onInputChange(it) },
         onSendMessage = { aiAgentViewModel.onSendMessage() },
         onClearHistory = { aiAgentViewModel.onClearHistory() },

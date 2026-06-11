@@ -24,6 +24,18 @@ object MarkdownUtils {
      * Refined to avoid matching bullet points (* ) as italic.
      */
     fun parseMarkdown(text: String): AnnotatedString {
+        // Pre-process bullet points: replace "* " or "- " at the start of a line with "• "
+        val processedText = text.lines().joinToString("\n") { line ->
+            val trimmedLine = line.trimStart()
+            if (trimmedLine.startsWith("* ") || trimmedLine.startsWith("- ")) {
+                val leadingContent = line.takeWhile { it.isWhitespace() }
+                val content = trimmedLine.substring(2)
+                "$leadingContent• $content"
+            } else {
+                line
+            }
+        }
+
         val pattern = Regex(
             "(\\*\\*\\*\\S[\\s\\S]*?\\S\\*\\*\\*|\\*\\*\\*\\S\\*\\*\\*)|" +
             "(\\*\\*\\S[\\s\\S]*?\\S\\*\\*|\\*\\*\\S\\*\\*)|" +
@@ -36,8 +48,8 @@ object MarkdownUtils {
         
         return buildAnnotatedString {
             var lastIndex = 0
-            pattern.findAll(text).forEach { matchResult ->
-                append(text.substring(lastIndex, matchResult.range.first))
+            pattern.findAll(processedText).forEach { matchResult ->
+                append(processedText.substring(lastIndex, matchResult.range.first))
                 
                 val matchValue = matchResult.value
                 when {
@@ -80,8 +92,8 @@ object MarkdownUtils {
                 lastIndex = matchResult.range.last + 1
             }
             
-            if (lastIndex < text.length) {
-                append(text.substring(lastIndex))
+            if (lastIndex < processedText.length) {
+                append(processedText.substring(lastIndex))
             }
         }
     }
