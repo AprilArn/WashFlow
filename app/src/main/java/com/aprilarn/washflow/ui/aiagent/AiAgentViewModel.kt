@@ -13,6 +13,22 @@ class AiAgentViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(AiAgentUiState())
     val uiState = _uiState.asStateFlow()
 
+    /**
+     * Stores IDs of messages whose entry animation has already played.
+     * Lives in the ViewModel so it survives panel close/reopen (AnimatedVisibility
+     * removes composables from the tree when hidden, destroying all remember{} state).
+     * Only cleared when the user explicitly deletes chat history.
+     */
+    private val animatedMessageIds = HashSet<String>()
+
+    /** Returns true if this message has already played its entry animation. */
+    fun wasMessageAnimated(messageId: String): Boolean = messageId in animatedMessageIds
+
+    /** Called by the panel once a message's entry animation has finished. */
+    fun markMessageAsAnimated(messageId: String) {
+        animatedMessageIds.add(messageId)
+    }
+
     fun onToggleAiAgent() {
         _uiState.update { it.copy(expanded = !it.expanded) }
     }
@@ -30,7 +46,7 @@ class AiAgentViewModel : ViewModel() {
         if (currentInput.isBlank()) return
 
         val userMessage = ChatMessage(text = currentInput, isUser = true)
-        
+
         _uiState.update { state ->
             state.copy(
                 messages = state.messages + userMessage,
@@ -38,20 +54,19 @@ class AiAgentViewModel : ViewModel() {
             )
         }
 
-        // Jalankan proses AI
         viewModelScope.launch {
-            // Tambahkan placeholder AI yang sedang "berpikir"
+            // Add AI placeholder that shows the "Thinking…" state
             val aiPlaceholder = ChatMessage(text = "", isUser = false, isThinking = true)
             _uiState.update { state ->
                 state.copy(messages = state.messages + aiPlaceholder)
             }
-            
-            // Panggil Gemini via Brain
+
+            // Call the AI
             val finalResponseText = brain.sendMessage(currentInput) { name, status ->
                 _uiState.update { it.copy(currentModelName = name, modelStatus = status) }
             }
-            
-            // UPDATE placeholder tadi menjadi response final
+
+            // Replace placeholder with the final response
             _uiState.update { state ->
                 val updatedMessages = state.messages.map { msg ->
                     if (msg.id == aiPlaceholder.id) {
@@ -62,11 +77,13 @@ class AiAgentViewModel : ViewModel() {
                 }
                 state.copy(
                     messages = updatedMessages,
-                    modelStatus = if (finalResponseText.startsWith("Maaf, semua layanan")) AiModelStatus.FAILURE else AiModelStatus.SUCCESS
+                    modelStatus = if (finalResponseText.startsWith("Maaf, semua layanan"))
+                        AiModelStatus.FAILURE
+                    else
+                        AiModelStatus.SUCCESS
                 )
             }
 
-            // Reset status setelah beberapa detik jika sukses/gagal agar tidak stuck di ikon centang/X selamanya
             kotlinx.coroutines.delay(3000)
             _uiState.update { it.copy(modelStatus = AiModelStatus.IDLE, currentModelName = null) }
         }
@@ -74,6 +91,8 @@ class AiAgentViewModel : ViewModel() {
 
     fun onClearHistory() {
         brain.clearHistory()
+        // Also clear animation tracking so messages animate again if re-added
+        animatedMessageIds.clear()
         _uiState.update { it.copy(messages = emptyList(), isAiThinking = false) }
     }
 

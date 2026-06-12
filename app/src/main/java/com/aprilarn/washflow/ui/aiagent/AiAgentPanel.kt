@@ -1,6 +1,9 @@
 package com.aprilarn.washflow.ui.aiagent
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,9 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.unit.IntOffset
@@ -37,8 +38,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -59,27 +62,38 @@ fun AiAgentPanel(
     isAiThinking: Boolean,
     currentModelName: String? = null,
     modelStatus: AiModelStatus = AiModelStatus.IDLE,
+    /**
+     * NEW: Query the ViewModel (which outlives panel close/reopen) to check
+     * whether a given message ID has already played its entry animation.
+     */
+    wasMessageAnimated: (String) -> Boolean,
+    /**
+     * NEW: Notify the ViewModel that a message's entry animation is done,
+     * so it won't replay if the panel is closed and reopened.
+     */
+    onMessageAnimated: (String) -> Unit,
     onInputChange: (String) -> Unit,
     onSendMessage: () -> Unit,
     onClearHistory: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
-    val coroutineScope = rememberCoroutineScope()
     var showMenu by remember { mutableStateOf(false) }
 
-    // Auto-scroll to bottom when messages change or AI starts thinking
-    LaunchedEffect(messages.size, isAiThinking) {
-        if (messages.isNotEmpty() || isAiThinking) {
-            coroutineScope.launch {
-                val lastIndex = if (isAiThinking) messages.size else messages.size - 1
-                if (lastIndex >= 0) {
-                    listState.animateScrollToItem(lastIndex)
-                }
-            }
+    // Compute slide offset once per composition (density-aware pixel value)
+    val slideOffsetPx = with(LocalDensity.current) { 60.dp.toPx() }
+
+    // ── Auto-scroll ────────────────────────────────────────────────────────────
+    // FIX: Use instant scrollToItem (not animated) so the new item is already
+    // in the viewport before its own spring animation begins.  Using
+    // animateScrollToItem raced with the item's entry animation and masked it.
+    LaunchedEffect(messages.size) {
+        if (messages.isNotEmpty()) {
+            listState.scrollToItem(messages.size - 1)
         }
     }
 
+    // ── Dim overlay ────────────────────────────────────────────────────────────
     AnimatedVisibility(
         visible = expanded,
         enter = fadeIn(animationSpec = tween(300)),
@@ -93,6 +107,7 @@ fun AiAgentPanel(
         )
     }
 
+    // ── Panel ──────────────────────────────────────────────────────────────────
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.CenterEnd
@@ -116,7 +131,8 @@ fun AiAgentPanel(
                 shadowElevation = 24.dp
             ) {
                 Column(modifier = Modifier.fillMaxSize()) {
-                    // Header
+
+                    // ── Header ─────────────────────────────────────────────────
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -140,11 +156,11 @@ fun AiAgentPanel(
                                     tint = MainFontBlack
                                 )
                             }
-                            
+
                             if (showMenu) {
                                 Popup(
                                     alignment = Alignment.TopEnd,
-                                    offset = IntOffset(x = 0, y = 120), // Adjusted to be below the button
+                                    offset = IntOffset(x = 0, y = 120),
                                     onDismissRequest = { showMenu = false },
                                     properties = PopupProperties(focusable = true)
                                 ) {
@@ -161,9 +177,9 @@ fun AiAgentPanel(
                                                 text = "Delete History",
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .clickable { 
+                                                    .clickable {
                                                         onClearHistory()
-                                                        showMenu = false 
+                                                        showMenu = false
                                                     }
                                                     .padding(horizontal = 20.dp, vertical = 12.dp),
                                                 style = MaterialTheme.typography.bodyMedium.copy(
@@ -178,6 +194,7 @@ fun AiAgentPanel(
                         }
                     }
 
+                    // ── Message list ───────────────────────────────────────────
                     LazyColumn(
                         state = listState,
                         modifier = Modifier
@@ -215,7 +232,7 @@ fun AiAgentPanel(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .clip(RoundedCornerShape(12.dp))
-                                            .background(Color(0xFF1E2124)) // Dark background from image
+                                            .background(Color(0xFF1E2124))
                                             .padding(16.dp)
                                     ) {
                                         Column {
@@ -265,36 +282,93 @@ fun AiAgentPanel(
                                 items = messages,
                                 key = { it.id }
                             ) { message ->
-                                val hasAnimated = rememberSaveable { mutableStateOf(false) }
-                                LaunchedEffect(Unit) { hasAnimated.value = true }
+
+                                // ── Per-message bounce entry animation ─────────
+                                //
+                                // FIX SUMMARY
+                                // -----------
+                                // Problem 1: animateItem(fadeInSpec = tween(…)) only fades alpha – no
+                                //   spring bounce, and the fade competes with animateScrollToItem.
+                                // Problem 2: animateItem's placementSpec only moves *existing* items
+                                //   that shift position; new messages appended at the end never move,
+                                //   so a spring placementSpec produced no visible effect.
+                                // Problem 3: remember{} animation state is destroyed when AnimatedVisibility
+                                //   removes the panel from composition on close, so every message
+                                //   re-animated on the next open.
+                                //
+                                // Fix:
+                                // • wasMessageAnimated() queries the ViewModel (survives panel close).
+                                //   Already-animated messages start with animProgress=1f → no animation.
+                                // • New messages start at 0f; a LaunchedEffect sets it to 1f after 50ms
+                                //   (giving the instant scrollToItem time to settle first).
+                                // • Two animateFloatAsState calls drive:
+                                //     - alpha  → tween(200ms): clean fade-in
+                                //     - offsetY → spring(MediumBouncy): slide-up with overshoot bounce
+                                // • graphicsLayer applies both without affecting layout dimensions,
+                                //   so the LazyColumn always knows the item's full size.
+
+                                val alreadyAnimated = remember(message.id) {
+                                    wasMessageAnimated(message.id)
+                                }
+                                var animProgress by remember(message.id) {
+                                    mutableStateOf(if (alreadyAnimated) 1f else 0f)
+                                }
+
+                                // Alpha: smooth 200ms fade-in (no spring needed for alpha)
+                                val animatedAlpha by animateFloatAsState(
+                                    targetValue = animProgress,
+                                    animationSpec = tween(durationMillis = 200),
+                                    label = "msgAlpha"
+                                )
+
+                                // Y offset: spring with bounce overshoot – this is the
+                                // visible "bounce". The value goes 0→1 with overshoot
+                                // (briefly >1), which translates to the message briefly
+                                // going above its final position before settling.
+                                val animatedOffset by animateFloatAsState(
+                                    targetValue = animProgress,
+                                    animationSpec = spring(
+                                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                                        stiffness = Spring.StiffnessMedium
+                                    ),
+                                    label = "msgOffset"
+                                )
+
+                                // Trigger animation after 50ms so the instant scroll settles
+                                // and the item is guaranteed to be in the viewport first.
+                                LaunchedEffect(message.id) {
+                                    if (!alreadyAnimated) {
+                                        delay(50L)
+                                        animProgress = 1f
+                                        // Notify ViewModel → won't animate again on reopen
+                                        onMessageAnimated(message.id)
+                                    }
+                                }
 
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .animateItem(
-                                            fadeInSpec = null,
-                                            placementSpec = tween(400),
-                                            fadeOutSpec = null
-                                        )
-                                ) {
-                                    AnimatedVisibility(
-                                        visible = hasAnimated.value,
-                                        enter = fadeIn(animationSpec = tween(500)) +
-                                                expandVertically(animationSpec = tween(500)) +
-                                                scaleIn(initialScale = 0.9f, animationSpec = tween(500)),
-                                        exit = fadeOut(animationSpec = tween(100))
-                                    ) {
-                                        Column {
-                                            ChatMessageItem(message, profilePictureUrl)
-                                            Spacer(modifier = Modifier.height(16.dp))
+                                        .graphicsLayer {
+                                            // Clamp alpha: spring overshoot can push it above 1.0
+                                            alpha = animatedAlpha.coerceIn(0f, 1f)
+                                            // Slide up from 60dp below final position.
+                                            // Spring overshoot makes it briefly rise above
+                                            // the target, then settle → visible bounce.
+                                            translationY = (1f - animatedOffset) * slideOffsetPx
                                         }
-                                    }
+                                ) {
+                                    ChatMessageItem(
+                                        message = message,
+                                        profilePictureUrl = profilePictureUrl,
+                                        isAlreadyAnimated = alreadyAnimated
+                                    )
+                                    Spacer(modifier = Modifier.height(16.dp))
                                 }
                             }
                         }
                     }
 
-                    // Input Area
+                    // ── Input area ─────────────────────────────────────────────
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -316,9 +390,9 @@ fun AiAgentPanel(
                                         imeAction = androidx.compose.ui.text.input.ImeAction.Send
                                     ),
                                     keyboardActions = androidx.compose.foundation.text.KeyboardActions(
-                                        onSend = { 
+                                        onSend = {
                                             if (inputMessage.isNotBlank() && !isAiThinking) {
-                                                onSendMessage() 
+                                                onSendMessage()
                                             }
                                         }
                                     ),
@@ -404,7 +478,12 @@ fun AiAgentPanel(
                                             enabled = inputMessage.isNotBlank() && !isAiThinking,
                                             modifier = Modifier
                                                 .clip(RoundedCornerShape(8.dp))
-                                                .background(if (inputMessage.isNotBlank() && !isAiThinking) GrayBlue else Color(0xFFE0E0E0))
+                                                .background(
+                                                    if (inputMessage.isNotBlank() && !isAiThinking)
+                                                        GrayBlue
+                                                    else
+                                                        Color(0xFFE0E0E0)
+                                                )
                                                 .height(38.dp)
                                                 .width(52.dp)
                                         ) {
@@ -425,15 +504,6 @@ fun AiAgentPanel(
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-//                            Box(
-//                                modifier = Modifier
-//                                    .clip(RoundedCornerShape(4.dp))
-//                                    .background(GrayBlue)
-//                                    .padding(horizontal = 4.dp, vertical = 2.dp)
-//                            ) {
-//                                Text("AI Pro", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-//                            }
-//                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 "AI can make mistakes, so double-check it",
                                 color = Gray,
@@ -466,7 +536,11 @@ fun AiMessageHeader() {
 }
 
 @Composable
-fun ChatMessageItem(message: ChatMessage, profilePictureUrl: String?) {
+fun ChatMessageItem(
+    message: ChatMessage,
+    profilePictureUrl: String?,
+    isAlreadyAnimated: Boolean = false
+) {
     if (message.isUser) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -501,17 +575,14 @@ fun ChatMessageItem(message: ChatMessage, profilePictureUrl: String?) {
         Column(modifier = Modifier.fillMaxWidth()) {
             AiMessageHeader()
             Spacer(modifier = Modifier.height(8.dp))
-            
-            // Seamless content transition
+
             AnimatedContent(
                 targetState = message.isThinking,
                 transitionSpec = {
                     if (targetState) {
-                        // Entrance for thinking
-                        (fadeIn(animationSpec = tween(300)) + expandVertically(animationSpec = tween(300)))
+                        fadeIn(animationSpec = tween(300))
                             .togetherWith(ExitTransition.None)
                     } else {
-                        // Transition from thinking to response - subtle crossfade
                         fadeIn(animationSpec = tween(300))
                             .togetherWith(fadeOut(animationSpec = tween(200)))
                     }
@@ -522,12 +593,17 @@ fun ChatMessageItem(message: ChatMessage, profilePictureUrl: String?) {
                 if (thinking) {
                     Text(
                         text = "Thinking...",
-                        style = MaterialTheme.typography.bodyMedium.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic),
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                        ),
                         color = Gray,
                         lineHeight = 20.sp
                     )
                 } else {
-                    TypewriterText(text = message.text)
+                    TypewriterText(
+                        text = message.text,
+                        isNewMessage = !isAlreadyAnimated
+                    )
                 }
             }
         }
@@ -541,9 +617,8 @@ fun TypewriterText(
     delayMillis: Long = 10L,
     isNewMessage: Boolean = true
 ) {
-    // Start with the first character if it's a new message to prevent 0-height layout shift
-    var displayedText by rememberSaveable(text) { 
-        mutableStateOf(if (isNewMessage && text.isNotEmpty()) text.take(1) else text) 
+    var displayedText by rememberSaveable(text) {
+        mutableStateOf(if (isNewMessage && text.isNotEmpty()) text.take(1) else text)
     }
     var animationFinished by rememberSaveable(text) { mutableStateOf(!isNewMessage) }
 
@@ -607,6 +682,8 @@ fun AiAgentPanelBulletPointPreview() {
         isAiThinking = false,
         currentModelName = "Gemini Flash",
         modelStatus = AiModelStatus.IDLE,
+        wasMessageAnimated = { true },  // Preview: pretend all already animated
+        onMessageAnimated = {},
         onInputChange = {},
         onSendMessage = {},
         onClearHistory = {},
@@ -626,6 +703,8 @@ fun AiAgentPanelIdlePreview() {
         isAiThinking = false,
         currentModelName = null,
         modelStatus = AiModelStatus.IDLE,
+        wasMessageAnimated = { true },
+        onMessageAnimated = {},
         onInputChange = {},
         onSendMessage = {},
         onClearHistory = {},

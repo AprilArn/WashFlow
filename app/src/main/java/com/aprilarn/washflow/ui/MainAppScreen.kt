@@ -31,7 +31,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.aprilarn.washflow.AppNavigation
 import com.aprilarn.washflow.data.repository.CustomerRepository
@@ -85,8 +84,6 @@ fun MainAppScreen(
 ) {
     // NavController khusus untuk navigasi di dalam Bottom Navigation Bar
     val bottomNavController = rememberNavController()
-    val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
 
     // Inisialisasi NotificationsViewModel
@@ -212,6 +209,7 @@ fun MainAppScreen(
 
                 composable(AppNavigation.Contributors.route) {
                     val factory = object : ViewModelProvider.Factory {
+                        @Suppress("UNCHECKED_CAST")
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
                             return ContributorsViewModel(
                                 WorkspaceRepository()
@@ -235,6 +233,7 @@ fun MainAppScreen(
 
                 composable(AppNavigation.ManageOrder.route) {
                     val factory = object : ViewModelProvider.Factory {
+                        @Suppress("UNCHECKED_CAST")
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
                             return ManageOrderViewModel(
                                 OrderRepository(),
@@ -370,6 +369,7 @@ fun MainAppScreen(
 
                 composable(AppNavigation.Orders.route) {
                     val factory = object : ViewModelProvider.Factory {
+                        @Suppress("UNCHECKED_CAST")
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
                             return OrdersViewModel(
                                 CustomerRepository(),
@@ -466,6 +466,8 @@ fun MainAppScreen(
         isAiThinking = aiAgentUiState.isAiThinking,
         currentModelName = aiAgentUiState.currentModelName,
         modelStatus = aiAgentUiState.modelStatus,
+        wasMessageAnimated = { aiAgentViewModel.wasMessageAnimated(it) },
+        onMessageAnimated = { aiAgentViewModel.markMessageAsAnimated(it) },
         onInputChange = { aiAgentViewModel.onInputChange(it) },
         onSendMessage = { aiAgentViewModel.onSendMessage() },
         onClearHistory = { aiAgentViewModel.onClearHistory() },
