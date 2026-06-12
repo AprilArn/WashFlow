@@ -80,9 +80,6 @@ fun AiAgentPanel(
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
     var showMenu by remember { mutableStateOf(false) }
 
-    // Compute slide offset once per composition (density-aware pixel value)
-    val slideOffsetPx = with(LocalDensity.current) { 60.dp.toPx() }
-
     // ── Auto-scroll ────────────────────────────────────────────────────────────
     // FIX: Use instant scrollToItem (not animated) so the new item is already
     // in the viewport before its own spring animation begins.  Using
@@ -351,10 +348,22 @@ fun AiAgentPanel(
                                         .graphicsLayer {
                                             // Clamp alpha: spring overshoot can push it above 1.0
                                             alpha = animatedAlpha.coerceIn(0f, 1f)
-                                            // Slide up from 60dp below final position.
-                                            // Spring overshoot makes it briefly rise above
-                                            // the target, then settle → visible bounce.
-                                            translationY = (1f - animatedOffset) * slideOffsetPx
+                                            
+                                            if (message.isUser) {
+                                                // USER: Bounce expand (Scale)
+                                                // Starts from 0.8 scale and expands to 1.0 with spring bounce
+                                                val scale = 0.8f + (animatedOffset * 0.2f)
+                                                scaleX = scale
+                                                scaleY = scale
+                                                // No translation for user
+                                                translationY = 0f
+                                            } else {
+                                                // AI: Fade in only (Alpha is already applied above)
+                                                // Reset scale and translation to defaults
+                                                scaleX = 1f
+                                                scaleY = 1f
+                                                translationY = 0f
+                                            }
                                         }
                                 ) {
                                     ChatMessageItem(
