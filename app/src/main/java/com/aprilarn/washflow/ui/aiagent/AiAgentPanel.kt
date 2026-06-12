@@ -5,6 +5,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import kotlinx.coroutines.delay
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.window.Popup
@@ -39,9 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -51,9 +51,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import com.aprilarn.washflow.ui.theme.Gray
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.launch
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.MainFontBlack
 import com.aprilarn.washflow.utils.MarkdownUtils
@@ -108,11 +105,10 @@ fun AiAgentPanel(
     }
 
     // ── Auto-scroll ────────────────────────────────────────────────────────────
-    // Instant scroll on new message or history clear
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
             listState.scrollToItem(messages.size - 1)
-            userHasInterrupted = false // Reset on new message
+            userHasInterrupted = false
         }
     }
 
@@ -218,38 +214,41 @@ fun AiAgentPanel(
                     }
 
                     // ── Message list ───────────────────────────────────────────
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(horizontal = 24.dp)
-                    ) {
-                        if (messages.isEmpty()) {
-                            item {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(bottom = 24.dp)
-                                ) {
-                                    Spacer(modifier = Modifier.height(64.dp))
-                                    Text(
-                                        text = "Hi, $userName",
-                                        style = MaterialTheme.typography.headlineLarge.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            color = GrayBlue,
-                                            fontSize = 32.sp
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 24.dp)
+                        ) {
+                            if (messages.isEmpty()) {
+                                item {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                    ) {
+                                        Spacer(modifier = Modifier.height(64.dp))
+                                        Text(
+                                            text = "Hi, $userName",
+                                            style = MaterialTheme.typography.headlineLarge.copy(
+                                                fontWeight = FontWeight.Bold,
+                                                color = GrayBlue,
+                                                fontSize = 32.sp
+                                            )
                                         )
-                                    )
-                                    Text(
-                                        text = "What can I help you today?",
-                                        style = MaterialTheme.typography.headlineSmall.copy(
-                                            fontWeight = FontWeight.Medium,
-                                            color = Gray,
-                                            fontSize = 20.sp
+                                        Text(
+                                            text = "What can I help you today?",
+                                            style = MaterialTheme.typography.headlineSmall.copy(
+                                                fontWeight = FontWeight.Medium,
+                                                color = Gray,
+                                                fontSize = 20.sp
+                                            )
                                         )
-                                    )
-                                    Spacer(modifier = Modifier.height(64.dp))
+                                        Spacer(modifier = Modifier.height(64.dp))
+                                    }
+                                }
 
+                                item {
                                     // Info Card
                                     Box(
                                         modifier = Modifier
@@ -283,9 +282,10 @@ fun AiAgentPanel(
                                             )
                                         }
                                     }
+                                }
 
+                                item {
                                     Spacer(modifier = Modifier.height(32.dp))
-
                                     Text(
                                         "Prompts to try",
                                         fontWeight = FontWeight.Bold,
@@ -293,95 +293,134 @@ fun AiAgentPanel(
                                         fontSize = 14.sp
                                     )
                                     Spacer(modifier = Modifier.height(12.dp))
-
-                                    PromptItem("Extract all hardcoded strings from this class and move them into strings.xml")
-                                    PromptItem("Add documentation to my current file")
-                                    PromptItem("Update kotlin in @libs.version.toml to the latest version")
-                                    PromptItem("Make my Theme's color scheme warmer")
-                                }
-                            }
-                        } else {
-                            items(
-                                items = messages,
-                                key = { it.id }
-                            ) { message ->
-
-                                val alreadyAnimated = remember(message.id) {
-                                    wasMessageAnimated(message.id)
-                                }
-                                var animProgress by remember(message.id) {
-                                    mutableStateOf(if (alreadyAnimated) 1f else 0f)
                                 }
 
-                                // Alpha: smooth 200ms fade-in (no spring needed for alpha)
-                                val animatedAlpha by animateFloatAsState(
-                                    targetValue = animProgress,
-                                    animationSpec = tween(durationMillis = 200),
-                                    label = "msgAlpha"
-                                )
+                                item { PromptItem("Extract all hardcoded strings from this class and move them into strings.xml") }
+                                item { PromptItem("Add documentation to my current file") }
+                                item { PromptItem("Update kotlin in @libs.version.toml to the latest version") }
+                                item { PromptItem("Make my Theme's color scheme warmer") }
 
-                                // Y offset: spring with bounce overshoot – this is the
-                                // visible "bounce". The value goes 0→1 with overshoot
-                                // (briefly >1), which translates to the message briefly
-                                // going above its final position before settling.
-                                val animatedOffset by animateFloatAsState(
-                                    targetValue = animProgress,
-                                    animationSpec = spring(
-                                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                                        stiffness = Spring.StiffnessMedium
-                                    ),
-                                    label = "msgOffset"
-                                )
+                                item {
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                }
+                            } else {
+                                items(
+                                    items = messages,
+                                    key = { it.id }
+                                ) { message ->
 
-                                // Trigger animation after 50ms so the instant scroll settles
-                                // and the item is guaranteed to be in the viewport first.
-                                LaunchedEffect(message.id) {
-                                    if (!alreadyAnimated) {
-                                        delay(50L)
-                                        animProgress = 1f
-                                        // Notify ViewModel → won't animate again on reopen
-                                        onMessageAnimated(message.id)
+                                    val alreadyAnimated = remember(message.id) {
+                                        wasMessageAnimated(message.id)
                                     }
-                                }
+                                    var animProgress by remember(message.id) {
+                                        mutableFloatStateOf(if (alreadyAnimated) 1f else 0f)
+                                    }
 
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .graphicsLayer {
-                                            // Clamp alpha: spring overshoot can push it above 1.0
-                                            alpha = animatedAlpha.coerceIn(0f, 1f)
+                                    val animatedAlpha by animateFloatAsState(
+                                        targetValue = animProgress,
+                                        animationSpec = tween(durationMillis = 200),
+                                        label = "msgAlpha"
+                                    )
 
-                                            if (message.isUser) {
-                                                // USER: Bounce expand (Scale)
-                                                // Starts from 0.8 scale and expands to 1.0 with spring bounce
-                                                val scale = 0.8f + (animatedOffset * 0.2f)
-                                                scaleX = scale
-                                                scaleY = scale
-                                                // No translation for user
-                                                translationY = 0f
-                                            } else {
-                                                // AI: Fade in only (Alpha is already applied above)
-                                                // Reset scale and translation to defaults
-                                                scaleX = 1f
-                                                scaleY = 1f
-                                                translationY = 0f
-                                            }
+                                    val animatedOffset by animateFloatAsState(
+                                        targetValue = animProgress,
+                                        animationSpec = spring(
+                                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                                            stiffness = Spring.StiffnessMedium
+                                        ),
+                                        label = "msgOffset"
+                                    )
+
+                                    LaunchedEffect(message.id) {
+                                        if (!alreadyAnimated) {
+                                            delay(50L)
+                                            animProgress = 1f
+                                            onMessageAnimated(message.id)
                                         }
-                                ) {
-                                    ChatMessageItem(
-                                        message = message,
-                                        profilePictureUrl = profilePictureUrl,
-                                        isAlreadyAnimated = alreadyAnimated,
-                                        onTextUpdate = {
-                                            // Only auto-scroll if user hasn't scrolled up
-                                            if (!userHasInterrupted) {
-                                                coroutineScope.launch {
-                                                    listState.scrollToItem(messages.size - 1)
+                                    }
+
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .graphicsLayer {
+                                                alpha = animatedAlpha.coerceIn(0f, 1f)
+
+                                                if (message.isUser) {
+                                                    val scale = 0.8f + (animatedOffset * 0.2f)
+                                                    scaleX = scale
+                                                    scaleY = scale
+                                                    translationY = 0f
+                                                } else {
+                                                    scaleX = 1f
+                                                    scaleY = 1f
+                                                    translationY = 0f
                                                 }
                                             }
+                                    ) {
+                                        ChatMessageItem(
+                                            message = message,
+                                            profilePictureUrl = profilePictureUrl,
+                                            isAlreadyAnimated = alreadyAnimated,
+                                            onTextUpdate = {
+                                                if (!userHasInterrupted) {
+                                                    coroutineScope.launch {
+                                                        listState.scrollToItem(messages.size - 1)
+                                                    }
+                                                }
+                                            }
+                                        )
+                                        Spacer(modifier = Modifier.height(16.dp))
+                                    }
+                                }
+                            }
+                        }
+
+                        // ── Floating Scroll Button ─────────────────────────────────
+                        androidx.compose.animation.AnimatedVisibility(
+                            visible = listState.canScrollForward,
+                            enter = fadeIn(),
+                            exit = fadeOut(),
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(bottom = 16.dp)
+                        ) {
+                            Surface(
+                                onClick = {
+                                    coroutineScope.launch {
+                                        val totalItems = listState.layoutInfo.totalItemsCount
+                                        if (totalItems > 0) {
+                                            listState.animateScrollToItem(totalItems - 1)
+                                            // FIX: Reset interruption flag so auto-scroll resumes
+                                            userHasInterrupted = false
                                         }
+                                    }
+                                },
+                                shape = CircleShape,
+                                color = Color.White.copy(alpha = 0.8f),
+                                shadowElevation = 0.dp,
+                                border = BorderStroke(1.dp, Color(0xFFE0E0E0).copy(alpha = 1f)),
+                                modifier = Modifier.height(36.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.KeyboardArrowDown,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp),
+                                        tint = GrayBlue
                                     )
-                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "Scroll to Bottom",
+                                        style = MaterialTheme.typography.labelLarge.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp
+                                        ),
+                                        color = GrayBlue
+                                    )
                                 }
                             }
                         }
@@ -639,21 +678,14 @@ fun TypewriterText(
     isNewMessage: Boolean = true,
     onTextUpdate: () -> Unit = {}
 ) {
-    // Use rememberSaveable to persist progress even when scrolled out of view.
-    // Important: We DON'T use 'text' as a key for rememberSaveable here, 
-    // because that would reset the state whenever the Composable is re-entered 
-    // if 'text' hasn't changed. We handle manual resets in LaunchedEffect(text).
     var displayedText by rememberSaveable {
         mutableStateOf(if (isNewMessage && text.isNotEmpty()) text.take(1) else text)
     }
     var animationFinished by rememberSaveable { mutableStateOf(!isNewMessage) }
     
-    // Track the last processed text to detect when the content actually changes
     var lastProcessedText by rememberSaveable { mutableStateOf(text) }
 
     LaunchedEffect(text) {
-        // If the text content has changed (e.g. new message or updated response),
-        // reset the animation state for this specific instance.
         if (text != lastProcessedText) {
             lastProcessedText = text
             if (isNewMessage) {
@@ -669,7 +701,6 @@ fun TypewriterText(
             if (text.isEmpty()) {
                 displayedText = ""
             } else {
-                // Resume from where we left off (displayedText.length)
                 val startIndex = displayedText.length
                 for (index in startIndex until text.length) {
                     displayedText = text.substring(0, index + 1)
