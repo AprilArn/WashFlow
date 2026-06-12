@@ -47,7 +47,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import com.aprilarn.washflow.ui.theme.Gray
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.MainFontBlack
 import com.aprilarn.washflow.utils.MarkdownUtils
@@ -78,15 +84,43 @@ fun AiAgentPanel(
     onDismiss: () -> Unit
 ) {
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
     var showMenu by remember { mutableStateOf(false) }
 
+    // ── Auto-scroll State ──────────────────────────────────────────────────────
+    var userHasInterrupted by remember { mutableStateOf(false) }
+
+    // Detect if user is at the bottom to reset interruption
+    val isAtBottom by remember {
+        derivedStateOf {
+            val layoutInfo = listState.layoutInfo
+            val visibleItems = layoutInfo.visibleItemsInfo
+            if (visibleItems.isEmpty()) return@derivedStateOf true
+            val lastVisibleItem = visibleItems.last()
+            // If last item is the last index and its bottom is close to the viewport bottom
+            lastVisibleItem.index == layoutInfo.totalItemsCount - 1 &&
+                    (layoutInfo.viewportEndOffset - lastVisibleItem.offset) <= 100 // threshold in pixels
+        }
+    }
+
+    // If user scrolls back to bottom, we resume auto-scroll
+    LaunchedEffect(isAtBottom) {
+        if (isAtBottom) userHasInterrupted = false
+    }
+
+    // Detect manual scroll to set interruption
+    LaunchedEffect(listState.isScrollInProgress) {
+        if (listState.isScrollInProgress && !isAtBottom) {
+            userHasInterrupted = true
+        }
+    }
+
     // ── Auto-scroll ────────────────────────────────────────────────────────────
-    // FIX: Use instant scrollToItem (not animated) so the new item is already
-    // in the viewport before its own spring animation begins.  Using
-    // animateScrollToItem raced with the item's entry animation and masked it.
+    // Instant scroll on new message or history clear
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
             listState.scrollToItem(messages.size - 1)
+            userHasInterrupted = false // Reset on new message
         }
     }
 
@@ -348,7 +382,7 @@ fun AiAgentPanel(
                                         .graphicsLayer {
                                             // Clamp alpha: spring overshoot can push it above 1.0
                                             alpha = animatedAlpha.coerceIn(0f, 1f)
-                                            
+
                                             if (message.isUser) {
                                                 // USER: Bounce expand (Scale)
                                                 // Starts from 0.8 scale and expands to 1.0 with spring bounce
@@ -369,7 +403,15 @@ fun AiAgentPanel(
                                     ChatMessageItem(
                                         message = message,
                                         profilePictureUrl = profilePictureUrl,
-                                        isAlreadyAnimated = alreadyAnimated
+                                        isAlreadyAnimated = alreadyAnimated,
+                                        onTextUpdate = {
+                                            // Only auto-scroll if user hasn't scrolled up
+                                            if (!userHasInterrupted) {
+                                                coroutineScope.launch {
+                                                    listState.scrollToItem(messages.size - 1)
+                                                }
+                                            }
+                                        }
                                     )
                                     Spacer(modifier = Modifier.height(16.dp))
                                 }
@@ -548,7 +590,8 @@ fun AiMessageHeader() {
 fun ChatMessageItem(
     message: ChatMessage,
     profilePictureUrl: String?,
-    isAlreadyAnimated: Boolean = false
+    isAlreadyAnimated: Boolean = false,
+    onTextUpdate: () -> Unit = {}
 ) {
     if (message.isUser) {
         Row(
@@ -611,7 +654,8 @@ fun ChatMessageItem(
                 } else {
                     TypewriterText(
                         text = message.text,
-                        isNewMessage = !isAlreadyAnimated
+                        isNewMessage = !isAlreadyAnimated,
+                        onTextUpdate = onTextUpdate
                     )
                 }
             }
@@ -624,24 +668,45 @@ fun TypewriterText(
     text: String,
     modifier: Modifier = Modifier,
     delayMillis: Long = 10L,
-    isNewMessage: Boolean = true
+    isNewMessage: Boolean = true,
+    onTextUpdate: () -> Unit = {}
 ) {
-    var displayedText by rememberSaveable(text) {
+    // Use rememberSaveable to persist progress even when scrolled out of view.
+    // Important: We DON'T use 'text' as a key for rememberSaveable here, 
+    // because that would reset the state whenever the Composable is re-entered 
+    // if 'text' hasn't changed. We handle manual resets in LaunchedEffect(text).
+    var displayedText by rememberSaveable {
         mutableStateOf(if (isNewMessage && text.isNotEmpty()) text.take(1) else text)
     }
-    var animationFinished by rememberSaveable(text) { mutableStateOf(!isNewMessage) }
+    var animationFinished by rememberSaveable { mutableStateOf(!isNewMessage) }
+    
+    // Track the last processed text to detect when the content actually changes
+    var lastProcessedText by rememberSaveable { mutableStateOf(text) }
 
     LaunchedEffect(text) {
+        // If the text content has changed (e.g. new message or updated response),
+        // reset the animation state for this specific instance.
+        if (text != lastProcessedText) {
+            lastProcessedText = text
+            if (isNewMessage) {
+                displayedText = text.take(1)
+                animationFinished = false
+            } else {
+                displayedText = text
+                animationFinished = true
+            }
+        }
+
         if (!animationFinished) {
             if (text.isEmpty()) {
                 displayedText = ""
             } else {
-                displayedText = text.take(1)
-                text.forEachIndexed { index, _ ->
-                    if (index > 0) {
-                        displayedText = text.substring(0, index + 1)
-                        delay(delayMillis)
-                    }
+                // Resume from where we left off (displayedText.length)
+                val startIndex = displayedText.length
+                for (index in startIndex until text.length) {
+                    displayedText = text.substring(0, index + 1)
+                    onTextUpdate()
+                    delay(delayMillis)
                 }
             }
             animationFinished = true
