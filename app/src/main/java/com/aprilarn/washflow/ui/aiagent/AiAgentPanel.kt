@@ -68,15 +68,7 @@ fun AiAgentPanel(
     isAiThinking: Boolean,
     currentModelName: String? = null,
     modelStatus: AiModelStatus = AiModelStatus.IDLE,
-    /**
-     * NEW: Query the ViewModel (which outlives panel close/reopen) to check
-     * whether a given message ID has already played its entry animation.
-     */
     wasMessageAnimated: (String) -> Boolean,
-    /**
-     * NEW: Notify the ViewModel that a message's entry animation is done,
-     * so it won't replay if the panel is closed and reopened.
-     */
     onMessageAnimated: (String) -> Unit,
     onInputChange: (String) -> Unit,
     onSendMessage: () -> Unit,
@@ -313,30 +305,6 @@ fun AiAgentPanel(
                                 items = messages,
                                 key = { it.id }
                             ) { message ->
-
-                                // ── Per-message bounce entry animation ─────────
-                                //
-                                // FIX SUMMARY
-                                // -----------
-                                // Problem 1: animateItem(fadeInSpec = tween(…)) only fades alpha – no
-                                //   spring bounce, and the fade competes with animateScrollToItem.
-                                // Problem 2: animateItem's placementSpec only moves *existing* items
-                                //   that shift position; new messages appended at the end never move,
-                                //   so a spring placementSpec produced no visible effect.
-                                // Problem 3: remember{} animation state is destroyed when AnimatedVisibility
-                                //   removes the panel from composition on close, so every message
-                                //   re-animated on the next open.
-                                //
-                                // Fix:
-                                // • wasMessageAnimated() queries the ViewModel (survives panel close).
-                                //   Already-animated messages start with animProgress=1f → no animation.
-                                // • New messages start at 0f; a LaunchedEffect sets it to 1f after 50ms
-                                //   (giving the instant scrollToItem time to settle first).
-                                // • Two animateFloatAsState calls drive:
-                                //     - alpha  → tween(200ms): clean fade-in
-                                //     - offsetY → spring(MediumBouncy): slide-up with overshoot bounce
-                                // • graphicsLayer applies both without affecting layout dimensions,
-                                //   so the LazyColumn always knows the item's full size.
 
                                 val alreadyAnimated = remember(message.id) {
                                     wasMessageAnimated(message.id)
