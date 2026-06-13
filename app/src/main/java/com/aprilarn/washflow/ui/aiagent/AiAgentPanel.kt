@@ -375,11 +375,19 @@ fun AiAgentPanel(
                             }
                         }
 
-                        // ── Floating Scroll Button ─────────────────────────────────
                         androidx.compose.animation.AnimatedVisibility(
                             visible = listState.canScrollForward,
-                            enter = fadeIn(),
-                            exit = fadeOut(),
+                            enter = scaleIn(
+                                initialScale = 0.8f,
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness = Spring.StiffnessLow
+                                )
+                            ) + fadeIn(animationSpec = tween(300)),
+                            exit = scaleOut(
+                                targetScale = 0.8f,
+                                animationSpec = tween(200)
+                            ) + fadeOut(animationSpec = tween(200)),
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
                                 .padding(bottom = 16.dp)
@@ -406,20 +414,20 @@ fun AiAgentPanel(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.Center
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.KeyboardArrowDown,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp),
-                                        tint = GrayBlue
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = "Scroll to Bottom",
+                                        text = "Scroll to bottom",
                                         style = MaterialTheme.typography.labelLarge.copy(
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 12.sp
                                         ),
                                         color = GrayBlue
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Icon(
+                                        imageVector = Icons.Default.KeyboardArrowDown,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp),
+                                        tint = GrayBlue
                                     )
                                 }
                             }
