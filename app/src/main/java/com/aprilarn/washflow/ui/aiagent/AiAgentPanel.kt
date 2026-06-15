@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import com.aprilarn.washflow.ui.theme.Gray
@@ -86,20 +87,22 @@ fun AiAgentPanel(
             val visibleItems = layoutInfo.visibleItemsInfo
             if (visibleItems.isEmpty()) return@derivedStateOf true
             val lastVisibleItem = visibleItems.last()
-            // If last item is the last index and its bottom is close to the viewport bottom
+            // Check if last item is at the end AND its bottom is visible/beyond viewport end
             lastVisibleItem.index == layoutInfo.totalItemsCount - 1 &&
-                    (layoutInfo.viewportEndOffset - lastVisibleItem.offset) <= 100 // threshold in pixels
+                    (lastVisibleItem.offset + lastVisibleItem.size) <= layoutInfo.viewportEndOffset + 5
         }
     }
 
-    // If user scrolls back to bottom, we resume auto-scroll
-    LaunchedEffect(isAtBottom) {
-        if (isAtBottom) userHasInterrupted = false
+    // Detect actual manual dragging to set interruption
+    val isDragging by listState.interactionSource.collectIsDraggedAsState()
+
+    // If user scrolls back to bottom and releases drag, we resume auto-scroll
+    LaunchedEffect(isAtBottom, isDragging) {
+        if (isAtBottom && !isDragging) userHasInterrupted = false
     }
 
-    // Detect manual scroll to set interruption
-    LaunchedEffect(listState.isScrollInProgress) {
-        if (listState.isScrollInProgress && !isAtBottom) {
+    LaunchedEffect(isDragging) {
+        if (isDragging && !isAtBottom) {
             userHasInterrupted = true
         }
     }
@@ -107,7 +110,8 @@ fun AiAgentPanel(
     // ── Auto-scroll ────────────────────────────────────────────────────────────
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
-            listState.scrollToItem(messages.size - 1)
+            // Scroll with a large offset to ensure bottom-alignment even for long messages
+            listState.scrollToItem(messages.size - 1, 100000)
             userHasInterrupted = false
         }
     }
@@ -364,7 +368,8 @@ fun AiAgentPanel(
                                             onTextUpdate = {
                                                 if (!userHasInterrupted) {
                                                     coroutineScope.launch {
-                                                        listState.scrollToItem(messages.size - 1)
+                                                        // Scroll with large offset for bottom alignment
+                                                        listState.scrollToItem(messages.size - 1, 100000)
                                                     }
                                                 }
                                             }
@@ -397,16 +402,17 @@ fun AiAgentPanel(
                                     coroutineScope.launch {
                                         val totalItems = listState.layoutInfo.totalItemsCount
                                         if (totalItems > 0) {
-                                            listState.animateScrollToItem(totalItems - 1)
+                                            // Ensure bottom alignment when manually scrolling to bottom
+                                            listState.animateScrollToItem(totalItems - 1, 100000)
                                             // FIX: Reset interruption flag so auto-scroll resumes
                                             userHasInterrupted = false
                                         }
                                     }
                                 },
                                 shape = CircleShape,
-                                color = Color.White.copy(alpha = 0.8f),
+                                color = Color(0xFF60B0FF).copy(alpha = 0.9f),
                                 shadowElevation = 0.dp,
-                                border = BorderStroke(1.dp, Color(0xFFE0E0E0).copy(alpha = 1f)),
+                                border = BorderStroke(1.dp, Color(0xFFC1DFFF).copy(alpha = 0.9f)),
                                 modifier = Modifier.height(36.dp)
                             ) {
                                 Row(
@@ -420,14 +426,14 @@ fun AiAgentPanel(
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 12.sp
                                         ),
-                                        color = GrayBlue
+                                        color = Color.White
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Icon(
                                         imageVector = Icons.Default.KeyboardArrowDown,
                                         contentDescription = null,
                                         modifier = Modifier.size(18.dp),
-                                        tint = GrayBlue
+                                        tint = Color.White
                                     )
                                 }
                             }
