@@ -55,6 +55,7 @@ class AiAgentViewModel : ViewModel() {
         }
 
         viewModelScope.launch {
+            _uiState.update { it.copy(isAiThinking = true) }
             // Add AI placeholder that shows the "Thinking…" state
             val aiPlaceholder = ChatMessage(text = "", isUser = false, isThinking = true)
             _uiState.update { state ->
@@ -80,7 +81,8 @@ class AiAgentViewModel : ViewModel() {
                     modelStatus = if (finalResponseText.startsWith("Maaf, semua layanan"))
                         AiModelStatus.FAILURE
                     else
-                        AiModelStatus.SUCCESS
+                        AiModelStatus.SUCCESS,
+                    isAiThinking = false
                 )
             }
 

@@ -76,6 +76,37 @@ fun AiAgentPanel(
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     var showMenu by remember { mutableStateOf(false) }
+    var animatingMessageIds by remember { mutableStateOf(setOf<String>()) }
+    val isAnyMessageAnimating by remember {
+        derivedStateOf { animatingMessageIds.isNotEmpty() }
+    }
+
+    val isProcessing = remember(isAiThinking, isAnyMessageAnimating, messages, animatingMessageIds) {
+        derivedStateOf {
+            if (isAiThinking || isAnyMessageAnimating) return@derivedStateOf true
+
+            // Check if the last AI message is still "new" and waiting to animate
+            val lastAiMessage = messages.lastOrNull { !it.isUser }
+            if (lastAiMessage != null && !lastAiMessage.isThinking && !wasMessageAnimated(lastAiMessage.id)) {
+                // If it's not in the animating set yet, it's about to be
+                return@derivedStateOf true
+            }
+
+            false
+        }
+    }
+
+    // Add a grace period to the processing state to prevent flicker
+    var processingWithGracePeriod by remember { mutableStateOf(false) }
+    LaunchedEffect(isProcessing.value) {
+        if (isProcessing.value) {
+            processingWithGracePeriod = true
+        } else {
+            // Wait for a short duration before re-enabling the send button
+            delay(250L)
+            processingWithGracePeriod = false
+        }
+    }
 
     // ── Auto-scroll State ──────────────────────────────────────────────────────
     var userHasInterrupted by remember { mutableStateOf(false) }
@@ -372,6 +403,13 @@ fun AiAgentPanel(
                                                         listState.scrollToItem(messages.size - 1, 100000)
                                                     }
                                                 }
+                                            },
+                                            onAnimationStateChange = { animating ->
+                                                animatingMessageIds = if (animating) {
+                                                    animatingMessageIds + message.id
+                                                } else {
+                                                    animatingMessageIds - message.id
+                                                }
                                             }
                                         )
                                         Spacer(modifier = Modifier.height(16.dp))
@@ -463,7 +501,7 @@ fun AiAgentPanel(
                                     ),
                                     keyboardActions = androidx.compose.foundation.text.KeyboardActions(
                                         onSend = {
-                                            if (inputMessage.isNotBlank() && !isAiThinking) {
+                                            if (inputMessage.isNotBlank() && !processingWithGracePeriod) {
                                                 onSendMessage()
                                             }
                                         }
@@ -487,20 +525,24 @@ fun AiAgentPanel(
                                                 .padding(horizontal = 12.dp)
                                                 .clip(RoundedCornerShape(8.dp))
                                         ) {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                modifier = Modifier.padding(vertical = 8.dp)
-                                            ) {
-                                                Text(
-                                                    text = if (modelStatus == AiModelStatus.IDLE) "Idle" else (currentModelName ?: ""),
-                                                    color = Gray,
-                                                    fontSize = 12.sp
-                                                )
-                                                Spacer(modifier = Modifier.width(6.dp))
-                                                AnimatedContent(
-                                                    targetState = modelStatus,
-                                                    label = "ModelStatusIcon"
-                                                ) { status ->
+                                            AnimatedContent(
+                                                targetState = modelStatus to currentModelName,
+                                                transitionSpec = {
+                                                    fadeIn(animationSpec = tween(300)) togetherWith
+                                                            fadeOut(animationSpec = tween(300))
+                                                },
+                                                label = "ModelIndicatorTransition"
+                                            ) { (status, name) ->
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    modifier = Modifier.padding(vertical = 8.dp)
+                                                ) {
+                                                    Text(
+                                                        text = if (status == AiModelStatus.IDLE) "Idle" else (name ?: ""),
+                                                        color = Gray,
+                                                        fontSize = 12.sp
+                                                    )
+                                                    Spacer(modifier = Modifier.width(6.dp))
                                                     when (status) {
                                                         AiModelStatus.IDLE -> {
                                                             Icon(
@@ -547,11 +589,11 @@ fun AiAgentPanel(
                                         }
                                         IconButton(
                                             onClick = onSendMessage,
-                                            enabled = inputMessage.isNotBlank() && !isAiThinking,
+                                            enabled = inputMessage.isNotBlank() && !processingWithGracePeriod,
                                             modifier = Modifier
                                                 .clip(RoundedCornerShape(8.dp))
                                                 .background(
-                                                    if (inputMessage.isNotBlank() && !isAiThinking)
+                                                    if (inputMessage.isNotBlank() && !processingWithGracePeriod)
                                                         GrayBlue
                                                     else
                                                         Color(0xFFE0E0E0)
@@ -612,7 +654,8 @@ fun ChatMessageItem(
     message: ChatMessage,
     profilePictureUrl: String?,
     isAlreadyAnimated: Boolean = false,
-    onTextUpdate: () -> Unit = {}
+    onTextUpdate: () -> Unit = {},
+    onAnimationStateChange: (Boolean) -> Unit = {}
 ) {
     if (message.isUser) {
         Row(
@@ -676,7 +719,8 @@ fun ChatMessageItem(
                     TypewriterText(
                         text = message.text,
                         isNewMessage = !isAlreadyAnimated,
-                        onTextUpdate = onTextUpdate
+                        onTextUpdate = onTextUpdate,
+                        onAnimationStateChange = onAnimationStateChange
                     )
                 }
             }
@@ -690,7 +734,8 @@ fun TypewriterText(
     modifier: Modifier = Modifier,
     delayMillis: Long = 10L,
     isNewMessage: Boolean = true,
-    onTextUpdate: () -> Unit = {}
+    onTextUpdate: () -> Unit = {},
+    onAnimationStateChange: (Boolean) -> Unit = {}
 ) {
     var displayedText by rememberSaveable {
         mutableStateOf(if (isNewMessage && text.isNotEmpty()) text.take(1) else text)
@@ -712,6 +757,7 @@ fun TypewriterText(
         }
 
         if (!animationFinished) {
+            onAnimationStateChange(true)
             if (text.isEmpty()) {
                 displayedText = ""
             } else {
@@ -723,8 +769,10 @@ fun TypewriterText(
                 }
             }
             animationFinished = true
+            onAnimationStateChange(false)
         } else {
             displayedText = text
+            onAnimationStateChange(false)
         }
     }
 
