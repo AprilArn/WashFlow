@@ -3,7 +3,9 @@ package com.aprilarn.washflow.ui.aiagent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aprilarn.washflow.ai.Brain
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -12,6 +14,9 @@ class AiAgentViewModel : ViewModel() {
     private val brain = Brain()
     private val _uiState = MutableStateFlow(AiAgentUiState())
     val uiState = _uiState.asStateFlow()
+
+    private val _actionEvents = MutableSharedFlow<AiAgentAction>()
+    val actionEvents = _actionEvents.asSharedFlow()
 
     /**
      * Stores IDs of messages whose entry animation has already played.
@@ -63,15 +68,22 @@ class AiAgentViewModel : ViewModel() {
             }
 
             // Call the AI
-            val finalResponseText = brain.sendMessage(currentInput) { name, status ->
+            val finalResponseRaw = brain.sendMessage(currentInput) { name, status ->
                 _uiState.update { it.copy(currentModelName = name, modelStatus = status) }
             }
+
+            val parsedAction = AiAgentParser.parseAction(finalResponseRaw) ?: AiAgentAction.None
+            val finalResponseText = AiAgentParser.cleanText(finalResponseRaw)
 
             // Replace placeholder with the final response
             _uiState.update { state ->
                 val updatedMessages = state.messages.map { msg ->
                     if (msg.id == aiPlaceholder.id) {
-                        msg.copy(text = finalResponseText, isThinking = false)
+                        msg.copy(
+                            text = finalResponseText,
+                            isThinking = false,
+                            action = parsedAction
+                        )
                     } else {
                         msg
                     }
@@ -100,5 +112,38 @@ class AiAgentViewModel : ViewModel() {
 
     fun setUserInfo(name: String, photoUrl: String?) {
         _uiState.update { it.copy(userName = name, profilePictureUrl = photoUrl) }
+    }
+
+    fun onConfirmAction(messageId: String) {
+        val message = _uiState.value.messages.find { it.id == messageId } ?: return
+        val action = message.action ?: return
+
+        _uiState.update { state ->
+            val updatedMessages = state.messages.map { msg ->
+                if (msg.id == messageId) {
+                    msg.copy(actionExecuted = true)
+                } else {
+                    msg
+                }
+            }
+            state.copy(messages = updatedMessages)
+        }
+
+        viewModelScope.launch {
+            _actionEvents.emit(action)
+        }
+    }
+
+    fun onCancelAction(messageId: String) {
+        _uiState.update { state ->
+            val updatedMessages = state.messages.map { msg ->
+                if (msg.id == messageId) {
+                    msg.copy(actionCancelled = true)
+                } else {
+                    msg
+                }
+            }
+            state.copy(messages = updatedMessages)
+        }
     }
 }

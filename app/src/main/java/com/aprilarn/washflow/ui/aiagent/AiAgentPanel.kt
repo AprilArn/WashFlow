@@ -71,6 +71,8 @@ fun AiAgentPanel(
     onInputChange: (String) -> Unit,
     onSendMessage: () -> Unit,
     onClearHistory: () -> Unit,
+    onConfirmAction: (String) -> Unit,
+    onCancelAction: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
@@ -396,6 +398,8 @@ fun AiAgentPanel(
                                             message = message,
                                             profilePictureUrl = profilePictureUrl,
                                             isAlreadyAnimated = alreadyAnimated,
+                                            onConfirmAction = { onConfirmAction(message.id) },
+                                            onCancelAction = { onCancelAction(message.id) },
                                             onTextUpdate = {
                                                 if (!userHasInterrupted) {
                                                     coroutineScope.launch {
@@ -654,6 +658,8 @@ fun ChatMessageItem(
     message: ChatMessage,
     profilePictureUrl: String?,
     isAlreadyAnimated: Boolean = false,
+    onConfirmAction: () -> Unit = {},
+    onCancelAction: () -> Unit = {},
     onTextUpdate: () -> Unit = {},
     onAnimationStateChange: (Boolean) -> Unit = {}
 ) {
@@ -716,12 +722,87 @@ fun ChatMessageItem(
                         lineHeight = 20.sp
                     )
                 } else {
-                    TypewriterText(
-                        text = message.text,
-                        isNewMessage = !isAlreadyAnimated,
-                        onTextUpdate = onTextUpdate,
-                        onAnimationStateChange = onAnimationStateChange
-                    )
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        TypewriterText(
+                            text = message.text,
+                            isNewMessage = !isAlreadyAnimated,
+                            onTextUpdate = onTextUpdate,
+                            onAnimationStateChange = onAnimationStateChange
+                        )
+
+                        if (message.action != null && message.action is AiAgentAction.Navigate && !message.actionExecuted && !message.actionCancelled && !message.isThinking) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            ActionConfirmationCard(
+                                action = message.action,
+                                onConfirm = onConfirmAction,
+                                onCancel = onCancelAction
+                            )
+                        } else if (message.actionExecuted) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = Color(0xFF4CAF50),
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    "Action executed",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color(0xFF4CAF50)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ActionConfirmationCard(
+    action: AiAgentAction,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit
+) {
+    val description = when (action) {
+        is AiAgentAction.Navigate -> "Pergi ke halaman ${action.destination.label}?"
+        is AiAgentAction.Unknown -> action.message
+        AiAgentAction.None -> ""
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F9FA)),
+        border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                color = MainFontBlack
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextButton(onClick = onCancel) {
+                    Text("Batal", color = Gray)
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = onConfirm,
+                    colors = ButtonDefaults.buttonColors(containerColor = GrayBlue),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
+                    modifier = Modifier.height(36.dp)
+                ) {
+                    Text("Konfirmasi", color = Color.White, fontSize = 13.sp)
                 }
             }
         }
@@ -822,6 +903,8 @@ fun AiAgentPanelBulletPointPreview() {
         onInputChange = {},
         onSendMessage = {},
         onClearHistory = {},
+        onConfirmAction = {},
+        onCancelAction = {},
         onDismiss = {}
     )
 }
@@ -843,6 +926,8 @@ fun AiAgentPanelIdlePreview() {
         onInputChange = {},
         onSendMessage = {},
         onClearHistory = {},
+        onConfirmAction = {},
+        onCancelAction = {},
         onDismiss = {}
     )
 }

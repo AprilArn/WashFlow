@@ -100,6 +100,23 @@ fun MainAppScreen(
     val aiAgentViewModel: AiAgentViewModel = viewModel()
     val aiAgentUiState by aiAgentViewModel.uiState.collectAsStateWithLifecycle()
 
+    // Handle AI Agent actions (navigation)
+    LaunchedEffect(Unit) {
+        aiAgentViewModel.actionEvents.collect { action ->
+            when (action) {
+                is com.aprilarn.washflow.ui.aiagent.AiAgentAction.Navigate -> {
+                    bottomNavController.navigate(action.destination.route)
+                }
+                is com.aprilarn.washflow.ui.aiagent.AiAgentAction.Unknown -> {
+                    // Log or handle unknown action
+                }
+                com.aprilarn.washflow.ui.aiagent.AiAgentAction.None -> {
+                    // Do nothing
+                }
+            }
+        }
+    }
+
     // Inisialisasi SettingsViewModel di level MainAppScreen
     val settingsViewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory)
     val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
@@ -471,6 +488,8 @@ fun MainAppScreen(
         onInputChange = { aiAgentViewModel.onInputChange(it) },
         onSendMessage = { aiAgentViewModel.onSendMessage() },
         onClearHistory = { aiAgentViewModel.onClearHistory() },
+        onConfirmAction = { aiAgentViewModel.onConfirmAction(it) },
+        onCancelAction = { aiAgentViewModel.onCancelAction(it) },
         onDismiss = { aiAgentViewModel.onDismissAiAgent() }
     )
 

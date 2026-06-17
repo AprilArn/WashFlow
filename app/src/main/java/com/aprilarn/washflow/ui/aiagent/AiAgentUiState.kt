@@ -13,7 +13,10 @@ data class ChatMessage(
     val text: String,
     val isUser: Boolean,
     val isThinking: Boolean = false,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val action: AiAgentAction? = null,
+    val actionExecuted: Boolean = false,
+    val actionCancelled: Boolean = false
 )
 
 data class AiAgentUiState(
