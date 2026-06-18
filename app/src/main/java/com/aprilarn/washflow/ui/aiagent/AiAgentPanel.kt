@@ -1,5 +1,6 @@
 package com.aprilarn.washflow.ui.aiagent
 
+import android.view.HapticFeedbackConstants
 import androidx.compose.animation.*
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -41,8 +42,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,6 +62,8 @@ import kotlinx.coroutines.launch
 import com.aprilarn.washflow.ui.theme.Gray
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.MainFontBlack
+import com.aprilarn.washflow.ui.theme.SkyBlue
+import com.aprilarn.washflow.ui.theme.SoftBlack
 import com.aprilarn.washflow.utils.MarkdownUtils
 
 @Composable
@@ -416,7 +426,7 @@ fun AiAgentPanel(
                                                 }
                                             }
                                         )
-                                        Spacer(modifier = Modifier.height(16.dp))
+                                        Spacer(modifier = Modifier.height(if (message.isUser) 12.dp else 32.dp))
                                     }
                                 }
                             }
@@ -722,22 +732,61 @@ fun ChatMessageItem(
                         lineHeight = 20.sp
                     )
                 } else {
+                    // Start as active if it's a new message to prevent the card from flickering/appearing
+                    // for a split second before the typewriter effect actually kicks in.
+                    var isTypewriterActive by remember { mutableStateOf(!isAlreadyAnimated) }
+                    var delayedShowActionCard by remember { mutableStateOf(false) }
+
                     Column(modifier = Modifier.fillMaxWidth()) {
                         TypewriterText(
                             text = message.text,
                             isNewMessage = !isAlreadyAnimated,
                             onTextUpdate = onTextUpdate,
-                            onAnimationStateChange = onAnimationStateChange
+                            onAnimationStateChange = { animating ->
+                                isTypewriterActive = animating
+                                onAnimationStateChange(animating)
+                            }
                         )
 
-                        if (message.action != null && message.action is AiAgentAction.Navigate && !message.actionExecuted && !message.actionCancelled && !message.isThinking) {
-                            Spacer(modifier = Modifier.height(12.dp))
-                            ActionConfirmationCard(
-                                action = message.action,
-                                onConfirm = onConfirmAction,
-                                onCancel = onCancelAction
-                            )
-                        } else if (message.actionExecuted) {
+                        val hasAction = message.action != null &&
+                                        message.action is AiAgentAction.Navigate &&
+                                        !message.actionExecuted &&
+                                        !message.actionCancelled &&
+                                        !message.isThinking
+
+                        LaunchedEffect(isTypewriterActive, hasAction) {
+                            if (!isTypewriterActive && hasAction) {
+                                delay(250L)
+                                delayedShowActionCard = true
+                            } else {
+                                delayedShowActionCard = false
+                            }
+                        }
+
+                        // Sync scroll when the confirmation card appears
+                        LaunchedEffect(delayedShowActionCard) {
+                            if (delayedShowActionCard) {
+                                // Just one scroll update since there's no layout height animation (fade only)
+                                onTextUpdate()
+                            }
+                        }
+
+                        AnimatedVisibility(
+                            visible = delayedShowActionCard,
+                            enter = fadeIn(animationSpec = tween(500)),
+                            exit = fadeOut(animationSpec = tween(500))
+                        ) {
+                            Column {
+                                Spacer(modifier = Modifier.height(12.dp))
+                                ActionConfirmationCard(
+                                    action = message.action!!,
+                                    onConfirm = onConfirmAction,
+                                    onCancel = onCancelAction
+                                )
+                            }
+                        }
+
+                        if (message.actionExecuted) {
                             Spacer(modifier = Modifier.height(8.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
@@ -751,6 +800,24 @@ fun ChatMessageItem(
                                     "Action executed",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = Color(0xFF4CAF50)
+                                )
+                            }
+                        }
+
+                        if (message.actionCancelled) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = null,
+                                    tint = Gray,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    "Action cancelled",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Gray
                                 )
                             }
                         }
@@ -768,21 +835,34 @@ fun ActionConfirmationCard(
     onCancel: () -> Unit
 ) {
     val description = when (action) {
-        is AiAgentAction.Navigate -> "Pergi ke halaman ${action.destination.label}?"
-        is AiAgentAction.Unknown -> action.message
-        AiAgentAction.None -> ""
+        is AiAgentAction.Navigate -> buildAnnotatedString {
+            append("Go to ")
+            withStyle(style = SpanStyle(color = SkyBlue, fontWeight = FontWeight.Bold)) {
+                append(action.destination.label)
+            }
+            append(" page?")
+        }
+        is AiAgentAction.Unknown -> AnnotatedString(action.message)
+        else -> AnnotatedString("")
     }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F9FA)),
-        border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0f)),
+        border = BorderStroke(2.dp, SkyBlue),
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(
+                text = "The agent needs your permission to proceed:",
+                style = MaterialTheme.typography.labelSmall,
+                color = Gray,
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
                 text = description,
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                style = MaterialTheme.typography.bodyMedium,
                 color = MainFontBlack
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -792,17 +872,17 @@ fun ActionConfirmationCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 TextButton(onClick = onCancel) {
-                    Text("Batal", color = Gray)
+                    Text("Cancel", color = Gray, fontSize = 13.sp)
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Button(
                     onClick = onConfirm,
-                    colors = ButtonDefaults.buttonColors(containerColor = GrayBlue),
+                    colors = ButtonDefaults.buttonColors(containerColor = SkyBlue),
                     shape = RoundedCornerShape(8.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
                     modifier = Modifier.height(36.dp)
                 ) {
-                    Text("Konfirmasi", color = Color.White, fontSize = 13.sp)
+                    Text("Confirm", color = Color.White, fontSize = 13.sp)
                 }
             }
         }
@@ -813,7 +893,7 @@ fun ActionConfirmationCard(
 fun TypewriterText(
     text: String,
     modifier: Modifier = Modifier,
-    delayMillis: Long = 10L,
+    delayMillis: Long = 20L,
     isNewMessage: Boolean = true,
     onTextUpdate: () -> Unit = {},
     onAnimationStateChange: (Boolean) -> Unit = {}
@@ -824,6 +904,7 @@ fun TypewriterText(
     var animationFinished by rememberSaveable { mutableStateOf(!isNewMessage) }
     
     var lastProcessedText by rememberSaveable { mutableStateOf(text) }
+    val view = LocalView.current
 
     LaunchedEffect(text) {
         if (text != lastProcessedText) {
@@ -844,13 +925,29 @@ fun TypewriterText(
             } else {
                 val startIndex = displayedText.length
                 for (index in startIndex until text.length) {
+                    val currentChar = text[index]
                     displayedText = text.substring(0, index + 1)
+                    
+                    // Haptic feedback when a word is completed (on whitespace)
+                    if (currentChar.isWhitespace()) {
+                        val prevChar = if (index > 0) text[index - 1] else null
+                        if (prevChar == null || !prevChar.isWhitespace()) {
+                            view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                        }
+                    }
+
                     onTextUpdate()
                     delay(delayMillis)
                 }
             }
             animationFinished = true
             onAnimationStateChange(false)
+            // Much stronger/punchier haptic (REJECT usually provides a sharp triple-tap or strong kick)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                view.performHapticFeedback(HapticFeedbackConstants.REJECT)
+            } else {
+                view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+            }
         } else {
             displayedText = text
             onAnimationStateChange(false)
@@ -880,6 +977,34 @@ fun PromptItem(text: String) {
     }
 }
 
+
+@Preview(showBackground = true)
+@Composable
+fun AiAgentPanelChatPreview() {
+    AiAgentPanel(
+        expanded = true,
+        userName = "April",
+        profilePictureUrl = null,
+        inputMessage = "",
+        messages = listOf(
+            ChatMessage(text = "Hello, can you help me?", isUser = true),
+            ChatMessage(text = "Sure! What can I do for you?", isUser = false),
+            ChatMessage(text = "I want to track my order.", isUser = true),
+            ChatMessage(text = "I can help you with that. Which order would you like to track?", isUser = false)
+        ),
+        isAiThinking = false,
+        currentModelName = "Gemini Flash",
+        modelStatus = AiModelStatus.IDLE,
+        wasMessageAnimated = { true },
+        onMessageAnimated = {},
+        onInputChange = {},
+        onSendMessage = {},
+        onClearHistory = {},
+        onConfirmAction = {},
+        onCancelAction = {},
+        onDismiss = {}
+    )
+}
 
 @Preview(showBackground = true)
 @Composable
