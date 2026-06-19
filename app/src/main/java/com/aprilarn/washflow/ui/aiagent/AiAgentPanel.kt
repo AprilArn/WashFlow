@@ -849,7 +849,7 @@ fun ActionConfirmationCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0f)),
-        border = BorderStroke(2.dp, SkyBlue),
+        border = BorderStroke(2.dp, GrayBlue),
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
@@ -877,7 +877,7 @@ fun ActionConfirmationCard(
                 Spacer(modifier = Modifier.width(8.dp))
                 Button(
                     onClick = onConfirm,
-                    colors = ButtonDefaults.buttonColors(containerColor = SkyBlue),
+                    colors = ButtonDefaults.buttonColors(containerColor = GrayBlue),
                     shape = RoundedCornerShape(8.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
                     modifier = Modifier.height(36.dp)
