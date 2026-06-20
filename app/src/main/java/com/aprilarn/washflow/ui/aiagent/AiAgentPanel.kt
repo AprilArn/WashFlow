@@ -408,7 +408,12 @@ fun AiAgentPanel(
                                             message = message,
                                             profilePictureUrl = profilePictureUrl,
                                             isAlreadyAnimated = alreadyAnimated,
-                                            onConfirmAction = { onConfirmAction(message.id) },
+                                            onConfirmAction = {
+                                                onConfirmAction(message.id)
+                                                if (message.action is AiAgentAction.Navigate) {
+                                                    onDismiss()
+                                                }
+                                            },
                                             onCancelAction = { onCancelAction(message.id) },
                                             onTextUpdate = {
                                                 if (!userHasInterrupted) {
