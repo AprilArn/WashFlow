@@ -2,6 +2,7 @@
 package com.aprilarn.washflow
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -14,8 +15,8 @@ sealed class AppNavigation(val route: String, val icon: ImageVector, val label: 
 
     object ManageOrder : AppNavigation("manage_order", Icons.Default.Phone, "Manage Order")
 
-    object Customers : AppNavigation("customers", Icons.Default.Person, "Users")
-    object Services : AppNavigation("services", Icons.Default.List, "Services")
+    object Customers : AppNavigation("customers", Icons.Default.Person, "Customers")
+    object Services : AppNavigation("services", Icons.AutoMirrored.Filled.List, "Services")
     object Items : AppNavigation("items", Icons.Default.ShoppingCart, "Items")
 
     // Tambahkan rute baru untuk 'TableDataScreen'
