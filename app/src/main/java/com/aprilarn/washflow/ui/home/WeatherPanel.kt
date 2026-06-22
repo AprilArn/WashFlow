@@ -50,6 +50,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aprilarn.washflow.ui.components.shimmerModifier
+import androidx.compose.foundation.shape.CircleShape
 import coil.compose.AsyncImage
 
 private fun parseTemperature(tempStr: String): Int {
@@ -143,44 +145,56 @@ fun WeatherDetailsPanel(state: HomeUiState) {
             WeatherDetailRow(
                 icon = Icons.Default.Thermostat,
                 label = "Feels Like",
-                value = state.feelsLike
+                value = state.feelsLike,
+                isLoading = state.isLoading
             )
             WeatherDetailRow(
                 icon = Icons.Default.WaterDrop,
                 label = "Humidity",
-                value = state.humidity
+                value = state.humidity,
+                isLoading = state.isLoading
             )
             WeatherDetailRow(
                 icon = Icons.Default.Cloud,
                 label = "Precipitation",
-                value = state.precipitationProb
+                value = state.precipitationProb,
+                isLoading = state.isLoading
             )
             WeatherDetailRow(
                 icon = Icons.Default.WbSunny,
                 label = "UV Index",
-                value = state.uvIndex
+                value = state.uvIndex,
+                isLoading = state.isLoading
             )
             WeatherDetailRow(
                 icon = Icons.Default.Air,
                 label = "Wind Speed",
-                value = state.windSpeed
+                value = state.windSpeed,
+                isLoading = state.isLoading
             )
             WeatherDetailRow(
                 icon = Icons.Default.Explore,
                 label = "Wind Direction",
-                value = state.windDirection
+                value = state.windDirection,
+                isLoading = state.isLoading
             )
             WeatherDetailRow(
                 icon = Icons.Default.Thunderstorm,
                 label = "Thunderstorm",
-                value = state.thunderstormProb
+                value = state.thunderstormProb,
+                isLoading = state.isLoading
             )
         }
     }
 }
 
 @Composable
-fun WeatherDetailRow(icon: ImageVector, label: String, value: String) {
+fun WeatherDetailRow(
+    icon: ImageVector,
+    label: String,
+    value: String,
+    isLoading: Boolean = false
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -198,20 +212,30 @@ fun WeatherDetailRow(icon: ImageVector, label: String, value: String) {
                 color = Color.White.copy(alpha = 0.7f),
                 fontSize = 11.sp
             )
-            Text(
-                text = value,
-                color = Color.White,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold
-            )
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .size(width = 48.dp, height = 16.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .shimmerModifier()
+                )
+            } else {
+                Text(
+                    text = value,
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
     }
 }
 
 @Composable
 fun HorizontalWeatherForecast(
+    modifier: Modifier = Modifier,
     forecasts: List<HourlyForecastUiState>,
-    modifier: Modifier = Modifier
+    isLoading: Boolean = false
 ) {
     // Container transparan agar rapi
     Box(
@@ -223,7 +247,9 @@ fun HorizontalWeatherForecast(
             .padding(vertical = 12.dp, horizontal = 8.dp),
         contentAlignment = Alignment.Center
     ) {
-        if (forecasts.isEmpty()) {
+        if (isLoading) {
+            HorizontalWeatherForecastShimmer()
+        } else if (forecasts.isEmpty()) {
             Text(
                 text = "Loading weather forecast...",
                 style = MaterialTheme.typography.bodySmall.copy(color = Color.White),
@@ -301,6 +327,68 @@ fun HorizontalWeatherForecast(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun HorizontalWeatherForecastShimmer() {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.wrapContentWidth(),
+        horizontalArrangement = Arrangement.spacedBy(0.dp)
+    ) {
+        repeat(7) {
+            HorizontalForecastItemShimmer()
+        }
+    }
+}
+
+@Composable
+fun HorizontalForecastItemShimmer() {
+    Column(
+        modifier = Modifier.width(64.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        // 1. Jam (Time) Shimmer
+        Box(
+            modifier = Modifier
+                .size(width = 32.dp, height = 12.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .shimmerModifier()
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // 2. Ikon Shimmer
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(CircleShape)
+                .shimmerModifier()
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // 3. Suhu Shimmer
+        Box(
+            modifier = Modifier
+                .size(width = 40.dp, height = 16.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .shimmerModifier()
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // 4. Diagram Suhu Shimmer (Long horizontal shimmer)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(40.dp)
+                .padding(vertical = 18.dp) // Adjust to match line height visually
+                .clip(RoundedCornerShape(2.dp))
+                .shimmerModifier()
+        )
     }
 }
 
@@ -387,6 +475,22 @@ fun HorizontalForecastItem(
     }
 }
 
+@Preview(showBackground = true, name = "Weather Panel Loading")
+@Composable
+fun WeatherPanelLoadingPreview() {
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text("Horizontal Weather Forecast Loading", color = Color.White)
+        Spacer(modifier = Modifier.height(8.dp))
+        HorizontalWeatherForecast(forecasts = emptyList(), isLoading = true)
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Text("Weather Details Panel Loading", color = Color.White)
+        Spacer(modifier = Modifier.height(8.dp))
+        WeatherDetailsPanel(state = HomeUiState(isLoading = true))
+    }
+}
+
 @Preview(showBackground = true, name = "Weather Details")
 @Composable
 fun WeatherDetailsPanelPreview() {
@@ -443,7 +547,7 @@ fun HorizontalWeatherForecastScenariosPreview() {
     ) {
         scenarios.forEachIndexed { index, forecast ->
             Text("Scenario ${index + 1}", color = Color.White)
-            HorizontalWeatherForecast(forecasts = forecast)
+            HorizontalWeatherForecast(forecasts = forecast, isLoading = false)
         }
     }
 }

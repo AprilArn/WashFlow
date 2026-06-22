@@ -160,7 +160,8 @@ fun HomeScreen(
 
                 // Tampilkan Forecast Horizontal di sini
                 HorizontalWeatherForecast(
-                    forecasts = state.hourlyForecasts
+                    forecasts = state.hourlyForecasts,
+                    isLoading = state.isLoading
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
