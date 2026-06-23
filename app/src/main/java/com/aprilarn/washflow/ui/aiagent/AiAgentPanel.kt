@@ -81,7 +81,7 @@ fun AiAgentPanel(
     onInputChange: (String) -> Unit,
     onSendMessage: () -> Unit,
     onClearHistory: () -> Unit,
-    onConfirmAction: (String) -> Unit,
+    onConfirmAction: (String, AiAgentAction?) -> Unit,
     onCancelAction: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -408,8 +408,8 @@ fun AiAgentPanel(
                                             message = message,
                                             profilePictureUrl = profilePictureUrl,
                                             isAlreadyAnimated = alreadyAnimated,
-                                            onConfirmAction = {
-                                                onConfirmAction(message.id)
+                                            onConfirmAction = { updatedAction ->
+                                                onConfirmAction(message.id, updatedAction)
                                                 if (message.action is AiAgentAction.Navigate) {
                                                     onDismiss()
                                                 }
@@ -651,29 +651,11 @@ fun AiAgentPanel(
 }
 
 @Composable
-fun AiMessageHeader() {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            imageVector = Icons.Default.AutoAwesome,
-            contentDescription = null,
-            tint = GrayBlue,
-            modifier = Modifier.size(16.dp)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = "WashFlow AI",
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-            color = GrayBlue
-        )
-    }
-}
-
-@Composable
 fun ChatMessageItem(
     message: ChatMessage,
     profilePictureUrl: String?,
     isAlreadyAnimated: Boolean = false,
-    onConfirmAction: () -> Unit = {},
+    onConfirmAction: (AiAgentAction?) -> Unit = {},
     onCancelAction: () -> Unit = {},
     onTextUpdate: () -> Unit = {},
     onAnimationStateChange: (Boolean) -> Unit = {}
@@ -754,7 +736,7 @@ fun ChatMessageItem(
                         )
 
                         val hasAction = message.action != null &&
-                                        message.action is AiAgentAction.Navigate &&
+                                        message.action !is AiAgentAction.None &&
                                         !message.actionExecuted &&
                                         !message.actionCancelled &&
                                         !message.isThinking
@@ -833,156 +815,6 @@ fun ChatMessageItem(
     }
 }
 
-@Composable
-fun ActionConfirmationCard(
-    action: AiAgentAction,
-    onConfirm: () -> Unit,
-    onCancel: () -> Unit
-) {
-    val description = when (action) {
-        is AiAgentAction.Navigate -> buildAnnotatedString {
-            append("Go to ")
-            withStyle(style = SpanStyle(color = SkyBlue, fontWeight = FontWeight.Bold)) {
-                append(action.destination.label)
-            }
-            append(" page?")
-        }
-        is AiAgentAction.Unknown -> AnnotatedString(action.message)
-        else -> AnnotatedString("")
-    }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0f)),
-        border = BorderStroke(2.dp, GrayBlue),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                text = "The agent needs your permission to proceed:",
-                style = MaterialTheme.typography.labelSmall,
-                color = Gray,
-                fontWeight = FontWeight.Medium
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MainFontBlack
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                TextButton(onClick = onCancel) {
-                    Text("Cancel", color = Gray, fontSize = 13.sp)
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(
-                    onClick = onConfirm,
-                    colors = ButtonDefaults.buttonColors(containerColor = GrayBlue),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
-                    modifier = Modifier.height(36.dp)
-                ) {
-                    Text("Confirm", color = Color.White, fontSize = 13.sp)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun TypewriterText(
-    text: String,
-    modifier: Modifier = Modifier,
-    delayMillis: Long = 20L,
-    isNewMessage: Boolean = true,
-    onTextUpdate: () -> Unit = {},
-    onAnimationStateChange: (Boolean) -> Unit = {}
-) {
-    var displayedText by rememberSaveable {
-        mutableStateOf(if (isNewMessage && text.isNotEmpty()) text.take(1) else text)
-    }
-    var animationFinished by rememberSaveable { mutableStateOf(!isNewMessage) }
-    
-    var lastProcessedText by rememberSaveable { mutableStateOf(text) }
-    val view = LocalView.current
-
-    LaunchedEffect(text) {
-        if (text != lastProcessedText) {
-            lastProcessedText = text
-            if (isNewMessage) {
-                displayedText = text.take(1)
-                animationFinished = false
-            } else {
-                displayedText = text
-                animationFinished = true
-            }
-        }
-
-        if (!animationFinished) {
-            onAnimationStateChange(true)
-            if (text.isEmpty()) {
-                displayedText = ""
-            } else {
-                val startIndex = displayedText.length
-                for (index in startIndex until text.length) {
-                    val currentChar = text[index]
-                    displayedText = text.substring(0, index + 1)
-                    
-                    // Haptic feedback when a word is completed (on whitespace)
-                    if (currentChar.isWhitespace()) {
-                        val prevChar = if (index > 0) text[index - 1] else null
-                        if (prevChar == null || !prevChar.isWhitespace()) {
-                            view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                        }
-                    }
-
-                    onTextUpdate()
-                    delay(delayMillis)
-                }
-            }
-            animationFinished = true
-            onAnimationStateChange(false)
-            // Much stronger/punchier haptic (REJECT usually provides a sharp triple-tap or strong kick)
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-                view.performHapticFeedback(HapticFeedbackConstants.REJECT)
-            } else {
-                view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-            }
-        } else {
-            displayedText = text
-            onAnimationStateChange(false)
-        }
-    }
-
-    Text(
-        text = MarkdownUtils.parseMarkdown(displayedText),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MainFontBlack,
-        lineHeight = 20.sp,
-        modifier = modifier.fillMaxWidth()
-    )
-}
-
-@Composable
-fun PromptItem(text: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(8.dp))
-            .clickable { }
-            .padding(12.dp)
-    ) {
-        Text(text, color = MainFontBlack, fontSize = 13.sp)
-    }
-}
-
-
 @Preview(showBackground = true)
 @Composable
 fun AiAgentPanelChatPreview() {
@@ -1005,7 +837,7 @@ fun AiAgentPanelChatPreview() {
         onInputChange = {},
         onSendMessage = {},
         onClearHistory = {},
-        onConfirmAction = {},
+        onConfirmAction = { _, _ -> },
         onCancelAction = {},
         onDismiss = {}
     )
@@ -1033,7 +865,7 @@ fun AiAgentPanelBulletPointPreview() {
         onInputChange = {},
         onSendMessage = {},
         onClearHistory = {},
-        onConfirmAction = {},
+        onConfirmAction = { _, _ -> },
         onCancelAction = {},
         onDismiss = {}
     )
@@ -1056,7 +888,7 @@ fun AiAgentPanelIdlePreview() {
         onInputChange = {},
         onSendMessage = {},
         onClearHistory = {},
-        onConfirmAction = {},
+        onConfirmAction = { _, _ -> },
         onCancelAction = {},
         onDismiss = {}
     )

@@ -100,12 +100,20 @@ fun MainAppScreen(
     val aiAgentViewModel: AiAgentViewModel = viewModel()
     val aiAgentUiState by aiAgentViewModel.uiState.collectAsStateWithLifecycle()
 
+    val customersViewModel: com.aprilarn.washflow.ui.customers.CustomersViewModel = viewModel()
+
+    val context = LocalContext.current
+
     // Handle AI Agent actions (navigation)
     LaunchedEffect(Unit) {
         aiAgentViewModel.actionEvents.collect { action ->
             when (action) {
                 is com.aprilarn.washflow.ui.aiagent.AiAgentAction.Navigate -> {
                     bottomNavController.navigate(action.destination.route)
+                }
+                is com.aprilarn.washflow.ui.aiagent.AiAgentAction.AddCustomer -> {
+                    customersViewModel.addCustomer(action.name, action.phoneNumber)
+                    android.widget.Toast.makeText(context, "Customer '${action.name}' added successfully!", android.widget.Toast.LENGTH_SHORT).show()
                 }
                 is com.aprilarn.washflow.ui.aiagent.AiAgentAction.Unknown -> {
                     // Log or handle unknown action
@@ -120,8 +128,6 @@ fun MainAppScreen(
     // Inisialisasi SettingsViewModel di level MainAppScreen
     val settingsViewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory)
     val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
-
-    val context = LocalContext.current
 
     // Inisialisasi HomeViewModel di level MainAppScreen agar bisa dibagikan
     val homeViewModelFactory = object : ViewModelProvider.Factory {
@@ -488,7 +494,7 @@ fun MainAppScreen(
         onInputChange = { aiAgentViewModel.onInputChange(it) },
         onSendMessage = { aiAgentViewModel.onSendMessage() },
         onClearHistory = { aiAgentViewModel.onClearHistory() },
-        onConfirmAction = { aiAgentViewModel.onConfirmAction(it) },
+        onConfirmAction = { id, action -> aiAgentViewModel.onConfirmAction(id, action) },
         onCancelAction = { aiAgentViewModel.onCancelAction(it) },
         onDismiss = { aiAgentViewModel.onDismissAiAgent() }
     )

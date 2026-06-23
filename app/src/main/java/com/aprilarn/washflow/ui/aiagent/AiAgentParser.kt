@@ -29,6 +29,13 @@ object AiAgentParser {
                     mapRouteToAction(route)
                 } else null
             }
+            "ADD_CUSTOMER" -> {
+                if (parts.size >= 3) {
+                    val name = parts[1]
+                    val phone = parts[2]
+                    AiAgentAction.AddCustomer(name, phone)
+                } else null
+            }
             else -> null
         }
     }

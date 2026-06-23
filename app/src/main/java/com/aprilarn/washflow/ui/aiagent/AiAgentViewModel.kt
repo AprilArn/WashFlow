@@ -114,9 +114,9 @@ class AiAgentViewModel : ViewModel() {
         _uiState.update { it.copy(userName = name, profilePictureUrl = photoUrl) }
     }
 
-    fun onConfirmAction(messageId: String) {
+    fun onConfirmAction(messageId: String, updatedAction: AiAgentAction? = null) {
         val message = _uiState.value.messages.find { it.id == messageId } ?: return
-        val action = message.action ?: return
+        val action = updatedAction ?: message.action ?: return
 
         _uiState.update { state ->
             val updatedMessages = state.messages.map { msg ->
