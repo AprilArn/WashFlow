@@ -10,6 +10,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -21,14 +23,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.toSize
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
+import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.ui.theme.Gray
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.MainFontBlack
@@ -57,15 +66,60 @@ fun AiMessageHeader() {
 @Composable
 fun ActionConfirmationCard(
     action: AiAgentAction,
+    customers: List<Customers> = emptyList(),
     onConfirm: (AiAgentAction?) -> Unit,
     onCancel: () -> Unit
 ) {
     var editedName by remember(action) {
-        mutableStateOf(if (action is AiAgentAction.AddCustomer) action.name else "")
+        mutableStateOf(
+            when (action) {
+                is AiAgentAction.AddCustomer -> action.name
+                is AiAgentAction.DeleteCustomer -> action.name
+                else -> ""
+            }
+        )
     }
-    var editedPhone by remember(action) {
-        mutableStateOf(if (action is AiAgentAction.AddCustomer) action.phoneNumber else "")
+    var editedValue by remember(action) {
+        mutableStateOf(
+            when (action) {
+                is AiAgentAction.AddCustomer -> action.phoneNumber
+                is AiAgentAction.DeleteCustomer -> action.contact
+                else -> ""
+            }
+        )
     }
+
+    var selectedCustomerId by remember(action) {
+        mutableStateOf(
+            if (action is AiAgentAction.DeleteCustomer) action.customerId else ""
+        )
+    }
+
+    // Auto-match for DeleteCustomer
+    LaunchedEffect(action, customers) {
+        if (action is AiAgentAction.DeleteCustomer && selectedCustomerId.isEmpty()) {
+            // Prioritas pencarian:
+            // 1. Exact match di Phone Number (Contact)
+            // 2. Exact match di Name (Case Insensitive)
+            // 3. Partial match di Name
+            val match = customers.find { 
+                action.contact.isNotBlank() && it.contact == action.contact 
+            } ?: customers.find { 
+                action.name.isNotBlank() && it.name.equals(action.name, ignoreCase = true)
+            } ?: customers.find { 
+                action.name.isNotBlank() && it.name.contains(action.name, ignoreCase = true)
+            }
+
+            if (match != null) {
+                editedName = match.name
+                editedValue = match.contact ?: ""
+                selectedCustomerId = match.customerId
+            }
+        }
+    }
+
+    var isDropdownExpanded by remember { mutableStateOf(false) }
+    var textFieldSize by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
 
     val description = when (action) {
         is AiAgentAction.Navigate -> buildAnnotatedString {
@@ -81,6 +135,13 @@ fun ActionConfirmationCard(
                 append(editedName)
             }
             append(" as a new customer?")
+        }
+        is AiAgentAction.DeleteCustomer -> buildAnnotatedString {
+            append("Delete customer ")
+            withStyle(style = SpanStyle(color = Color.Red, fontWeight = FontWeight.Bold)) {
+                append(editedName)
+            }
+            append("?")
         }
         is AiAgentAction.Unknown -> AnnotatedString(action.message)
         else -> AnnotatedString("")
@@ -102,25 +163,99 @@ fun ActionConfirmationCard(
             )
             Spacer(modifier = Modifier.height(8.dp))
             
-            if (action is AiAgentAction.AddCustomer) {
-                Column {
-                    OutlinedTextField(
-                        value = editedName,
-                        onValueChange = { editedName = it },
-                        label = { Text("Customer Name", fontSize = 12.sp) },
-                        modifier = Modifier.fillMaxWidth(),
-                        textStyle = MaterialTheme.typography.bodyMedium,
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = GrayBlue,
-                            unfocusedBorderColor = Color(0xFFE0E0E0)
+            if (action is AiAgentAction.AddCustomer || action is AiAgentAction.DeleteCustomer) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Box {
+                        OutlinedTextField(
+                            value = editedName,
+                            onValueChange = { 
+                                editedName = it
+                                isDropdownExpanded = true
+                            },
+                            label = { Text("Customer Name", fontSize = 12.sp) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .onGloballyPositioned { coordinates ->
+                                    textFieldSize = coordinates.size.toSize()
+                                },
+                            textStyle = MaterialTheme.typography.bodyMedium,
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = GrayBlue,
+                                unfocusedBorderColor = Color(0xFFE0E0E0)
+                            )
                         )
-                    )
+
+                        if (isDropdownExpanded && editedName.isNotEmpty()) {
+                            val filteredCustomers = customers.filter {
+                                it.name.contains(editedName, ignoreCase = true)
+                            }
+
+                            if (filteredCustomers.isNotEmpty()) {
+                                Popup(
+                                    onDismissRequest = { isDropdownExpanded = false },
+                                    offset = IntOffset(x = 0, y = textFieldSize.height.toInt()),
+                                    properties = PopupProperties(focusable = false)
+                                ) {
+                                    Surface(
+                                        modifier = Modifier
+                                            .width(with(LocalDensity.current) { textFieldSize.width.toDp() })
+                                            .padding(top = 4.dp)
+                                            .heightIn(max = 150.dp),
+                                        shape = RoundedCornerShape(8.dp),
+                                        shadowElevation = 4.dp,
+                                        border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
+                                        color = Color.White
+                                    ) {
+                                        LazyColumn {
+                                            items(filteredCustomers) { customer ->
+                                                DropdownMenuItem(
+                                                    text = { 
+                                                        Column {
+                                                            Text(customer.name, style = MaterialTheme.typography.bodyMedium)
+                                                            if (!customer.contact.isNullOrEmpty()) {
+                                                                Text(customer.contact, style = MaterialTheme.typography.labelSmall, color = Gray)
+                                                            }
+                                                        }
+                                                    },
+                                                    onClick = {
+                                                        editedName = customer.name
+                                                        if (action is AiAgentAction.AddCustomer) {
+                                                            editedValue = customer.contact ?: ""
+                                                        } else if (action is AiAgentAction.DeleteCustomer) {
+                                                            editedValue = customer.contact ?: ""
+                                                            selectedCustomerId = customer.customerId
+                                                        }
+                                                        isDropdownExpanded = false
+                                                    }
+                                                )
+                                                HorizontalDivider(color = Color(0xFFEEEEEE))
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
                     Spacer(modifier = Modifier.height(8.dp))
+                    
                     OutlinedTextField(
-                        value = editedPhone,
-                        onValueChange = { editedPhone = it },
-                        label = { Text("Phone Number", fontSize = 12.sp) },
+                        value = editedValue,
+                        onValueChange = { 
+                            editedValue = it
+                            if (action is AiAgentAction.DeleteCustomer) {
+                                // If user manually changes contact, reset ID until matched via dropdown or re-match logic
+                                selectedCustomerId = ""
+                                isDropdownExpanded = true
+                            }
+                        },
+                        label = {
+                            Text(
+                                if (action is AiAgentAction.AddCustomer || action is AiAgentAction.DeleteCustomer) "Phone Number" else "Customer ID",
+                                fontSize = 12.sp
+                            )
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         textStyle = MaterialTheme.typography.bodyMedium,
                         singleLine = true,
@@ -153,18 +288,26 @@ fun ActionConfirmationCard(
                 Spacer(modifier = Modifier.width(8.dp))
                 Button(
                     onClick = {
-                        if (action is AiAgentAction.AddCustomer) {
-                            onConfirm(AiAgentAction.AddCustomer(editedName, editedPhone))
-                        } else {
-                            onConfirm(null)
+                        val resultAction = when (action) {
+                            is AiAgentAction.AddCustomer -> AiAgentAction.AddCustomer(editedName, editedValue)
+                            is AiAgentAction.DeleteCustomer -> AiAgentAction.DeleteCustomer(editedName, editedValue, selectedCustomerId)
+                            else -> null
                         }
+                        onConfirm(resultAction)
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = GrayBlue),
+                    enabled = if (action is AiAgentAction.DeleteCustomer) selectedCustomerId.isNotEmpty() else true,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (action is AiAgentAction.DeleteCustomer) Color(0xFFEF5350) else GrayBlue
+                    ),
                     shape = RoundedCornerShape(8.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
                     modifier = Modifier.height(36.dp)
                 ) {
-                    Text("Confirm", color = Color.White, fontSize = 13.sp)
+                    Text(
+                        if (action is AiAgentAction.DeleteCustomer) "Delete" else "Confirm", 
+                        color = Color.White, 
+                        fontSize = 13.sp
+                    )
                 }
             }
         }

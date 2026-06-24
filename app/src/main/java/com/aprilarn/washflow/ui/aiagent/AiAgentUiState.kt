@@ -1,5 +1,7 @@
 package com.aprilarn.washflow.ui.aiagent
 
+import com.aprilarn.washflow.data.model.Customers
+
 enum class AiModelStatus {
     IDLE,
     THINKING,
@@ -27,5 +29,6 @@ data class AiAgentUiState(
     val messages: List<ChatMessage> = emptyList(),
     val isAiThinking: Boolean = false,
     val currentModelName: String? = null,
-    val modelStatus: AiModelStatus = AiModelStatus.IDLE
+    val modelStatus: AiModelStatus = AiModelStatus.IDLE,
+    val customers: List<Customers> = emptyList()
 )

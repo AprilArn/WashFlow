@@ -3,20 +3,37 @@ package com.aprilarn.washflow.ui.aiagent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aprilarn.washflow.ai.Brain
+import com.aprilarn.washflow.data.repository.CustomerRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class AiAgentViewModel : ViewModel() {
     private val brain = Brain()
+    private val customerRepository = CustomerRepository()
     private val _uiState = MutableStateFlow(AiAgentUiState())
     val uiState = _uiState.asStateFlow()
 
     private val _actionEvents = MutableSharedFlow<AiAgentAction>()
     val actionEvents = _actionEvents.asSharedFlow()
+
+    init {
+        listenForCustomerChanges()
+    }
+
+    private fun listenForCustomerChanges() {
+        viewModelScope.launch {
+            customerRepository.getCustomersRealtime()
+                .catch { /* Handle error if needed */ }
+                .collect { customers ->
+                    _uiState.update { it.copy(customers = customers) }
+                }
+        }
+    }
 
     /**
      * Stores IDs of messages whose entry animation has already played.

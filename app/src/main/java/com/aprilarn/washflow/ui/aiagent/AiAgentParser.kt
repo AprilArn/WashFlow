@@ -36,6 +36,13 @@ object AiAgentParser {
                     AiAgentAction.AddCustomer(name, phone)
                 } else null
             }
+            "DELETE_CUSTOMER" -> {
+                if (parts.size >= 2) {
+                    val name = parts[1]
+                    val contact = if (parts.size >= 3) parts[2] else ""
+                    AiAgentAction.DeleteCustomer(name, contact)
+                } else null
+            }
             else -> null
         }
     }

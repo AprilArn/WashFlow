@@ -55,6 +55,14 @@ class Brain {
             
             Example: "I've prepared the details to add April as a new customer. [ACTION:ADD_CUSTOMER:April:08123456789]"
             
+            ## 3. DELETE CUSTOMER
+            Trigger this tag when the user wants to delete a customer. Provide the name and/or the contact number. You no longer need to provide a customer ID; the app will find the relevant customer for confirmation.
+            Format: [ACTION:DELETE_CUSTOMER:Name:Phone]
+            
+            Example: "I understand you want to delete the customer 'Budi'. [ACTION:DELETE_CUSTOMER:Budi:]"
+            Example: "I'll help you delete the customer with number '08123'. [ACTION:DELETE_CUSTOMER::08123]"
+            Example: "I'll help you delete 'Santi' (08123). [ACTION:DELETE_CUSTOMER:Santi:08123]"
+            
             """.trimIndent()
         )
     }

@@ -65,6 +65,7 @@ import com.aprilarn.washflow.ui.theme.MainFontBlack
 import com.aprilarn.washflow.ui.theme.SkyBlue
 import com.aprilarn.washflow.ui.theme.SoftBlack
 import com.aprilarn.washflow.utils.MarkdownUtils
+import com.aprilarn.washflow.data.model.Customers
 
 @Composable
 fun AiAgentPanel(
@@ -76,6 +77,7 @@ fun AiAgentPanel(
     isAiThinking: Boolean,
     currentModelName: String? = null,
     modelStatus: AiModelStatus = AiModelStatus.IDLE,
+    customers: List<Customers> = emptyList(),
     wasMessageAnimated: (String) -> Boolean,
     onMessageAnimated: (String) -> Unit,
     onInputChange: (String) -> Unit,
@@ -408,6 +410,7 @@ fun AiAgentPanel(
                                             message = message,
                                             profilePictureUrl = profilePictureUrl,
                                             isAlreadyAnimated = alreadyAnimated,
+                                            customers = customers,
                                             onConfirmAction = { updatedAction ->
                                                 onConfirmAction(message.id, updatedAction)
                                                 if (message.action is AiAgentAction.Navigate) {
@@ -655,6 +658,7 @@ fun ChatMessageItem(
     message: ChatMessage,
     profilePictureUrl: String?,
     isAlreadyAnimated: Boolean = false,
+    customers: List<Customers> = emptyList(),
     onConfirmAction: (AiAgentAction?) -> Unit = {},
     onCancelAction: () -> Unit = {},
     onTextUpdate: () -> Unit = {},
@@ -767,6 +771,7 @@ fun ChatMessageItem(
                                 Spacer(modifier = Modifier.height(12.dp))
                                 ActionConfirmationCard(
                                     action = message.action!!,
+                                    customers = customers,
                                     onConfirm = onConfirmAction,
                                     onCancel = onCancelAction
                                 )
