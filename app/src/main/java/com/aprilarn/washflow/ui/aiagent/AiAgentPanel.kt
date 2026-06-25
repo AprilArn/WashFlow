@@ -209,7 +209,7 @@ fun AiAgentPanel(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "WashFlow AI",
+                            text = "Aira",
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 19.sp

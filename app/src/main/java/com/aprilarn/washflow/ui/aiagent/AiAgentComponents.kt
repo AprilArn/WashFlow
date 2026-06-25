@@ -56,7 +56,7 @@ fun AiMessageHeader() {
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = "WashFlow AI",
+            text = "Aira",
             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
             color = GrayBlue
         )
@@ -89,10 +89,15 @@ fun ActionConfirmationCard(
         )
     }
 
-    var selectedCustomerId by remember(action) {
-        mutableStateOf(
-            if (action is AiAgentAction.DeleteCustomer) action.customerId else ""
-        )
+    val selectedCustomerId by remember(editedName, editedValue, customers) {
+        derivedStateOf {
+            if (action is AiAgentAction.DeleteCustomer) {
+                customers.find { 
+                    it.name.equals(editedName, ignoreCase = true) && 
+                    (it.contact ?: "") == editedValue
+                }?.customerId ?: ""
+            } else ""
+        }
     }
 
     // Auto-match for DeleteCustomer
@@ -113,13 +118,14 @@ fun ActionConfirmationCard(
             if (match != null) {
                 editedName = match.name
                 editedValue = match.contact ?: ""
-                selectedCustomerId = match.customerId
             }
         }
     }
 
-    var isDropdownExpanded by remember { mutableStateOf(false) }
-    var textFieldSize by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
+    var isNameDropdownExpanded by remember { mutableStateOf(false) }
+    var isPhoneDropdownExpanded by remember { mutableStateOf(false) }
+    var nameTextFieldSize by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
+    var phoneTextFieldSize by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
 
     val description = when (action) {
         is AiAgentAction.Navigate -> buildAnnotatedString {
@@ -170,13 +176,14 @@ fun ActionConfirmationCard(
                             value = editedName,
                             onValueChange = { 
                                 editedName = it
-                                isDropdownExpanded = true
+                                isNameDropdownExpanded = true
+                                isPhoneDropdownExpanded = false
                             },
                             label = { Text("Customer Name", fontSize = 12.sp) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .onGloballyPositioned { coordinates ->
-                                    textFieldSize = coordinates.size.toSize()
+                                    nameTextFieldSize = coordinates.size.toSize()
                                 },
                             textStyle = MaterialTheme.typography.bodyMedium,
                             singleLine = true,
@@ -186,20 +193,20 @@ fun ActionConfirmationCard(
                             )
                         )
 
-                        if (isDropdownExpanded && editedName.isNotEmpty()) {
+                        if (isNameDropdownExpanded && editedName.isNotEmpty()) {
                             val filteredCustomers = customers.filter {
                                 it.name.contains(editedName, ignoreCase = true)
                             }
 
                             if (filteredCustomers.isNotEmpty()) {
                                 Popup(
-                                    onDismissRequest = { isDropdownExpanded = false },
-                                    offset = IntOffset(x = 0, y = textFieldSize.height.toInt()),
+                                    onDismissRequest = { isNameDropdownExpanded = false },
+                                    offset = IntOffset(x = 0, y = nameTextFieldSize.height.toInt()),
                                     properties = PopupProperties(focusable = false)
                                 ) {
                                     Surface(
                                         modifier = Modifier
-                                            .width(with(LocalDensity.current) { textFieldSize.width.toDp() })
+                                            .width(with(LocalDensity.current) { nameTextFieldSize.width.toDp() })
                                             .padding(top = 4.dp)
                                             .heightIn(max = 150.dp),
                                         shape = RoundedCornerShape(8.dp),
@@ -220,13 +227,8 @@ fun ActionConfirmationCard(
                                                     },
                                                     onClick = {
                                                         editedName = customer.name
-                                                        if (action is AiAgentAction.AddCustomer) {
-                                                            editedValue = customer.contact ?: ""
-                                                        } else if (action is AiAgentAction.DeleteCustomer) {
-                                                            editedValue = customer.contact ?: ""
-                                                            selectedCustomerId = customer.customerId
-                                                        }
-                                                        isDropdownExpanded = false
+                                                        editedValue = customer.contact ?: ""
+                                                        isNameDropdownExpanded = false
                                                     }
                                                 )
                                                 HorizontalDivider(color = Color(0xFFEEEEEE))
@@ -240,33 +242,84 @@ fun ActionConfirmationCard(
                     
                     Spacer(modifier = Modifier.height(8.dp))
                     
-                    OutlinedTextField(
-                        value = editedValue,
-                        onValueChange = { 
-                            editedValue = it
-                            if (action is AiAgentAction.DeleteCustomer) {
-                                // If user manually changes contact, reset ID until matched via dropdown or re-match logic
-                                selectedCustomerId = ""
-                                isDropdownExpanded = true
-                            }
-                        },
-                        label = {
-                            Text(
-                                if (action is AiAgentAction.AddCustomer || action is AiAgentAction.DeleteCustomer) "Phone Number" else "Customer ID",
-                                fontSize = 12.sp
+                    Box {
+                        OutlinedTextField(
+                            value = editedValue,
+                            onValueChange = { 
+                                editedValue = it
+                                if (action is AiAgentAction.DeleteCustomer) {
+                                    isPhoneDropdownExpanded = true
+                                    isNameDropdownExpanded = false
+                                }
+                            },
+                            label = {
+                                Text(
+                                    if (action is AiAgentAction.AddCustomer || action is AiAgentAction.DeleteCustomer) "Phone Number" else "Customer ID",
+                                    fontSize = 12.sp
+                                )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .onGloballyPositioned { coordinates ->
+                                    phoneTextFieldSize = coordinates.size.toSize()
+                                },
+                            textStyle = MaterialTheme.typography.bodyMedium,
+                            singleLine = true,
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                                keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone
+                            ),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = GrayBlue,
+                                unfocusedBorderColor = Color(0xFFE0E0E0)
                             )
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        textStyle = MaterialTheme.typography.bodyMedium,
-                        singleLine = true,
-                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone
-                        ),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = GrayBlue,
-                            unfocusedBorderColor = Color(0xFFE0E0E0)
                         )
-                    )
+
+                        if (isPhoneDropdownExpanded && editedValue.isNotEmpty() && action is AiAgentAction.DeleteCustomer) {
+                            val filteredCustomers = customers.filter {
+                                it.contact?.contains(editedValue, ignoreCase = true) == true
+                            }
+
+                            if (filteredCustomers.isNotEmpty()) {
+                                Popup(
+                                    onDismissRequest = { isPhoneDropdownExpanded = false },
+                                    offset = IntOffset(x = 0, y = phoneTextFieldSize.height.toInt()),
+                                    properties = PopupProperties(focusable = false)
+                                ) {
+                                    Surface(
+                                        modifier = Modifier
+                                            .width(with(LocalDensity.current) { phoneTextFieldSize.width.toDp() })
+                                            .padding(top = 4.dp)
+                                            .heightIn(max = 150.dp),
+                                        shape = RoundedCornerShape(8.dp),
+                                        shadowElevation = 4.dp,
+                                        border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
+                                        color = Color.White
+                                    ) {
+                                        LazyColumn {
+                                            items(filteredCustomers) { customer ->
+                                                DropdownMenuItem(
+                                                    text = { 
+                                                        Column {
+                                                            Text(customer.name, style = MaterialTheme.typography.bodyMedium)
+                                                            if (!customer.contact.isNullOrEmpty()) {
+                                                                Text(customer.contact, style = MaterialTheme.typography.labelSmall, color = Gray)
+                                                            }
+                                                        }
+                                                    },
+                                                    onClick = {
+                                                        editedName = customer.name
+                                                        editedValue = customer.contact ?: ""
+                                                        isPhoneDropdownExpanded = false
+                                                    }
+                                                )
+                                                HorizontalDivider(color = Color(0xFFEEEEEE))
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             } else {
                 Text(
