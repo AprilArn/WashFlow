@@ -43,6 +43,7 @@ import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.MainFontBlack
 import com.aprilarn.washflow.ui.theme.SkyBlue
 import com.aprilarn.washflow.utils.MarkdownUtils
+import com.aprilarn.washflow.utils.StringSimilarityUtils
 import kotlinx.coroutines.delay
 
 @Composable
@@ -112,8 +113,20 @@ fun ActionConfirmationCard(
             } ?: customers.find { 
                 action.name.isNotBlank() && it.name.equals(action.name, ignoreCase = true)
             } ?: customers.find { 
+                action.contact.isNotBlank() && it.contact?.contains(action.contact) == true
+            } ?: customers.find { 
                 action.name.isNotBlank() && it.name.contains(action.name, ignoreCase = true)
-            }
+            } ?: customers.find {
+                action.name.isNotBlank() && action.name.contains(it.name, ignoreCase = true)
+            } ?: customers.asSequence()
+                .map { customer ->
+                    val nameScore = if (action.name.isNotBlank()) StringSimilarityUtils.similarityScore(action.name, customer.name) else 0.0
+                    val contactScore = if (action.contact.isNotBlank() && !customer.contact.isNullOrBlank()) StringSimilarityUtils.similarityScore(action.contact, customer.contact!!) else 0.0
+                    customer to maxOf(nameScore, contactScore)
+                }
+                .filter { it.second > 0.5 }
+                .maxByOrNull { it.second }
+                ?.first
 
             if (match != null) {
                 editedName = match.name
