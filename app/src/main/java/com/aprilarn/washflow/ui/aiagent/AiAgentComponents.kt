@@ -44,7 +44,9 @@ import com.aprilarn.washflow.ui.theme.MainFontBlack
 import com.aprilarn.washflow.ui.theme.SkyBlue
 import com.aprilarn.washflow.utils.MarkdownUtils
 import com.aprilarn.washflow.utils.StringSimilarityUtils
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 
 @Composable
 fun AiMessageHeader() {
@@ -104,29 +106,31 @@ fun ActionConfirmationCard(
     // Auto-match for DeleteCustomer
     LaunchedEffect(action, customers) {
         if (action is AiAgentAction.DeleteCustomer && selectedCustomerId.isEmpty()) {
-            // Prioritas pencarian:
-            // 1. Exact match di Phone Number (Contact)
-            // 2. Exact match di Name (Case Insensitive)
-            // 3. Partial match di Name
-            val match = customers.find { 
-                action.contact.isNotBlank() && it.contact == action.contact 
-            } ?: customers.find { 
-                action.name.isNotBlank() && it.name.equals(action.name, ignoreCase = true)
-            } ?: customers.find { 
-                action.contact.isNotBlank() && it.contact?.contains(action.contact) == true
-            } ?: customers.find { 
-                action.name.isNotBlank() && it.name.contains(action.name, ignoreCase = true)
-            } ?: customers.find {
-                action.name.isNotBlank() && action.name.contains(it.name, ignoreCase = true)
-            } ?: customers.asSequence()
-                .map { customer ->
-                    val nameScore = if (action.name.isNotBlank()) StringSimilarityUtils.similarityScore(action.name, customer.name) else 0.0
-                    val contactScore = if (action.contact.isNotBlank() && !customer.contact.isNullOrBlank()) StringSimilarityUtils.similarityScore(action.contact, customer.contact!!) else 0.0
-                    customer to maxOf(nameScore, contactScore)
-                }
-                .filter { it.second > 0.5 }
-                .maxByOrNull { it.second }
-                ?.first
+            val match = withContext(Dispatchers.Default) {
+                // Prioritas pencarian:
+                // 1. Exact match di Phone Number (Contact)
+                // 2. Exact match di Name (Case Insensitive)
+                // 3. Partial match di Name
+                customers.find { 
+                    action.contact.isNotBlank() && it.contact == action.contact 
+                } ?: customers.find { 
+                    action.name.isNotBlank() && it.name.equals(action.name, ignoreCase = true)
+                } ?: customers.find { 
+                    action.contact.isNotBlank() && it.contact?.contains(action.contact) == true
+                } ?: customers.find { 
+                    action.name.isNotBlank() && it.name.contains(action.name, ignoreCase = true)
+                } ?: customers.find {
+                    action.name.isNotBlank() && action.name.contains(it.name, ignoreCase = true)
+                } ?: customers.asSequence()
+                    .map { customer ->
+                        val nameScore = if (action.name.isNotBlank()) StringSimilarityUtils.similarityScore(action.name, customer.name) else 0.0
+                        val contactScore = if (action.contact.isNotBlank() && !customer.contact.isNullOrBlank()) StringSimilarityUtils.similarityScore(action.contact, customer.contact!!) else 0.0
+                        customer to maxOf(nameScore, contactScore)
+                    }
+                    .filter { it.second > 0.6 }
+                    .maxByOrNull { it.second }
+                    ?.first
+            }
 
             if (match != null) {
                 editedName = match.name
