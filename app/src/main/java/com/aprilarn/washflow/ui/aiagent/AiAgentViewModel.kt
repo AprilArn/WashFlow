@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+import androidx.compose.ui.text.input.TextFieldValue
+
 class AiAgentViewModel : ViewModel() {
     private val brain = Brain()
     private val customerRepository = CustomerRepository()
@@ -59,12 +61,12 @@ class AiAgentViewModel : ViewModel() {
         _uiState.update { it.copy(expanded = false) }
     }
 
-    fun onInputChange(newValue: String) {
+    fun onInputChange(newValue: TextFieldValue) {
         _uiState.update { it.copy(inputMessage = newValue) }
     }
 
     fun onSendMessage() {
-        val currentInput = _uiState.value.inputMessage
+        val currentInput = _uiState.value.inputMessage.text
         if (currentInput.isBlank()) return
 
         val userMessage = ChatMessage(text = currentInput, isUser = true)
@@ -72,7 +74,7 @@ class AiAgentViewModel : ViewModel() {
         _uiState.update { state ->
             state.copy(
                 messages = state.messages + userMessage,
-                inputMessage = ""
+                inputMessage = TextFieldValue("")
             )
         }
 

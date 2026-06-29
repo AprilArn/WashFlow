@@ -1,6 +1,7 @@
 package com.aprilarn.washflow.ui.aiagent
 
 import com.aprilarn.washflow.data.model.Customers
+import androidx.compose.ui.text.input.TextFieldValue
 
 enum class AiModelStatus {
     IDLE,
@@ -25,7 +26,7 @@ data class AiAgentUiState(
     val expanded: Boolean = false,
     val userName: String = "",
     val profilePictureUrl: String? = null,
-    val inputMessage: String = "",
+    val inputMessage: TextFieldValue = TextFieldValue(""),
     val messages: List<ChatMessage> = emptyList(),
     val isAiThinking: Boolean = false,
     val currentModelName: String? = null,

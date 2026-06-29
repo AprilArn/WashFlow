@@ -67,12 +67,14 @@ import com.aprilarn.washflow.ui.theme.SoftBlack
 import com.aprilarn.washflow.utils.MarkdownUtils
 import com.aprilarn.washflow.data.model.Customers
 
+import androidx.compose.ui.text.input.TextFieldValue
+
 @Composable
 fun AiAgentPanel(
     expanded: Boolean,
     userName: String,
     profilePictureUrl: String?,
-    inputMessage: String,
+    inputMessage: TextFieldValue,
     messages: List<ChatMessage>,
     isAiThinking: Boolean,
     currentModelName: String? = null,
@@ -80,7 +82,7 @@ fun AiAgentPanel(
     customers: List<Customers> = emptyList(),
     wasMessageAnimated: (String) -> Boolean,
     onMessageAnimated: (String) -> Unit,
-    onInputChange: (String) -> Unit,
+    onInputChange: (TextFieldValue) -> Unit,
     onSendMessage: () -> Unit,
     onClearHistory: () -> Unit,
     onConfirmAction: (String, AiAgentAction?) -> Unit,
@@ -519,15 +521,9 @@ fun AiAgentPanel(
                                     modifier = Modifier.fillMaxWidth(),
                                     placeholder = { Text("Ask WashFlow AI...", color = Color.Gray) },
                                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                                        imeAction = androidx.compose.ui.text.input.ImeAction.Send
+                                        imeAction = androidx.compose.ui.text.input.ImeAction.Default
                                     ),
-                                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(
-                                        onSend = {
-                                            if (inputMessage.isNotBlank() && !processingWithGracePeriod) {
-                                                onSendMessage()
-                                            }
-                                        }
-                                    ),
+                                    maxLines = 5,
                                     colors = OutlinedTextFieldDefaults.colors(
                                         focusedBorderColor = Color.Transparent,
                                         unfocusedBorderColor = Color.Transparent,
@@ -611,11 +607,11 @@ fun AiAgentPanel(
                                         }
                                         IconButton(
                                             onClick = onSendMessage,
-                                            enabled = inputMessage.isNotBlank() && !processingWithGracePeriod,
+                                            enabled = inputMessage.text.isNotBlank() && !processingWithGracePeriod,
                                             modifier = Modifier
                                                 .clip(RoundedCornerShape(8.dp))
                                                 .background(
-                                                    if (inputMessage.isNotBlank() && !processingWithGracePeriod)
+                                                    if (inputMessage.text.isNotBlank() && !processingWithGracePeriod)
                                                         GrayBlue
                                                     else
                                                         Color(0xFFE0E0E0)
@@ -827,7 +823,7 @@ fun AiAgentPanelChatPreview() {
         expanded = true,
         userName = "April",
         profilePictureUrl = null,
-        inputMessage = "",
+        inputMessage = TextFieldValue(""),
         messages = listOf(
             ChatMessage(text = "Hello, can you help me?", isUser = true),
             ChatMessage(text = "Sure! What can I do for you?", isUser = false),
@@ -855,7 +851,7 @@ fun AiAgentPanelBulletPointPreview() {
         expanded = true,
         userName = "April",
         profilePictureUrl = null,
-        inputMessage = "",
+        inputMessage = TextFieldValue(""),
         messages = listOf(
             ChatMessage(
                 text = "I can assist you with:\n\n* **Tracking your orders**: Get real-time updates.\n* **Managing your account**: Help with navigation.\n* **Answering general questions**: Provide information.",
@@ -883,7 +879,7 @@ fun AiAgentPanelIdlePreview() {
         expanded = true,
         userName = "April",
         profilePictureUrl = null,
-        inputMessage = "",
+        inputMessage = TextFieldValue(""),
         messages = emptyList(),
         isAiThinking = false,
         currentModelName = null,
