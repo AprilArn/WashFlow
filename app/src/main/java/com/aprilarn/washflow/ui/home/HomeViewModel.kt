@@ -133,7 +133,7 @@ class HomeViewModel(
                 val isGps = _uiState.value.isGpsLocation
 
                 if (lastLat != 0.0 || lastLon != 0.0) {
-                    fetchWeatherData(lastLat, lastLon, isGps)
+                    fetchWeatherData(lastLat, lastLon, isGps, showLoader = false)
                 } else {
                     _uiState.update { it.copy(greeting = getGreetingMessage()) }
                 }
@@ -304,7 +304,7 @@ class HomeViewModel(
         return sortedAll.take(8)
     }
 
-    fun fetchWeatherData(lat: Double, lon: Double, isGps: Boolean = true) {
+    fun fetchWeatherData(lat: Double, lon: Double, isGps: Boolean = true, showLoader: Boolean = true) {
         val currentTime = System.currentTimeMillis()
         val lastFetchTime = sharedPreferences.getLong("LAST_FETCH_TIME", 0L)
         val lastLat = sharedPreferences.getFloat("LAST_LAT", 0f).toDouble()
@@ -374,7 +374,9 @@ class HomeViewModel(
         }
 
         Log.d("HomeViewModel", "Mengambil data cuaca baru dari API...")
-        _uiState.update { it.copy(isLoading = true, isGpsLocation = isGps) }
+        if (showLoader) {
+            _uiState.update { it.copy(isLoading = true, isGpsLocation = isGps) }
+        }
 
         viewModelScope.launch {
             try {

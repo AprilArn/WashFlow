@@ -212,20 +212,25 @@ fun WeatherDetailRow(
                 color = Color.White.copy(alpha = 0.7f),
                 fontSize = 11.sp
             )
-            if (isLoading) {
-                Box(
-                    modifier = Modifier
-                        .size(width = 48.dp, height = 16.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .shimmerModifier()
-                )
-            } else {
-                Text(
-                    text = value,
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
+            Box(
+                modifier = Modifier.height(20.dp),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                if (isLoading) {
+                    Box(
+                        modifier = Modifier
+                            .size(width = 48.dp, height = 16.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .shimmerModifier()
+                    )
+                } else {
+                    Text(
+                        text = value,
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
         }
     }
