@@ -53,7 +53,7 @@ class Brain {
             Trigger this tag when the user wants to register a new customer and has provided the necessary information (Name and Phone).
             Format: [ACTION:ADD_CUSTOMER:Name:Phone]
             
-            Example: "I've prepared the details to add April as a new customer. [ACTION:ADD_CUSTOMER:April:08123456789]"
+            Example: "I've prepared the details to add raphael as a new customer. [ACTION:ADD_CUSTOMER:Raphael:08123456789]"
             
             ## 3. DELETE CUSTOMER
             Trigger this tag when the user wants to delete a customer. Provide the name and/or the contact number. You no longer need to provide a customer ID; the app will find the relevant customer for confirmation.
