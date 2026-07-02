@@ -34,6 +34,7 @@ import kotlinx.coroutines.delay
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
@@ -66,7 +67,12 @@ import com.aprilarn.washflow.ui.theme.SkyBlue
 import com.aprilarn.washflow.ui.theme.SoftBlack
 import com.aprilarn.washflow.utils.MarkdownUtils
 import com.aprilarn.washflow.data.model.Customers
-
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.TextFieldValue
 
 @Composable
@@ -95,6 +101,74 @@ fun AiAgentPanel(
     var animatingMessageIds by remember { mutableStateOf(setOf<String>()) }
     val isAnyMessageAnimating by remember {
         derivedStateOf { animatingMessageIds.isNotEmpty() }
+    }
+
+    // ── Collapsible Header/Footer State ────────────────────────────────────────
+    val density = LocalDensity.current
+    var headerHeightPx by remember { mutableFloatStateOf(0f) }
+    var footerHeightPx by remember { mutableFloatStateOf(0f) }
+    var headerOffsetPx by remember { mutableFloatStateOf(0f) }
+    var footerOffsetPx by remember { mutableFloatStateOf(0f) }
+
+    val nestedScrollConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                val delta = available.y
+
+                // Footer (TextField): Scroll Up/To Top (delta > 0) hides
+                // Footer (TextField): Scroll Down/To Bottom (delta < 0) shows
+                val newFooterOffset = footerOffsetPx + delta
+                footerOffsetPx = newFooterOffset.coerceIn(0f, footerHeightPx)
+
+                // Header: Sync with Footer
+                if (footerHeightPx > 0) {
+                    val footerProgress = footerOffsetPx / footerHeightPx // 0f (visible) to 1f (hidden)
+                    headerOffsetPx = footerProgress * -headerHeightPx
+                }
+
+                return Offset.Zero
+            }
+
+            override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+                // Snap Footer
+                if (footerOffsetPx > 0f && footerOffsetPx < footerHeightPx) {
+                    val targetFooterOffset = if (footerOffsetPx > footerHeightPx / 2) footerHeightPx else 0f
+                    
+                    androidx.compose.animation.core.Animatable(footerOffsetPx).animateTo(
+                        targetValue = targetFooterOffset,
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
+                    ) {
+                        footerOffsetPx = value
+                        
+                        // Sync Header during animation
+                        if (footerHeightPx > 0) {
+                            val footerProgress = footerOffsetPx / footerHeightPx
+                            headerOffsetPx = footerProgress * -headerHeightPx
+                        }
+                    }
+                }
+
+                return super.onPostFling(consumed, available)
+            }
+        }
+    }
+
+    // Reset offsets when expanded or messages change
+    LaunchedEffect(expanded) {
+        if (expanded) {
+            headerOffsetPx = 0f
+            footerOffsetPx = 0f
+        }
+    }
+
+    LaunchedEffect(messages.size) {
+        headerOffsetPx = 0f
+        footerOffsetPx = 0f
+    }
+
+    // Close menu when scrolling
+    LaunchedEffect(listState.isScrollInProgress) {
+        if (listState.isScrollInProgress) showMenu = false
     }
 
     val isProcessing = remember(isAiThinking, isAnyMessageAnimating, messages, animatingMessageIds) {
@@ -200,312 +274,337 @@ fun AiAgentPanel(
                 color = Color.White,
                 shadowElevation = 24.dp
             ) {
-                Column(modifier = Modifier.fillMaxSize()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .nestedScroll(nestedScrollConnection)
+                ) {
+                    // ── Message list ───────────────────────────────────────────
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(
+                            top = with(density) { headerHeightPx.toDp() },
+                            bottom = with(density) { footerHeightPx.toDp() },
+                            start = 24.dp,
+                            end = 24.dp
+                        )
+                    ) {
+                        if (messages.isEmpty()) {
+                            item {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                ) {
+                                    Spacer(modifier = Modifier.height(64.dp))
+                                    Text(
+                                        text = "Hi, $userName",
+                                        style = MaterialTheme.typography.headlineLarge.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            color = GrayBlue,
+                                            fontSize = 32.sp
+                                        )
+                                    )
+                                    Text(
+                                        text = "What can I help you today?",
+                                        style = MaterialTheme.typography.headlineSmall.copy(
+                                            fontWeight = FontWeight.Medium,
+                                            color = Gray,
+                                            fontSize = 20.sp
+                                        )
+                                    )
+                                    Spacer(modifier = Modifier.height(64.dp))
+                                }
+                            }
 
-                    // ── Header ─────────────────────────────────────────────────
-                    Row(
+                            item {
+                                // Info Card
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(Color(0xFF1E2124))
+                                        .padding(16.dp)
+                                ) {
+                                    Column {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                Icons.Default.Refresh,
+                                                contentDescription = null,
+                                                tint = Color.White,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                "More ways to access AI",
+                                                color = Color.White,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 14.sp
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(
+                                            "Upgrade to a qualified Google AI plan for subscription access to Gemini, or provide API keys to use Anthropic, OpenAI, and Gemini via AI Studio. For offline development, run local models via local LLM hosts.",
+                                            color = Color(0xFFB0B0B0),
+                                            fontSize = 12.sp,
+                                            lineHeight = 16.sp
+                                        )
+                                    }
+                                }
+                            }
+
+                            item {
+                                Spacer(modifier = Modifier.height(32.dp))
+                                Text(
+                                    "Prompts to try",
+                                    fontWeight = FontWeight.Bold,
+                                    color = MainFontBlack,
+                                    fontSize = 14.sp
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                            }
+
+                            item { PromptItem("Extract all hardcoded strings from this class and move them into strings.xml") }
+                            item { PromptItem("Add documentation to my current file") }
+                            item { PromptItem("Update kotlin in @libs.version.toml to the latest version") }
+                            item { PromptItem("Make my Theme's color scheme warmer") }
+
+                            item {
+                                Spacer(modifier = Modifier.height(24.dp))
+                            }
+                        } else {
+                            items(
+                                items = messages,
+                                key = { it.id }
+                            ) { message ->
+
+                                val alreadyAnimated = remember(message.id) {
+                                    wasMessageAnimated(message.id)
+                                }
+                                var animProgress by remember(message.id) {
+                                    mutableFloatStateOf(if (alreadyAnimated) 1f else 0f)
+                                }
+
+                                val animatedAlpha by animateFloatAsState(
+                                    targetValue = animProgress,
+                                    animationSpec = tween(durationMillis = 200),
+                                    label = "msgAlpha"
+                                )
+
+                                val animatedOffset by animateFloatAsState(
+                                    targetValue = animProgress,
+                                    animationSpec = spring(
+                                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                                        stiffness = Spring.StiffnessMedium
+                                    ),
+                                    label = "msgOffset"
+                                )
+
+                                LaunchedEffect(message.id) {
+                                    if (!alreadyAnimated) {
+                                        delay(50L)
+                                        animProgress = 1f
+                                        onMessageAnimated(message.id)
+                                    }
+                                }
+
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .graphicsLayer {
+                                            alpha = animatedAlpha.coerceIn(0f, 1f)
+
+                                            if (message.isUser) {
+                                                val scale = 0.8f + (animatedOffset * 0.2f)
+                                                scaleX = scale
+                                                scaleY = scale
+                                                translationY = 0f
+                                            } else {
+                                                scaleX = 1f
+                                                scaleY = 1f
+                                                translationY = 0f
+                                            }
+                                        }
+                                ) {
+                                    ChatMessageItem(
+                                        message = message,
+                                        profilePictureUrl = profilePictureUrl,
+                                        isAlreadyAnimated = alreadyAnimated,
+                                        customers = customers,
+                                        onConfirmAction = { updatedAction ->
+                                            onConfirmAction(message.id, updatedAction)
+                                            if (message.action is AiAgentAction.Navigate) {
+                                                onDismiss()
+                                            }
+                                        },
+                                        onCancelAction = { onCancelAction(message.id) },
+                                        onTextUpdate = {
+                                            if (!userHasInterrupted) {
+                                                coroutineScope.launch {
+                                                    // Scroll with large offset for bottom alignment
+                                                    listState.scrollToItem(messages.size - 1, 100000)
+                                                }
+                                                // Ensure UI is visible during typewriter
+                                                headerOffsetPx = 0f
+                                                footerOffsetPx = 0f
+                                            }
+                                        },
+                                        onAnimationStateChange = { animating ->
+                                            animatingMessageIds = if (animating) {
+                                                animatingMessageIds + message.id
+                                            } else {
+                                                animatingMessageIds - message.id
+                                            }
+                                        }
+                                    )
+                                    Spacer(modifier = Modifier.height(if (message.isUser) 12.dp else 32.dp))
+                                }
+                            }
+                        }
+                    }
+
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = listState.canScrollForward,
+                        enter = scaleIn(
+                            initialScale = 0.8f,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessLow
+                            )
+                        ) + fadeIn(animationSpec = tween(300)),
+                        exit = scaleOut(
+                            targetScale = 0.8f,
+                            animationSpec = tween(200)
+                        ) + fadeOut(animationSpec = tween(200)),
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 16.dp)
+                            .graphicsLayer {
+                                // Move with footer
+                                translationY = footerOffsetPx
+                            }
+                    ) {
+                        Surface(
+                            onClick = {
+                                coroutineScope.launch {
+                                    val totalItems = listState.layoutInfo.totalItemsCount
+                                    if (totalItems > 0) {
+                                        // Ensure bottom alignment when manually scrolling to bottom
+                                        listState.animateScrollToItem(totalItems - 1, 100000)
+                                        // FIX: Reset interruption flag so auto-scroll resumes
+                                        userHasInterrupted = false
+                                    }
+                                }
+                            },
+                            shape = CircleShape,
+                            color = Color(0xFF60B0FF).copy(alpha = 0.9f),
+                            shadowElevation = 0.dp,
+                            border = BorderStroke(1.dp, Color(0xFFC1DFFF).copy(alpha = 0.9f)),
+                            modifier = Modifier.height(36.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = "Scroll to bottom",
+                                    style = MaterialTheme.typography.labelLarge.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp
+                                    ),
+                                    color = Color.White
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Icon(
+                                    imageVector = Icons.Default.KeyboardArrowDown,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                    tint = Color.White
+                                )
+                            }
+                        }
+                    }
+
+                    // ── Header (Overlay) ───────────────────────────────────────
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                            .onGloballyPositioned { headerHeightPx = it.size.height.toFloat() }
+                            .graphicsLayer { translationY = headerOffsetPx }
+                            .background(Color.White)
+                            .align(Alignment.TopCenter)
                     ) {
-                        Text(
-                            text = "Aira",
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 19.sp
-                            ),
-                            color = MainFontBlack
-                        )
-                        Box {
-                            IconButton(onClick = { showMenu = true }) {
-                                Icon(
-                                    imageVector = Icons.Default.MoreVert,
-                                    contentDescription = "More Options",
-                                    tint = MainFontBlack
-                                )
-                            }
-
-                            if (showMenu) {
-                                Popup(
-                                    alignment = Alignment.TopEnd,
-                                    offset = IntOffset(x = 0, y = 120),
-                                    onDismissRequest = { showMenu = false },
-                                    properties = PopupProperties(focusable = true)
-                                ) {
-                                    Surface(
-                                        modifier = Modifier
-                                            .wrapContentWidth()
-                                            .padding(end = 24.dp),
-                                        shape = RoundedCornerShape(12.dp),
-                                        shadowElevation = 8.dp,
-                                        color = Color.White
-                                    ) {
-                                        Column(modifier = Modifier.width(IntrinsicSize.Max)) {
-                                            Text(
-                                                text = "Delete History",
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .clickable {
-                                                        onClearHistory()
-                                                        showMenu = false
-                                                    }
-                                                    .padding(horizontal = 20.dp, vertical = 12.dp),
-                                                style = MaterialTheme.typography.bodyMedium.copy(
-                                                    fontWeight = FontWeight.Medium
-                                                ),
-                                                color = MaterialTheme.colorScheme.error
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // ── Message list ───────────────────────────────────────────
-                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                        LazyColumn(
-                            state = listState,
+                        Row(
                             modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 24.dp)
+                                .fillMaxWidth()
+                                .padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            if (messages.isEmpty()) {
-                                item {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                    ) {
-                                        Spacer(modifier = Modifier.height(64.dp))
-                                        Text(
-                                            text = "Hi, $userName",
-                                            style = MaterialTheme.typography.headlineLarge.copy(
-                                                fontWeight = FontWeight.Bold,
-                                                color = GrayBlue,
-                                                fontSize = 32.sp
-                                            )
-                                        )
-                                        Text(
-                                            text = "What can I help you today?",
-                                            style = MaterialTheme.typography.headlineSmall.copy(
-                                                fontWeight = FontWeight.Medium,
-                                                color = Gray,
-                                                fontSize = 20.sp
-                                            )
-                                        )
-                                        Spacer(modifier = Modifier.height(64.dp))
-                                    }
-                                }
-
-                                item {
-                                    // Info Card
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .background(Color(0xFF1E2124))
-                                            .padding(16.dp)
-                                    ) {
-                                        Column {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Icon(
-                                                    Icons.Default.Refresh,
-                                                    contentDescription = null,
-                                                    tint = Color.White,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Text(
-                                                    "More ways to access AI",
-                                                    color = Color.White,
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 14.sp
-                                                )
-                                            }
-                                            Spacer(modifier = Modifier.height(8.dp))
-                                            Text(
-                                                "Upgrade to a qualified Google AI plan for subscription access to Gemini, or provide API keys to use Anthropic, OpenAI, and Gemini via AI Studio. For offline development, run local models via local LLM hosts.",
-                                                color = Color(0xFFB0B0B0),
-                                                fontSize = 12.sp,
-                                                lineHeight = 16.sp
-                                            )
-                                        }
-                                    }
-                                }
-
-                                item {
-                                    Spacer(modifier = Modifier.height(32.dp))
-                                    Text(
-                                        "Prompts to try",
-                                        fontWeight = FontWeight.Bold,
-                                        color = MainFontBlack,
-                                        fontSize = 14.sp
-                                    )
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                }
-
-                                item { PromptItem("Extract all hardcoded strings from this class and move them into strings.xml") }
-                                item { PromptItem("Add documentation to my current file") }
-                                item { PromptItem("Update kotlin in @libs.version.toml to the latest version") }
-                                item { PromptItem("Make my Theme's color scheme warmer") }
-
-                                item {
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                }
-                            } else {
-                                items(
-                                    items = messages,
-                                    key = { it.id }
-                                ) { message ->
-
-                                    val alreadyAnimated = remember(message.id) {
-                                        wasMessageAnimated(message.id)
-                                    }
-                                    var animProgress by remember(message.id) {
-                                        mutableFloatStateOf(if (alreadyAnimated) 1f else 0f)
-                                    }
-
-                                    val animatedAlpha by animateFloatAsState(
-                                        targetValue = animProgress,
-                                        animationSpec = tween(durationMillis = 200),
-                                        label = "msgAlpha"
-                                    )
-
-                                    val animatedOffset by animateFloatAsState(
-                                        targetValue = animProgress,
-                                        animationSpec = spring(
-                                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                                            stiffness = Spring.StiffnessMedium
-                                        ),
-                                        label = "msgOffset"
-                                    )
-
-                                    LaunchedEffect(message.id) {
-                                        if (!alreadyAnimated) {
-                                            delay(50L)
-                                            animProgress = 1f
-                                            onMessageAnimated(message.id)
-                                        }
-                                    }
-
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .graphicsLayer {
-                                                alpha = animatedAlpha.coerceIn(0f, 1f)
-
-                                                if (message.isUser) {
-                                                    val scale = 0.8f + (animatedOffset * 0.2f)
-                                                    scaleX = scale
-                                                    scaleY = scale
-                                                    translationY = 0f
-                                                } else {
-                                                    scaleX = 1f
-                                                    scaleY = 1f
-                                                    translationY = 0f
-                                                }
-                                            }
-                                    ) {
-                                        ChatMessageItem(
-                                            message = message,
-                                            profilePictureUrl = profilePictureUrl,
-                                            isAlreadyAnimated = alreadyAnimated,
-                                            customers = customers,
-                                            onConfirmAction = { updatedAction ->
-                                                onConfirmAction(message.id, updatedAction)
-                                                if (message.action is AiAgentAction.Navigate) {
-                                                    onDismiss()
-                                                }
-                                            },
-                                            onCancelAction = { onCancelAction(message.id) },
-                                            onTextUpdate = {
-                                                if (!userHasInterrupted) {
-                                                    coroutineScope.launch {
-                                                        // Scroll with large offset for bottom alignment
-                                                        listState.scrollToItem(messages.size - 1, 100000)
-                                                    }
-                                                }
-                                            },
-                                            onAnimationStateChange = { animating ->
-                                                animatingMessageIds = if (animating) {
-                                                    animatingMessageIds + message.id
-                                                } else {
-                                                    animatingMessageIds - message.id
-                                                }
-                                            }
-                                        )
-                                        Spacer(modifier = Modifier.height(if (message.isUser) 12.dp else 32.dp))
-                                    }
-                                }
-                            }
-                        }
-
-                        androidx.compose.animation.AnimatedVisibility(
-                            visible = listState.canScrollForward,
-                            enter = scaleIn(
-                                initialScale = 0.8f,
-                                animationSpec = spring(
-                                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                                    stiffness = Spring.StiffnessLow
-                                )
-                            ) + fadeIn(animationSpec = tween(300)),
-                            exit = scaleOut(
-                                targetScale = 0.8f,
-                                animationSpec = tween(200)
-                            ) + fadeOut(animationSpec = tween(200)),
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(bottom = 16.dp)
-                        ) {
-                            Surface(
-                                onClick = {
-                                    coroutineScope.launch {
-                                        val totalItems = listState.layoutInfo.totalItemsCount
-                                        if (totalItems > 0) {
-                                            // Ensure bottom alignment when manually scrolling to bottom
-                                            listState.animateScrollToItem(totalItems - 1, 100000)
-                                            // FIX: Reset interruption flag so auto-scroll resumes
-                                            userHasInterrupted = false
-                                        }
-                                    }
-                                },
-                                shape = CircleShape,
-                                color = Color(0xFF60B0FF).copy(alpha = 0.9f),
-                                shadowElevation = 0.dp,
-                                border = BorderStroke(1.dp, Color(0xFFC1DFFF).copy(alpha = 0.9f)),
-                                modifier = Modifier.height(36.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 16.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
-                                ) {
-                                    Text(
-                                        text = "Scroll to bottom",
-                                        style = MaterialTheme.typography.labelLarge.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 12.sp
-                                        ),
-                                        color = Color.White
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Aira",
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 19.sp
+                                ),
+                                color = MainFontBlack
+                            )
+                            Box {
+                                IconButton(onClick = { showMenu = true }) {
                                     Icon(
-                                        imageVector = Icons.Default.KeyboardArrowDown,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp),
-                                        tint = Color.White
+                                        imageVector = Icons.Default.MoreVert,
+                                        contentDescription = "More Options",
+                                        tint = MainFontBlack
                                     )
+                                }
+
+                                if (showMenu) {
+                                    Popup(
+                                        alignment = Alignment.TopEnd,
+                                        offset = IntOffset(x = 0, y = 120),
+                                        onDismissRequest = { showMenu = false },
+                                        properties = PopupProperties(focusable = true)
+                                    ) {
+                                        Surface(
+                                            modifier = Modifier
+                                                .wrapContentWidth()
+                                                .padding(end = 24.dp),
+                                            shape = RoundedCornerShape(12.dp),
+                                            shadowElevation = 8.dp,
+                                            color = Color.White
+                                        ) {
+                                            Column(modifier = Modifier.width(IntrinsicSize.Max)) {
+                                                Text(
+                                                    text = "Delete History",
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .clickable {
+                                                            onClearHistory()
+                                                            showMenu = false
+                                                        }
+                                                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                                        fontWeight = FontWeight.Medium
+                                                    ),
+                                                    color = MaterialTheme.colorScheme.error
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
 
-                    // ── Input area ─────────────────────────────────────────────
+                    // ── Input area (Overlay) ───────────────────────────────────
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .onGloballyPositioned { footerHeightPx = it.size.height.toFloat() }
+                            .graphicsLayer { translationY = footerOffsetPx }
+                            .background(Color.White)
+                            .align(Alignment.BottomCenter)
                             .padding(16.dp)
                     ) {
                         Box(
@@ -649,6 +748,7 @@ fun AiAgentPanel(
     }
 }
 
+
 @Composable
 fun ChatMessageItem(
     message: ChatMessage,
@@ -736,10 +836,10 @@ fun ChatMessageItem(
                         )
 
                         val hasAction = message.action != null &&
-                                        message.action !is AiAgentAction.None &&
-                                        !message.actionExecuted &&
-                                        !message.actionCancelled &&
-                                        !message.isThinking
+                                message.action !is AiAgentAction.None &&
+                                !message.actionExecuted &&
+                                !message.actionCancelled &&
+                                !message.isThinking
 
                         LaunchedEffect(isTypewriterActive, hasAction) {
                             if (!isTypewriterActive && hasAction) {
