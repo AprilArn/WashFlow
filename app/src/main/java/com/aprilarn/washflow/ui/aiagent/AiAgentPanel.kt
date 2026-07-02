@@ -110,26 +110,96 @@ fun AiAgentPanel(
     var headerOffsetPx by remember { mutableFloatStateOf(0f) }
     var footerOffsetPx by remember { mutableFloatStateOf(0f) }
 
+    // Detect if user is at the top
+    val isAtTop by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0
+        }
+    }
+
+    // Auto-reveal Header when reaching the top
+    LaunchedEffect(isAtTop) {
+        if (isAtTop && headerOffsetPx < 0f) {
+            androidx.compose.animation.core.Animatable(headerOffsetPx).animateTo(
+                targetValue = 0f,
+                animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
+            ) {
+                headerOffsetPx = value
+                // REMOVED: footerOffsetPx = footerHeightPx
+                // We no longer force the footer to hide when the header auto-reveals at the top.
+            }
+        }
+    }
+
     val nestedScrollConnection = remember {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                 val delta = available.y
+                
+                // Only allow hiding if content is scrollable
+                val isScrollable = listState.canScrollForward || listState.canScrollBackward
+                if (!isScrollable) {
+                    // Force visible if not scrollable
+                    footerOffsetPx = 0f
+                    headerOffsetPx = 0f
+                    return Offset.Zero
+                }
 
-                // Footer (TextField): Scroll Up/To Top (delta > 0) hides
-                // Footer (TextField): Scroll Down/To Bottom (delta < 0) shows
-                val newFooterOffset = footerOffsetPx + delta
-                footerOffsetPx = newFooterOffset.coerceIn(0f, footerHeightPx)
+                // If user is at the bottom and tries to scroll down (delta < 0), force show BOTH
+                if (!listState.canScrollForward && delta < 0) {
+                    val newFooterOffset = footerOffsetPx + delta
+                    footerOffsetPx = newFooterOffset.coerceIn(0f, footerHeightPx)
+                    
+                    // Sync Header with Footer (Standard Sync)
+                    if (footerHeightPx > 0) {
+                        val footerProgress = footerOffsetPx / footerHeightPx
+                        headerOffsetPx = footerProgress * -headerHeightPx
+                    }
+                } 
+                // If user is at the top and tries to scroll up (delta > 0), force show ONLY HEADER
+                else if (!listState.canScrollBackward && delta > 0) {
+                    val newHeaderOffset = headerOffsetPx + delta
+                    headerOffsetPx = newHeaderOffset.coerceIn(-headerHeightPx, 0f)
+                    
+                    // Removed: footerOffsetPx = footerHeightPx
+                    // This allows the footer to stay at whatever position it was 
+                    // (likely 0f if the user was scrolling up bit by bit)
+                }
+                else {
+                    // Standard behavior:
+                    // delta > 0 (scroll up/to top) -> hide
+                    // delta < 0 (scroll down/to bottom) -> show
+                    
+                    // Check if we are "out of sync" (Header is more visible than what Footer sync would suggest)
+                    // Expected header offset if synced: (footerOffsetPx / footerHeightPx) * -headerHeightPx
+                    val syncedHeaderOffset = if (footerHeightPx > 0) (footerOffsetPx / footerHeightPx) * -headerHeightPx else 0f
+                    val isOutOfSync = headerOffsetPx > syncedHeaderOffset + 1f // Add small epsilon
 
-                // Header: Sync with Footer
-                if (footerHeightPx > 0) {
-                    val footerProgress = footerOffsetPx / footerHeightPx // 0f (visible) to 1f (hidden)
-                    headerOffsetPx = footerProgress * -headerHeightPx
+                    if (isOutOfSync) {
+                        // In Out of Sync mode (e.g. Header pinned at Top), 
+                        // scrolling affects Footer while Header stays locked at 0f.
+                        val newFooterOffset = footerOffsetPx + delta
+                        footerOffsetPx = newFooterOffset.coerceIn(0f, footerHeightPx)
+                        headerOffsetPx = 0f
+                    } else {
+                        // Standard Sync
+                        val newFooterOffset = footerOffsetPx + delta
+                        footerOffsetPx = newFooterOffset.coerceIn(0f, footerHeightPx)
+
+                        if (footerHeightPx > 0) {
+                            val footerProgress = footerOffsetPx / footerHeightPx
+                            headerOffsetPx = footerProgress * -headerHeightPx
+                        }
+                    }
                 }
 
                 return Offset.Zero
             }
 
             override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+                val isScrollable = listState.canScrollForward || listState.canScrollBackward
+                if (!isScrollable) return super.onPostFling(consumed, available)
+
                 // Snap Footer
                 if (footerOffsetPx > 0f && footerOffsetPx < footerHeightPx) {
                     val targetFooterOffset = if (footerOffsetPx > footerHeightPx / 2) footerHeightPx else 0f
@@ -140,10 +210,18 @@ fun AiAgentPanel(
                     ) {
                         footerOffsetPx = value
                         
-                        // Sync Header during animation
+                        // Check if we were in "Out of Sync" mode (Header visible at Top)
+                        val syncedHeaderOffset = if (footerHeightPx > 0) (footerOffsetPx / footerHeightPx) * -headerHeightPx else 0f
+                        val wasOutOfSync = headerOffsetPx > syncedHeaderOffset + 1f
+
                         if (footerHeightPx > 0) {
-                            val footerProgress = footerOffsetPx / footerHeightPx
-                            headerOffsetPx = footerProgress * -headerHeightPx
+                            if (wasOutOfSync) {
+                                // If we are at the top (Out of Sync), always keep Header at 0f
+                                headerOffsetPx = 0f
+                            } else {
+                                // Standard Sync
+                                headerOffsetPx = syncedHeaderOffset
+                            }
                         }
                     }
                 }
