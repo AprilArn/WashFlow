@@ -461,22 +461,6 @@ fun AiAgentPanel(
                         }
                     }
 
-                    AiAgentScrollToBottomButton(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 16.dp)
-                            .graphicsLayer { translationY = footerOffsetPx },
-                        onClick = {
-                            coroutineScope.launch {
-                                val totalItems = listState.layoutInfo.totalItemsCount
-                                if (totalItems > 0) {
-                                    listState.animateScrollToItem(totalItems - 1, 100000)
-                                    userHasInterrupted = false
-                                }
-                            }
-                        }
-                    )
-
                     // ── Header (Overlay) ───────────────────────────────────────
                     Box(
                         modifier = Modifier
@@ -519,6 +503,29 @@ fun AiAgentPanel(
                                 fontSize = 10.sp
                             )
                         }
+                    }
+
+                    // ── Floating Action Buttons (Top Layer) ────────────────────
+                    AnimatedVisibility(
+                        visible = !isAtBottom && messages.isNotEmpty(),
+                        enter = fadeIn() + scaleIn(),
+                        exit = fadeOut() + scaleOut(),
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = with(density) { footerHeightPx.toDp() + 16.dp })
+                            .graphicsLayer { translationY = footerOffsetPx }
+                    ) {
+                        AiAgentScrollToBottomButton(
+                            onClick = {
+                                coroutineScope.launch {
+                                    val totalItems = listState.layoutInfo.totalItemsCount
+                                    if (totalItems > 0) {
+                                        listState.animateScrollToItem(totalItems - 1, 100000)
+                                        userHasInterrupted = false
+                                    }
+                                }
+                            }
+                        )
                     }
                 }
             }

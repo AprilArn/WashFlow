@@ -9,6 +9,7 @@ import com.google.ai.client.generativeai.type.SafetySetting
 import com.google.ai.client.generativeai.type.content
 import com.google.ai.client.generativeai.type.generationConfig
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.time.Duration.Companion.milliseconds
 
 class Brain {
 
@@ -142,7 +143,7 @@ class Brain {
                 // This ensures the fallback model starts with full conversation context.
                 val chat = model.startChat(history = chatHistory.toList())
 
-                val response = withTimeoutOrNull(TIMEOUT_MS) {
+                val response = withTimeoutOrNull(TIMEOUT_MS.milliseconds) {
                     chat.sendMessage(userContent)
                 }
 

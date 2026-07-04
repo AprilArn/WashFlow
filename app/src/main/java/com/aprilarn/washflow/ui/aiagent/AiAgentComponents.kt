@@ -918,7 +918,7 @@ fun AiAgentScrollToBottomButton(
         onClick = onClick,
         shape = CircleShape,
         color = Color(0xFF60B0FF).copy(alpha = 0.9f),
-        shadowElevation = 0.dp,
+        shadowElevation = 6.dp,
         border = BorderStroke(1.dp, Color(0xFFC1DFFF).copy(alpha = 0.9f)),
         modifier = modifier.height(36.dp)
     ) {
