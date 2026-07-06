@@ -103,6 +103,22 @@ fun AiAgentPanel(
         derivedStateOf { animatingMessageIds.isNotEmpty() }
     }
 
+    // ── Auto-scroll State ──────────────────────────────────────────────────────
+    var userHasInterrupted by remember { mutableStateOf(false) }
+
+    // Detect if user is at the bottom to reset interruption
+    val isAtBottom by remember {
+        derivedStateOf {
+            val layoutInfo = listState.layoutInfo
+            val visibleItems = layoutInfo.visibleItemsInfo
+            if (visibleItems.isEmpty()) return@derivedStateOf true
+            val lastVisibleItem = visibleItems.last()
+            // Check if last item is at the end AND its bottom is visible/beyond viewport end
+            lastVisibleItem.index == layoutInfo.totalItemsCount - 1 &&
+                    (lastVisibleItem.offset + lastVisibleItem.size) <= layoutInfo.viewportEndOffset + 5
+        }
+    }
+
     // ── Collapsible Header/Footer State ────────────────────────────────────────
     val density = LocalDensity.current
     var headerHeightPx by remember { mutableFloatStateOf(0f) }
@@ -117,7 +133,7 @@ fun AiAgentPanel(
         }
     }
 
-    // Auto-reveal Header when reaching the top
+    // Auto-reveal Header when reaching the top or Footer when reaching the bottom
     LaunchedEffect(isAtTop) {
         if (isAtTop && headerOffsetPx < 0f) {
             androidx.compose.animation.core.Animatable(headerOffsetPx).animateTo(
@@ -125,8 +141,22 @@ fun AiAgentPanel(
                 animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
             ) {
                 headerOffsetPx = value
-                // REMOVED: footerOffsetPx = footerHeightPx
-                // We no longer force the footer to hide when the header auto-reveals at the top.
+            }
+        }
+    }
+
+    LaunchedEffect(isAtBottom) {
+        if (isAtBottom && footerOffsetPx > 0f) {
+            androidx.compose.animation.core.Animatable(footerOffsetPx).animateTo(
+                targetValue = 0f,
+                animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
+            ) {
+                footerOffsetPx = value
+                
+                // Keep header synced if not at top
+                if (!isAtTop && footerHeightPx > 0) {
+                    headerOffsetPx = (footerOffsetPx / footerHeightPx) * -headerHeightPx
+                }
             }
         }
     }
@@ -136,6 +166,13 @@ fun AiAgentPanel(
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                 val delta = available.y
                 
+                // Detection of user manual scroll to interrupt auto-scroll
+                if (source == NestedScrollSource.UserInput && kotlin.math.abs(delta) > 0.5f) {
+                    if (!isAtBottom || delta > 0) { // delta > 0 means scrolling UP
+                        userHasInterrupted = true
+                    }
+                }
+
                 // Only allow hiding if content is scrollable
                 val isScrollable = listState.canScrollForward || listState.canScrollBackward
                 if (!isScrollable) {
@@ -145,7 +182,7 @@ fun AiAgentPanel(
                     return Offset.Zero
                 }
 
-                // If user is at the bottom and tries to scroll down (delta < 0), force show BOTH
+                // If user is at the bottom and tries to scroll DOWN (content moves UP, delta < 0), force SHOW footer
                 if (!listState.canScrollForward && delta < 0) {
                     val newFooterOffset = footerOffsetPx + delta
                     footerOffsetPx = newFooterOffset.coerceIn(0f, footerHeightPx)
@@ -160,9 +197,9 @@ fun AiAgentPanel(
                 else if (!listState.canScrollBackward && delta > 0) {
                     val newHeaderOffset = headerOffsetPx + delta
                     headerOffsetPx = newHeaderOffset.coerceIn(-headerHeightPx, 0f)
-                    
+
                     // Removed: footerOffsetPx = footerHeightPx
-                    // This allows the footer to stay at whatever position it was 
+                    // This allows the footer to stay at whatever position it was
                     // (likely 0f if the user was scrolling up bit by bit)
                 }
                 else {
@@ -176,7 +213,7 @@ fun AiAgentPanel(
                     val isOutOfSync = headerOffsetPx > syncedHeaderOffset + 1f // Add small epsilon
 
                     if (isOutOfSync) {
-                        // In Out of Sync mode (e.g. Header pinned at Top), 
+                        // In Out of Sync mode (e.g. Header pinned at Top),
                         // scrolling affects Footer while Header stays locked at 0f.
                         val newFooterOffset = footerOffsetPx + delta
                         footerOffsetPx = newFooterOffset.coerceIn(0f, footerHeightPx)
@@ -273,22 +310,6 @@ fun AiAgentPanel(
             // Wait for a short duration before re-enabling the send button
             delay(250L)
             processingWithGracePeriod = false
-        }
-    }
-
-    // ── Auto-scroll State ──────────────────────────────────────────────────────
-    var userHasInterrupted by remember { mutableStateOf(false) }
-
-    // Detect if user is at the bottom to reset interruption
-    val isAtBottom by remember {
-        derivedStateOf {
-            val layoutInfo = listState.layoutInfo
-            val visibleItems = layoutInfo.visibleItemsInfo
-            if (visibleItems.isEmpty()) return@derivedStateOf true
-            val lastVisibleItem = visibleItems.last()
-            // Check if last item is at the end AND its bottom is visible/beyond viewport end
-            lastVisibleItem.index == layoutInfo.totalItemsCount - 1 &&
-                    (lastVisibleItem.offset + lastVisibleItem.size) <= layoutInfo.viewportEndOffset + 5
         }
     }
 
@@ -508,8 +529,19 @@ fun AiAgentPanel(
                     // ── Floating Action Buttons (Top Layer) ────────────────────
                     AnimatedVisibility(
                         visible = !isAtBottom && messages.isNotEmpty(),
-                        enter = fadeIn() + scaleIn(),
-                        exit = fadeOut() + scaleOut(),
+                        enter = fadeIn(animationSpec = tween(400)) + 
+                                scaleIn(
+                                    initialScale = 0.8f,
+                                    animationSpec = spring(
+                                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                                        stiffness = Spring.StiffnessLow
+                                    )
+                                ),
+                        exit = fadeOut(animationSpec = tween(300)) + 
+                               scaleOut(
+                                   targetScale = 0.8f,
+                                   animationSpec = tween(400)
+                               ),
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .padding(bottom = with(density) { footerHeightPx.toDp() + 16.dp })
@@ -520,8 +552,19 @@ fun AiAgentPanel(
                                 coroutineScope.launch {
                                     val totalItems = listState.layoutInfo.totalItemsCount
                                     if (totalItems > 0) {
-                                        listState.animateScrollToItem(totalItems - 1, 100000)
                                         userHasInterrupted = false
+                                        
+                                        // Animate offsets to 0 alongside the scroll
+                                        launch {
+                                            androidx.compose.animation.core.Animatable(footerOffsetPx).animateTo(0f) {
+                                                footerOffsetPx = value
+                                                if (footerHeightPx > 0) {
+                                                    headerOffsetPx = (footerOffsetPx / footerHeightPx) * -headerHeightPx
+                                                }
+                                            }
+                                        }
+                                        
+                                        listState.animateScrollToItem(totalItems - 1, 100000)
                                     }
                                 }
                             }
