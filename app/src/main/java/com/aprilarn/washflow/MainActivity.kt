@@ -30,7 +30,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.aprilarn.washflow.data.repository.InviteRepository
-import com.aprilarn.washflow.data.repository.NotificationsRepository
 import com.aprilarn.washflow.data.repository.WorkspaceRepository
 import com.aprilarn.washflow.ui.MainAppScreen
 import com.aprilarn.washflow.ui.MainNavigationEvent
@@ -202,7 +201,6 @@ class MainActivity : ComponentActivity() {
                                     return MainViewModel(
                                         WorkspaceRepository(),
                                         InviteRepository(),
-                                        NotificationsRepository(),
                                         applicationContext.getSharedPreferences("WashFlowPrefs", MODE_PRIVATE)
                                     ) as T
                                 }

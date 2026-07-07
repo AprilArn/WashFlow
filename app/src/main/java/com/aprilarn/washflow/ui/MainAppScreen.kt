@@ -31,19 +31,22 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.aprilarn.washflow.AppNavigation
 import com.aprilarn.washflow.data.repository.CustomerRepository
 import com.aprilarn.washflow.data.repository.ItemRepository
+import com.aprilarn.washflow.data.repository.NotificationsRepository
 import com.aprilarn.washflow.data.repository.OrderRepository
 import com.aprilarn.washflow.data.repository.ServiceRepository
 import com.aprilarn.washflow.data.repository.WorkspaceRepository
 import com.aprilarn.washflow.ui.components.Header
 import com.aprilarn.washflow.ui.components.KickedDialog
 import com.aprilarn.washflow.ui.components.LeaveWorkspaceDialog
-import com.aprilarn.washflow.ui.components.NotificationPanel
-import com.aprilarn.washflow.ui.components.NotificationPreviewItem
+import com.aprilarn.washflow.ui.aiagent.AiAgentPanel
+import com.aprilarn.washflow.ui.aiagent.AiAgentViewModel
+import com.aprilarn.washflow.ui.notifications.NotificationPanel
+import com.aprilarn.washflow.ui.notifications.NotificationPreviewItem
+import com.aprilarn.washflow.ui.notifications.NotificationsViewModel
 import com.aprilarn.washflow.ui.contributors.ContributorsScreen
 import com.aprilarn.washflow.ui.contributors.ContributorsViewModel
 import com.aprilarn.washflow.ui.customers.CustomersScreen
@@ -81,15 +84,62 @@ fun MainAppScreen(
 ) {
     // NavController khusus untuk navigasi di dalam Bottom Navigation Bar
     val bottomNavController = rememberNavController()
-    val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
+
+    // Inisialisasi NotificationsViewModel
+    val notificationsViewModelFactory = object : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            return NotificationsViewModel(NotificationsRepository()) as T
+        }
+    }
+    val notificationsViewModel: NotificationsViewModel = viewModel(factory = notificationsViewModelFactory)
+    val notificationsUiState by notificationsViewModel.uiState.collectAsStateWithLifecycle()
+
+    // Inisialisasi AiAgentViewModel
+    val aiAgentViewModel: AiAgentViewModel = viewModel()
+    val aiAgentUiState by aiAgentViewModel.uiState.collectAsStateWithLifecycle()
+
+    val customersViewModel: com.aprilarn.washflow.ui.customers.CustomersViewModel = viewModel()
+
+    val context = LocalContext.current
+
+    // Handle AI Agent actions (navigation)
+    LaunchedEffect(Unit) {
+        aiAgentViewModel.actionEvents.collect { action ->
+            when (action) {
+                is com.aprilarn.washflow.ui.aiagent.AiAgentAction.Navigate -> {
+                    bottomNavController.navigate(action.destination.route)
+                }
+                is com.aprilarn.washflow.ui.aiagent.AiAgentAction.AddCustomer -> {
+                    customersViewModel.addCustomer(action.name, action.phoneNumber)
+                    android.widget.Toast.makeText(context, "Customer '${action.name}' added successfully!", android.widget.Toast.LENGTH_SHORT).show()
+                }
+                is com.aprilarn.washflow.ui.aiagent.AiAgentAction.DeleteCustomer -> {
+                    if (action.customerId.isNotEmpty()) {
+                        val customerToDelete = com.aprilarn.washflow.data.model.Customers(
+                            customerId = action.customerId,
+                            name = action.name
+                        )
+                        customersViewModel.deleteCustomer(customerToDelete)
+                        android.widget.Toast.makeText(context, "Customer '${action.name}' deleted successfully!", android.widget.Toast.LENGTH_SHORT).show()
+                    } else {
+                        android.widget.Toast.makeText(context, "Error: Customer ID not found.", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                }
+                is com.aprilarn.washflow.ui.aiagent.AiAgentAction.Unknown -> {
+                    // Log or handle unknown action
+                }
+                com.aprilarn.washflow.ui.aiagent.AiAgentAction.None -> {
+                    // Do nothing
+                }
+            }
+        }
+    }
 
     // Inisialisasi SettingsViewModel di level MainAppScreen
     val settingsViewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory)
     val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
-
-    val context = LocalContext.current
 
     // Inisialisasi HomeViewModel di level MainAppScreen agar bisa dibagikan
     val homeViewModelFactory = object : ViewModelProvider.Factory {
@@ -107,7 +157,7 @@ fun MainAppScreen(
             val sharedPrefs = context.getSharedPreferences("WashFlowPrefs", Context.MODE_PRIVATE)
 
             // 3. Masukkan ketiganya ke dalam HomeViewModel
-            return HomeViewModel(OrderRepository(), geocodingService, sharedPrefs) as T
+            return HomeViewModel(OrderRepository(), WorkspaceRepository(), geocodingService, sharedPrefs) as T
         }
     }
     val homeViewModel: HomeViewModel = viewModel(factory = homeViewModelFactory)
@@ -119,12 +169,13 @@ fun MainAppScreen(
                 modifier = Modifier.padding(bottom = 30.dp),
                 navController = bottomNavController,
                 workspaceName = mainUiState.workspaceName,
-                unreadCount = mainUiState.unreadCount,
+                unreadCount = notificationsUiState.unreadCount,
                 isWorkspaceExpanded = mainUiState.showWorkspaceOptions,
-                notificationPreviews = mainUiState.notificationPreviews,
+                notificationPreviews = notificationsUiState.notificationPreviews,
                 onWorkspaceClick = { mainViewModel.onWorkspaceNameClicked() },
-                onNotifClick = { mainViewModel.onNotificationIconClicked() },
-                onRemovePreview = { id, swiped -> mainViewModel.removeNotificationPreview(id, swiped) },
+                onNotifClick = { notificationsViewModel.onNotificationIconClicked() },
+                onAiAgentClick = { aiAgentViewModel.onToggleAiAgent() },
+                onRemovePreview = { id, swiped -> notificationsViewModel.removeNotificationPreview(id, swiped) },
                 workspaceDropdown = { wsOffset ->
                     WorkspaceOptionsDropdown(
                         expanded = mainUiState.showWorkspaceOptions,
@@ -193,6 +244,7 @@ fun MainAppScreen(
 
                 composable(AppNavigation.Contributors.route) {
                     val factory = object : ViewModelProvider.Factory {
+                        @Suppress("UNCHECKED_CAST")
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
                             return ContributorsViewModel(
                                 WorkspaceRepository()
@@ -216,6 +268,7 @@ fun MainAppScreen(
 
                 composable(AppNavigation.ManageOrder.route) {
                     val factory = object : ViewModelProvider.Factory {
+                        @Suppress("UNCHECKED_CAST")
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
                             return ManageOrderViewModel(
                                 OrderRepository(),
@@ -351,6 +404,7 @@ fun MainAppScreen(
 
                 composable(AppNavigation.Orders.route) {
                     val factory = object : ViewModelProvider.Factory {
+                        @Suppress("UNCHECKED_CAST")
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
                             return OrdersViewModel(
                                 CustomerRepository(),
@@ -425,17 +479,41 @@ fun MainAppScreen(
 
     // 2. PANEL NOTIFIKASI MELAYANG (Berada paling atas karena ditulis paling akhir)
     NotificationPanel(
-        expanded = mainUiState.showNotificationOptions,
-        notifications = mainUiState.notifications,
-        currentUid = mainUiState.currentUserUid,
-        onDismiss = { mainViewModel.onDismissNotificationOptions() },
+        expanded = notificationsUiState.showNotificationOptions,
+        notifications = notificationsUiState.filteredNotifications,
+        currentUid = notificationsUiState.currentUserUid,
+        filter = notificationsUiState.filter,
+        onFilterChange = { notificationsViewModel.onFilterChanged(it) },
+        onMarkAllAsRead = { notificationsViewModel.markAllAsRead() },
+        onDismiss = { notificationsViewModel.onDismissNotificationOptions() },
         onNotificationClick = { notif ->
-            mainViewModel.markNotificationAsRead(notif)
+            notificationsViewModel.markNotificationAsRead(notif)
         }
     )
 
+    // 2.5 PANEL AI AGENT (Berada paling atas karena ditulis paling akhir)
+    AiAgentPanel(
+        expanded = aiAgentUiState.expanded,
+        userName = userData?.displayName ?: "Unknown",
+        profilePictureUrl = userData?.profilePictureUrl,
+        inputMessage = aiAgentUiState.inputMessage,
+        messages = aiAgentUiState.messages,
+        isAiThinking = aiAgentUiState.isAiThinking,
+        currentModelName = aiAgentUiState.currentModelName,
+        modelStatus = aiAgentUiState.modelStatus,
+        customers = aiAgentUiState.customers,
+        wasMessageAnimated = { aiAgentViewModel.wasMessageAnimated(it) },
+        onMessageAnimated = { aiAgentViewModel.markMessageAsAnimated(it) },
+        onInputChange = { aiAgentViewModel.onInputChange(it) },
+        onSendMessage = { aiAgentViewModel.onSendMessage() },
+        onClearHistory = { aiAgentViewModel.onClearHistory() },
+        onConfirmAction = { id, action -> aiAgentViewModel.onConfirmAction(id, action) },
+        onCancelAction = { aiAgentViewModel.onCancelAction(it) },
+        onDismiss = { aiAgentViewModel.onDismissAiAgent() }
+    )
+
     // 3. OVERLAY PREVIEW NOTIFIKASI JATUH (TANPA POPUP)
-    if (mainUiState.notificationPreviews.isNotEmpty()) {
+    if (notificationsUiState.notificationPreviews.isNotEmpty()) {
         Box(
             modifier = Modifier
                 .fillMaxSize() // Memenuhi layar agar notif bisa jatuh sampai bawah
@@ -449,19 +527,19 @@ fun MainAppScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalAlignment = Alignment.End
             ) {
-                mainUiState.notificationPreviews.forEachIndexed { index, notif ->
+                notificationsUiState.notificationPreviews.forEachIndexed { index, notif ->
                     key(notif.notificationId) {
                         NotificationPreviewItem(
-                            modifier = Modifier.zIndex(mainUiState.notificationPreviews.size - index.toFloat()),
+                            modifier = Modifier.zIndex(notificationsUiState.notificationPreviews.size - index.toFloat()),
                             notification = notif,
                             onClick = {
                                 if (notif.title == "Order Baru") {
                                     bottomNavController.navigate(AppNavigation.ManageOrder.route)
                                 }
-                                mainViewModel.removeNotificationPreview(notif.notificationId, true)
+                                notificationsViewModel.removeNotificationPreview(notif.notificationId, true)
                             },
                             onRemove = { wasSwiped ->
-                                mainViewModel.removeNotificationPreview(notif.notificationId, wasSwiped)
+                                notificationsViewModel.removeNotificationPreview(notif.notificationId, wasSwiped)
                             }
                         )
                     }

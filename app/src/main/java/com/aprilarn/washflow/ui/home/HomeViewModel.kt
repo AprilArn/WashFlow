@@ -9,6 +9,7 @@ import com.aprilarn.washflow.BuildConfig
 import com.aprilarn.washflow.data.remote.weather.service.GeocodingApiService
 import com.aprilarn.washflow.data.remote.weather.service.WeatherApiService
 import com.aprilarn.washflow.data.repository.OrderRepository
+import com.aprilarn.washflow.data.repository.WorkspaceRepository
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +27,7 @@ import kotlin.math.roundToInt
 
 class HomeViewModel(
     private val orderRepository: OrderRepository,
+    private val workspaceRepository: WorkspaceRepository,
     private val geocodingApiService: GeocodingApiService,
     private val sharedPreferences: SharedPreferences
 ) : ViewModel() {
@@ -39,19 +41,47 @@ class HomeViewModel(
     private val gson = Gson()
 
     init {
-        listenForOrderUpdates()
+        listenForMetadataUpdates()
+        listenForDeadlineUpdates()
         startPeriodicRefresh()
     }
 
-    private fun listenForOrderUpdates() {
+    private fun listenForMetadataUpdates() {
         viewModelScope.launch {
-            orderRepository.getOrdersRealtime()
+            workspaceRepository.getMetadataRealtime()
                 .catch { e ->
-                    Log.e("HomeViewModel", "Error listening for order updates", e)
+                    Log.e("HomeViewModel", "Error listening for metadata updates", e)
+                }
+                .collect { metadata ->
+                    // Jika total order > 0 tapi rincian status masih 0 semua, berarti perlu sync (migrasi data lama)
+                    val totalStatusCount = metadata.orderOnQueueCount + metadata.orderOnProcessCount + metadata.orderDoneCount
+                    
+                    val workspaceId = workspaceRepository.getCurrentWorkspaceId()
+                    if (workspaceId != null) {
+                        // Jika metadata benar-benar kosong (dokumen belum ada), atau perlu migrasi
+                        if ((metadata.orderCount == 0 && totalStatusCount == 0) || (metadata.orderCount > 0 && totalStatusCount == 0)) {
+                            workspaceRepository.syncMetadata(workspaceId)
+                        }
+                    }
+
+                    _uiState.update {
+                        it.copy(
+                            inQueue = metadata.orderOnQueueCount,
+                            onProcess = metadata.orderOnProcessCount,
+                            done = metadata.orderDoneCount
+                        )
+                    }
+                }
+        }
+    }
+
+    private fun listenForDeadlineUpdates() {
+        viewModelScope.launch {
+            orderRepository.getActiveOrdersWithDeadlinesRealtime()
+                .catch { e ->
+                    Log.e("HomeViewModel", "Error listening for deadline updates", e)
                 }
                 .collect { orders ->
-                    val groupedOrders = orders.groupBy { it.status }
-
                     // Filter for deadlines that fall within our forecast window
                     val now = Calendar.getInstance()
                     val windowEnd = Calendar.getInstance().apply {
@@ -59,8 +89,6 @@ class HomeViewModel(
                     }
 
                     todayDeadlines = orders.filter { order ->
-                        order.orderDueDate != null && order.status != "Done" && order.status != "Canceled"
-                    }.filter { order ->
                         val dueCal = Calendar.getInstance().apply { time = order.orderDueDate!!.toDate() }
                         dueCal.after(now) && dueCal.before(windowEnd)
                     }.map { order ->
@@ -77,9 +105,6 @@ class HomeViewModel(
 
                     _uiState.update {
                         it.copy(
-                            inQueue = groupedOrders["On Queue"]?.size ?: 0,
-                            onProcess = groupedOrders["On Process"]?.size ?: 0,
-                            done = groupedOrders["Done"]?.size ?: 0,
                             hourlyForecasts = injectEvents(currentWeatherOnlyForecast)
                         )
                     }
@@ -108,7 +133,7 @@ class HomeViewModel(
                 val isGps = _uiState.value.isGpsLocation
 
                 if (lastLat != 0.0 || lastLon != 0.0) {
-                    fetchWeatherData(lastLat, lastLon, isGps)
+                    fetchWeatherData(lastLat, lastLon, isGps, showLoader = false)
                 } else {
                     _uiState.update { it.copy(greeting = getGreetingMessage()) }
                 }
@@ -279,7 +304,7 @@ class HomeViewModel(
         return sortedAll.take(8)
     }
 
-    fun fetchWeatherData(lat: Double, lon: Double, isGps: Boolean = true) {
+    fun fetchWeatherData(lat: Double, lon: Double, isGps: Boolean = true, showLoader: Boolean = true) {
         val currentTime = System.currentTimeMillis()
         val lastFetchTime = sharedPreferences.getLong("LAST_FETCH_TIME", 0L)
         val lastLat = sharedPreferences.getFloat("LAST_LAT", 0f).toDouble()
@@ -349,7 +374,9 @@ class HomeViewModel(
         }
 
         Log.d("HomeViewModel", "Mengambil data cuaca baru dari API...")
-        _uiState.update { it.copy(isLoading = true, isGpsLocation = isGps) }
+        if (showLoader) {
+            _uiState.update { it.copy(isLoading = true, isGpsLocation = isGps) }
+        }
 
         viewModelScope.launch {
             try {

@@ -25,7 +25,10 @@ data class Workspaces (
         val customerCount: Int = 0,
         val serviceCount: Int = 0,
         val itemCount: Int = 0,
-        val orderCount: Int = 0
+        val orderCount: Int = 0,
+        val orderOnQueueCount: Int = 0,
+        val orderOnProcessCount: Int = 0,
+        val orderDoneCount: Int = 0
     )
 
     data class Customers (

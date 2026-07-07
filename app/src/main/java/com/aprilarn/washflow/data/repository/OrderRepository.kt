@@ -59,6 +59,38 @@ class OrderRepository {
         }
     }
 
+    suspend fun getActiveOrdersWithDeadlinesRealtime(): Flow<List<Orders>> {
+        return callbackFlow {
+            val workspaceId = getWorkspaceId()
+            if (workspaceId == null) {
+                close(IllegalStateException("Workspace ID not found"))
+                return@callbackFlow
+            }
+
+            // Fetch only orders that are not Done and have a due date
+            val listener = db.collection("workspaces")
+                .document(workspaceId)
+                .collection("orders")
+                .whereIn("status", listOf("On Queue", "On Process"))
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        if (error is FirebaseFirestoreException && error.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+                            close()
+                            return@addSnapshotListener
+                        }
+                        close(error)
+                        return@addSnapshotListener
+                    }
+                    if (snapshot != null) {
+                        val orders = snapshot.toObjects(Orders::class.java)
+                            .filter { it.orderDueDate != null }
+                        trySend(orders).isSuccess
+                    }
+                }
+            awaitClose { listener.remove() }
+        }
+    }
+
     suspend fun createOrder(order: Orders): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
         val currentUser = Firebase.auth.currentUser ?: return false
@@ -95,6 +127,9 @@ class OrderRepository {
                 batch.set(newOrderDoc, finalOrder)
                 batch.set(newNotifDoc, notification)
                 batch.update(metadataDocRef, "orderCount", FieldValue.increment(1))
+                if (finalOrder.status == "On Queue") {
+                    batch.update(metadataDocRef, "orderOnQueueCount", FieldValue.increment(1))
+                }
             }.await()
 
             true
@@ -105,15 +140,33 @@ class OrderRepository {
     }
 
     // Fungsi untuk update status order
-    suspend fun updateOrderStatus(orderId: String, newStatus: String): Boolean {
+    suspend fun updateOrderStatus(orderId: String, oldStatus: String, newStatus: String): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
         return try {
-            db.collection("workspaces")
-                .document(workspaceId)
-                .collection("orders")
-                .document(orderId)
-                .update("status", newStatus)
-                .await()
+            val workspaceRef = db.collection("workspaces").document(workspaceId)
+            val orderRef = workspaceRef.collection("orders").document(orderId)
+            val metadataRef = workspaceRef.collection("metadata").document("counts")
+
+            db.runBatch { batch ->
+                batch.update(orderRef, "status", newStatus)
+
+                // Update metadata counts
+                val oldField = when (oldStatus) {
+                    "On Queue" -> "orderOnQueueCount"
+                    "On Process" -> "orderOnProcessCount"
+                    "Done" -> "orderDoneCount"
+                    else -> null
+                }
+                val newField = when (newStatus) {
+                    "On Queue" -> "orderOnQueueCount"
+                    "On Process" -> "orderOnProcessCount"
+                    "Done" -> "orderDoneCount"
+                    else -> null
+                }
+
+                if (oldField != null) batch.update(metadataRef, oldField, FieldValue.increment(-1))
+                if (newField != null) batch.update(metadataRef, newField, FieldValue.increment(1))
+            }.await()
             true
         } catch (e: Exception) {
             e.printStackTrace()
@@ -137,7 +190,7 @@ class OrderRepository {
         }
     }
 
-    suspend fun deleteOrder(orderId: String): Boolean {
+    suspend fun deleteOrder(orderId: String, status: String?): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
         return try {
             val workspaceRef = db.collection("workspaces").document(workspaceId)
@@ -147,6 +200,16 @@ class OrderRepository {
             db.runBatch { batch ->
                 batch.delete(orderDocRef)
                 batch.update(metadataDocRef, "orderCount", FieldValue.increment(-1))
+                
+                val statusField = when (status) {
+                    "On Queue" -> "orderOnQueueCount"
+                    "On Process" -> "orderOnProcessCount"
+                    "Done" -> "orderDoneCount"
+                    else -> null
+                }
+                if (statusField != null) {
+                    batch.update(metadataDocRef, statusField, FieldValue.increment(-1))
+                }
             }.await()
             true
         } catch (e: Exception) {

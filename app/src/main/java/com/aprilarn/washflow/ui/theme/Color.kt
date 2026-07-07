@@ -16,6 +16,9 @@ val Pinkish = Color(0xFFF48FB1)
 
 val MainFontBlack = Color(0xFF323232) // Soft Black
 
+val SkyBlue = Color(0xFF4EB0FF)
+
+val SoftBlack = Color(0xFF424242)
 
 // Gradient colors
 // Pagi (Cerah & Lembut)

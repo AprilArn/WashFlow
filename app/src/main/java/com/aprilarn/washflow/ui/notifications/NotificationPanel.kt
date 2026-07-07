@@ -1,5 +1,4 @@
-// com/aprilarn/washflow/ui/components/NotificationPanel.kt
-package com.aprilarn.washflow.ui.components
+package com.aprilarn.washflow.ui.notifications
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
@@ -11,7 +10,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.PersonAdd
@@ -51,6 +49,9 @@ fun NotificationPanel(
     expanded: Boolean,
     notifications: List<Notifications>,
     currentUid: String,
+    filter: NotificationFilter,
+    onFilterChange: (NotificationFilter) -> Unit,
+    onMarkAllAsRead: () -> Unit,
     onDismiss: () -> Unit,
     onNotificationClick: (Notifications) -> Unit
 ) {
@@ -99,15 +100,15 @@ fun NotificationPanel(
                     ) {
                         Text(
                             text = "Notifications",
-                            style = MaterialTheme.typography.headlineSmall.copy(
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 22.sp
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 19.sp
                             ),
                             color = MainFontBlack
                         )
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            TextButton(onClick = { /* TODO: Mark all as read */ }) {
+                            TextButton(onClick = onMarkAllAsRead) {
                                 Text(
                                     text = "Mark all as read",
                                     color = GrayBlue,
@@ -122,8 +123,20 @@ fun NotificationPanel(
                         modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Text("All", color = MainFontBlack, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        Text("Unread", color = Color.Gray, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                        Text(
+                            text = "Unread",
+                            color = if (filter == NotificationFilter.UNREAD) MainFontBlack else Color.Gray,
+                            fontWeight = if (filter == NotificationFilter.UNREAD) FontWeight.Bold else FontWeight.Medium,
+                            fontSize = 14.sp,
+                            modifier = Modifier.clickable { onFilterChange(NotificationFilter.UNREAD) }
+                        )
+                        Text(
+                            text = "All",
+                            color = if (filter == NotificationFilter.ALL) MainFontBlack else Color.Gray,
+                            fontWeight = if (filter == NotificationFilter.ALL) FontWeight.Bold else FontWeight.Medium,
+                            fontSize = 14.sp,
+                            modifier = Modifier.clickable { onFilterChange(NotificationFilter.ALL) }
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -301,6 +314,9 @@ fun NotificationPanelPreview() {
             )
         ),
         currentUid = "user123",
+        filter = NotificationFilter.UNREAD,
+        onFilterChange = {},
+        onMarkAllAsRead = {},
         onDismiss = {},
         onNotificationClick = {}
     )

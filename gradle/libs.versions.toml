@@ -38,6 +38,9 @@ playServicesAuth = "21.4.0"
 # Concurrency
 coroutine = "1.7.3"
 
+# Gemini AI
+generativeai = "0.9.0"
+
 # Testing
 junit = "4.13.2"
 junitVersion = "1.3.0"
@@ -92,6 +95,9 @@ androidx-credentials = { group = "androidx.credentials", name = "credentials", v
 androidx-credentials-play-services-auth = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "credentials" }
 googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleid" }
 play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playServicesAuth" }
+
+# Gemini AI
+generativeai = { group = "com.google.ai.client.generativeai", name = "generativeai", version.ref = "generativeai" }
 
 # Concurrency
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutine" }
