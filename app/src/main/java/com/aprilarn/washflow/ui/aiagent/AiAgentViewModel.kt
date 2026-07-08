@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.ui.text.input.TextFieldValue
 
 class AiAgentViewModel : ViewModel() {
@@ -37,21 +38,22 @@ class AiAgentViewModel : ViewModel() {
         }
     }
 
-    /**
-     * Stores IDs of messages whose entry animation has already played.
-     * Lives in the ViewModel so it survives panel close/reopen (AnimatedVisibility
-     * removes composables from the tree when hidden, destroying all remember{} state).
-     * Only cleared when the user explicitly deletes chat history.
-     */
-    private val animatedMessageIds = HashSet<String>()
-
     /** Returns true if this message has already played its entry animation. */
-    fun wasMessageAnimated(messageId: String): Boolean = messageId in animatedMessageIds
+    fun wasMessageAnimated(messageId: String): Boolean = 
+        messageId in _uiState.value.animatedMessageIds
 
     /** Called by the panel once a message's entry animation has finished. */
     fun markMessageAsAnimated(messageId: String) {
-        animatedMessageIds.add(messageId)
+        _uiState.update { it.copy(animatedMessageIds = it.animatedMessageIds + messageId) }
     }
+
+    /**
+     * Tracks the number of characters currently displayed for each message.
+     * This ensures the typewriter animation continues even if the panel is closed.
+     */
+    private val messageAnimationProgress = mutableStateMapOf<String, Int>()
+
+    fun getAnimationProgress(messageId: String): Int = messageAnimationProgress[messageId] ?: -1
 
     fun onToggleAiAgent() {
         _uiState.update { it.copy(expanded = !it.expanded) }
@@ -117,6 +119,17 @@ class AiAgentViewModel : ViewModel() {
                 )
             }
 
+            // Start background typewriter simulation
+            val finalAiMessageId = aiPlaceholder.id
+            viewModelScope.launch {
+                messageAnimationProgress[finalAiMessageId] = 0
+                for (i in 1..finalResponseText.length) {
+                    messageAnimationProgress[finalAiMessageId] = i
+                    kotlinx.coroutines.delay(20) // Match UI typewriter speed
+                }
+                markMessageAsAnimated(finalAiMessageId)
+            }
+
             kotlinx.coroutines.delay(3000)
             _uiState.update { it.copy(modelStatus = AiModelStatus.IDLE, currentModelName = null) }
         }
@@ -124,9 +137,13 @@ class AiAgentViewModel : ViewModel() {
 
     fun onClearHistory() {
         brain.clearHistory()
-        // Also clear animation tracking so messages animate again if re-added
-        animatedMessageIds.clear()
-        _uiState.update { it.copy(messages = emptyList(), isAiThinking = false) }
+        _uiState.update { it.copy(
+            messages = emptyList(),
+            isAiThinking = false,
+            animatedMessageIds = emptySet()
+        ) }
+        messageAnimationProgress.clear()
+        // Resetting any other internal UI states that might be tracked via callbacks
     }
 
     fun setUserInfo(name: String, photoUrl: String?) {

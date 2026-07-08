@@ -31,5 +31,6 @@ data class AiAgentUiState(
     val isAiThinking: Boolean = false,
     val currentModelName: String? = null,
     val modelStatus: AiModelStatus = AiModelStatus.IDLE,
-    val customers: List<Customers> = emptyList()
+    val customers: List<Customers> = emptyList(),
+    val animatedMessageIds: Set<String> = emptySet()
 )

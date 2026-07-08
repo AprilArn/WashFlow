@@ -44,8 +44,10 @@ fun AiAgentPanel(
     currentModelName: String? = null,
     modelStatus: AiModelStatus = AiModelStatus.IDLE,
     customers: List<Customers> = emptyList(),
+    animatedMessageIds: Set<String> = emptySet(),
     wasMessageAnimated: (String) -> Boolean,
     onMessageAnimated: (String) -> Unit,
+    getAnimationProgress: (String) -> Int, // New callback
     onInputChange: (TextFieldValue) -> Unit,
     onSendMessage: () -> Unit,
     onClearHistory: () -> Unit,
@@ -56,10 +58,6 @@ fun AiAgentPanel(
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     var showMenu by remember { mutableStateOf(false) }
-    var animatingMessageIds by remember { mutableStateOf(setOf<String>()) }
-    val isAnyMessageAnimating by remember {
-        derivedStateOf { animatingMessageIds.isNotEmpty() }
-    }
 
     // --- Auto-scroll Logic ---
     var userHasInterrupted by remember { mutableStateOf(false) }
@@ -208,11 +206,17 @@ fun AiAgentPanel(
         if (listState.isScrollInProgress) showMenu = false
     }
 
-    val isProcessing = remember(isAiThinking, isAnyMessageAnimating, messages, animatingMessageIds) {
+    val isProcessing = remember(isAiThinking, messages, animatedMessageIds) {
         derivedStateOf {
-            if (isAiThinking || isAnyMessageAnimating) return@derivedStateOf true
             val lastAiMessage = messages.lastOrNull { !it.isUser }
-            if (lastAiMessage != null && !lastAiMessage.isThinking && !wasMessageAnimated(lastAiMessage.id)) return@derivedStateOf true
+            val isLastAiMessageNotAnimated = lastAiMessage != null && 
+                !lastAiMessage.isThinking && 
+                !wasMessageAnimated(lastAiMessage.id) &&
+                (getAnimationProgress(lastAiMessage.id) < lastAiMessage.text.length)
+
+            if (messages.isEmpty()) return@derivedStateOf false
+
+            if (isAiThinking || isLastAiMessageNotAnimated) return@derivedStateOf true
             false
         }
     }
@@ -344,6 +348,7 @@ fun AiAgentPanel(
                                         message = message,
                                         profilePictureUrl = profilePictureUrl,
                                         isAlreadyAnimated = alreadyAnimated,
+                                        progress = getAnimationProgress(message.id),
                                         customers = customers,
                                         onConfirmAction = { updatedAction ->
                                             onConfirmAction(message.id, updatedAction)
@@ -356,9 +361,6 @@ fun AiAgentPanel(
                                                 headerOffsetPx = 0f
                                                 footerOffsetPx = 0f
                                             }
-                                        },
-                                        onAnimationStateChange = { animating ->
-                                            animatingMessageIds = if (animating) animatingMessageIds + message.id else animatingMessageIds - message.id
                                         }
                                     )
                                     Spacer(modifier = Modifier.height(if (message.isUser) 12.dp else 32.dp))

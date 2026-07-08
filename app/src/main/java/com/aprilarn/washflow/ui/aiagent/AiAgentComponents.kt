@@ -17,7 +17,6 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -386,67 +385,39 @@ fun ActionConfirmationCard(
 @Composable
 fun TypewriterText(
     text: String,
+    progress: Int, // Drives the typewriter from ViewModel
     modifier: Modifier = Modifier,
-    delayMillis: Long = 20L,
     isNewMessage: Boolean = true,
-    onTextUpdate: () -> Unit = {},
-    onAnimationStateChange: (Boolean) -> Unit = {}
+    onTextUpdate: () -> Unit = {}
 ) {
-    var displayedText by rememberSaveable {
-        mutableStateOf(if (isNewMessage && text.isNotEmpty()) text.take(1) else text)
+    val displayedText = remember(text, progress) {
+        if (progress < 0 || progress >= text.length) text else text.take(progress)
     }
-    var animationFinished by rememberSaveable { mutableStateOf(!isNewMessage) }
     
-    var lastProcessedText by rememberSaveable { mutableStateOf(text) }
     val view = LocalView.current
 
-    LaunchedEffect(text) {
-        if (text != lastProcessedText) {
-            lastProcessedText = text
-            if (isNewMessage) {
-                displayedText = text.take(1)
-                animationFinished = false
-            } else {
-                displayedText = text
-                animationFinished = true
-            }
-        }
-
-        if (!animationFinished) {
-            onAnimationStateChange(true)
-            if (text.isEmpty()) {
-                displayedText = ""
-            } else {
-                val startIndex = displayedText.length
-                for (index in startIndex until text.length) {
-                    val currentChar = text[index]
-                    displayedText = text.substring(0, index + 1)
-                    
-                    // Haptic feedback when a word is completed (on whitespace)
-                    if (currentChar.isWhitespace()) {
-                        val prevChar = if (index > 0) text[index - 1] else null
-                        if (prevChar == null || !prevChar.isWhitespace()) {
-                            view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                        }
-                    }
-
-                    onTextUpdate()
-                    delay(delayMillis)
+    // Handle haptics and scroll-updates based on progress
+    LaunchedEffect(progress) {
+        if (progress > 0 && progress < text.length) {
+            val currentChar = text[progress - 1]
+            if (currentChar.isWhitespace()) {
+                val prevChar = if (progress > 1) text[progress - 2] else null
+                if (prevChar == null || !prevChar.isWhitespace()) {
+                    view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
                 }
             }
-            animationFinished = true
-            onAnimationStateChange(false)
-            // Much stronger/punchier haptic (REJECT usually provides a sharp triple-tap or strong kick)
+            onTextUpdate()
+        }
+        
+        if (progress >= text.length && isNewMessage) {
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
                 view.performHapticFeedback(HapticFeedbackConstants.REJECT)
             } else {
                 view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
             }
-        } else {
-            displayedText = text
-            onAnimationStateChange(false)
         }
     }
+
 
     Text(
         text = MarkdownUtils.parseMarkdown(displayedText),
@@ -476,11 +447,11 @@ fun ChatMessageItem(
     message: ChatMessage,
     profilePictureUrl: String?,
     isAlreadyAnimated: Boolean = false,
+    progress: Int = -1, // New: Drives typewriter from ViewModel
     customers: List<Customers> = emptyList(),
     onConfirmAction: (AiAgentAction?) -> Unit = {},
     onCancelAction: () -> Unit = {},
-    onTextUpdate: () -> Unit = {},
-    onAnimationStateChange: (Boolean) -> Unit = {}
+    onTextUpdate: () -> Unit = {}
 ) {
     if (message.isUser) {
         Row(
@@ -541,18 +512,17 @@ fun ChatMessageItem(
                         lineHeight = 20.sp
                     )
                 } else {
-                    var isTypewriterActive by remember { mutableStateOf(!isAlreadyAnimated) }
+                    val isTypewriterActive by remember(progress, message.text) {
+                        derivedStateOf { progress >= 0 && progress < message.text.length }
+                    }
                     var delayedShowActionCard by remember { mutableStateOf(false) }
 
                     Column(modifier = Modifier.fillMaxWidth()) {
                         TypewriterText(
                             text = message.text,
+                            progress = progress,
                             isNewMessage = !isAlreadyAnimated,
-                            onTextUpdate = onTextUpdate,
-                            onAnimationStateChange = { animating ->
-                                isTypewriterActive = animating
-                                onAnimationStateChange(animating)
-                            }
+                            onTextUpdate = onTextUpdate
                         )
 
                         val hasAction = message.action != null &&
