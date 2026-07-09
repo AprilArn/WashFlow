@@ -39,6 +39,7 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import coil.compose.AsyncImage
 import com.aprilarn.washflow.data.model.Customers
+import com.aprilarn.washflow.data.model.Items
 import com.aprilarn.washflow.ui.theme.*
 import com.aprilarn.washflow.utils.MarkdownUtils
 import com.aprilarn.washflow.utils.StringSimilarityUtils
@@ -68,6 +69,7 @@ fun AiMessageHeader() {
 fun ActionConfirmationCard(
     action: AiAgentAction,
     customers: List<Customers> = emptyList(),
+    items: List<Items> = emptyList(),
     onConfirm: (AiAgentAction?) -> Unit,
     onCancel: () -> Unit
 ) {
@@ -76,6 +78,7 @@ fun ActionConfirmationCard(
             when (action) {
                 is AiAgentAction.AddCustomer -> action.name
                 is AiAgentAction.DeleteCustomer -> action.name
+                is AiAgentAction.DeleteItem -> action.itemName
                 else -> ""
             }
         )
@@ -98,6 +101,16 @@ fun ActionConfirmationCard(
                     (it.contact ?: "") == editedValue
                 }?.customerId ?: ""
             } else ""
+        }
+    }
+
+    val selectedItem by remember(editedName, items) {
+        derivedStateOf {
+            if (action is AiAgentAction.DeleteItem) {
+                items.find { 
+                    it.itemName.equals(editedName, ignoreCase = true)
+                }
+            } else null
         }
     }
 
@@ -137,6 +150,32 @@ fun ActionConfirmationCard(
         }
     }
 
+    // Auto-match for DeleteItem
+    LaunchedEffect(action, items) {
+        if (action is AiAgentAction.DeleteItem && selectedItem == null) {
+            val match = withContext(Dispatchers.Default) {
+                items.find { 
+                    it.itemName.equals(action.itemName, ignoreCase = true)
+                } ?: items.find { 
+                    it.itemName.contains(action.itemName, ignoreCase = true)
+                } ?: items.find {
+                    action.itemName.contains(it.itemName, ignoreCase = true)
+                } ?: items.asSequence()
+                    .map { item ->
+                        val score = StringSimilarityUtils.similarityScore(action.itemName, item.itemName)
+                        item to score
+                    }
+                    .filter { it.second > 0.6 }
+                    .maxByOrNull { it.second }
+                    ?.first
+            }
+
+            if (match != null) {
+                editedName = match.itemName
+            }
+        }
+    }
+
     var isNameDropdownExpanded by remember { mutableStateOf(false) }
     var isPhoneDropdownExpanded by remember { mutableStateOf(false) }
     var nameTextFieldSize by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
@@ -164,6 +203,13 @@ fun ActionConfirmationCard(
             }
             append("?")
         }
+        is AiAgentAction.DeleteItem -> buildAnnotatedString {
+            append("Delete laundry item ")
+            withStyle(style = SpanStyle(color = Color.Red, fontWeight = FontWeight.Bold)) {
+                append(editedName)
+            }
+            append("?")
+        }
         is AiAgentAction.Unknown -> AnnotatedString(action.message)
         else -> AnnotatedString("")
     }
@@ -184,7 +230,7 @@ fun ActionConfirmationCard(
             )
             Spacer(modifier = Modifier.height(8.dp))
             
-            if (action is AiAgentAction.AddCustomer || action is AiAgentAction.DeleteCustomer) {
+            if (action is AiAgentAction.AddCustomer || action is AiAgentAction.DeleteCustomer || action is AiAgentAction.DeleteItem) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Box {
                         OutlinedTextField(
@@ -194,7 +240,7 @@ fun ActionConfirmationCard(
                                 isNameDropdownExpanded = true
                                 isPhoneDropdownExpanded = false
                             },
-                            label = { Text("Customer Name", fontSize = 12.sp) },
+                            label = { Text(if (action is AiAgentAction.DeleteItem) "Item Name" else "Customer Name", fontSize = 12.sp) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .onGloballyPositioned { coordinates ->
@@ -209,44 +255,87 @@ fun ActionConfirmationCard(
                         )
 
                         if (isNameDropdownExpanded && editedName.isNotEmpty()) {
-                            val filteredCustomers = customers.filter {
-                                it.name.contains(editedName, ignoreCase = true)
-                            }
+                            if (action is AiAgentAction.DeleteItem) {
+                                val filteredItems = items.filter {
+                                    it.itemName.contains(editedName, ignoreCase = true)
+                                }
 
-                            if (filteredCustomers.isNotEmpty()) {
-                                Popup(
-                                    onDismissRequest = { isNameDropdownExpanded = false },
-                                    offset = IntOffset(x = 0, y = nameTextFieldSize.height.toInt()),
-                                    properties = PopupProperties(focusable = false)
-                                ) {
-                                    Surface(
-                                        modifier = Modifier
-                                            .width(with(LocalDensity.current) { nameTextFieldSize.width.toDp() })
-                                            .padding(top = 4.dp)
-                                            .heightIn(max = 150.dp),
-                                        shape = RoundedCornerShape(8.dp),
-                                        shadowElevation = 4.dp,
-                                        border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
-                                        color = Color.White
+                                if (filteredItems.isNotEmpty()) {
+                                    Popup(
+                                        onDismissRequest = { isNameDropdownExpanded = false },
+                                        offset = IntOffset(x = 0, y = nameTextFieldSize.height.toInt()),
+                                        properties = PopupProperties(focusable = false)
                                     ) {
-                                        LazyColumn {
-                                            items(filteredCustomers) { customer ->
-                                                DropdownMenuItem(
-                                                    text = { 
-                                                        Column {
-                                                            Text(customer.name, style = MaterialTheme.typography.bodyMedium)
-                                                            if (!customer.contact.isNullOrEmpty()) {
-                                                                Text(customer.contact, style = MaterialTheme.typography.labelSmall, color = Gray)
+                                        Surface(
+                                            modifier = Modifier
+                                                .width(with(LocalDensity.current) { nameTextFieldSize.width.toDp() })
+                                                .padding(top = 4.dp)
+                                                .heightIn(max = 150.dp),
+                                            shape = RoundedCornerShape(8.dp),
+                                            shadowElevation = 4.dp,
+                                            border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
+                                            color = Color.White
+                                        ) {
+                                            LazyColumn {
+                                                items(filteredItems) { item ->
+                                                    DropdownMenuItem(
+                                                        text = { 
+                                                            Column {
+                                                                Text(item.itemName, style = MaterialTheme.typography.bodyMedium)
+                                                                Text("Rp${item.itemPrice}", style = MaterialTheme.typography.labelSmall, color = Gray)
                                                             }
+                                                        },
+                                                        onClick = {
+                                                            editedName = item.itemName
+                                                            isNameDropdownExpanded = false
                                                         }
-                                                    },
-                                                    onClick = {
-                                                        editedName = customer.name
-                                                        editedValue = customer.contact ?: ""
-                                                        isNameDropdownExpanded = false
-                                                    }
-                                                )
-                                                HorizontalDivider(color = Color(0xFFEEEEEE))
+                                                    )
+                                                    HorizontalDivider(color = Color(0xFFEEEEEE))
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                val filteredCustomers = customers.filter {
+                                    it.name.contains(editedName, ignoreCase = true)
+                                }
+
+                                if (filteredCustomers.isNotEmpty()) {
+                                    Popup(
+                                        onDismissRequest = { isNameDropdownExpanded = false },
+                                        offset = IntOffset(x = 0, y = nameTextFieldSize.height.toInt()),
+                                        properties = PopupProperties(focusable = false)
+                                    ) {
+                                        Surface(
+                                            modifier = Modifier
+                                                .width(with(LocalDensity.current) { nameTextFieldSize.width.toDp() })
+                                                .padding(top = 4.dp)
+                                                .heightIn(max = 150.dp),
+                                            shape = RoundedCornerShape(8.dp),
+                                            shadowElevation = 4.dp,
+                                            border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
+                                            color = Color.White
+                                        ) {
+                                            LazyColumn {
+                                                items(filteredCustomers) { customer ->
+                                                    DropdownMenuItem(
+                                                        text = { 
+                                                            Column {
+                                                                Text(customer.name, style = MaterialTheme.typography.bodyMedium)
+                                                                if (!customer.contact.isNullOrEmpty()) {
+                                                                    Text(customer.contact, style = MaterialTheme.typography.labelSmall, color = Gray)
+                                                                }
+                                                            }
+                                                        },
+                                                        onClick = {
+                                                            editedName = customer.name
+                                                            editedValue = customer.contact ?: ""
+                                                            isNameDropdownExpanded = false
+                                                        }
+                                                    )
+                                                    HorizontalDivider(color = Color(0xFFEEEEEE))
+                                                }
                                             }
                                         }
                                     }
@@ -255,82 +344,115 @@ fun ActionConfirmationCard(
                         }
                     }
                     
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    Box {
-                        OutlinedTextField(
-                            value = editedValue,
-                            onValueChange = { 
-                                editedValue = it
-                                if (action is AiAgentAction.DeleteCustomer) {
-                                    isPhoneDropdownExpanded = true
-                                    isNameDropdownExpanded = false
-                                }
-                            },
-                            label = {
-                                Text(
-                                    if (action is AiAgentAction.AddCustomer || action is AiAgentAction.DeleteCustomer) "Phone Number" else "Customer ID",
-                                    fontSize = 12.sp
-                                )
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .onGloballyPositioned { coordinates ->
-                                    phoneTextFieldSize = coordinates.size.toSize()
+                    if (action !is AiAgentAction.DeleteItem) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        Box {
+                            OutlinedTextField(
+                                value = editedValue,
+                                onValueChange = { 
+                                    editedValue = it
+                                    if (action is AiAgentAction.DeleteCustomer) {
+                                        isPhoneDropdownExpanded = true
+                                        isNameDropdownExpanded = false
+                                    }
                                 },
-                            textStyle = MaterialTheme.typography.bodyMedium,
-                            singleLine = true,
-                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                                keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone
-                            ),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = GrayBlue,
-                                unfocusedBorderColor = Color(0xFFE0E0E0)
+                                label = {
+                                    Text(
+                                        if (action is AiAgentAction.AddCustomer || action is AiAgentAction.DeleteCustomer) "Phone Number" else "Customer ID",
+                                        fontSize = 12.sp
+                                    )
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .onGloballyPositioned { coordinates ->
+                                        phoneTextFieldSize = coordinates.size.toSize()
+                                    },
+                                textStyle = MaterialTheme.typography.bodyMedium,
+                                singleLine = true,
+                                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone
+                                ),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = GrayBlue,
+                                    unfocusedBorderColor = Color(0xFFE0E0E0)
+                                )
                             )
-                        )
 
-                        if (isPhoneDropdownExpanded && editedValue.isNotEmpty() && action is AiAgentAction.DeleteCustomer) {
-                            val filteredCustomers = customers.filter {
-                                it.contact?.contains(editedValue, ignoreCase = true) == true
-                            }
+                            if (isPhoneDropdownExpanded && editedValue.isNotEmpty() && action is AiAgentAction.DeleteCustomer) {
+                                val filteredCustomers = customers.filter {
+                                    it.contact?.contains(editedValue, ignoreCase = true) == true
+                                }
 
-                            if (filteredCustomers.isNotEmpty()) {
-                                Popup(
-                                    onDismissRequest = { isPhoneDropdownExpanded = false },
-                                    offset = IntOffset(x = 0, y = phoneTextFieldSize.height.toInt()),
-                                    properties = PopupProperties(focusable = false)
-                                ) {
-                                    Surface(
-                                        modifier = Modifier
-                                            .width(with(LocalDensity.current) { phoneTextFieldSize.width.toDp() })
-                                            .padding(top = 4.dp)
-                                            .heightIn(max = 150.dp),
-                                        shape = RoundedCornerShape(8.dp),
-                                        shadowElevation = 4.dp,
-                                        border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
-                                        color = Color.White
+                                if (filteredCustomers.isNotEmpty()) {
+                                    Popup(
+                                        onDismissRequest = { isPhoneDropdownExpanded = false },
+                                        offset = IntOffset(x = 0, y = phoneTextFieldSize.height.toInt()),
+                                        properties = PopupProperties(focusable = false)
                                     ) {
-                                        LazyColumn {
-                                            items(filteredCustomers) { customer ->
-                                                DropdownMenuItem(
-                                                    text = { 
-                                                        Column {
-                                                            Text(customer.name, style = MaterialTheme.typography.bodyMedium)
-                                                            if (!customer.contact.isNullOrEmpty()) {
-                                                                Text(customer.contact, style = MaterialTheme.typography.labelSmall, color = Gray)
+                                        Surface(
+                                            modifier = Modifier
+                                                .width(with(LocalDensity.current) { phoneTextFieldSize.width.toDp() })
+                                                .padding(top = 4.dp)
+                                                .heightIn(max = 150.dp),
+                                            shape = RoundedCornerShape(8.dp),
+                                            shadowElevation = 4.dp,
+                                            border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
+                                            color = Color.White
+                                        ) {
+                                            LazyColumn {
+                                                items(filteredCustomers) { customer ->
+                                                    DropdownMenuItem(
+                                                        text = { 
+                                                            Column {
+                                                                Text(customer.name, style = MaterialTheme.typography.bodyMedium)
+                                                                if (!customer.contact.isNullOrEmpty()) {
+                                                                    Text(customer.contact, style = MaterialTheme.typography.labelSmall, color = Gray)
+                                                                }
                                                             }
+                                                        },
+                                                        onClick = {
+                                                            editedName = customer.name
+                                                            editedValue = customer.contact ?: ""
+                                                            isPhoneDropdownExpanded = false
                                                         }
-                                                    },
-                                                    onClick = {
-                                                        editedName = customer.name
-                                                        editedValue = customer.contact ?: ""
-                                                        isPhoneDropdownExpanded = false
-                                                    }
-                                                )
-                                                HorizontalDivider(color = Color(0xFFEEEEEE))
+                                                    )
+                                                    HorizontalDivider(color = Color(0xFFEEEEEE))
+                                                }
                                             }
                                         }
                                     }
+                                }
+                            }
+                        }
+                    } else if (selectedItem != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFF9F9F9)),
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, Color(0xFFF0F0F0))
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(
+                                    text = "Item Details",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Gray
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = selectedItem!!.itemName,
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                                    )
+                                    Text(
+                                        text = "Rp${selectedItem!!.itemPrice}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = GrayBlue
+                                    )
                                 }
                             }
                         }
@@ -359,20 +481,25 @@ fun ActionConfirmationCard(
                         val resultAction = when (action) {
                             is AiAgentAction.AddCustomer -> AiAgentAction.AddCustomer(editedName, editedValue)
                             is AiAgentAction.DeleteCustomer -> AiAgentAction.DeleteCustomer(editedName, editedValue, selectedCustomerId)
+                            is AiAgentAction.DeleteItem -> AiAgentAction.DeleteItem(editedName, selectedItem?.itemId ?: "")
                             else -> null
                         }
                         onConfirm(resultAction)
                     },
-                    enabled = if (action is AiAgentAction.DeleteCustomer) selectedCustomerId.isNotEmpty() else true,
+                    enabled = when (action) {
+                        is AiAgentAction.DeleteCustomer -> selectedCustomerId.isNotEmpty()
+                        is AiAgentAction.DeleteItem -> selectedItem != null
+                        else -> true
+                    },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (action is AiAgentAction.DeleteCustomer) Color(0xFFEF5350) else GrayBlue
+                        containerColor = if (action is AiAgentAction.DeleteCustomer || action is AiAgentAction.DeleteItem) Color(0xFFEF5350) else GrayBlue
                     ),
                     shape = RoundedCornerShape(8.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
                     modifier = Modifier.height(36.dp)
                 ) {
                     Text(
-                        if (action is AiAgentAction.DeleteCustomer) "Delete" else "Confirm", 
+                        if (action is AiAgentAction.DeleteCustomer || action is AiAgentAction.DeleteItem) "Delete" else "Confirm",
                         color = Color.White, 
                         fontSize = 13.sp
                     )
@@ -449,6 +576,7 @@ fun ChatMessageItem(
     isAlreadyAnimated: Boolean = false,
     progress: Int = -1, // New: Drives typewriter from ViewModel
     customers: List<Customers> = emptyList(),
+    items: List<Items> = emptyList(),
     onConfirmAction: (AiAgentAction?) -> Unit = {},
     onCancelAction: () -> Unit = {},
     onTextUpdate: () -> Unit = {}
@@ -556,6 +684,7 @@ fun ChatMessageItem(
                                 ActionConfirmationCard(
                                     action = message.action!!,
                                     customers = customers,
+                                    items = items,
                                     onConfirm = onConfirmAction,
                                     onCancel = onCancelAction
                                 )

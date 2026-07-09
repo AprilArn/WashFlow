@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aprilarn.washflow.ui.theme.Gray
 import com.aprilarn.washflow.data.model.Customers
+import com.aprilarn.washflow.data.model.Items
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -44,6 +45,7 @@ fun AiAgentPanel(
     currentModelName: String? = null,
     modelStatus: AiModelStatus = AiModelStatus.IDLE,
     customers: List<Customers> = emptyList(),
+    items: List<Items> = emptyList(),
     animatedMessageIds: Set<String> = emptySet(),
     wasMessageAnimated: (String) -> Boolean,
     onMessageAnimated: (String) -> Unit,
@@ -350,6 +352,7 @@ fun AiAgentPanel(
                                         isAlreadyAnimated = alreadyAnimated,
                                         progress = getAnimationProgress(message.id),
                                         customers = customers,
+                                        items = items,
                                         onConfirmAction = { updatedAction ->
                                             onConfirmAction(message.id, updatedAction)
                                             if (message.action is AiAgentAction.Navigate) onDismiss()

@@ -101,6 +101,7 @@ fun MainAppScreen(
     val aiAgentUiState by aiAgentViewModel.uiState.collectAsStateWithLifecycle()
 
     val customersViewModel: com.aprilarn.washflow.ui.customers.CustomersViewModel = viewModel()
+    val itemsViewModel: ItemsViewModel = viewModel()
 
     val context = LocalContext.current
 
@@ -125,6 +126,18 @@ fun MainAppScreen(
                         android.widget.Toast.makeText(context, "Customer '${action.name}' deleted successfully!", android.widget.Toast.LENGTH_SHORT).show()
                     } else {
                         android.widget.Toast.makeText(context, "Error: Customer ID not found.", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                }
+                is com.aprilarn.washflow.ui.aiagent.AiAgentAction.DeleteItem -> {
+                    if (action.itemId.isNotEmpty()) {
+                        val itemToDelete = com.aprilarn.washflow.data.model.Items(
+                            itemId = action.itemId,
+                            itemName = action.itemName
+                        )
+                        itemsViewModel.deleteItem(itemToDelete)
+                        android.widget.Toast.makeText(context, "Item '${action.itemName}' deleted successfully!", android.widget.Toast.LENGTH_SHORT).show()
+                    } else {
+                        android.widget.Toast.makeText(context, "Error: Item ID not found.", android.widget.Toast.LENGTH_SHORT).show()
                     }
                 }
                 is com.aprilarn.washflow.ui.aiagent.AiAgentAction.Unknown -> {
@@ -502,6 +515,7 @@ fun MainAppScreen(
         currentModelName = aiAgentUiState.currentModelName,
         modelStatus = aiAgentUiState.modelStatus,
         customers = aiAgentUiState.customers,
+        items = aiAgentUiState.items,
         animatedMessageIds = aiAgentUiState.animatedMessageIds,
         wasMessageAnimated = { aiAgentViewModel.wasMessageAnimated(it) },
         onMessageAnimated = { aiAgentViewModel.markMessageAsAnimated(it) },

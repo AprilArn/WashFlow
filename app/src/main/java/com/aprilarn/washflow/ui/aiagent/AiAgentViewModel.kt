@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aprilarn.washflow.ai.Brain
 import com.aprilarn.washflow.data.repository.CustomerRepository
+import com.aprilarn.washflow.data.repository.ItemRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -18,6 +19,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 class AiAgentViewModel : ViewModel() {
     private val brain = Brain()
     private val customerRepository = CustomerRepository()
+    private val itemRepository = ItemRepository()
     private val _uiState = MutableStateFlow(AiAgentUiState())
     val uiState = _uiState.asStateFlow()
 
@@ -26,6 +28,7 @@ class AiAgentViewModel : ViewModel() {
 
     init {
         listenForCustomerChanges()
+        listenForItemChanges()
     }
 
     private fun listenForCustomerChanges() {
@@ -34,6 +37,16 @@ class AiAgentViewModel : ViewModel() {
                 .catch { /* Handle error if needed */ }
                 .collect { customers ->
                     _uiState.update { it.copy(customers = customers) }
+                }
+        }
+    }
+
+    private fun listenForItemChanges() {
+        viewModelScope.launch {
+            itemRepository.getItemsRealtime()
+                .catch { /* Handle error */ }
+                .collect { items ->
+                    _uiState.update { it.copy(items = items) }
                 }
         }
     }

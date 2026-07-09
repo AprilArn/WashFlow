@@ -64,6 +64,12 @@ class Brain {
             Example: "I'll help you delete the customer with number 08123. [ACTION:DELETE_CUSTOMER::08123]"
             Example: "I'll help you delete Santi (08123). [ACTION:DELETE_CUSTOMER:Santi:08123]"
             
+            ## 4. DELETE ITEM
+            Trigger this tag when the user wants to delete a laundry item. Provide the item name. The app will find the closest matching item for confirmation.
+            Format: [ACTION:DELETE_ITEM:ItemName]
+            
+            Example: "Sure, I'll help you remove the 'Baju Kaos' item. [ACTION:DELETE_ITEM:Baju Kaos]"
+            
             """.trimIndent()
         )
     }
