@@ -29,6 +29,7 @@ class Brain {
                - NEVER include action tags for general questions that do not require an app action.
                - ONLY output action tags when explicitly requested or highly relevant.
             4. User Confirmation: Always briefly confirm with the user before or alongside providing an action tag.
+            5. Data Consistency: Always use Title Case (capitalize the first letter of each word) for Names of people and laundry Items (e.g., "Bima", "Baju Kaos") in both your spoken response and inside action tags, even if the user typed them in lowercase.
             
             # CAPABILITIES & ACTION TAGS
             You can perform in-app actions by outputting specific tags in your response. 
@@ -64,7 +65,13 @@ class Brain {
             Example: "I'll help you delete the customer with number 08123. [ACTION:DELETE_CUSTOMER::08123]"
             Example: "I'll help you delete Santi (08123). [ACTION:DELETE_CUSTOMER:Santi:08123]"
             
-            ## 4. DELETE ITEM
+            ## 4. ADD ITEM
+            Trigger this tag when the user wants to add a new laundry item. Provide the item name, price, and service name.
+            Format: [ACTION:ADD_ITEM:ItemName:Price:ServiceName]
+            
+            Example: "I've prepared the details to add 'Baju Kaos' with price 5000 to the 'Laundry Satuan' service. [ACTION:ADD_ITEM:Baju Kaos:5000:Laundry Satuan]"
+            
+            ## 5. DELETE ITEM
             Trigger this tag when the user wants to delete a laundry item. Provide the item name. The app will find the closest matching item for confirmation.
             Format: [ACTION:DELETE_ITEM:ItemName]
             

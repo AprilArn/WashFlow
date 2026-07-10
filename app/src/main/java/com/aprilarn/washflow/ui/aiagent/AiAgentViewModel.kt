@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.aprilarn.washflow.ai.Brain
 import com.aprilarn.washflow.data.repository.CustomerRepository
 import com.aprilarn.washflow.data.repository.ItemRepository
+import com.aprilarn.washflow.data.repository.ServiceRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -20,6 +21,7 @@ class AiAgentViewModel : ViewModel() {
     private val brain = Brain()
     private val customerRepository = CustomerRepository()
     private val itemRepository = ItemRepository()
+    private val serviceRepository = ServiceRepository()
     private val _uiState = MutableStateFlow(AiAgentUiState())
     val uiState = _uiState.asStateFlow()
 
@@ -29,6 +31,7 @@ class AiAgentViewModel : ViewModel() {
     init {
         listenForCustomerChanges()
         listenForItemChanges()
+        listenForServiceChanges()
     }
 
     private fun listenForCustomerChanges() {
@@ -47,6 +50,16 @@ class AiAgentViewModel : ViewModel() {
                 .catch { /* Handle error */ }
                 .collect { items ->
                     _uiState.update { it.copy(items = items) }
+                }
+        }
+    }
+
+    private fun listenForServiceChanges() {
+        viewModelScope.launch {
+            serviceRepository.getServicesRealtime()
+                .catch { /* Handle error */ }
+                .collect { services ->
+                    _uiState.update { it.copy(services = services) }
                 }
         }
     }

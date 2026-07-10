@@ -36,6 +36,14 @@ object AiAgentParser {
                     AiAgentAction.AddCustomer(name, phone)
                 } else null
             }
+            "ADD_ITEM" -> {
+                if (parts.size >= 4) {
+                    val itemName = parts[1]
+                    val itemPrice = parts[2].toDoubleOrNull() ?: 0.0
+                    val serviceName = parts[3]
+                    AiAgentAction.AddItem(itemName, itemPrice, serviceName)
+                } else null
+            }
             "DELETE_CUSTOMER" -> {
                 if (parts.size >= 2) {
                     val name = parts[1]

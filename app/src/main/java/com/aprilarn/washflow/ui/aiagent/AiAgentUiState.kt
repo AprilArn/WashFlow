@@ -2,6 +2,7 @@ package com.aprilarn.washflow.ui.aiagent
 
 import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.data.model.Items
+import com.aprilarn.washflow.data.model.Services
 import androidx.compose.ui.text.input.TextFieldValue
 
 enum class AiModelStatus {
@@ -34,5 +35,6 @@ data class AiAgentUiState(
     val modelStatus: AiModelStatus = AiModelStatus.IDLE,
     val customers: List<Customers> = emptyList(),
     val items: List<Items> = emptyList(),
+    val services: List<Services> = emptyList(),
     val animatedMessageIds: Set<String> = emptySet()
 )

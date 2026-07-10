@@ -40,6 +40,7 @@ import androidx.compose.ui.window.PopupProperties
 import coil.compose.AsyncImage
 import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.data.model.Items
+import com.aprilarn.washflow.data.model.Services
 import com.aprilarn.washflow.ui.theme.*
 import com.aprilarn.washflow.utils.MarkdownUtils
 import com.aprilarn.washflow.utils.StringSimilarityUtils
@@ -70,6 +71,7 @@ fun ActionConfirmationCard(
     action: AiAgentAction,
     customers: List<Customers> = emptyList(),
     items: List<Items> = emptyList(),
+    services: List<Services> = emptyList(),
     onConfirm: (AiAgentAction?) -> Unit,
     onCancel: () -> Unit
 ) {
@@ -78,6 +80,7 @@ fun ActionConfirmationCard(
             when (action) {
                 is AiAgentAction.AddCustomer -> action.name
                 is AiAgentAction.DeleteCustomer -> action.name
+                is AiAgentAction.AddItem -> action.itemName
                 is AiAgentAction.DeleteItem -> action.itemName
                 else -> ""
             }
@@ -88,9 +91,24 @@ fun ActionConfirmationCard(
             when (action) {
                 is AiAgentAction.AddCustomer -> action.phoneNumber
                 is AiAgentAction.DeleteCustomer -> action.contact
+                is AiAgentAction.AddItem -> action.itemPrice.toString()
                 else -> ""
             }
         )
+    }
+
+    var editedServiceName by remember(action) {
+        mutableStateOf(
+            if (action is AiAgentAction.AddItem) action.serviceName else ""
+        )
+    }
+
+    val selectedServiceId by remember(editedServiceName, services) {
+        derivedStateOf {
+            services.find { 
+                it.serviceName.equals(editedServiceName, ignoreCase = true)
+            }?.serviceId ?: ""
+        }
     }
 
     val selectedCustomerId by remember(editedName, editedValue, customers) {
@@ -176,10 +194,38 @@ fun ActionConfirmationCard(
         }
     }
 
+    // Auto-match for AddItem (Service)
+    LaunchedEffect(action, services) {
+        if (action is AiAgentAction.AddItem && selectedServiceId.isEmpty()) {
+            val match = withContext(Dispatchers.Default) {
+                services.find { 
+                    it.serviceName.equals(action.serviceName, ignoreCase = true)
+                } ?: services.find { 
+                    it.serviceName.contains(action.serviceName, ignoreCase = true)
+                } ?: services.find {
+                    action.serviceName.contains(it.serviceName, ignoreCase = true)
+                } ?: services.asSequence()
+                    .map { service ->
+                        val score = StringSimilarityUtils.similarityScore(action.serviceName, service.serviceName)
+                        service to score
+                    }
+                    .filter { it.second > 0.6 }
+                    .maxByOrNull { it.second }
+                    ?.first
+            }
+
+            if (match != null) {
+                editedServiceName = match.serviceName
+            }
+        }
+    }
+
     var isNameDropdownExpanded by remember { mutableStateOf(false) }
     var isPhoneDropdownExpanded by remember { mutableStateOf(false) }
+    var isServiceDropdownExpanded by remember { mutableStateOf(false) }
     var nameTextFieldSize by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
     var phoneTextFieldSize by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
+    var serviceTextFieldSize by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
 
     val description = when (action) {
         is AiAgentAction.Navigate -> buildAnnotatedString {
@@ -195,6 +241,17 @@ fun ActionConfirmationCard(
                 append(editedName)
             }
             append(" as a new customer?")
+        }
+        is AiAgentAction.AddItem -> buildAnnotatedString {
+            append("Add laundry item ")
+            withStyle(style = SpanStyle(color = GrayBlue, fontWeight = FontWeight.Bold)) {
+                append(editedName)
+            }
+            append(" to ")
+            withStyle(style = SpanStyle(color = GrayBlue, fontWeight = FontWeight.Bold)) {
+                append(editedServiceName)
+            }
+            append("?")
         }
         is AiAgentAction.DeleteCustomer -> buildAnnotatedString {
             append("Delete customer ")
@@ -223,14 +280,14 @@ fun ActionConfirmationCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Confirmation required:",
+                text = "Aira needs your confirmation:",
                 style = MaterialTheme.typography.labelSmall,
                 color = Gray,
                 fontWeight = FontWeight.Medium
             )
             Spacer(modifier = Modifier.height(8.dp))
             
-            if (action is AiAgentAction.AddCustomer || action is AiAgentAction.DeleteCustomer || action is AiAgentAction.DeleteItem) {
+            if (action is AiAgentAction.AddCustomer || action is AiAgentAction.DeleteCustomer || action is AiAgentAction.DeleteItem || action is AiAgentAction.AddItem) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Box {
                         OutlinedTextField(
@@ -239,8 +296,9 @@ fun ActionConfirmationCard(
                                 editedName = it
                                 isNameDropdownExpanded = true
                                 isPhoneDropdownExpanded = false
+                                isServiceDropdownExpanded = false
                             },
-                            label = { Text(if (action is AiAgentAction.DeleteItem) "Item Name" else "Customer Name", fontSize = 12.sp) },
+                            label = { Text(if (action is AiAgentAction.DeleteItem || action is AiAgentAction.AddItem) "Item Name" else "Customer Name", fontSize = 12.sp) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .onGloballyPositioned { coordinates ->
@@ -355,11 +413,16 @@ fun ActionConfirmationCard(
                                     if (action is AiAgentAction.DeleteCustomer) {
                                         isPhoneDropdownExpanded = true
                                         isNameDropdownExpanded = false
+                                        isServiceDropdownExpanded = false
                                     }
                                 },
                                 label = {
                                     Text(
-                                        if (action is AiAgentAction.AddCustomer || action is AiAgentAction.DeleteCustomer) "Phone Number" else "Customer ID",
+                                        when (action) {
+                                            is AiAgentAction.AddCustomer, is AiAgentAction.DeleteCustomer -> "Phone Number"
+                                            is AiAgentAction.AddItem -> "Price"
+                                            else -> "Customer ID"
+                                        },
                                         fontSize = 12.sp
                                     )
                                 },
@@ -371,7 +434,7 @@ fun ActionConfirmationCard(
                                 textStyle = MaterialTheme.typography.bodyMedium,
                                 singleLine = true,
                                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone
+                                    keyboardType = if (action is AiAgentAction.AddItem) androidx.compose.ui.text.input.KeyboardType.Number else androidx.compose.ui.text.input.KeyboardType.Phone
                                 ),
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = GrayBlue,
@@ -418,6 +481,71 @@ fun ActionConfirmationCard(
                                                         }
                                                     )
                                                     HorizontalDivider(color = Color(0xFFEEEEEE))
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (action is AiAgentAction.AddItem) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Box {
+                                OutlinedTextField(
+                                    value = editedServiceName,
+                                    onValueChange = { 
+                                        editedServiceName = it
+                                        isServiceDropdownExpanded = true
+                                        isNameDropdownExpanded = false
+                                        isPhoneDropdownExpanded = false
+                                    },
+                                    label = { Text("Service", fontSize = 12.sp) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .onGloballyPositioned { coordinates ->
+                                            serviceTextFieldSize = coordinates.size.toSize()
+                                        },
+                                    textStyle = MaterialTheme.typography.bodyMedium,
+                                    singleLine = true,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = GrayBlue,
+                                        unfocusedBorderColor = Color(0xFFE0E0E0)
+                                    )
+                                )
+
+                                if (isServiceDropdownExpanded && editedServiceName.isNotEmpty()) {
+                                    val filteredServices = services.filter {
+                                        it.serviceName.contains(editedServiceName, ignoreCase = true)
+                                    }
+
+                                    if (filteredServices.isNotEmpty()) {
+                                        Popup(
+                                            onDismissRequest = { isServiceDropdownExpanded = false },
+                                            offset = IntOffset(x = 0, y = serviceTextFieldSize.height.toInt()),
+                                            properties = PopupProperties(focusable = false)
+                                        ) {
+                                            Surface(
+                                                modifier = Modifier
+                                                    .width(with(LocalDensity.current) { serviceTextFieldSize.width.toDp() })
+                                                    .padding(top = 4.dp)
+                                                    .heightIn(max = 150.dp),
+                                                shape = RoundedCornerShape(8.dp),
+                                                shadowElevation = 4.dp,
+                                                border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
+                                                color = Color.White
+                                            ) {
+                                                LazyColumn {
+                                                    items(filteredServices) { service ->
+                                                        DropdownMenuItem(
+                                                            text = { Text(service.serviceName, style = MaterialTheme.typography.bodyMedium) },
+                                                            onClick = {
+                                                                editedServiceName = service.serviceName
+                                                                isServiceDropdownExpanded = false
+                                                            }
+                                                        )
+                                                        HorizontalDivider(color = Color(0xFFEEEEEE))
+                                                    }
                                                 }
                                             }
                                         }
@@ -481,6 +609,7 @@ fun ActionConfirmationCard(
                         val resultAction = when (action) {
                             is AiAgentAction.AddCustomer -> AiAgentAction.AddCustomer(editedName, editedValue)
                             is AiAgentAction.DeleteCustomer -> AiAgentAction.DeleteCustomer(editedName, editedValue, selectedCustomerId)
+                            is AiAgentAction.AddItem -> AiAgentAction.AddItem(editedName, editedValue.toDoubleOrNull() ?: 0.0, editedServiceName, selectedServiceId)
                             is AiAgentAction.DeleteItem -> AiAgentAction.DeleteItem(editedName, selectedItem?.itemId ?: "")
                             else -> null
                         }
@@ -488,6 +617,7 @@ fun ActionConfirmationCard(
                     },
                     enabled = when (action) {
                         is AiAgentAction.DeleteCustomer -> selectedCustomerId.isNotEmpty()
+                        is AiAgentAction.AddItem -> editedName.isNotBlank() && selectedServiceId.isNotEmpty()
                         is AiAgentAction.DeleteItem -> selectedItem != null
                         else -> true
                     },
@@ -577,6 +707,7 @@ fun ChatMessageItem(
     progress: Int = -1, // New: Drives typewriter from ViewModel
     customers: List<Customers> = emptyList(),
     items: List<Items> = emptyList(),
+    services: List<Services> = emptyList(),
     onConfirmAction: (AiAgentAction?) -> Unit = {},
     onCancelAction: () -> Unit = {},
     onTextUpdate: () -> Unit = {}
@@ -685,6 +816,7 @@ fun ChatMessageItem(
                                     action = message.action!!,
                                     customers = customers,
                                     items = items,
+                                    services = services,
                                     onConfirm = onConfirmAction,
                                     onCancel = onCancelAction
                                 )
