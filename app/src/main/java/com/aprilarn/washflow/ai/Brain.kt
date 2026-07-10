@@ -133,7 +133,7 @@ class Brain {
 
     companion object {
         /** Maximum time (ms) to wait for a single model before falling back. */
-        private const val TIMEOUT_MS = 16_000L
+        private const val TIMEOUT_MS = 12_000L
     }
 
     // -------------------------------------------------------------------------
