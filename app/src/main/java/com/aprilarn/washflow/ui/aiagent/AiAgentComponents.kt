@@ -42,6 +42,7 @@ import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.data.model.Items
 import com.aprilarn.washflow.data.model.Services
 import com.aprilarn.washflow.ui.theme.*
+import com.aprilarn.washflow.utils.CurrencyUtils
 import com.aprilarn.washflow.utils.MarkdownUtils
 import com.aprilarn.washflow.utils.StringSimilarityUtils
 import kotlinx.coroutines.Dispatchers
@@ -91,7 +92,7 @@ fun ActionConfirmationCard(
             when (action) {
                 is AiAgentAction.AddCustomer -> action.phoneNumber
                 is AiAgentAction.DeleteCustomer -> action.contact
-                is AiAgentAction.AddItem -> action.itemPrice.toString()
+                is AiAgentAction.AddItem -> action.itemPrice.toString().replace(".0", "")
                 else -> ""
             }
         )
@@ -266,6 +267,10 @@ fun ActionConfirmationCard(
             withStyle(style = SpanStyle(color = GrayBlue, fontWeight = FontWeight.Bold)) {
                 append(editedServiceName)
             }
+            append(" with price ")
+            withStyle(style = SpanStyle(color = SkyBlue, fontWeight = FontWeight.Bold)) {
+                append(CurrencyUtils.formatRupiahWithSymbol(editedValue.toDoubleOrNull() ?: 0.0))
+            }
             append("?")
         }
         is AiAgentAction.DeleteCustomer -> buildAnnotatedString {
@@ -355,7 +360,7 @@ fun ActionConfirmationCard(
                                                         text = { 
                                                             Column {
                                                                 Text(item.itemName, style = MaterialTheme.typography.bodyMedium)
-                                                                Text("Rp${item.itemPrice}", style = MaterialTheme.typography.labelSmall, color = Gray)
+                                                                Text(CurrencyUtils.formatRupiahWithSymbol(item.itemPrice), style = MaterialTheme.typography.labelSmall, color = Gray)
                                                             }
                                                         },
                                                         onClick = {
@@ -600,7 +605,7 @@ fun ActionConfirmationCard(
                                         )
                                     }
                                     Text(
-                                        text = "Rp${selectedItem!!.itemPrice}",
+                                        text = CurrencyUtils.formatRupiahWithSymbol(selectedItem!!.itemPrice),
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = GrayBlue
                                     )
