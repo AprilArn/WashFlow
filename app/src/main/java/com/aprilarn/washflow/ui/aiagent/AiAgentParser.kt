@@ -54,7 +54,8 @@ object AiAgentParser {
             "DELETE_ITEM" -> {
                 if (parts.size >= 2) {
                     val itemName = parts[1]
-                    AiAgentAction.DeleteItem(itemName)
+                    val serviceName = if (parts.size >= 3) parts[2] else ""
+                    AiAgentAction.DeleteItem(itemName, serviceName)
                 } else null
             }
             else -> null

@@ -99,7 +99,11 @@ fun ActionConfirmationCard(
 
     var editedServiceName by remember(action) {
         mutableStateOf(
-            if (action is AiAgentAction.AddItem) action.serviceName else ""
+            when (action) {
+                is AiAgentAction.AddItem -> action.serviceName
+                is AiAgentAction.DeleteItem -> action.serviceName
+                else -> ""
+            }
         )
     }
 
@@ -122,10 +126,13 @@ fun ActionConfirmationCard(
         }
     }
 
-    val selectedItem by remember(editedName, items) {
+    val selectedItem by remember(editedName, editedServiceName, items, services) {
         derivedStateOf {
             if (action is AiAgentAction.DeleteItem) {
-                items.find { 
+                items.find { item ->
+                    item.itemName.equals(editedName, ignoreCase = true) && 
+                    (editedServiceName.isEmpty() || services.find { it.serviceId == item.serviceId }?.serviceName?.equals(editedServiceName, ignoreCase = true) == true)
+                } ?: items.find { 
                     it.itemName.equals(editedName, ignoreCase = true)
                 }
             } else null
@@ -169,10 +176,15 @@ fun ActionConfirmationCard(
     }
 
     // Auto-match for DeleteItem
-    LaunchedEffect(action, items) {
+    LaunchedEffect(action, items, services) {
         if (action is AiAgentAction.DeleteItem && selectedItem == null) {
             val match = withContext(Dispatchers.Default) {
-                items.find { 
+                val serviceToMatch = action.serviceName
+                
+                items.find { item ->
+                    item.itemName.equals(action.itemName, ignoreCase = true) &&
+                    (serviceToMatch.isEmpty() || services.find { it.serviceId == item.serviceId }?.serviceName?.equals(serviceToMatch, ignoreCase = true) == true)
+                } ?: items.find { 
                     it.itemName.equals(action.itemName, ignoreCase = true)
                 } ?: items.find { 
                     it.itemName.contains(action.itemName, ignoreCase = true)
@@ -190,6 +202,9 @@ fun ActionConfirmationCard(
 
             if (match != null) {
                 editedName = match.itemName
+                if (action.serviceName.isEmpty()) {
+                    editedServiceName = services.find { it.serviceId == match.serviceId }?.serviceName ?: ""
+                }
             }
         }
     }
@@ -572,10 +587,18 @@ fun ActionConfirmationCard(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Text(
-                                        text = selectedItem!!.itemName,
-                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
-                                    )
+                                    Column {
+                                        val serviceName = services.find { it.serviceId == selectedItem!!.serviceId }?.serviceName ?: "Unknown Service"
+                                        Text(
+                                            text = selectedItem!!.itemName,
+                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                                        )
+                                        Text(
+                                            text = serviceName,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = Gray
+                                        )
+                                    }
                                     Text(
                                         text = "Rp${selectedItem!!.itemPrice}",
                                         style = MaterialTheme.typography.bodyMedium,
@@ -610,7 +633,7 @@ fun ActionConfirmationCard(
                             is AiAgentAction.AddCustomer -> AiAgentAction.AddCustomer(editedName, editedValue)
                             is AiAgentAction.DeleteCustomer -> AiAgentAction.DeleteCustomer(editedName, editedValue, selectedCustomerId)
                             is AiAgentAction.AddItem -> AiAgentAction.AddItem(editedName, editedValue.toDoubleOrNull() ?: 0.0, editedServiceName, selectedServiceId)
-                            is AiAgentAction.DeleteItem -> AiAgentAction.DeleteItem(editedName, selectedItem?.itemId ?: "")
+                            is AiAgentAction.DeleteItem -> AiAgentAction.DeleteItem(editedName, editedServiceName, selectedItem?.itemId ?: "")
                             else -> null
                         }
                         onConfirm(resultAction)

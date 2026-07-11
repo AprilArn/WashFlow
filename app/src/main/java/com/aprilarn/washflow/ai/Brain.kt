@@ -72,10 +72,11 @@ class Brain {
             Example: "I've prepared the details to add 'Baju Kaos' with price 5000 to the 'Laundry Satuan' service. [ACTION:ADD_ITEM:Baju Kaos:5000:Laundry Satuan]"
             
             ## 5. DELETE ITEM
-            Trigger this tag when the user wants to delete a laundry item. Provide the item name. The app will find the closest matching item for confirmation.
-            Format: [ACTION:DELETE_ITEM:ItemName]
+            Trigger this tag when the user wants to delete a laundry item. Provide the item name and the service name if known. The app will find the closest matching item for confirmation.
+            Format: [ACTION:DELETE_ITEM:ItemName:ServiceName]
             
-            Example: "Sure, I'll help you remove the 'Baju Kaos' item. [ACTION:DELETE_ITEM:Baju Kaos]"
+            Example: "Sure, I'll help you remove the 'Baju Kaos' item from 'Laundry Satuan'. [ACTION:DELETE_ITEM:Baju Kaos:Laundry Satuan]"
+            Example: "I'll help you delete 'Sajadah'. [ACTION:DELETE_ITEM:Sajadah:]"
             
             """.trimIndent()
         )
