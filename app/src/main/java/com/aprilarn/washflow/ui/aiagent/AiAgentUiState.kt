@@ -36,5 +36,10 @@ data class AiAgentUiState(
     val customers: List<Customers> = emptyList(),
     val items: List<Items> = emptyList(),
     val services: List<Services> = emptyList(),
-    val animatedMessageIds: Set<String> = emptySet()
+    val animatedMessageIds: Set<String> = emptySet(),
+    val voiceAgentStatus: VoiceAgentStatus = VoiceAgentStatus.IDLE
 )
+
+enum class VoiceAgentStatus {
+    IDLE, LISTENING, PROCESSING
+}

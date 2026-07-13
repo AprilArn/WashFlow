@@ -1,7 +1,9 @@
 package com.aprilarn.washflow.ui.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -68,6 +71,8 @@ fun Header(
     onWorkspaceClick: () -> Unit,
     onNotifClick: () -> Unit,
     onAiAgentClick: () -> Unit = {},
+    onAiAgentLongClick: () -> Unit = {},
+    isAiVoiceActive: Boolean = false,
     onRemovePreview: (String, Boolean) -> Unit,
     workspaceDropdown: @Composable (IntOffset) -> Unit
 ) {
@@ -162,7 +167,17 @@ fun Header(
         Spacer(modifier = Modifier.width(8.dp))
 
         // --- AI AGENT BUTTON ---
-        IconButton(onClick = onAiAgentClick) {
+        @OptIn(ExperimentalFoundationApi::class)
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .combinedClickable(
+                    onClick = onAiAgentClick,
+                    onLongClick = if (isAiVoiceActive) null else onAiAgentLongClick
+                ),
+            contentAlignment = Alignment.Center
+        ) {
             Icon(
                 imageVector = Icons.Default.AutoAwesome,
                 contentDescription = "AI Agent",

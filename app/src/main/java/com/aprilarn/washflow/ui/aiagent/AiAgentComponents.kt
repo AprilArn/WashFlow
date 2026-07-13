@@ -68,6 +68,66 @@ fun AiMessageHeader() {
 }
 
 @Composable
+fun VoiceAgentOverlay(
+    status: VoiceAgentStatus,
+    modifier: Modifier = Modifier
+) {
+    if (status == VoiceAgentStatus.IDLE) return
+
+    val text = when (status) {
+        VoiceAgentStatus.LISTENING -> "Listening..."
+        VoiceAgentStatus.PROCESSING -> "Processing..."
+        else -> ""
+    }
+
+    val icon = when (status) {
+        VoiceAgentStatus.LISTENING -> Icons.Default.Mic
+        VoiceAgentStatus.PROCESSING -> Icons.Default.Sync
+        else -> Icons.Default.AutoAwesome
+    }
+
+    Surface(
+        modifier = modifier
+            .width(280.dp)
+            .height(64.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White,
+        shadowElevation = 8.dp
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Left Icon Area
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(64.dp)
+                    .background(GrayBlue.copy(alpha = 0.08f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = GrayBlue,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    color = MainFontBlack,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp
+                ),
+                modifier = Modifier.padding(start = 16.dp)
+            )
+        }
+    }
+}
+
+@Composable
 fun ActionConfirmationCard(
     action: AiAgentAction,
     customers: List<Customers> = emptyList(),

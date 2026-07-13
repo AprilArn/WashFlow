@@ -89,6 +89,18 @@ class AiAgentViewModel : ViewModel() {
         _uiState.update { it.copy(expanded = false) }
     }
 
+    fun onStartVoiceAgent() {
+        if (_uiState.value.voiceAgentStatus != VoiceAgentStatus.IDLE) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(voiceAgentStatus = VoiceAgentStatus.LISTENING) }
+            kotlinx.coroutines.delay(1000)
+            _uiState.update { it.copy(voiceAgentStatus = VoiceAgentStatus.PROCESSING) }
+            kotlinx.coroutines.delay(2000)
+            _uiState.update { it.copy(voiceAgentStatus = VoiceAgentStatus.IDLE) }
+        }
+    }
+
     fun onInputChange(newValue: TextFieldValue) {
         _uiState.update { it.copy(inputMessage = newValue) }
     }

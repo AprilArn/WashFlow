@@ -43,6 +43,7 @@ import com.aprilarn.washflow.ui.components.Header
 import com.aprilarn.washflow.ui.components.KickedDialog
 import com.aprilarn.washflow.ui.components.LeaveWorkspaceDialog
 import com.aprilarn.washflow.ui.aiagent.AiAgentPanel
+import com.aprilarn.washflow.ui.aiagent.VoiceAgentOverlay
 import com.aprilarn.washflow.ui.aiagent.AiAgentViewModel
 import com.aprilarn.washflow.ui.notifications.NotificationPanel
 import com.aprilarn.washflow.ui.notifications.NotificationPreviewItem
@@ -192,6 +193,8 @@ fun MainAppScreen(
                 onWorkspaceClick = { mainViewModel.onWorkspaceNameClicked() },
                 onNotifClick = { notificationsViewModel.onNotificationIconClicked() },
                 onAiAgentClick = { aiAgentViewModel.onToggleAiAgent() },
+                onAiAgentLongClick = { aiAgentViewModel.onStartVoiceAgent() },
+                isAiVoiceActive = aiAgentUiState.voiceAgentStatus != com.aprilarn.washflow.ui.aiagent.VoiceAgentStatus.IDLE,
                 onRemovePreview = { id, swiped -> notificationsViewModel.removeNotificationPreview(id, swiped) },
                 workspaceDropdown = { wsOffset ->
                     WorkspaceOptionsDropdown(
@@ -566,6 +569,21 @@ fun MainAppScreen(
                     }
                 }
             }
+        }
+    }
+
+    // 4. OVERLAY VOICE AGENT (Paling atas agar tidak tertutup notifikasi)
+    if (aiAgentUiState.voiceAgentStatus != com.aprilarn.washflow.ui.aiagent.VoiceAgentStatus.IDLE) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = 58.dp)
+                .zIndex(99f), // Force to be on top of other overlays
+            contentAlignment = Alignment.TopCenter
+        ) {
+            VoiceAgentOverlay(
+                status = aiAgentUiState.voiceAgentStatus
+            )
         }
     }
 
