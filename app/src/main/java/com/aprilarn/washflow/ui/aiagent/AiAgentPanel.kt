@@ -32,6 +32,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.input.TextFieldValue
+import com.aprilarn.washflow.ui.aiagent.component.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -43,6 +44,7 @@ fun AiAgentPanel(
     inputMessage: TextFieldValue,
     messages: List<ChatMessage>,
     isAiThinking: Boolean,
+    isTypewriterActive: Boolean = false,
     currentModelName: String? = null,
     modelStatus: AiModelStatus = AiModelStatus.IDLE,
     customers: List<Customers> = emptyList(),
@@ -403,7 +405,7 @@ fun AiAgentPanel(
                             onSendMessage = onSendMessage,
                             modelStatus = modelStatus,
                             currentModelName = currentModelName,
-                            isProcessing = processingWithGracePeriod
+                            isProcessing = processingWithGracePeriod || isTypewriterActive
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(

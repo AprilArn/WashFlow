@@ -37,6 +37,7 @@ data class AiAgentUiState(
     val items: List<Items> = emptyList(),
     val services: List<Services> = emptyList(),
     val animatedMessageIds: Set<String> = emptySet(),
+    val isTypewriterActive: Boolean = false,
     val voiceAgentStatus: VoiceAgentStatus = VoiceAgentStatus.IDLE,
     val voiceAgentText: String = ""
 )

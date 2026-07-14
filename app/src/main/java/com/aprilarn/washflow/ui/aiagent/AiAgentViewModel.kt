@@ -168,12 +168,14 @@ class AiAgentViewModel : ViewModel() {
             // Start background typewriter simulation
             val finalAiMessageId = aiPlaceholder.id
             viewModelScope.launch {
+                _uiState.update { it.copy(isTypewriterActive = true) }
                 messageAnimationProgress[finalAiMessageId] = 0
                 for (i in 1..finalResponseText.length) {
                     messageAnimationProgress[finalAiMessageId] = i
                     kotlinx.coroutines.delay(20) // Match UI typewriter speed
                 }
                 markMessageAsAnimated(finalAiMessageId)
+                _uiState.update { it.copy(isTypewriterActive = false) }
             }
 
             kotlinx.coroutines.delay(3000)

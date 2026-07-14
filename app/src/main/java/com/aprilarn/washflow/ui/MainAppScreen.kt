@@ -43,7 +43,7 @@ import com.aprilarn.washflow.ui.components.Header
 import com.aprilarn.washflow.ui.components.KickedDialog
 import com.aprilarn.washflow.ui.components.LeaveWorkspaceDialog
 import com.aprilarn.washflow.ui.aiagent.AiAgentPanel
-import com.aprilarn.washflow.ui.aiagent.VoiceAgentOverlay
+import com.aprilarn.washflow.ui.aiagent.component.VoiceAgentOverlay
 import com.aprilarn.washflow.ui.aiagent.AiAgentViewModel
 import com.aprilarn.washflow.ui.notifications.NotificationPanel
 import com.aprilarn.washflow.ui.notifications.NotificationPreviewItem
@@ -519,6 +519,7 @@ fun MainAppScreen(
         inputMessage = aiAgentUiState.inputMessage,
         messages = aiAgentUiState.messages,
         isAiThinking = aiAgentUiState.isAiThinking,
+        isTypewriterActive = aiAgentUiState.isTypewriterActive,
         currentModelName = aiAgentUiState.currentModelName,
         modelStatus = aiAgentUiState.modelStatus,
         customers = aiAgentUiState.customers,
