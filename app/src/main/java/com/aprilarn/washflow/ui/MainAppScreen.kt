@@ -582,7 +582,8 @@ fun MainAppScreen(
             contentAlignment = Alignment.TopCenter
         ) {
             VoiceAgentOverlay(
-                status = aiAgentUiState.voiceAgentStatus
+                status = aiAgentUiState.voiceAgentStatus,
+                text = aiAgentUiState.voiceAgentText
             )
         }
     }

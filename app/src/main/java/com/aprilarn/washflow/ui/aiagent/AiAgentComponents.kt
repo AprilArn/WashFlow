@@ -2,7 +2,7 @@ package com.aprilarn.washflow.ui.aiagent
 
 import android.view.HapticFeedbackConstants
 import androidx.compose.animation.*
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -70,32 +71,52 @@ fun AiMessageHeader() {
 @Composable
 fun VoiceAgentOverlay(
     status: VoiceAgentStatus,
+    text: String = "",
     modifier: Modifier = Modifier
 ) {
     if (status == VoiceAgentStatus.IDLE) return
 
-    val text = when (status) {
+    val displayTitle = when (status) {
         VoiceAgentStatus.LISTENING -> "Listening..."
-        VoiceAgentStatus.PROCESSING -> "Processing..."
+        VoiceAgentStatus.THINKING -> "Thinking..."
+        VoiceAgentStatus.ANSWERING -> "Aira"
         else -> ""
     }
 
     val icon = when (status) {
         VoiceAgentStatus.LISTENING -> Icons.Default.Mic
-        VoiceAgentStatus.PROCESSING -> Icons.Default.Sync
+        VoiceAgentStatus.THINKING -> Icons.Default.Sync
+        VoiceAgentStatus.ANSWERING -> Icons.Default.AutoAwesome
         else -> Icons.Default.AutoAwesome
     }
 
+    val infiniteTransition = rememberInfiniteTransition(label = "SyncRotation")
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = -360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "rotation"
+    )
+
     Surface(
         modifier = modifier
-            .width(280.dp)
-            .height(64.dp),
+            .widthIn(max = 520.dp)
+            .wrapContentHeight()
+            .clip(RoundedCornerShape(16.dp)) // Keamanan tambahan saat re-layout
+            .animateContentSize(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = Spring.StiffnessMediumLow
+                )
+            ),
         shape = RoundedCornerShape(16.dp),
-        color = Color.White,
-        shadowElevation = 8.dp
+        color = Color.White
     ) {
         Row(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.wrapContentWidth().height(IntrinsicSize.Min),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Left Icon Area
@@ -103,26 +124,75 @@ fun VoiceAgentOverlay(
                 modifier = Modifier
                     .fillMaxHeight()
                     .width(64.dp)
-                    .background(GrayBlue.copy(alpha = 0.08f)),
+                    .background(
+                        color = GrayBlue.copy(alpha = 0.08f),
+                        shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp) // Rounding internal
+                    ),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = GrayBlue,
-                    modifier = Modifier.size(24.dp)
-                )
+                AnimatedContent(
+                    targetState = icon to (status == VoiceAgentStatus.THINKING),
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(300)) + scaleIn(initialScale = 0.8f) togetherWith
+                                fadeOut(animationSpec = tween(300)) + scaleOut(targetScale = 0.8f)
+                    },
+                    label = "VoiceAgentIcon"
+                ) { (targetIcon, isProcessing) ->
+                    Icon(
+                        imageVector = targetIcon,
+                        contentDescription = null,
+                        tint = GrayBlue,
+                        modifier = Modifier.size(24.dp)
+                            .then(
+                                if (isProcessing) Modifier.graphicsLayer { rotationZ = rotation }
+                                else Modifier
+                            )
+                    )
+                }
             }
 
-            Text(
-                text = text,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    color = MainFontBlack,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp
-                ),
-                modifier = Modifier.padding(start = 16.dp)
-            )
+            Column(
+                modifier = Modifier
+                    .wrapContentWidth()
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.Center
+            ) {
+                AnimatedContent(
+                    targetState = displayTitle,
+                    transitionSpec = {
+                        (slideInVertically { it / 2 } + fadeIn(animationSpec = tween(300))) togetherWith
+                                (slideOutVertically { -it / 2 } + fadeOut(animationSpec = tween(300)))
+                    },
+                    label = "VoiceAgentTitle"
+                ) { targetTitle ->
+                    Text(
+                        text = targetTitle,
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            color = MainFontBlack,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp
+                        )
+                    )
+                }
+
+                AnimatedVisibility(
+                    visible = status == VoiceAgentStatus.ANSWERING && text.isNotBlank(),
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    Column {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = text,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = 13.sp,
+                                lineHeight = 18.sp
+                            ),
+                            color = Color(0xFF64748B)
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -170,7 +240,7 @@ fun ActionConfirmationCard(
 
     val selectedServiceId by remember(editedServiceName, services) {
         derivedStateOf {
-            services.find { 
+            services.find {
                 it.serviceName.equals(editedServiceName, ignoreCase = true)
             }?.serviceId ?: ""
         }
@@ -179,8 +249,8 @@ fun ActionConfirmationCard(
     val selectedCustomerId by remember(editedName, editedValue, customers) {
         derivedStateOf {
             if (action is AiAgentAction.DeleteCustomer) {
-                customers.find { 
-                    it.name.equals(editedName, ignoreCase = true) && 
+                customers.find {
+                    it.name.equals(editedName, ignoreCase = true) &&
                     (it.contact ?: "") == editedValue
                 }?.customerId ?: ""
             } else ""
@@ -191,9 +261,9 @@ fun ActionConfirmationCard(
         derivedStateOf {
             if (action is AiAgentAction.DeleteItem) {
                 items.find { item ->
-                    item.itemName.equals(editedName, ignoreCase = true) && 
+                    item.itemName.equals(editedName, ignoreCase = true) &&
                     (editedServiceName.isEmpty() || services.find { it.serviceId == item.serviceId }?.serviceName?.equals(editedServiceName, ignoreCase = true) == true)
-                } ?: items.find { 
+                } ?: items.find {
                     it.itemName.equals(editedName, ignoreCase = true)
                 }
             } else null
@@ -208,13 +278,13 @@ fun ActionConfirmationCard(
                 // 1. Exact match di Phone Number (Contact)
                 // 2. Exact match di Name (Case Insensitive)
                 // 3. Partial match di Name
-                customers.find { 
-                    action.contact.isNotBlank() && it.contact == action.contact 
-                } ?: customers.find { 
+                customers.find {
+                    action.contact.isNotBlank() && it.contact == action.contact
+                } ?: customers.find {
                     action.name.isNotBlank() && it.name.equals(action.name, ignoreCase = true)
-                } ?: customers.find { 
+                } ?: customers.find {
                     action.contact.isNotBlank() && it.contact?.contains(action.contact) == true
-                } ?: customers.find { 
+                } ?: customers.find {
                     action.name.isNotBlank() && it.name.contains(action.name, ignoreCase = true)
                 } ?: customers.find {
                     action.name.isNotBlank() && action.name.contains(it.name, ignoreCase = true)
@@ -241,13 +311,13 @@ fun ActionConfirmationCard(
         if (action is AiAgentAction.DeleteItem && selectedItem == null) {
             val match = withContext(Dispatchers.Default) {
                 val serviceToMatch = action.serviceName
-                
+
                 items.find { item ->
                     item.itemName.equals(action.itemName, ignoreCase = true) &&
                     (serviceToMatch.isEmpty() || services.find { it.serviceId == item.serviceId }?.serviceName?.equals(serviceToMatch, ignoreCase = true) == true)
-                } ?: items.find { 
+                } ?: items.find {
                     it.itemName.equals(action.itemName, ignoreCase = true)
-                } ?: items.find { 
+                } ?: items.find {
                     it.itemName.contains(action.itemName, ignoreCase = true)
                 } ?: items.find {
                     action.itemName.contains(it.itemName, ignoreCase = true)
@@ -274,9 +344,9 @@ fun ActionConfirmationCard(
     LaunchedEffect(action, services) {
         if (action is AiAgentAction.AddItem && selectedServiceId.isEmpty()) {
             val match = withContext(Dispatchers.Default) {
-                services.find { 
+                services.find {
                     it.serviceName.equals(action.serviceName, ignoreCase = true)
-                } ?: services.find { 
+                } ?: services.find {
                     it.serviceName.contains(action.serviceName, ignoreCase = true)
                 } ?: services.find {
                     action.serviceName.contains(it.serviceName, ignoreCase = true)
@@ -366,13 +436,13 @@ fun ActionConfirmationCard(
                 fontWeight = FontWeight.Medium
             )
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             if (action is AiAgentAction.AddCustomer || action is AiAgentAction.DeleteCustomer || action is AiAgentAction.DeleteItem || action is AiAgentAction.AddItem) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Box {
                         OutlinedTextField(
                             value = editedName,
-                            onValueChange = { 
+                            onValueChange = {
                                 editedName = it
                                 isNameDropdownExpanded = true
                                 isPhoneDropdownExpanded = false
@@ -417,7 +487,7 @@ fun ActionConfirmationCard(
                                             LazyColumn {
                                                 items(filteredItems) { item ->
                                                     DropdownMenuItem(
-                                                        text = { 
+                                                        text = {
                                                             Column {
                                                                 Text(item.itemName, style = MaterialTheme.typography.bodyMedium)
                                                                 Text(CurrencyUtils.formatRupiahWithSymbol(item.itemPrice), style = MaterialTheme.typography.labelSmall, color = Gray)
@@ -458,7 +528,7 @@ fun ActionConfirmationCard(
                                             LazyColumn {
                                                 items(filteredCustomers) { customer ->
                                                     DropdownMenuItem(
-                                                        text = { 
+                                                        text = {
                                                             Column {
                                                                 Text(customer.name, style = MaterialTheme.typography.bodyMedium)
                                                                 if (!customer.contact.isNullOrEmpty()) {
@@ -481,14 +551,14 @@ fun ActionConfirmationCard(
                             }
                         }
                     }
-                    
+
                     if (action !is AiAgentAction.DeleteItem) {
                         Spacer(modifier = Modifier.height(8.dp))
-                        
+
                         Box {
                             OutlinedTextField(
                                 value = editedValue,
-                                onValueChange = { 
+                                onValueChange = {
                                     editedValue = it
                                     if (action is AiAgentAction.DeleteCustomer) {
                                         isPhoneDropdownExpanded = true
@@ -546,7 +616,7 @@ fun ActionConfirmationCard(
                                             LazyColumn {
                                                 items(filteredCustomers) { customer ->
                                                     DropdownMenuItem(
-                                                        text = { 
+                                                        text = {
                                                             Column {
                                                                 Text(customer.name, style = MaterialTheme.typography.bodyMedium)
                                                                 if (!customer.contact.isNullOrEmpty()) {
@@ -574,7 +644,7 @@ fun ActionConfirmationCard(
                             Box {
                                 OutlinedTextField(
                                     value = editedServiceName,
-                                    onValueChange = { 
+                                    onValueChange = {
                                         editedServiceName = it
                                         isServiceDropdownExpanded = true
                                         isNameDropdownExpanded = false
@@ -681,7 +751,7 @@ fun ActionConfirmationCard(
                     color = MainFontBlack
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -718,7 +788,7 @@ fun ActionConfirmationCard(
                 ) {
                     Text(
                         if (action is AiAgentAction.DeleteCustomer || action is AiAgentAction.DeleteItem) "Delete" else "Confirm",
-                        color = Color.White, 
+                        color = Color.White,
                         fontSize = 13.sp
                     )
                 }
@@ -738,7 +808,7 @@ fun TypewriterText(
     val displayedText = remember(text, progress) {
         if (progress < 0 || progress >= text.length) text else text.take(progress)
     }
-    
+
     val view = LocalView.current
 
     // Handle haptics and scroll-updates based on progress
@@ -753,7 +823,7 @@ fun TypewriterText(
             }
             onTextUpdate()
         }
-        
+
         if (progress >= text.length && isNewMessage) {
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
                 view.performHapticFeedback(HapticFeedbackConstants.REJECT)
@@ -1218,7 +1288,7 @@ fun AiAgentEmptyState(userName: String) {
             fontSize = 14.sp
         )
         Spacer(modifier = Modifier.height(12.dp))
-        
+
         PromptItem("Extract all hardcoded strings from this class and move them into strings.xml")
         PromptItem("Add documentation to my current file")
         PromptItem("Update kotlin in @libs.version.toml to the latest version")

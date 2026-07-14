@@ -93,10 +93,18 @@ class AiAgentViewModel : ViewModel() {
         if (_uiState.value.voiceAgentStatus != VoiceAgentStatus.IDLE) return
 
         viewModelScope.launch {
-            _uiState.update { it.copy(voiceAgentStatus = VoiceAgentStatus.LISTENING) }
+            _uiState.update { it.copy(
+                voiceAgentStatus = VoiceAgentStatus.LISTENING,
+                voiceAgentText = ""
+            ) }
             kotlinx.coroutines.delay(1000)
-            _uiState.update { it.copy(voiceAgentStatus = VoiceAgentStatus.PROCESSING) }
+            _uiState.update { it.copy(voiceAgentStatus = VoiceAgentStatus.THINKING) }
             kotlinx.coroutines.delay(2000)
+            _uiState.update { it.copy(
+                voiceAgentStatus = VoiceAgentStatus.ANSWERING,
+                voiceAgentText = "Halo! Saya adalah Aira. Ada yang bisa saya bantu hari ini? Anda bisa menanyakan tentang status pesanan, daftar layanan pencucian, atau bantuan navigasi lainnya di aplikasi WashFlow."
+            ) }
+            kotlinx.coroutines.delay(4000)
             _uiState.update { it.copy(voiceAgentStatus = VoiceAgentStatus.IDLE) }
         }
     }

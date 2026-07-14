@@ -37,9 +37,10 @@ data class AiAgentUiState(
     val items: List<Items> = emptyList(),
     val services: List<Services> = emptyList(),
     val animatedMessageIds: Set<String> = emptySet(),
-    val voiceAgentStatus: VoiceAgentStatus = VoiceAgentStatus.IDLE
+    val voiceAgentStatus: VoiceAgentStatus = VoiceAgentStatus.IDLE,
+    val voiceAgentText: String = ""
 )
 
 enum class VoiceAgentStatus {
-    IDLE, LISTENING, PROCESSING
+    IDLE, LISTENING, THINKING, ANSWERING
 }
