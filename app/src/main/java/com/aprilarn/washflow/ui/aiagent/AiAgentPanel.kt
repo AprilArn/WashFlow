@@ -212,24 +212,9 @@ fun AiAgentPanel(
         if (listState.isScrollInProgress) showMenu = false
     }
 
-    val isProcessing = remember(isAiThinking, messages, animatedMessageIds) {
-        derivedStateOf {
-            val lastAiMessage = messages.lastOrNull { !it.isUser }
-            val isLastAiMessageNotAnimated = lastAiMessage != null && 
-                !lastAiMessage.isThinking && 
-                !wasMessageAnimated(lastAiMessage.id) &&
-                (getAnimationProgress(lastAiMessage.id) < lastAiMessage.text.length)
-
-            if (messages.isEmpty()) return@derivedStateOf false
-
-            if (isAiThinking || isLastAiMessageNotAnimated) return@derivedStateOf true
-            false
-        }
-    }
-
     var processingWithGracePeriod by remember { mutableStateOf(false) }
-    LaunchedEffect(isProcessing.value) {
-        if (isProcessing.value) {
+    LaunchedEffect(isAiThinking, isTypewriterActive) {
+        if (isAiThinking || isTypewriterActive) {
             processingWithGracePeriod = true
         } else {
             delay(250L)
@@ -405,7 +390,7 @@ fun AiAgentPanel(
                             onSendMessage = onSendMessage,
                             modelStatus = modelStatus,
                             currentModelName = currentModelName,
-                            isProcessing = processingWithGracePeriod || isTypewriterActive
+                            isProcessing = processingWithGracePeriod
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(
