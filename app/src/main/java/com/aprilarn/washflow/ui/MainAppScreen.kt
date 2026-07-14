@@ -573,19 +573,17 @@ fun MainAppScreen(
     }
 
     // 4. OVERLAY VOICE AGENT (Paling atas agar tidak tertutup notifikasi)
-    if (aiAgentUiState.voiceAgentStatus != com.aprilarn.washflow.ui.aiagent.VoiceAgentStatus.IDLE) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = 58.dp)
-                .zIndex(99f), // Force to be on top of other overlays
-            contentAlignment = Alignment.TopCenter
-        ) {
-            VoiceAgentOverlay(
-                status = aiAgentUiState.voiceAgentStatus,
-                text = aiAgentUiState.voiceAgentText
-            )
-        }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = 58.dp)
+            .zIndex(99f), // Tetap di depan, visibility diatur internal oleh overlay
+        contentAlignment = Alignment.TopCenter
+    ) {
+        VoiceAgentOverlay(
+            status = aiAgentUiState.voiceAgentStatus,
+            text = aiAgentUiState.voiceAgentText
+        )
     }
 
     // --- DIALOG UNTUK RENAME WORKSPACE ---
