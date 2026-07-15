@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
@@ -29,13 +30,6 @@ fun VoiceAgentOverlay(
     text: String = "",
     modifier: Modifier = Modifier
 ) {
-    val displayTitle = when (status) {
-        VoiceAgentStatus.LISTENING -> "Listening..."
-        VoiceAgentStatus.THINKING -> "Thinking..."
-        VoiceAgentStatus.ANSWERING -> "Aira"
-        else -> ""
-    }
-
     val icon = when (status) {
         VoiceAgentStatus.LISTENING -> Icons.Default.Mic
         VoiceAgentStatus.THINKING -> Icons.Default.Sync
@@ -56,48 +50,81 @@ fun VoiceAgentOverlay(
 
     AnimatedVisibility(
         visible = status != VoiceAgentStatus.IDLE,
-        enter = fadeIn(animationSpec = tween(400)) + 
-                scaleIn(initialScale = 0.8f, animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy)) +
-                slideInVertically(initialOffsetY = { -it }),
-        exit = fadeOut(animationSpec = tween(500)) +
-               scaleOut(targetScale = 0.8f) + 
-               slideOutVertically(targetOffsetY = { -it }),
+        enter = fadeIn(animationSpec = tween(400)) +
+                expandHorizontally(
+                    expandFrom = Alignment.CenterHorizontally,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioLowBouncy,
+                        stiffness = Spring.StiffnessLow
+                    )
+                ) +
+                slideInVertically(
+                    initialOffsetY = { fullHeight -> -fullHeight },
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioLowBouncy,
+                        stiffness = Spring.StiffnessLow
+                    )
+                ),
+        exit = fadeOut(animationSpec = tween(400)) +
+                shrinkHorizontally(
+                    shrinkTowards = Alignment.CenterHorizontally,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioLowBouncy,
+                        stiffness = Spring.StiffnessLow
+                    )
+                ) +
+                slideOutVertically(
+                    targetOffsetY = { fullHeight -> -fullHeight },
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioLowBouncy,
+                        stiffness = Spring.StiffnessLow
+                    )
+                ),
         modifier = modifier
     ) {
         Surface(
             modifier = Modifier
+                .padding(top = 58.dp) // PADDING DARI MAINAPPSCREEN DIPINDAH KE SINI
                 .widthIn(max = 520.dp)
                 .wrapContentHeight()
                 .clip(RoundedCornerShape(16.dp))
-                .animateContentSize(
+                .animateContentSize( // Smoothly animates overall container size
                     animationSpec = spring(
                         dampingRatio = Spring.DampingRatioLowBouncy,
-                        stiffness = Spring.StiffnessMediumLow
-                    )
+                        stiffness = Spring.StiffnessLow
+                    ),
+                    alignment = Alignment.Center
                 ),
             shape = RoundedCornerShape(16.dp),
             color = Color.White
         ) {
+            // Kita definisikan warna background kiri di sini
+            val leftBgColor = GrayBlue.copy(alpha = 0.08f)
+
             Row(
-                modifier = Modifier.wrapContentWidth().height(IntrinsicSize.Min),
+                modifier = Modifier
+                    .wrapContentWidth()
+                    // Menggambar background kiri secara presisi tanpa mengacaukan tinggi
+                    .drawBehind {
+                        drawRect(
+                            color = leftBgColor,
+                            size = androidx.compose.ui.geometry.Size(64.dp.toPx(), size.height)
+                        )
+                    },
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Left Icon Area
                 Box(
                     modifier = Modifier
-                        .fillMaxHeight()
                         .width(64.dp)
-                        .background(
-                            color = GrayBlue.copy(alpha = 0.08f),
-                            shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp)
-                        ),
+                        .padding(vertical = 16.dp), // Memberikan padding agar selalu memiliki tinggi minimum
                     contentAlignment = Alignment.Center
                 ) {
                     AnimatedContent(
                         targetState = icon to (status == VoiceAgentStatus.THINKING),
                         transitionSpec = {
-                            fadeIn(animationSpec = tween(300)) + scaleIn(initialScale = 0.8f) togetherWith
-                                    fadeOut(animationSpec = tween(300)) + scaleOut(targetScale = 0.8f)
+                            (fadeIn(animationSpec = tween(300)) + scaleIn(initialScale = 0.8f)) togetherWith
+                                    (fadeOut(animationSpec = tween(300)) + scaleOut(targetScale = 0.8f)) using SizeTransform(clip = false)
                         },
                         label = "VoiceAgentIcon"
                     ) { (targetIcon, isProcessing) ->
@@ -105,7 +132,8 @@ fun VoiceAgentOverlay(
                             imageVector = targetIcon,
                             contentDescription = null,
                             tint = GrayBlue,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier
+                                .size(24.dp)
                                 .then(
                                     if (isProcessing) Modifier.graphicsLayer { rotationZ = rotation }
                                     else Modifier
@@ -114,6 +142,7 @@ fun VoiceAgentOverlay(
                     }
                 }
 
+                // Right Content Area
                 Column(
                     modifier = Modifier
                         .wrapContentWidth()
@@ -121,38 +150,42 @@ fun VoiceAgentOverlay(
                     verticalArrangement = Arrangement.Center
                 ) {
                     AnimatedContent(
-                        targetState = displayTitle,
+                        targetState = status,
                         transitionSpec = {
-                            (slideInVertically { it / 2 } + fadeIn(animationSpec = tween(300))) togetherWith
-                                    (slideOutVertically { -it / 2 } + fadeOut(animationSpec = tween(300)))
+                            fadeIn(animationSpec = tween(400)) togetherWith
+                                    fadeOut(animationSpec = tween(400)) using SizeTransform(clip = false)
                         },
-                        label = "VoiceAgentTitle"
-                    ) { targetTitle ->
-                        Text(
-                            text = targetTitle,
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                color = MainFontBlack,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp
-                            )
-                        )
-                    }
+                        label = "VoiceAgentContent",
+                        contentAlignment = Alignment.CenterStart
+                    ) { targetStatus ->
+                        val targetTitle = when (targetStatus) {
+                            VoiceAgentStatus.LISTENING -> "Listening..."
+                            VoiceAgentStatus.THINKING -> "Thinking..."
+                            VoiceAgentStatus.ANSWERING -> "Aira"
+                            else -> ""
+                        }
 
-                    AnimatedVisibility(
-                        visible = status == VoiceAgentStatus.ANSWERING && text.isNotBlank(),
-                        enter = expandVertically() + fadeIn(),
-                        exit = shrinkVertically() + fadeOut()
-                    ) {
                         Column {
-                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = text,
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontSize = 13.sp,
-                                    lineHeight = 18.sp
-                                ),
-                                color = Color(0xFF64748B)
+                                text = targetTitle,
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    color = MainFontBlack,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp
+                                )
                             )
+
+                            if (targetStatus == VoiceAgentStatus.ANSWERING && text.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = text,
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontSize = 13.sp,
+                                        lineHeight = 18.sp
+                                    ),
+                                    color = Color(0xFF64748B)
+                                )
+                            }
                         }
                     }
                 }

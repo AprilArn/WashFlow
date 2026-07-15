@@ -577,7 +577,6 @@ fun MainAppScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = 58.dp)
             .zIndex(99f), // Tetap di depan, visibility diatur internal oleh overlay
         contentAlignment = Alignment.TopCenter
     ) {

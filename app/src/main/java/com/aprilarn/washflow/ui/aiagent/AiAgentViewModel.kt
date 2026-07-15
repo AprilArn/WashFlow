@@ -105,6 +105,10 @@ class AiAgentViewModel : ViewModel() {
                 voiceAgentText = "Halo! Saya adalah Aira. Ada yang bisa saya bantu hari ini? Anda bisa menanyakan tentang status pesanan, daftar layanan pencucian, atau bantuan navigasi lainnya di aplikasi WashFlow."
             ) }
             kotlinx.coroutines.delay(4000)
+            _uiState.update { it.copy(
+                voiceAgentStatus = VoiceAgentStatus.LISTENING
+            ) }
+            kotlinx.coroutines.delay(1000)
             _uiState.update { it.copy(voiceAgentStatus = VoiceAgentStatus.IDLE) }
         }
     }
