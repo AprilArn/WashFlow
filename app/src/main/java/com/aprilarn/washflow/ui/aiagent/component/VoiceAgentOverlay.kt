@@ -84,7 +84,7 @@ fun VoiceAgentOverlay(
     ) {
         Surface(
             modifier = Modifier
-                .padding(top = 58.dp) // PADDING DARI MAINAPPSCREEN DIPINDAH KE SINI
+                .padding(top = 58.dp, bottom = 48.dp) // Tambahkan padding bottom untuk ruang bounce
                 .widthIn(max = 520.dp)
                 .wrapContentHeight()
                 .clip(RoundedCornerShape(16.dp))
