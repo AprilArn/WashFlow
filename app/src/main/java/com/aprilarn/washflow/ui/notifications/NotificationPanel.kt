@@ -55,110 +55,115 @@ fun NotificationPanel(
     onDismiss: () -> Unit,
     onNotificationClick: (Notifications) -> Unit
 ) {
-    AnimatedVisibility(
-        visible = expanded,
-        enter = fadeIn(animationSpec = tween(300)),
-        exit = fadeOut(animationSpec = tween(300))
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.3f))
-                .clickable { onDismiss() }
-        )
-    }
-
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.CenterEnd
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
         AnimatedVisibility(
             visible = expanded,
-            enter = slideInHorizontally(
-                initialOffsetX = { fullWidth -> fullWidth },
-                animationSpec = tween(durationMillis = 300)
-            ),
-            exit = slideOutHorizontally(
-                targetOffsetX = { fullWidth -> fullWidth },
-                animationSpec = tween(durationMillis = 300)
-            )
+            enter = fadeIn(animationSpec = tween(300)),
+            exit = fadeOut(animationSpec = tween(300))
         ) {
-            Surface(
+            Box(
                 modifier = Modifier
-                    .fillMaxHeight()
-                    .width(400.dp),
-                color = Color.White,
-                shadowElevation = 24.dp
-            ) {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Notifications",
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 19.sp
-                            ),
-                            color = MainFontBlack
-                        )
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.3f))
+                    .clickable { onDismiss() }
+            )
+        }
 
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            TextButton(onClick = onMarkAllAsRead) {
-                                Text(
-                                    text = "Mark all as read",
-                                    color = GrayBlue,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.CenterEnd
+        ) {
+            AnimatedVisibility(
+                visible = expanded,
+                enter = slideInHorizontally(
+                    initialOffsetX = { fullWidth -> fullWidth },
+                    animationSpec = tween(durationMillis = 300)
+                ),
+                exit = slideOutHorizontally(
+                    targetOffsetX = { fullWidth -> fullWidth },
+                    animationSpec = tween(durationMillis = 300)
+                )
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(400.dp),
+                    color = Color.White,
+                    shadowElevation = 24.dp
+                ) {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Notifications",
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 19.sp
+                                ),
+                                color = MainFontBlack
+                            )
+
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                TextButton(onClick = onMarkAllAsRead) {
+                                    Text(
+                                        text = "Mark all as read",
+                                        color = GrayBlue,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
                             }
                         }
-                    }
 
-                    Row(
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Text(
-                            text = "Unread",
-                            color = if (filter == NotificationFilter.UNREAD) MainFontBlack else Color.Gray,
-                            fontWeight = if (filter == NotificationFilter.UNREAD) FontWeight.Bold else FontWeight.Medium,
-                            fontSize = 14.sp,
-                            modifier = Modifier.clickable { onFilterChange(NotificationFilter.UNREAD) }
-                        )
-                        Text(
-                            text = "All",
-                            color = if (filter == NotificationFilter.ALL) MainFontBlack else Color.Gray,
-                            fontWeight = if (filter == NotificationFilter.ALL) FontWeight.Bold else FontWeight.Medium,
-                            fontSize = 14.sp,
-                            modifier = Modifier.clickable { onFilterChange(NotificationFilter.ALL) }
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-                    HorizontalDivider(color = Color(0xFFF0F0F0), thickness = 1.dp)
-
-                    if (notifications.isEmpty()) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("Belum ada notifikasi", color = Color.Gray)
-                        }
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(vertical = 4.dp)
+                        Row(
+                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            items(notifications) { notif ->
-                                val isUnread = currentUid !in notif.readBy
+                            Text(
+                                text = "Unread",
+                                color = if (filter == NotificationFilter.UNREAD) MainFontBlack else Color.Gray,
+                                fontWeight = if (filter == NotificationFilter.UNREAD) FontWeight.Bold else FontWeight.Medium,
+                                fontSize = 14.sp,
+                                modifier = Modifier.clickable { onFilterChange(NotificationFilter.UNREAD) }
+                            )
+                            Text(
+                                text = "All",
+                                color = if (filter == NotificationFilter.ALL) MainFontBlack else Color.Gray,
+                                fontWeight = if (filter == NotificationFilter.ALL) FontWeight.Bold else FontWeight.Medium,
+                                fontSize = 14.sp,
+                                modifier = Modifier.clickable { onFilterChange(NotificationFilter.ALL) }
+                            )
+                        }
 
-                                NotificationPanelItem(
-                                    notification = notif,
-                                    isUnread = isUnread,
-                                    onClick = { onNotificationClick(notif) }
-                                )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        HorizontalDivider(color = Color(0xFFF0F0F0), thickness = 1.dp)
+
+                        if (notifications.isEmpty()) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("Belum ada notifikasi", color = Color.Gray)
+                            }
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(vertical = 4.dp)
+                            ) {
+                                items(notifications) { notif ->
+                                    val isUnread = currentUid !in notif.readBy
+
+                                    NotificationPanelItem(
+                                        notification = notif,
+                                        isUnread = isUnread,
+                                        onClick = { onNotificationClick(notif) }
+                                    )
+                                }
                             }
                         }
                     }

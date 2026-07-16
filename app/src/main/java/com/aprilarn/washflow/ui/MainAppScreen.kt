@@ -497,53 +497,43 @@ fun MainAppScreen(
         }
     }
 
-    // 2. PANEL NOTIFIKASI MELAYANG (Berada paling atas karena ditulis paling akhir)
-    NotificationPanel(
-        expanded = notificationsUiState.showNotificationOptions,
-        notifications = notificationsUiState.filteredNotifications,
-        currentUid = notificationsUiState.currentUserUid,
-        filter = notificationsUiState.filter,
-        onFilterChange = { notificationsViewModel.onFilterChanged(it) },
-        onMarkAllAsRead = { notificationsViewModel.markAllAsRead() },
-        onDismiss = { notificationsViewModel.onDismissNotificationOptions() },
-        onNotificationClick = { notif ->
-            notificationsViewModel.markNotificationAsRead(notif)
-        }
-    )
+    // 2. PANEL NOTIFIKASI MELAYANG (Berada paling atas karena memiliki zIndex tinggi)
+    Box(modifier = Modifier.fillMaxSize().zIndex(100f)) {
+        NotificationPanel(
+            expanded = notificationsUiState.showNotificationOptions,
+            notifications = notificationsUiState.filteredNotifications,
+            currentUid = notificationsUiState.currentUserUid,
+            filter = notificationsUiState.filter,
+            onFilterChange = { notificationsViewModel.onFilterChanged(it) },
+            onMarkAllAsRead = { notificationsViewModel.markAllAsRead() },
+            onDismiss = { notificationsViewModel.onDismissNotificationOptions() },
+            onNotificationClick = { notif ->
+                notificationsViewModel.markNotificationAsRead(notif)
+            }
+        )
+    }
 
-    // 2.5 PANEL AI AGENT (Berada paling atas karena ditulis paling akhir)
-    AiAgentPanel(
-        expanded = aiAgentUiState.expanded,
-        userName = userData?.displayName ?: "Unknown",
-        profilePictureUrl = userData?.profilePictureUrl,
-        inputMessage = aiAgentUiState.inputMessage,
-        messages = aiAgentUiState.messages,
-        isAiThinking = aiAgentUiState.isAiThinking,
-        isTypewriterActive = aiAgentUiState.isTypewriterActive,
-        currentModelName = aiAgentUiState.currentModelName,
-        modelStatus = aiAgentUiState.modelStatus,
-        customers = aiAgentUiState.customers,
-        items = aiAgentUiState.items,
-        services = aiAgentUiState.services,
-        animatedMessageIds = aiAgentUiState.animatedMessageIds,
-        wasMessageAnimated = { aiAgentViewModel.wasMessageAnimated(it) },
-        onMessageAnimated = { aiAgentViewModel.markMessageAsAnimated(it) },
-        getAnimationProgress = { aiAgentViewModel.getAnimationProgress(it) },
-        onInputChange = { aiAgentViewModel.onInputChange(it) },
-        onSendMessage = { aiAgentViewModel.onSendMessage() },
-        onClearHistory = { aiAgentViewModel.onClearHistory() },
-        onConfirmAction = { id, action -> aiAgentViewModel.onConfirmAction(id, action) },
-        onCancelAction = { aiAgentViewModel.onCancelAction(it) },
-        onDismiss = { aiAgentViewModel.onDismissAiAgent() }
-    )
+    // 2.5 OVERLAY VOICE AGENT (Berada di belakang AI Agent Panel jika terbuka)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .zIndex(99f), // Tetap di depan elemen UI dasar, tapi di bawah AI Panel (100f)
+        contentAlignment = Alignment.TopCenter
+    ) {
+        VoiceAgentOverlay(
+            status = aiAgentUiState.voiceAgentStatus,
+            text = aiAgentUiState.voiceAgentText
+        )
+    }
 
-    // 3. OVERLAY PREVIEW NOTIFIKASI JATUH (TANPA POPUP)
+    // 2.6 OVERLAY PREVIEW NOTIFIKASI JATUH (TANPA POPUP)
     if (notificationsUiState.notificationPreviews.isNotEmpty()) {
         Box(
             modifier = Modifier
                 .fillMaxSize() // Memenuhi layar agar notif bisa jatuh sampai bawah
                 // Box kosong di Compose TIDAK memblokir sentuhan (touch pass-through)
                 .padding(top = 58.dp, end = 24.dp) // Jarak dari atas dan kanan, sesuaikan sedikit agar pas di bawah lonceng
+                .zIndex(98f) // Berada satu tingkat di bawah Voice Agent Overlay (99f)
         ) {
             Column(
                 modifier = Modifier
@@ -573,16 +563,31 @@ fun MainAppScreen(
         }
     }
 
-    // 4. OVERLAY VOICE AGENT (Paling atas agar tidak tertutup notifikasi)
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .zIndex(99f), // Tetap di depan, visibility diatur internal oleh overlay
-        contentAlignment = Alignment.TopCenter
-    ) {
-        VoiceAgentOverlay(
-            status = aiAgentUiState.voiceAgentStatus,
-            text = aiAgentUiState.voiceAgentText
+    // 2.7 PANEL AI AGENT (Berada paling atas karena memiliki zIndex tertinggi)
+    Box(modifier = Modifier.fillMaxSize().zIndex(100f)) {
+        AiAgentPanel(
+            expanded = aiAgentUiState.expanded,
+            userName = userData?.displayName ?: "Unknown",
+            profilePictureUrl = userData?.profilePictureUrl,
+            inputMessage = aiAgentUiState.inputMessage,
+            messages = aiAgentUiState.messages,
+            isAiThinking = aiAgentUiState.isAiThinking,
+            isTypewriterActive = aiAgentUiState.isTypewriterActive,
+            currentModelName = aiAgentUiState.currentModelName,
+            modelStatus = aiAgentUiState.modelStatus,
+            customers = aiAgentUiState.customers,
+            items = aiAgentUiState.items,
+            services = aiAgentUiState.services,
+            animatedMessageIds = aiAgentUiState.animatedMessageIds,
+            wasMessageAnimated = { aiAgentViewModel.wasMessageAnimated(it) },
+            onMessageAnimated = { aiAgentViewModel.markMessageAsAnimated(it) },
+            getAnimationProgress = { aiAgentViewModel.getAnimationProgress(it) },
+            onInputChange = { aiAgentViewModel.onInputChange(it) },
+            onSendMessage = { aiAgentViewModel.onSendMessage() },
+            onClearHistory = { aiAgentViewModel.onClearHistory() },
+            onConfirmAction = { id, action -> aiAgentViewModel.onConfirmAction(id, action) },
+            onCancelAction = { aiAgentViewModel.onCancelAction(it) },
+            onDismiss = { aiAgentViewModel.onDismissAiAgent() }
         )
     }
 

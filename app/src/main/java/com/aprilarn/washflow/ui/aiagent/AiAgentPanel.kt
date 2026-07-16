@@ -240,199 +240,223 @@ fun AiAgentPanel(
     }
 
     // --- UI Layout ---
-    AnimatedVisibility(
-        visible = expanded,
-        enter = fadeIn(animationSpec = tween(300)),
-        exit = fadeOut(animationSpec = tween(300))
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.3f))
-                .clickable { onDismiss() }
-        )
-    }
-
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.CenterEnd
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
         AnimatedVisibility(
             visible = expanded,
-            enter = slideInHorizontally(
-                initialOffsetX = { fullWidth -> fullWidth },
-                animationSpec = tween(durationMillis = 300)
-            ),
-            exit = slideOutHorizontally(
-                targetOffsetX = { fullWidth -> fullWidth },
-                animationSpec = tween(durationMillis = 300)
-            )
+            enter = fadeIn(animationSpec = tween(300)),
+            exit = fadeOut(animationSpec = tween(300))
         ) {
-            Surface(
+            Box(
                 modifier = Modifier
-                    .fillMaxHeight()
-                    .width(400.dp),
-                color = Color.White,
-                shadowElevation = 24.dp
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.3f))
+                    .clickable { onDismiss() }
+            )
+        }
+
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.CenterEnd
+        ) {
+            AnimatedVisibility(
+                visible = expanded,
+                enter = slideInHorizontally(
+                    initialOffsetX = { fullWidth -> fullWidth },
+                    animationSpec = tween(durationMillis = 300)
+                ),
+                exit = slideOutHorizontally(
+                    targetOffsetX = { fullWidth -> fullWidth },
+                    animationSpec = tween(durationMillis = 300)
+                )
             ) {
-                Box(
+                Surface(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .nestedScroll(nestedScrollConnection)
+                        .fillMaxHeight()
+                        .width(400.dp),
+                    color = Color.White,
+                    shadowElevation = 24.dp
                 ) {
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(
-                            top = with(density) { headerHeightPx.toDp() },
-                            bottom = with(density) { footerHeightPx.toDp() },
-                            start = 24.dp,
-                            end = 24.dp
-                        )
-                    ) {
-                        if (messages.isEmpty()) {
-                            item { AiAgentEmptyState(userName = userName) }
-                        } else {
-                            items(
-                                items = messages,
-                                key = { it.id }
-                            ) { message ->
-                                val alreadyAnimated = remember(message.id) { wasMessageAnimated(message.id) }
-                                var animProgress by remember(message.id) { mutableFloatStateOf(if (alreadyAnimated) 1f else 0f) }
-
-                                val animatedAlpha by animateFloatAsState(
-                                    targetValue = animProgress,
-                                    animationSpec = tween(durationMillis = 200),
-                                    label = "msgAlpha"
-                                )
-
-                                val animatedOffset by animateFloatAsState(
-                                    targetValue = animProgress,
-                                    animationSpec = spring(
-                                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                                        stiffness = Spring.StiffnessMedium
-                                    ),
-                                    label = "msgOffset"
-                                )
-
-                                LaunchedEffect(message.id) {
-                                    if (!alreadyAnimated) {
-                                        delay(50L)
-                                        animProgress = 1f
-                                        onMessageAnimated(message.id)
-                                    }
-                                }
-
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .graphicsLayer {
-                                            alpha = animatedAlpha.coerceIn(0f, 1f)
-                                            if (message.isUser) {
-                                                val scale = 0.8f + (animatedOffset * 0.2f)
-                                                scaleX = scale
-                                                scaleY = scale
-                                            }
-                                        }
-                                ) {
-                                    ChatMessageItem(
-                                        message = message,
-                                        profilePictureUrl = profilePictureUrl,
-                                        isAlreadyAnimated = alreadyAnimated,
-                                        progress = getAnimationProgress(message.id),
-                                        customers = customers,
-                                        items = items,
-                                        services = services,
-                                        onConfirmAction = { updatedAction ->
-                                            onConfirmAction(message.id, updatedAction)
-                                            if (message.action is AiAgentAction.Navigate) onDismiss()
-                                        },
-                                        onCancelAction = { onCancelAction(message.id) },
-                                        onTextUpdate = {
-                                            if (!userHasInterrupted) {
-                                                coroutineScope.launch { listState.scrollToItem(messages.size - 1, 100000) }
-                                                headerOffsetPx = 0f
-                                                footerOffsetPx = 0f
-                                            }
-                                        }
-                                    )
-                                    Spacer(modifier = Modifier.height(if (message.isUser) 12.dp else 32.dp))
-                                }
-                            }
-                        }
-                    }
-
-                    // Header Overlay
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .onGloballyPositioned { headerHeightPx = it.size.height.toFloat() }
-                            .graphicsLayer { translationY = headerOffsetPx }
-                            .background(Color.White)
-                            .align(Alignment.TopCenter)
+                            .fillMaxSize()
+                            .nestedScroll(nestedScrollConnection)
                     ) {
-                        AiAgentPanelHeader(onClearHistory = onClearHistory)
-                    }
-
-                    // Input Overlay
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .onGloballyPositioned { footerHeightPx = it.size.height.toFloat() }
-                            .graphicsLayer { translationY = footerOffsetPx }
-                            .background(Color.White)
-                            .align(Alignment.BottomCenter)
-                            .padding(16.dp)
-                    ) {
-                        AiAgentPanelInputArea(
-                            inputMessage = inputMessage,
-                            onInputChange = onInputChange,
-                            onSendMessage = onSendMessage,
-                            modelStatus = modelStatus,
-                            currentModelName = currentModelName,
-                            isProcessing = processingWithGracePeriod
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                "AI can make mistakes, so double-check it",
-                                color = Gray,
-                                fontSize = 10.sp
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(
+                                top = with(density) { headerHeightPx.toDp() },
+                                bottom = with(density) { footerHeightPx.toDp() },
+                                start = 24.dp,
+                                end = 24.dp
                             )
-                        }
-                    }
+                        ) {
+                            if (messages.isEmpty()) {
+                                item { AiAgentEmptyState(userName = userName) }
+                            } else {
+                                items(
+                                    items = messages,
+                                    key = { it.id }
+                                ) { message ->
+                                    val alreadyAnimated =
+                                        remember(message.id) { wasMessageAnimated(message.id) }
+                                    var animProgress by remember(message.id) {
+                                        mutableFloatStateOf(
+                                            if (alreadyAnimated) 1f else 0f
+                                        )
+                                    }
 
-                    // Scroll-to-bottom FAB
-                    AnimatedVisibility(
-                        visible = !isAtBottom && messages.isNotEmpty(),
-                        enter = fadeIn(animationSpec = tween(400)) + scaleIn(initialScale = 0.8f, animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)),
-                        exit = fadeOut(animationSpec = tween(300)) + scaleOut(targetScale = 0.8f, animationSpec = tween(400)),
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = with(density) { footerHeightPx.toDp() + 16.dp })
-                            .graphicsLayer { translationY = footerOffsetPx }
-                    ) {
-                        AiAgentScrollToBottomButton(
-                            onClick = {
-                                coroutineScope.launch {
-                                    val totalItems = listState.layoutInfo.totalItemsCount
-                                    if (totalItems > 0) {
-                                        userHasInterrupted = false
-                                        launch {
-                                            androidx.compose.animation.core.Animatable(footerOffsetPx).animateTo(0f) {
-                                                footerOffsetPx = value
-                                                if (footerHeightPx > 0) headerOffsetPx = (footerOffsetPx / footerHeightPx) * -headerHeightPx
-                                            }
+                                    val animatedAlpha by animateFloatAsState(
+                                        targetValue = animProgress,
+                                        animationSpec = tween(durationMillis = 200),
+                                        label = "msgAlpha"
+                                    )
+
+                                    val animatedOffset by animateFloatAsState(
+                                        targetValue = animProgress,
+                                        animationSpec = spring(
+                                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                                            stiffness = Spring.StiffnessMedium
+                                        ),
+                                        label = "msgOffset"
+                                    )
+
+                                    LaunchedEffect(message.id) {
+                                        if (!alreadyAnimated) {
+                                            delay(50L)
+                                            animProgress = 1f
+                                            onMessageAnimated(message.id)
                                         }
-                                        listState.animateScrollToItem(totalItems - 1, 100000)
+                                    }
+
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .graphicsLayer {
+                                                alpha = animatedAlpha.coerceIn(0f, 1f)
+                                                if (message.isUser) {
+                                                    val scale = 0.8f + (animatedOffset * 0.2f)
+                                                    scaleX = scale
+                                                    scaleY = scale
+                                                }
+                                            }
+                                    ) {
+                                        ChatMessageItem(
+                                            message = message,
+                                            profilePictureUrl = profilePictureUrl,
+                                            isAlreadyAnimated = alreadyAnimated,
+                                            progress = getAnimationProgress(message.id),
+                                            customers = customers,
+                                            items = items,
+                                            services = services,
+                                            onConfirmAction = { updatedAction ->
+                                                onConfirmAction(message.id, updatedAction)
+                                                if (message.action is AiAgentAction.Navigate) onDismiss()
+                                            },
+                                            onCancelAction = { onCancelAction(message.id) },
+                                            onTextUpdate = {
+                                                if (!userHasInterrupted) {
+                                                    coroutineScope.launch {
+                                                        listState.scrollToItem(
+                                                            messages.size - 1,
+                                                            100000
+                                                        )
+                                                    }
+                                                    headerOffsetPx = 0f
+                                                    footerOffsetPx = 0f
+                                                }
+                                            }
+                                        )
+                                        Spacer(modifier = Modifier.height(if (message.isUser) 12.dp else 32.dp))
                                     }
                                 }
                             }
-                        )
+                        }
+
+                        // Header Overlay
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .onGloballyPositioned { headerHeightPx = it.size.height.toFloat() }
+                                .graphicsLayer { translationY = headerOffsetPx }
+                                .background(Color.White)
+                                .align(Alignment.TopCenter)
+                        ) {
+                            AiAgentPanelHeader(onClearHistory = onClearHistory)
+                        }
+
+                        // Input Overlay
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .onGloballyPositioned { footerHeightPx = it.size.height.toFloat() }
+                                .graphicsLayer { translationY = footerOffsetPx }
+                                .background(Color.White)
+                                .align(Alignment.BottomCenter)
+                                .padding(16.dp)
+                        ) {
+                            AiAgentPanelInputArea(
+                                inputMessage = inputMessage,
+                                onInputChange = onInputChange,
+                                onSendMessage = onSendMessage,
+                                modelStatus = modelStatus,
+                                currentModelName = currentModelName,
+                                isProcessing = processingWithGracePeriod
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "AI can make mistakes, so double-check it",
+                                    color = Gray,
+                                    fontSize = 10.sp
+                                )
+                            }
+                        }
+
+                        // Scroll-to-bottom FAB
+                        AnimatedVisibility(
+                            visible = !isAtBottom && messages.isNotEmpty(),
+                            enter = fadeIn(animationSpec = tween(400)) + scaleIn(
+                                initialScale = 0.8f,
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness = Spring.StiffnessLow
+                                )
+                            ),
+                            exit = fadeOut(animationSpec = tween(300)) + scaleOut(
+                                targetScale = 0.8f,
+                                animationSpec = tween(400)
+                            ),
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(bottom = with(density) { footerHeightPx.toDp() + 16.dp })
+                                .graphicsLayer { translationY = footerOffsetPx }
+                        ) {
+                            AiAgentScrollToBottomButton(
+                                onClick = {
+                                    coroutineScope.launch {
+                                        val totalItems = listState.layoutInfo.totalItemsCount
+                                        if (totalItems > 0) {
+                                            userHasInterrupted = false
+                                            launch {
+                                                androidx.compose.animation.core.Animatable(
+                                                    footerOffsetPx
+                                                ).animateTo(0f) {
+                                                    footerOffsetPx = value
+                                                    if (footerHeightPx > 0) headerOffsetPx =
+                                                        (footerOffsetPx / footerHeightPx) * -headerHeightPx
+                                                }
+                                            }
+                                            listState.animateScrollToItem(totalItems - 1, 100000)
+                                        }
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }
