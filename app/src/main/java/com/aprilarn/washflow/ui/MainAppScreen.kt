@@ -1,7 +1,10 @@
 package com.aprilarn.washflow.ui
 
 import android.content.Context
+import android.util.Log
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -101,10 +104,21 @@ fun MainAppScreen(
     val aiAgentViewModel: AiAgentViewModel = viewModel()
     val aiAgentUiState by aiAgentViewModel.uiState.collectAsStateWithLifecycle()
 
+    val context = LocalContext.current
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            if (isGranted) {
+                aiAgentViewModel.onStartVoiceAgent(context)
+            } else {
+                Toast.makeText(context, "Microphone permission is required for voice agent", Toast.LENGTH_SHORT).show()
+            }
+        }
+    )
+
     val customersViewModel: com.aprilarn.washflow.ui.customers.CustomersViewModel = viewModel()
     val itemsViewModel: ItemsViewModel = viewModel()
-
-    val context = LocalContext.current
 
     // Handle AI Agent actions (navigation)
     LaunchedEffect(Unit) {
@@ -193,7 +207,21 @@ fun MainAppScreen(
                 onWorkspaceClick = { mainViewModel.onWorkspaceNameClicked() },
                 onNotifClick = { notificationsViewModel.onNotificationIconClicked() },
                 onAiAgentClick = { aiAgentViewModel.onToggleAiAgent() },
-                onAiAgentLongClick = { aiAgentViewModel.onStartVoiceAgent() },
+                onAiAgentLongClick = {
+                    Log.d("ai agent button", "onAiAgentLongClick: Triggered")
+                    val permission = android.Manifest.permission.RECORD_AUDIO
+                    val isGranted = androidx.core.content.ContextCompat.checkSelfPermission(
+                        context, permission
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+                    if (isGranted) {
+                        Log.d("ai agent button", "onAiAgentLongClick: Permission already granted, starting voice agent")
+                        aiAgentViewModel.onStartVoiceAgent(context)
+                    } else {
+                        Log.d("ai agent button", "onAiAgentLongClick: Requesting RECORD_AUDIO permission")
+                        permissionLauncher.launch(permission)
+                    }
+                },
                 isAiVoiceActive = aiAgentUiState.voiceAgentStatus != com.aprilarn.washflow.ui.aiagent.VoiceAgentStatus.IDLE,
                 onRemovePreview = { id, swiped -> notificationsViewModel.removeNotificationPreview(id, swiped) },
                 workspaceDropdown = { wsOffset ->

@@ -175,7 +175,7 @@ fun VoiceAgentOverlay(
                                 )
                             )
 
-                            if (targetStatus == VoiceAgentStatus.ANSWERING && text.isNotBlank()) {
+                            if (text.isNotBlank()) {
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     text = text,

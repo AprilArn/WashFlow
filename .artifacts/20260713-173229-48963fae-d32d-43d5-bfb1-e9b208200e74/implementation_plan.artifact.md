@@ -1,52 +1,57 @@
-# Fix VoiceAgentOverlay Wrap Content and Animation
+# Implementation Plan - Speech to Text (STT) for Agent Overlay
 
-Explain why the Voice Agent overlay is not wrapping content as expected and implement a fix to make it dynamic and smooth.
+Implement Android's built-in Speech-to-Text functionality to allow the user to interact with the Voice Agent using voice. The captured text will be displayed in real-time in the agent overlay's listening mode.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> The current implementation uses `Modifier.fillMaxWidth()` inside the `VoiceAgentOverlay`'s `Row`, which forces the overlay to always expand to its maximum allowed width (350.dp). I propose changing this to `wrapContentWidth()` and adding `animateContentSize()` for a better user experience.
+> The app will now require the `RECORD_AUDIO` permission. A permission request dialog will appear when the user first attempts to use the Voice Agent (via long-press on the AI icon).
 
 ## Proposed Changes
 
-### AI Agent Components
+### Configuration & Permissions
 
-#### [AiAgentComponents.kt](file:///C:/Personal/Projects/version-control/WashFlow/app/src/main/java/com/aprilarn/washflow/ui/aiagent/AiAgentComponents.kt)
+#### [MODIFY] [AndroidManifest.xml](file:///C:/Personal/Projects/version-control/WashFlow/app/src/main/AndroidManifest.xml)
+- Add `<uses-permission android:name="android.permission.RECORD_AUDIO" />` to allow the app to capture audio for STT.
 
-- Replace `Modifier.fillMaxWidth()` with `Modifier.wrapContentWidth()` in the main `Row` of `VoiceAgentOverlay`.
-- Add `animateContentSize()` to the `Surface` to smoothly transition between sizes when the status or text changes.
-- (Optional but recommended) Use `AnimatedContent` for the title and description text to make status transitions feel more "live".
+### STT Logic
 
-```kotlin
-@Composable
-fun VoiceAgentOverlay(
-    status: VoiceAgentStatus,
-    text: String = "",
-    modifier: Modifier = Modifier
-) {
-    // ...
-    Surface(
-        modifier = modifier
-            .widthIn(min = 200.dp, max = 350.dp)
-            .wrapContentHeight()
-            .animateContentSize(), // Smooth size transition
-        // ...
-    ) {
-        Row(
-            modifier = Modifier
-                .wrapContentWidth() // Changed from fillMaxWidth()
-                .height(IntrinsicSize.Min),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // ...
-        }
-    }
-}
-```
+#### [NEW] [SpeechToTextManager.kt](file:///C:/Personal/Projects/version-control/WashFlow/app/src/main/java/com/aprilarn/washflow/ui/aiagent/SpeechToTextManager.kt)
+- Create a helper class to manage `android.speech.SpeechRecognizer`.
+- Provide methods to start and stop listening.
+- Implement `RecognitionListener` to handle:
+    - `onPartialResults`: Update preview text.
+    - `onResults`: Capture final text and trigger `ANSWERING` mode.
+    - `onError`: Handle silence timeout to trigger `IDLE` mode.
+- Support Indonesian (`id-ID`) as the primary language.
+
+### UI State & ViewModel
+
+#### [MODIFY] [AiAgentViewModel.kt](file:///C:/Personal/Projects/version-control/WashFlow/app/src/main/java/com/aprilarn/washflow/ui/aiagent/AiAgentViewModel.kt)
+- Integrate `SpeechToTextManager`.
+- Update `onStartVoiceAgent` to initiate the STT flow.
+- Implement flow logic:
+    1.  `LISTENING`: Update `voiceAgentText` with partial results.
+    2.  `Speech Detected & Finished`: Transition to `ANSWERING`.
+    3.  `ANSWERING`: Show dummy response ("Siappp, saya proses ya...") for a few seconds.
+    4.  `Transition Back`: Return to `LISTENING`.
+    5.  `Silence/Error`: If no speech detected during `LISTENING`, transition to `IDLE`.
+
+### UI Components
+
+#### [MODIFY] [VoiceAgentOverlay.kt](file:///C:/Personal/Projects/version-control/WashFlow/app/src/main/java/com/aprilarn/washflow/ui/aiagent/component/VoiceAgentOverlay.kt)
+- Update the component to display `voiceAgentText` when the status is `LISTENING`.
+- Ensure the overlay can display text in both `LISTENING` (preview) and `ANSWERING` (response) modes.
+
+#### [MODIFY] [MainAppScreen.kt](file:///C:/Personal/Projects/version-control/WashFlow/app/src/main/java/com/aprilarn/washflow/ui/MainAppScreen.kt)
+- Add a permission launcher for `RECORD_AUDIO`.
+- Update the `onAiAgentLongClick` handler in the `Header` to check for permissions and call `aiAgentViewModel.onStartVoiceAgent()`.
 
 ## Verification Plan
 
 ### Manual Verification
-- Use `render_compose_preview` to verify the `VoiceAgentOverlay` behavior with different statuses.
-- Create a temporary preview function if necessary to test `LISTENING`, `PROCESSING`, and `ANSWERING` states side-by-side.
-- Verify that the width now adjusts based on the content (e.g., "Listening..." should be narrower than a long "ANSWERING" text).
+1.  **Permission Request**: Long-press the AI icon. Verify permission dialog.
+2.  **Listening Mode**: Speak and verify real-time text preview in the overlay.
+3.  **Answering Transition**: After finishing speech, verify it switches to "Aira" with a dummy response.
+4.  **Looping**: After the response, verify it returns to "Listening...".
+5.  **Auto-Idle**: Stop speaking and wait for silence. Verify the overlay disappears (`IDLE`).
