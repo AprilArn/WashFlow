@@ -135,20 +135,18 @@ class AiAgentViewModel : ViewModel() {
             return
         }
 
+        // Add the transcribed text as a user message to the panel
+        val userMessage = ChatMessage(text = text, isUser = true)
+        _uiState.update { state ->
+            state.copy(
+                messages = state.messages + userMessage,
+                voiceAgentStatus = VoiceAgentStatus.THINKING,
+                voiceAgentText = "" // Clear the transcribed text as we move to thinking
+            )
+        }
+
         viewModelScope.launch {
-            _uiState.update { it.copy(
-                voiceAgentStatus = VoiceAgentStatus.ANSWERING,
-                voiceAgentText = "Halo! Saya adalah Aira. Ada yang bisa saya bantu hari ini? Anda bisa menanyakan tentang status pesanan, daftar layanan pencucian, atau bantuan navigasi lainnya di aplikasi WashFlow."
-            ) }
-            
-            kotlinx.coroutines.delay(2000)
-            
-            // Loop back to listening
-            _uiState.update { it.copy(
-                voiceAgentStatus = VoiceAgentStatus.LISTENING,
-                voiceAgentText = ""
-            ) }
-            sttManager?.startListening()
+            executeAiFlow(text, isFromVoice = true)
         }
     }
 
@@ -175,60 +173,88 @@ class AiAgentViewModel : ViewModel() {
         }
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isAiThinking = true) }
-            // Add AI placeholder that shows the "Thinking…" state
-            val aiPlaceholder = ChatMessage(text = "", isUser = false, isThinking = true)
-            _uiState.update { state ->
-                state.copy(messages = state.messages + aiPlaceholder)
-            }
-
-            // Call the AI
-            val finalResponseRaw = brain.sendMessage(currentInput) { name, status ->
-                _uiState.update { it.copy(currentModelName = name, modelStatus = status) }
-            }
-
-            val parsedAction = AiAgentParser.parseAction(finalResponseRaw) ?: AiAgentAction.None
-            val finalResponseText = AiAgentParser.cleanText(finalResponseRaw)
-
-            // Replace placeholder with the final response
-            _uiState.update { state ->
-                val updatedMessages = state.messages.map { msg ->
-                    if (msg.id == aiPlaceholder.id) {
-                        msg.copy(
-                            text = finalResponseText,
-                            isThinking = false,
-                            action = parsedAction
-                        )
-                    } else {
-                        msg
-                    }
-                }
-                state.copy(
-                    messages = updatedMessages,
-                    modelStatus = if (finalResponseText.startsWith("Maaf, semua layanan"))
-                        AiModelStatus.FAILURE
-                    else
-                        AiModelStatus.SUCCESS,
-                    isAiThinking = false
-                )
-            }
-
-            // Start background typewriter simulation
-            val finalAiMessageId = aiPlaceholder.id
-            viewModelScope.launch {
-                _uiState.update { it.copy(isTypewriterActive = true) }
-                messageAnimationProgress[finalAiMessageId] = 0
-                for (i in 1..finalResponseText.length) {
-                    messageAnimationProgress[finalAiMessageId] = i
-                    kotlinx.coroutines.delay(20) // Match UI typewriter speed
-                }
-                markMessageAsAnimated(finalAiMessageId)
-                _uiState.update { it.copy(isTypewriterActive = false) }
-            }
-
-            kotlinx.coroutines.delay(3000)
-            _uiState.update { it.copy(modelStatus = AiModelStatus.IDLE, currentModelName = null) }
+            executeAiFlow(currentInput, isFromVoice = false)
         }
+    }
+
+    private suspend fun executeAiFlow(query: String, isFromVoice: Boolean) {
+        _uiState.update { it.copy(isAiThinking = true) }
+        if (isFromVoice) {
+            _uiState.update { it.copy(voiceAgentStatus = VoiceAgentStatus.THINKING) }
+        }
+
+        // Add AI placeholder that shows the "Thinking…" state
+        val aiPlaceholder = ChatMessage(text = "", isUser = false, isThinking = true)
+        _uiState.update { state ->
+            state.copy(messages = state.messages + aiPlaceholder)
+        }
+
+        // Call the AI
+        val finalResponseRaw = brain.sendMessage(query) { name, status ->
+            _uiState.update { it.copy(currentModelName = name, modelStatus = status) }
+        }
+
+        val parsedAction = AiAgentParser.parseAction(finalResponseRaw) ?: AiAgentAction.None
+        val finalResponseText = AiAgentParser.cleanText(finalResponseRaw)
+
+        // Replace placeholder with the final response
+        _uiState.update { state ->
+            val updatedMessages = state.messages.map { msg ->
+                if (msg.id == aiPlaceholder.id) {
+                    msg.copy(
+                        text = finalResponseText,
+                        isThinking = false,
+                        action = parsedAction
+                    )
+                } else {
+                    msg
+                }
+            }
+            state.copy(
+                messages = updatedMessages,
+                modelStatus = if (finalResponseText.startsWith("Maaf, semua layanan"))
+                    AiModelStatus.FAILURE
+                else
+                    AiModelStatus.SUCCESS,
+                isAiThinking = false
+            )
+        }
+
+        if (isFromVoice) {
+            _uiState.update { it.copy(voiceAgentStatus = VoiceAgentStatus.ANSWERING) }
+        }
+
+        // Start background typewriter simulation
+        val finalAiMessageId = aiPlaceholder.id
+        _uiState.update { it.copy(isTypewriterActive = true) }
+        messageAnimationProgress[finalAiMessageId] = 0
+        
+        for (i in 1..finalResponseText.length) {
+            val partialText = finalResponseText.take(i)
+            messageAnimationProgress[finalAiMessageId] = i
+            
+            if (isFromVoice) {
+                _uiState.update { it.copy(voiceAgentText = partialText) }
+            }
+            
+            kotlinx.coroutines.delay(20) // Match UI typewriter speed
+        }
+        
+        markMessageAsAnimated(finalAiMessageId)
+        _uiState.update { it.copy(isTypewriterActive = false) }
+
+        if (isFromVoice) {
+            kotlinx.coroutines.delay(2000)
+            // Loop back to listening if it was started from voice
+            _uiState.update { it.copy(
+                voiceAgentStatus = VoiceAgentStatus.LISTENING,
+                voiceAgentText = ""
+            ) }
+            sttManager?.startListening()
+        }
+
+        kotlinx.coroutines.delay(1000) // Small buffer before resetting model status
+        _uiState.update { it.copy(modelStatus = AiModelStatus.IDLE, currentModelName = null) }
     }
 
     fun onClearHistory() {

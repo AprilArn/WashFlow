@@ -1,0 +1,5 @@
+- [x] Refactor `AiAgentViewModel.kt`: Extract AI flow to `executeAiFlow`
+- [x] Update `onSendMessage` in `AiAgentViewModel.kt`
+- [x] Update `handleFinalSpeechResult` in `AiAgentViewModel.kt` to sync with panel
+- [x] Sync typewriter animation between Panel and Overlay
+- [x] Verify synchronization and transitions
