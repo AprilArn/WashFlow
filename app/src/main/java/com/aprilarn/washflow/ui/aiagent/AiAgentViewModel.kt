@@ -135,17 +135,21 @@ class AiAgentViewModel : ViewModel() {
             return
         }
 
-        // Add the transcribed text as a user message to the panel
-        val userMessage = ChatMessage(text = text, isUser = true)
-        _uiState.update { state ->
-            state.copy(
-                messages = state.messages + userMessage,
-                voiceAgentStatus = VoiceAgentStatus.THINKING,
-                voiceAgentText = "" // Clear the transcribed text as we move to thinking
-            )
-        }
-
         viewModelScope.launch {
+            // Step 1: Show the final transcribed text clearly for a short moment
+            _uiState.update { it.copy(voiceAgentText = text) }
+            kotlinx.coroutines.delay(1000) // 1000ms delay so user can read their input
+
+            // Step 2: Add to chat history and move to thinking state
+            val userMessage = ChatMessage(text = text, isUser = true)
+            _uiState.update { state ->
+                state.copy(
+                    messages = state.messages + userMessage,
+                    voiceAgentStatus = VoiceAgentStatus.THINKING,
+                    voiceAgentText = "" // Clear preview as we start processing
+                )
+            }
+
             executeAiFlow(text, isFromVoice = true)
         }
     }
@@ -244,7 +248,9 @@ class AiAgentViewModel : ViewModel() {
         _uiState.update { it.copy(isTypewriterActive = false) }
 
         if (isFromVoice) {
-            kotlinx.coroutines.delay(2000)
+            // Wait 3 seconds so user has time to read the full answer
+            kotlinx.coroutines.delay(3000)
+            
             // Loop back to listening if it was started from voice
             _uiState.update { it.copy(
                 voiceAgentStatus = VoiceAgentStatus.LISTENING,

@@ -3,8 +3,13 @@ package com.aprilarn.washflow.ui.aiagent.component
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Mic
@@ -31,6 +36,40 @@ fun VoiceAgentOverlay(
     text: String = "",
     modifier: Modifier = Modifier
 ) {
+    val scrollState = rememberScrollState()
+    var userHasInterrupted by remember { mutableStateOf(false) }
+    val isDragging by scrollState.interactionSource.collectIsDraggedAsState()
+
+    // Detect if we are at the bottom to resume auto-scroll
+    val isAtBottom by remember {
+        derivedStateOf {
+            scrollState.value >= scrollState.maxValue
+        }
+    }
+
+    LaunchedEffect(isDragging) {
+        if (isDragging) userHasInterrupted = true
+    }
+
+    LaunchedEffect(isAtBottom) {
+        if (isAtBottom && !isDragging) userHasInterrupted = false
+    }
+
+    // Auto-scroll logic during typewriter
+    LaunchedEffect(text) {
+        if (!userHasInterrupted && status == VoiceAgentStatus.ANSWERING) {
+            scrollState.animateScrollTo(scrollState.maxValue)
+        }
+    }
+
+    // Reset scroll and interruption when status changes (e.g. back to listening)
+    LaunchedEffect(status) {
+        if (status == VoiceAgentStatus.LISTENING || status == VoiceAgentStatus.IDLE) {
+            scrollState.scrollTo(0)
+            userHasInterrupted = false
+        }
+    }
+
     val icon = when (status) {
         VoiceAgentStatus.LISTENING -> Icons.Default.Mic
         VoiceAgentStatus.THINKING -> Icons.Default.Sync
@@ -85,11 +124,12 @@ fun VoiceAgentOverlay(
     ) {
         Surface(
             modifier = Modifier
-                .padding(top = 58.dp, bottom = 48.dp) // Tambahkan padding bottom untuk ruang bounce
+                .padding(top = 58.dp, bottom = 48.dp)
                 .widthIn(max = 520.dp)
+                .heightIn(max = 200.dp) // Limit height
                 .wrapContentHeight()
                 .clip(RoundedCornerShape(16.dp))
-                .animateContentSize( // Smoothly animates overall container size
+                .animateContentSize(
                     animationSpec = spring(
                         dampingRatio = Spring.DampingRatioLowBouncy,
                         stiffness = Spring.StiffnessLow
@@ -146,7 +186,8 @@ fun VoiceAgentOverlay(
                 // Right Content Area
                 Column(
                     modifier = Modifier
-                        .wrapContentWidth()
+                        .weight(1f, fill = false) // Allow taking space but not forcing it
+                        .verticalScroll(scrollState) // Enable vertical scroll
                         .padding(horizontal = 20.dp, vertical = 16.dp),
                     verticalArrangement = Arrangement.Center
                 ) {
