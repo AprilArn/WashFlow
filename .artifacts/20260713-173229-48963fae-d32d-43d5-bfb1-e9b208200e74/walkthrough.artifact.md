@@ -11,17 +11,17 @@ I have integrated Android's native Speech-to-Text (STT) into the Voice Agent ove
 ### Logic & State Management
 - **[AiAgentViewModel.kt](file:///C:/Personal/Projects/version-control/WashFlow/app/src/main/java/com/aprilarn/washflow/ui/aiagent/AiAgentViewModel.kt)**:
     - Updated `onStartVoiceAgent` to initialize and start the `SpeechToTextManager`.
-    - Implemented `handleFinalSpeechResult` to transition to `ANSWERING` mode with a dummy response ("Siappp, saya proses ya...") before looping back to `LISTENING`.
+    - Implemented `handleFinalSpeechResult` to transition to `ANSWERING` mode with a dummy response before looping back to `LISTENING`.
     - Added automatic transition to `IDLE` if no speech is detected (timeout/no match).
 
-### Logging & Debugging
-- Added comprehensive logging with the tag **`ai agent button`** across `AiAgentViewModel`, `SpeechToTextManager`, and `MainAppScreen`. This will help track the lifecycle of the voice agent and identify any potential crashes (force close) during transitions.
-
 ### UI Enhancements
-- **[VoiceAgentOverlay.kt](file:///C:/Personal/Projects/version-control/WashFlow/app/src/main/java/com/aprilarn/washflow/ui/aiagent/component/VoiceAgentOverlay.kt)**: Now displays the captured text in real-time during the `LISTENING` phase, allowing users to see what the system hears.
+- **[VoiceAgentOverlay.kt](file:///C:/Personal/Projects/version-control/WashFlow/app/src/main/java/com/aprilarn/washflow/ui/aiagent/component/VoiceAgentOverlay.kt)**: Now displays the captured text in real-time during the `LISTENING` phase.
 - **[MainAppScreen.kt](file:///C:/Personal/Projects/version-control/WashFlow/app/src/main/java/com/aprilarn/washflow/ui/MainAppScreen.kt)**:
     - Added a `permissionLauncher` to handle the runtime microphone permission request.
     - Updated the long-press action on the AI icon to check for permissions before starting the voice agent.
+
+## Cleanup
+- Removed temporary debug logs and unused imports across all modified files to ensure a clean production-ready codebase.
 
 ## Verification Results
 

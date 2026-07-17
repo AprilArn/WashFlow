@@ -6,7 +6,6 @@ import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
-import android.util.Log
 
 class SpeechToTextManager(
     private val context: Context,
@@ -14,7 +13,6 @@ class SpeechToTextManager(
     private val onSpeechFinalResults: (String) -> Unit,
     private val onSpeechError: (Int) -> Unit
 ) {
-    private val TAG = "ai agent button"
     private var speechRecognizer: SpeechRecognizer? = null
     private val recognizerIntent: Intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
         putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
@@ -30,13 +28,11 @@ class SpeechToTextManager(
         override fun onEndOfSpeech() {}
 
         override fun onError(error: Int) {
-            Log.e(TAG, "RecognitionListener onError: $error")
             onSpeechError(error)
         }
 
         override fun onResults(results: Bundle?) {
             val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-            Log.d(TAG, "RecognitionListener onResults: Captured ${matches?.size ?: 0} matches")
             if (!matches.isNullOrEmpty()) {
                 onSpeechFinalResults(matches[0])
             }
@@ -53,9 +49,7 @@ class SpeechToTextManager(
     }
 
     fun startListening() {
-        Log.d(TAG, "startListening: Initiating SpeechRecognizer")
         if (speechRecognizer == null) {
-            Log.d(TAG, "startListening: Creating new SpeechRecognizer instance")
             speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context).apply {
                 setRecognitionListener(recognitionListener)
             }
@@ -64,12 +58,10 @@ class SpeechToTextManager(
     }
 
     fun stopListening() {
-        Log.d(TAG, "stopListening: Stopping SpeechRecognizer")
         speechRecognizer?.stopListening()
     }
 
     fun destroy() {
-        Log.d(TAG, "destroy: Destroying SpeechRecognizer")
         speechRecognizer?.destroy()
         speechRecognizer = null
     }

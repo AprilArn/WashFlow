@@ -18,10 +18,8 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.ui.text.input.TextFieldValue
 import android.content.Context
 import android.speech.SpeechRecognizer
-import android.util.Log
 
 class AiAgentViewModel : ViewModel() {
-    private val TAG = "ai agent button"
     private val brain = Brain()
     private val customerRepository = CustomerRepository()
     private val itemRepository = ItemRepository()
@@ -42,7 +40,6 @@ class AiAgentViewModel : ViewModel() {
 
     override fun onCleared() {
         super.onCleared()
-        Log.d(TAG, "onCleared: Destroying STT manager")
         sttManager?.destroy()
     }
 
@@ -102,30 +99,23 @@ class AiAgentViewModel : ViewModel() {
     }
 
     fun onStartVoiceAgent(context: Context) {
-        Log.d(TAG, "onStartVoiceAgent: Starting voice agent flow")
         if (_uiState.value.voiceAgentStatus != VoiceAgentStatus.IDLE) {
-            Log.d(TAG, "onStartVoiceAgent: Already active, ignoring")
             return
         }
 
         if (sttManager == null) {
-            Log.d(TAG, "onStartVoiceAgent: Initializing SpeechToTextManager")
             sttManager = SpeechToTextManager(
                 context = context.applicationContext,
                 onSpeechPartialResults = { partial ->
                     _uiState.update { it.copy(voiceAgentText = partial) }
                 },
                 onSpeechFinalResults = { final ->
-                    Log.d(TAG, "onFinalResults: Captured text: $final")
                     handleFinalSpeechResult(final)
                 },
                 onSpeechError = { errorCode ->
-                    Log.e(TAG, "STT onError: Error code $errorCode")
                     if (errorCode == SpeechRecognizer.ERROR_NO_MATCH || errorCode == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
-                        Log.d(TAG, "STT onError: No match or timeout, setting to IDLE")
                         _uiState.update { it.copy(voiceAgentStatus = VoiceAgentStatus.IDLE, voiceAgentText = "") }
                     } else {
-                        Log.d(TAG, "STT onError: Other error, re-starting listening")
                         sttManager?.startListening()
                     }
                 }
@@ -136,19 +126,16 @@ class AiAgentViewModel : ViewModel() {
             voiceAgentStatus = VoiceAgentStatus.LISTENING,
             voiceAgentText = ""
         ) }
-        Log.d(TAG, "onStartVoiceAgent: STT startListening called")
         sttManager?.startListening()
     }
 
     private fun handleFinalSpeechResult(text: String) {
         if (text.isBlank()) {
-            Log.d(TAG, "handleFinalSpeechResult: Blank result, setting to IDLE")
             _uiState.update { it.copy(voiceAgentStatus = VoiceAgentStatus.IDLE) }
             return
         }
 
         viewModelScope.launch {
-            Log.d(TAG, "handleFinalSpeechResult: Transitioning to ANSWERING mode")
             _uiState.update { it.copy(
                 voiceAgentStatus = VoiceAgentStatus.ANSWERING,
                 voiceAgentText = "Halo! Saya adalah Aira. Ada yang bisa saya bantu hari ini? Anda bisa menanyakan tentang status pesanan, daftar layanan pencucian, atau bantuan navigasi lainnya di aplikasi WashFlow."
@@ -157,7 +144,6 @@ class AiAgentViewModel : ViewModel() {
             kotlinx.coroutines.delay(2000)
             
             // Loop back to listening
-            Log.d(TAG, "handleFinalSpeechResult: Looping back to LISTENING")
             _uiState.update { it.copy(
                 voiceAgentStatus = VoiceAgentStatus.LISTENING,
                 voiceAgentText = ""

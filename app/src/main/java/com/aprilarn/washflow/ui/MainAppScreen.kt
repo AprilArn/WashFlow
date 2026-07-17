@@ -1,7 +1,6 @@
 package com.aprilarn.washflow.ui
 
 import android.content.Context
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -208,17 +207,14 @@ fun MainAppScreen(
                 onNotifClick = { notificationsViewModel.onNotificationIconClicked() },
                 onAiAgentClick = { aiAgentViewModel.onToggleAiAgent() },
                 onAiAgentLongClick = {
-                    Log.d("ai agent button", "onAiAgentLongClick: Triggered")
                     val permission = android.Manifest.permission.RECORD_AUDIO
                     val isGranted = androidx.core.content.ContextCompat.checkSelfPermission(
                         context, permission
                     ) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
                     if (isGranted) {
-                        Log.d("ai agent button", "onAiAgentLongClick: Permission already granted, starting voice agent")
                         aiAgentViewModel.onStartVoiceAgent(context)
                     } else {
-                        Log.d("ai agent button", "onAiAgentLongClick: Requesting RECORD_AUDIO permission")
                         permissionLauncher.launch(permission)
                     }
                 },
