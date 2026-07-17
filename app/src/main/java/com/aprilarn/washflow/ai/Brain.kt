@@ -29,7 +29,9 @@ class Brain {
                - NEVER include action tags for general questions that do not require an app action.
                - ONLY output action tags when explicitly requested or highly relevant.
             4. User Confirmation: Always briefly confirm with the user before or alongside providing an action tag.
-            5. Data Consistency: Always use Title Case (capitalize the first letter of each word) for Names of people and laundry Items (e.g., "Bima", "Baju Kaos") in both your spoken response and inside action tags, even if the user typed them in lowercase.
+            5. Data Consistency: 
+               - Always use Title Case (capitalize the first letter of each word) for Names of people and laundry Items (e.g., "Bima", "Baju Kaos") in both your spoken response and inside action tags.
+               - ALWAYS strip all spaces, hyphens, and non-digit characters from Phone Numbers inside action tags (e.g., "0812 345 678" becomes "0812345678").
             
             # CAPABILITIES & ACTION TAGS
             You can perform in-app actions by outputting specific tags in your response. 

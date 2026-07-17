@@ -391,7 +391,11 @@ fun ActionConfirmationCard(
                             OutlinedTextField(
                                 value = editedValue,
                                 onValueChange = {
-                                    editedValue = it
+                                    editedValue = if (action is AiAgentAction.AddCustomer || action is AiAgentAction.DeleteCustomer) {
+                                        it.replace(Regex("\\s+"), "")
+                                    } else {
+                                        it
+                                    }
                                     if (action is AiAgentAction.DeleteCustomer) {
                                         isPhoneDropdownExpanded = true
                                         isNameDropdownExpanded = false
@@ -596,10 +600,16 @@ fun ActionConfirmationCard(
                 Spacer(modifier = Modifier.width(8.dp))
                 Button(
                     onClick = {
+                        val finalValue = if (action is AiAgentAction.AddCustomer || action is AiAgentAction.DeleteCustomer) {
+                            editedValue.replace(Regex("\\s+"), "")
+                        } else {
+                            editedValue
+                        }
+                        
                         val resultAction = when (action) {
-                            is AiAgentAction.AddCustomer -> AiAgentAction.AddCustomer(editedName, editedValue)
-                            is AiAgentAction.DeleteCustomer -> AiAgentAction.DeleteCustomer(editedName, editedValue, selectedCustomerId)
-                            is AiAgentAction.AddItem -> AiAgentAction.AddItem(editedName, editedValue.toDoubleOrNull() ?: 0.0, editedServiceName, selectedServiceId)
+                            is AiAgentAction.AddCustomer -> AiAgentAction.AddCustomer(editedName, finalValue)
+                            is AiAgentAction.DeleteCustomer -> AiAgentAction.DeleteCustomer(editedName, finalValue, selectedCustomerId)
+                            is AiAgentAction.AddItem -> AiAgentAction.AddItem(editedName, finalValue.toDoubleOrNull() ?: 0.0, editedServiceName, selectedServiceId)
                             is AiAgentAction.DeleteItem -> AiAgentAction.DeleteItem(editedName, editedServiceName, selectedItem?.itemId ?: "")
                             else -> null
                         }

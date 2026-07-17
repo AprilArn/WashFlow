@@ -32,14 +32,14 @@ object AiAgentParser {
             "ADD_CUSTOMER" -> {
                 if (parts.size >= 3) {
                     val name = parts[1]
-                    val phone = parts[2]
+                    val phone = parts[2].replace(Regex("\\s+"), "")
                     AiAgentAction.AddCustomer(name, phone)
                 } else null
             }
             "ADD_ITEM" -> {
                 if (parts.size >= 4) {
                     val itemName = parts[1]
-                    val itemPrice = parts[2].toDoubleOrNull() ?: 0.0
+                    val itemPrice = parts[2].replace(Regex("\\s+"), "").toDoubleOrNull() ?: 0.0
                     val serviceName = parts[3]
                     AiAgentAction.AddItem(itemName, itemPrice, serviceName)
                 } else null
@@ -47,7 +47,7 @@ object AiAgentParser {
             "DELETE_CUSTOMER" -> {
                 if (parts.size >= 2) {
                     val name = parts[1]
-                    val contact = if (parts.size >= 3) parts[2] else ""
+                    val contact = if (parts.size >= 3) parts[2].replace(Regex("\\s+"), "") else ""
                     AiAgentAction.DeleteCustomer(name, contact)
                 } else null
             }
