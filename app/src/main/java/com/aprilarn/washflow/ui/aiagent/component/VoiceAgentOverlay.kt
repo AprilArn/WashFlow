@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import com.aprilarn.washflow.ui.aiagent.VoiceAgentStatus
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.MainFontBlack
+import com.aprilarn.washflow.utils.MarkdownUtils
 
 @Composable
 fun VoiceAgentOverlay(
@@ -178,7 +179,7 @@ fun VoiceAgentOverlay(
                             if (text.isNotBlank()) {
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = text,
+                                    text = MarkdownUtils.parseMarkdown(text),
                                     style = MaterialTheme.typography.bodyMedium.copy(
                                         fontSize = 13.sp,
                                         lineHeight = 18.sp
