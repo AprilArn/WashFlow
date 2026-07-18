@@ -126,7 +126,7 @@ fun VoiceAgentOverlay(
             modifier = Modifier
                 .padding(top = 58.dp, bottom = 48.dp)
                 .widthIn(max = 520.dp)
-                .heightIn(max = 200.dp) // Limit height
+                .heightIn(max = 180.dp) // Limit height
                 .wrapContentHeight()
                 .clip(RoundedCornerShape(16.dp))
                 .animateContentSize(
