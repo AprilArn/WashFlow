@@ -546,7 +546,23 @@ fun MainAppScreen(
     ) {
         VoiceAgentOverlay(
             status = aiAgentUiState.voiceAgentStatus,
-            text = aiAgentUiState.voiceAgentText
+            text = aiAgentUiState.voiceAgentText,
+            lastMessage = aiAgentUiState.messages.lastOrNull(),
+            customers = aiAgentUiState.customers,
+            items = aiAgentUiState.items,
+            services = aiAgentUiState.services,
+            onConfirmAction = { updatedAction ->
+                val lastMessage = aiAgentUiState.messages.lastOrNull()
+                if (lastMessage != null) {
+                    aiAgentViewModel.onConfirmAction(lastMessage.id, updatedAction)
+                }
+            },
+            onCancelAction = {
+                val lastMessage = aiAgentUiState.messages.lastOrNull()
+                if (lastMessage != null) {
+                    aiAgentViewModel.onCancelAction(lastMessage.id)
+                }
+            }
         )
     }
 

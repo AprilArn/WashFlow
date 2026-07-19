@@ -248,15 +248,22 @@ class AiAgentViewModel : ViewModel() {
         _uiState.update { it.copy(isTypewriterActive = false) }
 
         if (isFromVoice) {
-            // Wait 3 seconds so user has time to read the full answer
-            kotlinx.coroutines.delay(3000)
+            val hasAction = parsedAction !is AiAgentAction.None && 
+                            parsedAction !is AiAgentAction.Unknown
             
-            // Loop back to listening if it was started from voice
-            _uiState.update { it.copy(
-                voiceAgentStatus = VoiceAgentStatus.LISTENING,
-                voiceAgentText = ""
-            ) }
-            sttManager?.startListening()
+            if (hasAction) {
+                _uiState.update { it.copy(voiceAgentStatus = VoiceAgentStatus.WAITING_FOR_CONFIRMATION) }
+            } else {
+                // Wait 3 seconds so user has time to read the full answer
+                kotlinx.coroutines.delay(3000)
+                
+                // Loop back to listening if it was started from voice
+                _uiState.update { it.copy(
+                    voiceAgentStatus = VoiceAgentStatus.LISTENING,
+                    voiceAgentText = ""
+                ) }
+                sttManager?.startListening()
+            }
         }
 
         kotlinx.coroutines.delay(1000) // Small buffer before resetting model status
@@ -282,6 +289,8 @@ class AiAgentViewModel : ViewModel() {
         val message = _uiState.value.messages.find { it.id == messageId } ?: return
         val action = updatedAction ?: message.action ?: return
 
+        val isVoiceConfirmation = _uiState.value.voiceAgentStatus == VoiceAgentStatus.WAITING_FOR_CONFIRMATION
+
         _uiState.update { state ->
             val updatedMessages = state.messages.map { msg ->
                 if (msg.id == messageId) {
@@ -290,7 +299,15 @@ class AiAgentViewModel : ViewModel() {
                     msg
                 }
             }
-            state.copy(messages = updatedMessages)
+            state.copy(
+                messages = updatedMessages,
+                voiceAgentStatus = if (isVoiceConfirmation) VoiceAgentStatus.LISTENING else state.voiceAgentStatus,
+                voiceAgentText = if (isVoiceConfirmation) "" else state.voiceAgentText
+            )
+        }
+
+        if (isVoiceConfirmation) {
+            sttManager?.startListening()
         }
 
         viewModelScope.launch {
@@ -299,6 +316,8 @@ class AiAgentViewModel : ViewModel() {
     }
 
     fun onCancelAction(messageId: String) {
+        val isVoiceConfirmation = _uiState.value.voiceAgentStatus == VoiceAgentStatus.WAITING_FOR_CONFIRMATION
+
         _uiState.update { state ->
             val updatedMessages = state.messages.map { msg ->
                 if (msg.id == messageId) {
@@ -307,7 +326,15 @@ class AiAgentViewModel : ViewModel() {
                     msg
                 }
             }
-            state.copy(messages = updatedMessages)
+            state.copy(
+                messages = updatedMessages,
+                voiceAgentStatus = if (isVoiceConfirmation) VoiceAgentStatus.LISTENING else state.voiceAgentStatus,
+                voiceAgentText = if (isVoiceConfirmation) "" else state.voiceAgentText
+            )
+        }
+
+        if (isVoiceConfirmation) {
+            sttManager?.startListening()
         }
     }
 }

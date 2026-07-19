@@ -43,5 +43,5 @@ data class AiAgentUiState(
 )
 
 enum class VoiceAgentStatus {
-    IDLE, LISTENING, THINKING, ANSWERING
+    IDLE, LISTENING, THINKING, ANSWERING, WAITING_FOR_CONFIRMATION
 }

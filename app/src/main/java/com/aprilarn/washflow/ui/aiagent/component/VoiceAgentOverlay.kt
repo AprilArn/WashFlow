@@ -25,6 +25,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aprilarn.washflow.data.model.Customers
+import com.aprilarn.washflow.data.model.Items
+import com.aprilarn.washflow.data.model.Services
+import com.aprilarn.washflow.ui.aiagent.AiAgentAction
+import com.aprilarn.washflow.ui.aiagent.ChatMessage
 import com.aprilarn.washflow.ui.aiagent.VoiceAgentStatus
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.MainFontBlack
@@ -34,6 +39,12 @@ import com.aprilarn.washflow.utils.MarkdownUtils
 fun VoiceAgentOverlay(
     status: VoiceAgentStatus,
     text: String = "",
+    lastMessage: ChatMessage? = null,
+    customers: List<Customers> = emptyList(),
+    items: List<Items> = emptyList(),
+    services: List<Services> = emptyList(),
+    onConfirmAction: (AiAgentAction?) -> Unit = {},
+    onCancelAction: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
@@ -74,6 +85,7 @@ fun VoiceAgentOverlay(
         VoiceAgentStatus.LISTENING -> Icons.Default.Mic
         VoiceAgentStatus.THINKING -> Icons.Default.Sync
         VoiceAgentStatus.ANSWERING -> Icons.Default.AutoAwesome
+        VoiceAgentStatus.WAITING_FOR_CONFIRMATION -> Icons.Default.AutoAwesome
         else -> Icons.Default.AutoAwesome
     }
 
@@ -126,7 +138,7 @@ fun VoiceAgentOverlay(
             modifier = Modifier
                 .padding(top = 58.dp, bottom = 48.dp)
                 .widthIn(max = 520.dp)
-                .heightIn(max = 180.dp) // Limit height
+                .heightIn(max = 400.dp) // Increased height to accommodate confirmation card
                 .wrapContentHeight()
                 .clip(RoundedCornerShape(16.dp))
                 .animateContentSize(
@@ -204,6 +216,7 @@ fun VoiceAgentOverlay(
                             VoiceAgentStatus.LISTENING -> "Listening..."
                             VoiceAgentStatus.THINKING -> "Thinking..."
                             VoiceAgentStatus.ANSWERING -> "Aira"
+                            VoiceAgentStatus.WAITING_FOR_CONFIRMATION -> "Aira needs confirmation"
                             else -> ""
                         }
 
@@ -226,6 +239,22 @@ fun VoiceAgentOverlay(
                                         lineHeight = 18.sp
                                     ),
                                     color = Color(0xFF64748B)
+                                )
+                            }
+
+                            // Show ActionConfirmationCard if needed
+                            if (status == VoiceAgentStatus.WAITING_FOR_CONFIRMATION && 
+                                lastMessage?.action != null && 
+                                !lastMessage.actionExecuted && 
+                                !lastMessage.actionCancelled) {
+                                Spacer(modifier = Modifier.height(16.dp))
+                                ActionConfirmationCard(
+                                    action = lastMessage.action,
+                                    customers = customers,
+                                    items = items,
+                                    services = services,
+                                    onConfirm = onConfirmAction,
+                                    onCancel = onCancelAction
                                 )
                             }
                         }
