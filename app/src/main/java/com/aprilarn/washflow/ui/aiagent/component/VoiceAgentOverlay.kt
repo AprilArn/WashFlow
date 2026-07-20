@@ -51,23 +51,27 @@ fun VoiceAgentOverlay(
     var userHasInterrupted by remember { mutableStateOf(false) }
     val isDragging by scrollState.interactionSource.collectIsDraggedAsState()
 
-    // Detect if we are at the bottom to resume auto-scroll
+    // Detect if we are at the bottom to resume auto-scroll (with a small threshold)
     val isAtBottom by remember {
         derivedStateOf {
-            scrollState.value >= scrollState.maxValue
+            scrollState.value >= (scrollState.maxValue - 10).coerceAtLeast(0)
         }
     }
 
     LaunchedEffect(isDragging) {
-        if (isDragging) userHasInterrupted = true
+        // Mark as interrupted only if dragging away from the bottom
+        if (isDragging && !isAtBottom) userHasInterrupted = true
     }
 
-    LaunchedEffect(isAtBottom) {
-        if (isAtBottom && !isDragging) userHasInterrupted = false
+    // Reset interruption when user stops dragging at the bottom or flings back to bottom
+    LaunchedEffect(isAtBottom, isDragging) {
+        if (isAtBottom && !isDragging) {
+            userHasInterrupted = false
+        }
     }
 
-    // Auto-scroll logic during typewriter
-    LaunchedEffect(text) {
+    // Auto-scroll logic triggered by content growth (maxValue) or text changes
+    LaunchedEffect(scrollState.maxValue, text) {
         if (!userHasInterrupted && status == VoiceAgentStatus.ANSWERING) {
             scrollState.animateScrollTo(scrollState.maxValue)
         }
