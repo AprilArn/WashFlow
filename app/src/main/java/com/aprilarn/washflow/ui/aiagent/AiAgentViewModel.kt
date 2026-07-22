@@ -247,17 +247,23 @@ class AiAgentViewModel : ViewModel() {
         markMessageAsAnimated(finalAiMessageId)
         _uiState.update { it.copy(isTypewriterActive = false) }
 
+        // Auto-execute immediate actions (e.g., DIRECT_NAVIGATE)
+        if (parsedAction is AiAgentAction.Navigate && parsedAction.isImmediate) {
+            onConfirmAction(finalAiMessageId, parsedAction)
+        }
+
         if (isFromVoice) {
-            val hasAction = parsedAction !is AiAgentAction.None && 
-                            parsedAction !is AiAgentAction.Unknown
-            
-            if (hasAction) {
+            val hasAction = parsedAction !is AiAgentAction.None &&
+                    parsedAction !is AiAgentAction.Unknown
+            val isImmediateNav = parsedAction is AiAgentAction.Navigate && parsedAction.isImmediate
+
+            if (hasAction && !isImmediateNav) {
+                // Perlu konfirmasi (Add/Delete/Navigate biasa)
                 _uiState.update { it.copy(voiceAgentStatus = VoiceAgentStatus.WAITING_FOR_CONFIRMATION) }
             } else {
-                // Wait 3 seconds so user has time to read the full answer
+                // Navigasi Langsung (isImmediateNav) ATAU hanya ngobrol biasa (!hasAction)
+                // Keduanya langsung buka mic lagi setelah jeda 3 detik
                 kotlinx.coroutines.delay(3000)
-                
-                // Loop back to listening if it was started from voice
                 _uiState.update { it.copy(
                     voiceAgentStatus = VoiceAgentStatus.LISTENING,
                     voiceAgentText = ""

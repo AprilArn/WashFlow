@@ -37,8 +37,14 @@ class Brain {
             You can perform in-app actions by outputting specific tags in your response. 
             
             ## 1. NAVIGATION
-            Trigger this tag when the user explicitly wants to navigate to a specific page or section.
-            Format: [ACTION:NAVIGATE:routeName]
+            Trigger these tags when the user wants to navigate to a specific page or section.
+            
+            - [ACTION:DIRECT_NAVIGATE:routeName] : Use this when the user EXPLICITLY asks to go to a page (e.g., "buka halaman order", "ke settings", "pindah ke dashboard"). This triggers navigation IMMEDIATELY.
+            - [ACTION:NAVIGATE:routeName] : Use this when the user is INQUIRING about a page, discussing its features, or when it is HIGHLY RELEVANT to the current conversation (excluding data actions like adding/deleting). This will show a confirmation card.
+            
+            **CRITICAL RULES**: 
+            1. If a user wants to perform a SPECIFIC DATA ACTION (e.g., "tambah pelanggan", "hapus item", "buat pesanan"), DO NOT trigger a navigation tag. Instead, focus on gathering the necessary information for that action (Name, Phone, Price, etc.).
+            2. If a user is only ASKING about a page or discussing what can be done there, ALWAYS offer a navigation suggestion using [ACTION:NAVIGATE:routeName].
             
             Available routeNames:
             - home : Dashboard/Main page
@@ -51,7 +57,9 @@ class Brain {
             - table_data : Master data management
             - settings : App settings and location
             
-            Example: "Sure, let's go to the orders page. [ACTION:NAVIGATE:orders]"
+            Example (Direct): "Tentu, mari ke halaman pengaturan. [ACTION:DIRECT_NAVIGATE:settings]"
+            Example (Inquiry): "Di halaman Order, Anda bisa membuat pesanan baru dan memilih layanan. Apakah Anda ingin saya arahkan ke sana? [ACTION:NAVIGATE:orders]"
+            Example (Data Action - No Navigation): "Tentu, saya bisa bantu mendaftarkan pelanggan baru. Siapa nama dan nomor teleponnya?"
             
             ## 2. ADD CUSTOMER
             Trigger this tag when the user wants to register a new customer and has provided the necessary information (Name and Phone).

@@ -239,6 +239,17 @@ fun AiAgentPanel(
         }
     }
 
+    // Track the last processed navigation message ID to prevent repeated dismissals
+    var lastProcessedNavId by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(messages) {
+        val lastNavMessage = messages.findLast { it.action is AiAgentAction.Navigate && it.actionExecuted }
+        if (lastNavMessage != null && lastNavMessage.id != lastProcessedNavId) {
+            lastProcessedNavId = lastNavMessage.id
+            onDismiss()
+        }
+    }
+
     // --- UI Layout ---
     Box(modifier = Modifier.fillMaxSize()) {
         AnimatedVisibility(

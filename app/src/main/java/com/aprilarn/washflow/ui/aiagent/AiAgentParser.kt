@@ -26,7 +26,13 @@ object AiAgentParser {
             "NAVIGATE" -> {
                 if (parts.size >= 2) {
                     val route = parts[1]
-                    mapRouteToAction(route)
+                    mapRouteToAction(route, isImmediate = false)
+                } else null
+            }
+            "DIRECT_NAVIGATE" -> {
+                if (parts.size >= 2) {
+                    val route = parts[1]
+                    mapRouteToAction(route, isImmediate = true)
                 } else null
             }
             "ADD_CUSTOMER" -> {
@@ -69,7 +75,7 @@ object AiAgentParser {
         return text.replace(Regex("\\[ACTION:.*?\\]"), "").trim()
     }
 
-    private fun mapRouteToAction(route: String): AiAgentAction? {
+    private fun mapRouteToAction(route: String, isImmediate: Boolean): AiAgentAction? {
         val destination = when (route.lowercase()) {
             "home" -> AppNavigation.Home
             "contributors" -> AppNavigation.Contributors
@@ -82,6 +88,6 @@ object AiAgentParser {
             "settings" -> AppNavigation.Settings
             else -> null
         }
-        return destination?.let { AiAgentAction.Navigate(it) }
+        return destination?.let { AiAgentAction.Navigate(it, isImmediate) }
     }
 }
