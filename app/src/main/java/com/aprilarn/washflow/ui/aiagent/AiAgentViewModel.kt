@@ -164,7 +164,7 @@ class AiAgentViewModel : ViewModel() {
     }
 
     fun onSendMessage() {
-        val currentInput = _uiState.value.inputMessage.text
+        val currentInput = _uiState.value.inputMessage.text.trim()
         if (currentInput.isBlank()) return
 
         val userMessage = ChatMessage(text = currentInput, isUser = true)

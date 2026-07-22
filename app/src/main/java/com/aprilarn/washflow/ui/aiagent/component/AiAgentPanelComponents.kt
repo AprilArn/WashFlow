@@ -9,6 +9,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
@@ -18,7 +20,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -117,10 +121,30 @@ fun AiAgentPanelInputArea(
             OutlinedTextField(
                 value = inputMessage,
                 onValueChange = onInputChange,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onKeyEvent {
+                        if (it.key == Key.Enter && !it.isShiftPressed) {
+                            if (it.type == KeyEventType.KeyDown) {
+                                if (inputMessage.text.isNotBlank() && !isProcessing) {
+                                    onSendMessage()
+                                }
+                            }
+                            true
+                        } else {
+                            false
+                        }
+                    },
                 placeholder = { Text("Ask WashFlow AI...", color = Color.Gray) },
-                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                    imeAction = androidx.compose.ui.text.input.ImeAction.Default
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Send
+                ),
+                keyboardActions = KeyboardActions(
+                    onSend = {
+                        if (inputMessage.text.isNotBlank() && !isProcessing) {
+                            onSendMessage()
+                        }
+                    }
                 ),
                 maxLines = 5,
                 colors = OutlinedTextFieldDefaults.colors(
