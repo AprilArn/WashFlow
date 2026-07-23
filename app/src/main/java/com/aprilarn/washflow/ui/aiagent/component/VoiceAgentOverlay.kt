@@ -220,7 +220,7 @@ fun VoiceAgentOverlay(
                             VoiceAgentStatus.LISTENING -> "Listening..."
                             VoiceAgentStatus.THINKING -> "Thinking..."
                             VoiceAgentStatus.ANSWERING -> "Aira"
-                            VoiceAgentStatus.WAITING_FOR_CONFIRMATION -> "Aira needs confirmation"
+                            VoiceAgentStatus.WAITING_FOR_CONFIRMATION -> "Aira"
                             else -> ""
                         }
 
