@@ -39,12 +39,17 @@ fun SettingsScreen(
     // State baru untuk mengontrol kemunculan dialog logout
     var showLogoutDialog by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
+    val sharedPrefs = remember { context.getSharedPreferences("WashFlowPrefs", Context.MODE_PRIVATE) }
+    var isSoundEnabled by remember { mutableStateOf(sharedPrefs.getBoolean("SOUND_ENABLED", true)) }
+
     Column(
         modifier = Modifier
-            .fillMaxSize(),
+            .fillMaxSize()
+            .verticalScroll(scrollState),
         horizontalAlignment = Alignment.CenterHorizontally // Menengahkan konten (600.dp)
     ) {
-        // --- BAGIAN ATAS (FIXED / TIDAK SCROLL) ---
+        // --- KONTEN (SCROLLABLE BERSAMA) ---
         ProfileInfoCard(
             userData = userData,
             modifier = Modifier.width(600.dp) // Membatasi lebar sesuai request
@@ -52,19 +57,11 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // --- BAGIAN BAWAH (SCROLLABLE) ---
-        val context = LocalContext.current
-        val sharedPrefs = remember { context.getSharedPreferences("WashFlowPrefs", Context.MODE_PRIVATE) }
-        var isSoundEnabled by remember { mutableStateOf(sharedPrefs.getBoolean("SOUND_ENABLED", true)) }
-
         Column(
             modifier = Modifier
-                .width(600.dp)
-                .weight(1f)
-                .verticalScroll(scrollState),
+                .width(600.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-
             // Masukkan state switch suara ke PreferencesSection
             PreferencesSection(
                 locationName = settingsUiState.locationName,
