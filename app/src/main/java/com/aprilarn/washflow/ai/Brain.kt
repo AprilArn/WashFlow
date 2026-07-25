@@ -107,16 +107,8 @@ class Brain {
     private data class ModelEntry(val name: String, val label: String)
 
     private val modelChain: List<ModelEntry> = listOf(
-        // Tier 1 – Model Cloud Komersial Utama (Paling Pintar, Agen Terbaik)
-        ModelEntry("gemini-flash-latest",       "Gemini Flash"),          // Agen multi-step & tool-use terbaik
-        ModelEntry("gemini-flash-lite-latest",  "Gemini Flash Lite"),     // Sangat cepat, hemat token, instruksi ketat
-
-        // Tier 2 – Open Model Kategori Besar (Penalaran & Logika Tingkat Tinggi)
-        ModelEntry("gemma-4-31b-it",            "Gemma 4 31B Dense"),     // Akurasi & nalar tertinggi di seri open model Google
-        ModelEntry("gemma-4-26b-a4b-it",        "Gemma 4 26B A4B MoE"),   // Cepat (Active 4B), nalar kuat, hemat VRAM
-
-        // Tier 3 – Open Model Kategori Medium (Laptop-Ready)
-        ModelEntry("gemma-4-12b-it",            "Gemma 4 12B"),           // Encoder-free multimodal, pas untuk agen lokal
+        ModelEntry("gemini-flash-latest",       "Gemini Flash"),
+        ModelEntry("gemini-flash-lite-latest",  "Gemini Flash Lite"),
     )
 
     private val models: List<GenerativeModel> = modelChain.map { entry ->
