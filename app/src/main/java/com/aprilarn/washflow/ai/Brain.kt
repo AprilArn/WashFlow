@@ -8,7 +8,10 @@ import com.google.ai.client.generativeai.type.HarmCategory
 import com.google.ai.client.generativeai.type.SafetySetting
 import com.google.ai.client.generativeai.type.content
 import com.google.ai.client.generativeai.type.generationConfig
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withTimeoutOrNull
+import java.util.concurrent.CancellationException
 import kotlin.time.Duration.Companion.milliseconds
 
 class Brain {
@@ -151,6 +154,7 @@ class Brain {
         var lastFailureReason = ""
 
         for ((index, model) in models.withIndex()) {
+            currentCoroutineContext().ensureActive() // Cek pembatalan segera sebelum update status
             val label = modelChain[index].label
             onStatusUpdate(label, com.aprilarn.washflow.ui.aiagent.AiModelStatus.THINKING)
 
@@ -170,6 +174,7 @@ class Brain {
                         onStatusUpdate(label, com.aprilarn.washflow.ui.aiagent.AiModelStatus.FAILURE)
                         if (index < models.size - 1) {
                             onStatusUpdate("Switching...", com.aprilarn.washflow.ui.aiagent.AiModelStatus.SWITCHING)
+                            currentCoroutineContext().ensureActive() // Cek pembatalan sebelum delay
                             kotlinx.coroutines.delay(500)
                         }
                         continue
@@ -193,6 +198,8 @@ class Brain {
                 }
 
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                
                 lastFailureReason = buildExceptionReason(label, e)
                 onStatusUpdate(label, com.aprilarn.washflow.ui.aiagent.AiModelStatus.FAILURE)
                 if (index < models.size - 1) {
@@ -204,6 +211,7 @@ class Brain {
         }
 
         // Every model in the chain has failed or timed out
+        currentCoroutineContext().ensureActive()
         return buildAllFailedMessage(lastFailureReason)
     }
 

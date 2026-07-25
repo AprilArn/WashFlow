@@ -107,9 +107,11 @@ fun AiAgentPanelInputArea(
     inputMessage: TextFieldValue,
     onInputChange: (TextFieldValue) -> Unit,
     onSendMessage: () -> Unit,
+    onStopProcessing: () -> Unit,
     modelStatus: AiModelStatus,
     currentModelName: String?,
-    isProcessing: Boolean
+    isAiThinking: Boolean,
+    isTypewriterActive: Boolean
 ) {
     Box(
         modifier = Modifier
@@ -126,7 +128,7 @@ fun AiAgentPanelInputArea(
                     .onKeyEvent {
                         if (it.key == Key.Enter && !it.isShiftPressed) {
                             if (it.type == KeyEventType.KeyDown) {
-                                if (inputMessage.text.isNotBlank() && !isProcessing) {
+                                if (inputMessage.text.isNotBlank() && !isAiThinking && !isTypewriterActive) {
                                     onSendMessage()
                                 }
                             }
@@ -141,7 +143,7 @@ fun AiAgentPanelInputArea(
                 ),
                 keyboardActions = KeyboardActions(
                     onSend = {
-                        if (inputMessage.text.isNotBlank() && !isProcessing) {
+                        if (inputMessage.text.isNotBlank() && !isAiThinking && !isTypewriterActive) {
                             onSendMessage()
                         }
                     }
@@ -228,23 +230,31 @@ fun AiAgentPanelInputArea(
                             }
                         }
                     }
+
+                    val showStopButton = isAiThinking
+                    val showDisabledSend = isTypewriterActive
+
                     IconButton(
-                        onClick = onSendMessage,
-                        enabled = inputMessage.text.isNotBlank() && !isProcessing,
+                        onClick = {
+                            if (showStopButton) onStopProcessing() else onSendMessage()
+                        },
+                        enabled = (inputMessage.text.isNotBlank() || showStopButton) && !showDisabledSend,
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
                             .background(
-                                if (inputMessage.text.isNotBlank() && !isProcessing)
-                                    GrayBlue
-                                else
-                                    Color(0xFFE0E0E0)
+                                when {
+                                    showStopButton -> Color.Red
+                                    showDisabledSend -> Color(0xFFE0E0E0)
+                                    inputMessage.text.isNotBlank() -> GrayBlue
+                                    else -> Color(0xFFE0E0E0)
+                                }
                             )
                             .height(38.dp)
                             .width(52.dp)
                     ) {
                         Icon(
-                            Icons.AutoMirrored.Filled.Send,
-                            contentDescription = "Send",
+                            imageVector = if (showStopButton) Icons.Default.Stop else Icons.AutoMirrored.Filled.Send,
+                            contentDescription = if (showStopButton) "Stop" else "Send",
                             tint = Color.White,
                             modifier = Modifier.size(20.dp)
                         )

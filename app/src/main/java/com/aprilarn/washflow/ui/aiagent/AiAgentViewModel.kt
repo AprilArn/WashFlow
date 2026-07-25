@@ -6,6 +6,9 @@ import com.aprilarn.washflow.ai.Brain
 import com.aprilarn.washflow.data.repository.CustomerRepository
 import com.aprilarn.washflow.data.repository.ItemRepository
 import com.aprilarn.washflow.data.repository.ServiceRepository
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -26,6 +29,9 @@ class AiAgentViewModel : ViewModel() {
     private val serviceRepository = ServiceRepository()
     private val _uiState = MutableStateFlow(AiAgentUiState())
     val uiState = _uiState.asStateFlow()
+
+    private var aiFlowJob: Job? = null
+    private var currentAiMessageId: String? = null
 
     private val _actionEvents = MutableSharedFlow<AiAgentAction>()
     val actionEvents = _actionEvents.asSharedFlow()
@@ -135,7 +141,7 @@ class AiAgentViewModel : ViewModel() {
             return
         }
 
-        viewModelScope.launch {
+        aiFlowJob = viewModelScope.launch {
             // Step 1: Show the final transcribed text clearly for a short moment
             _uiState.update { it.copy(voiceAgentText = text) }
             kotlinx.coroutines.delay(1000) // 1000ms delay so user can read their input
@@ -176,9 +182,32 @@ class AiAgentViewModel : ViewModel() {
             )
         }
 
-        viewModelScope.launch {
+        aiFlowJob = viewModelScope.launch {
             executeAiFlow(currentInput, isFromVoice = false)
         }
+    }
+
+    fun onStopProcessing() {
+        aiFlowJob?.cancel()
+        aiFlowJob = null
+
+        val messageIdToCleanup = currentAiMessageId
+        currentAiMessageId = null
+
+        _uiState.update { state ->
+            state.copy(
+                isAiThinking = false,
+                isTypewriterActive = false,
+                modelStatus = AiModelStatus.IDLE,
+                currentModelName = null,
+                voiceAgentStatus = if (state.voiceAgentStatus == VoiceAgentStatus.THINKING || 
+                    state.voiceAgentStatus == VoiceAgentStatus.ANSWERING) 
+                    VoiceAgentStatus.IDLE else state.voiceAgentStatus,
+                messages = state.messages.filterNot { it.isThinking || it.id == messageIdToCleanup }
+            )
+        }
+        
+        messageIdToCleanup?.let { messageAnimationProgress.remove(it) }
     }
 
     private suspend fun executeAiFlow(query: String, isFromVoice: Boolean) {
@@ -189,14 +218,26 @@ class AiAgentViewModel : ViewModel() {
 
         // Add AI placeholder that shows the "Thinking…" state
         val aiPlaceholder = ChatMessage(text = "", isUser = false, isThinking = true)
+        currentAiMessageId = aiPlaceholder.id
+        
         _uiState.update { state ->
             state.copy(messages = state.messages + aiPlaceholder)
         }
 
         // Call the AI
         val finalResponseRaw = brain.sendMessage(query) { name, status ->
-            _uiState.update { it.copy(currentModelName = name, modelStatus = status) }
+            _uiState.update { state ->
+                // Guard: Hanya update status jika kita masih dalam mode Thinking
+                if (state.isAiThinking) {
+                    state.copy(currentModelName = name, modelStatus = status)
+                } else {
+                    state
+                }
+            }
         }
+        
+        // Final guard after network call
+        currentCoroutineContext().ensureActive()
 
         val parsedAction = AiAgentParser.parseAction(finalResponseRaw) ?: AiAgentAction.None
         val finalResponseText = AiAgentParser.cleanText(finalResponseRaw)
@@ -246,6 +287,7 @@ class AiAgentViewModel : ViewModel() {
         
         markMessageAsAnimated(finalAiMessageId)
         _uiState.update { it.copy(isTypewriterActive = false) }
+        currentAiMessageId = null
 
         // Auto-execute immediate actions (e.g., DIRECT_NAVIGATE)
         if (parsedAction is AiAgentAction.Navigate && parsedAction.isImmediate) {

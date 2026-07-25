@@ -56,6 +56,7 @@ fun AiAgentPanel(
     getAnimationProgress: (String) -> Int, // New callback
     onInputChange: (TextFieldValue) -> Unit,
     onSendMessage: () -> Unit,
+    onStopProcessing: () -> Unit,
     onClearHistory: () -> Unit,
     onConfirmAction: (String, AiAgentAction?) -> Unit,
     onCancelAction: (String) -> Unit,
@@ -410,9 +411,11 @@ fun AiAgentPanel(
                                 inputMessage = inputMessage,
                                 onInputChange = onInputChange,
                                 onSendMessage = onSendMessage,
+                                onStopProcessing = onStopProcessing,
                                 modelStatus = modelStatus,
                                 currentModelName = currentModelName,
-                                isProcessing = processingWithGracePeriod
+                                isAiThinking = isAiThinking,
+                                isTypewriterActive = isTypewriterActive
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Row(

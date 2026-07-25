@@ -624,6 +624,7 @@ fun MainAppScreen(
             getAnimationProgress = { aiAgentViewModel.getAnimationProgress(it) },
             onInputChange = { aiAgentViewModel.onInputChange(it) },
             onSendMessage = { aiAgentViewModel.onSendMessage() },
+            onStopProcessing = { aiAgentViewModel.onStopProcessing() },
             onClearHistory = { aiAgentViewModel.onClearHistory() },
             onConfirmAction = { id, action -> aiAgentViewModel.onConfirmAction(id, action) },
             onCancelAction = { aiAgentViewModel.onCancelAction(it) },
