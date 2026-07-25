@@ -10,7 +10,8 @@ enum class AiModelStatus {
     THINKING,
     SUCCESS,
     FAILURE,
-    SWITCHING
+    SWITCHING,
+    COOLDOWN
 }
 
 data class ChatMessage(

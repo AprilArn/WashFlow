@@ -128,7 +128,7 @@ fun AiAgentPanelInputArea(
                     .onKeyEvent {
                         if (it.key == Key.Enter && !it.isShiftPressed) {
                             if (it.type == KeyEventType.KeyDown) {
-                                if (inputMessage.text.isNotBlank() && !isAiThinking && !isTypewriterActive) {
+                                if (inputMessage.text.isNotBlank() && !isAiThinking && !isTypewriterActive && modelStatus != AiModelStatus.COOLDOWN) {
                                     onSendMessage()
                                 }
                             }
@@ -143,7 +143,7 @@ fun AiAgentPanelInputArea(
                 ),
                 keyboardActions = KeyboardActions(
                     onSend = {
-                        if (inputMessage.text.isNotBlank() && !isAiThinking && !isTypewriterActive) {
+                        if (inputMessage.text.isNotBlank() && !isAiThinking && !isTypewriterActive && modelStatus != AiModelStatus.COOLDOWN) {
                             onSendMessage()
                         }
                     }
@@ -226,13 +226,21 @@ fun AiAgentPanelInputArea(
                                             tint = GrayBlue
                                         )
                                     }
+                                    AiModelStatus.COOLDOWN -> {
+                                        Icon(
+                                            imageVector = Icons.Default.Timer,
+                                            contentDescription = "Cooldown",
+                                            modifier = Modifier.size(14.dp),
+                                            tint = Color.Gray
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
 
                     val showStopButton = isAiThinking
-                    val showDisabledSend = isTypewriterActive
+                    val showDisabledSend = isTypewriterActive || modelStatus == AiModelStatus.COOLDOWN
 
                     IconButton(
                         onClick = {

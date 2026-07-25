@@ -31,6 +31,7 @@ class AiAgentViewModel : ViewModel() {
     val uiState = _uiState.asStateFlow()
 
     private var aiFlowJob: Job? = null
+    private var cooldownJob: Job? = null
     private var currentAiMessageId: String? = null
 
     private val _actionEvents = MutableSharedFlow<AiAgentAction>()
@@ -170,6 +171,8 @@ class AiAgentViewModel : ViewModel() {
     }
 
     fun onSendMessage() {
+        if (_uiState.value.modelStatus == AiModelStatus.COOLDOWN) return
+        
         val currentInput = _uiState.value.inputMessage.text.trim()
         if (currentInput.isBlank()) return
 
@@ -208,6 +211,17 @@ class AiAgentViewModel : ViewModel() {
         }
         
         messageIdToCleanup?.let { messageAnimationProgress.remove(it) }
+
+        // Start 10-second cooldown
+        cooldownJob?.cancel()
+        cooldownJob = viewModelScope.launch {
+            _uiState.update { it.copy(modelStatus = AiModelStatus.COOLDOWN) }
+            for (i in 10 downTo 1) {
+                _uiState.update { it.copy(currentModelName = "Cooldown ${i}s") }
+                kotlinx.coroutines.delay(1000)
+            }
+            _uiState.update { it.copy(modelStatus = AiModelStatus.IDLE, currentModelName = null) }
+        }
     }
 
     private suspend fun executeAiFlow(query: String, isFromVoice: Boolean) {
@@ -320,10 +334,14 @@ class AiAgentViewModel : ViewModel() {
 
     fun onClearHistory() {
         brain.clearHistory()
+        cooldownJob?.cancel()
+        cooldownJob = null
         _uiState.update { it.copy(
             messages = emptyList(),
             isAiThinking = false,
-            animatedMessageIds = emptySet()
+            animatedMessageIds = emptySet(),
+            modelStatus = AiModelStatus.IDLE,
+            currentModelName = null
         ) }
         messageAnimationProgress.clear()
         // Resetting any other internal UI states that might be tracked via callbacks
