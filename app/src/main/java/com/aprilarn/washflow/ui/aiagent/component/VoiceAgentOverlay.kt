@@ -43,6 +43,7 @@ import kotlin.math.abs
 @Composable
 fun VoiceAgentOverlay(
     status: VoiceAgentStatus,
+    modifier: Modifier = Modifier,
     text: String = "",
     lastMessage: ChatMessage? = null,
     customers: List<Customers> = emptyList(),
@@ -52,8 +53,7 @@ fun VoiceAgentOverlay(
     onCancelAction: () -> Unit = {},
     onDismissListening: () -> Unit = {},
     onDismissThinking: () -> Unit = {},
-    onDismissAnswering: () -> Unit = {},
-    modifier: Modifier = Modifier
+    onDismissAnswering: () -> Unit = {}
 ) {
     val scrollState = rememberScrollState()
     var userHasInterrupted by remember { mutableStateOf(false) }
@@ -102,6 +102,9 @@ fun VoiceAgentOverlay(
             rawOffsetX = 0f
             isFalling = false
             fallDirection = 0f
+            
+            // Trigger vibration on mode change
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
         }
     }
 
