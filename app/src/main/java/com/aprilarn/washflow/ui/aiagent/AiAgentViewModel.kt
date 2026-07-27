@@ -106,7 +106,10 @@ class AiAgentViewModel : ViewModel() {
     }
 
     fun onStartVoiceAgent(context: Context) {
-        if (_uiState.value.voiceAgentStatus != VoiceAgentStatus.IDLE) {
+        if (_uiState.value.voiceAgentStatus != VoiceAgentStatus.IDLE || 
+            _uiState.value.isAiThinking || 
+            _uiState.value.isTypewriterActive || 
+            _uiState.value.modelStatus == AiModelStatus.COOLDOWN) {
             return
         }
 
@@ -120,10 +123,16 @@ class AiAgentViewModel : ViewModel() {
                     handleFinalSpeechResult(final)
                 },
                 onSpeechError = { errorCode ->
-                    if (errorCode == SpeechRecognizer.ERROR_NO_MATCH || errorCode == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
-                        _uiState.update { it.copy(voiceAgentStatus = VoiceAgentStatus.IDLE, voiceAgentText = "") }
-                    } else {
-                        sttManager?.startListening()
+                    // Guard: If we are already IDLE (dismissed), don't restart anything
+                    if (_uiState.value.voiceAgentStatus != VoiceAgentStatus.IDLE) {
+                        if (errorCode == SpeechRecognizer.ERROR_NO_MATCH || errorCode == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
+                            _uiState.update { it.copy(voiceAgentStatus = VoiceAgentStatus.IDLE, voiceAgentText = "") }
+                        } else {
+                            // Only auto-restart if we are still in LISTENING mode
+                            if (_uiState.value.voiceAgentStatus == VoiceAgentStatus.LISTENING) {
+                                sttManager?.startListening()
+                            }
+                        }
                     }
                 }
             )
@@ -137,7 +146,7 @@ class AiAgentViewModel : ViewModel() {
     }
 
     private fun handleFinalSpeechResult(text: String) {
-        if (text.isBlank()) {
+        if (text.isBlank() || _uiState.value.voiceAgentStatus == VoiceAgentStatus.IDLE) {
             _uiState.update { it.copy(voiceAgentStatus = VoiceAgentStatus.IDLE) }
             return
         }
@@ -162,7 +171,13 @@ class AiAgentViewModel : ViewModel() {
     }
 
     fun onStopVoiceAgent() {
-        sttManager?.stopListening()
+        _uiState.update { it.copy(voiceAgentStatus = VoiceAgentStatus.IDLE) }
+        sttManager?.cancel()
+        aiFlowJob?.cancel()
+        aiFlowJob = null
+    }
+
+    fun onDismissVoiceOverlay() {
         _uiState.update { it.copy(voiceAgentStatus = VoiceAgentStatus.IDLE) }
     }
 
@@ -303,6 +318,13 @@ class AiAgentViewModel : ViewModel() {
         _uiState.update { it.copy(isTypewriterActive = false) }
         currentAiMessageId = null
 
+        // GUARD: If the user swiped to dismiss during answering, do not continue voice interaction
+        if (isFromVoice && _uiState.value.voiceAgentStatus == VoiceAgentStatus.IDLE) {
+            kotlinx.coroutines.delay(1000)
+            _uiState.update { it.copy(modelStatus = AiModelStatus.IDLE, currentModelName = null) }
+            return
+        }
+
         // Auto-execute immediate actions (e.g., DIRECT_NAVIGATE)
         if (parsedAction is AiAgentAction.Navigate && parsedAction.isImmediate) {
             onConfirmAction(finalAiMessageId, parsedAction)
@@ -320,6 +342,10 @@ class AiAgentViewModel : ViewModel() {
                 // Navigasi Langsung (isImmediateNav) ATAU hanya ngobrol biasa (!hasAction)
                 // Keduanya langsung buka mic lagi setelah jeda 3 detik
                 kotlinx.coroutines.delay(3000)
+                
+                // FINAL GUARD: If user dismissed while waiting to restart mic
+                if (_uiState.value.voiceAgentStatus == VoiceAgentStatus.IDLE) return
+
                 _uiState.update { it.copy(
                     voiceAgentStatus = VoiceAgentStatus.LISTENING,
                     voiceAgentText = ""

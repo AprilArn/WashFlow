@@ -61,6 +61,10 @@ class SpeechToTextManager(
         speechRecognizer?.stopListening()
     }
 
+    fun cancel() {
+        speechRecognizer?.cancel()
+    }
+
     fun destroy() {
         speechRecognizer?.destroy()
         speechRecognizer = null

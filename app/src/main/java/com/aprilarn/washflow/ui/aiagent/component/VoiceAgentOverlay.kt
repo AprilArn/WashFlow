@@ -4,6 +4,7 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.*
@@ -22,6 +23,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -34,6 +38,7 @@ import com.aprilarn.washflow.ui.aiagent.VoiceAgentStatus
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.MainFontBlack
 import com.aprilarn.washflow.utils.MarkdownUtils
+import kotlin.math.abs
 
 @Composable
 fun VoiceAgentOverlay(
@@ -45,11 +50,69 @@ fun VoiceAgentOverlay(
     services: List<Services> = emptyList(),
     onConfirmAction: (AiAgentAction?) -> Unit = {},
     onCancelAction: () -> Unit = {},
+    onDismissListening: () -> Unit = {},
+    onDismissThinking: () -> Unit = {},
+    onDismissAnswering: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
     var userHasInterrupted by remember { mutableStateOf(false) }
-    val isDragging by scrollState.interactionSource.collectIsDraggedAsState()
+    val isDraggingScroll by scrollState.interactionSource.collectIsDraggedAsState()
+
+    // Swipe state
+    val haptic = LocalHapticFeedback.current
+    var rawOffsetX by remember { mutableFloatStateOf(0f) }
+    var isDraggingSwipe by remember { mutableStateOf(false) }
+    val dismissThreshold = 300f
+
+    // Falling animation states
+    var isFalling by remember { mutableStateOf(false) }
+    var fallDirection by remember { mutableFloatStateOf(0f) } // -1f for left, 1f for right
+
+    val fallingX by animateFloatAsState(
+        targetValue = if (isFalling) 1000f * fallDirection else 0f,
+        animationSpec = tween(durationMillis = 800, easing = FastOutLinearInEasing),
+        label = "fallingX"
+    )
+
+    val fallingY by animateFloatAsState(
+        targetValue = if (isFalling) 2000f else 0f,
+        animationSpec = tween(durationMillis = 800, easing = FastOutLinearInEasing),
+        label = "fallingY"
+    )
+
+    val fallingRotationZ by animateFloatAsState(
+        targetValue = if (isFalling) 55f * fallDirection else 0f,
+        animationSpec = if (isFalling) tween(800) else spring(),
+        label = "fallingRotationZ"
+    )
+
+    // Trigger dismissal when fallingY reaches threshold
+    if (fallingY > 1500f) {
+        SideEffect {
+            isFalling = false
+            rawOffsetX = 0f
+            fallDirection = 0f
+        }
+    }
+    
+    // Reset offset and falling states when starting a new active state
+    LaunchedEffect(status) {
+        if (status != VoiceAgentStatus.IDLE) {
+            rawOffsetX = 0f
+            isFalling = false
+            fallDirection = 0f
+        }
+    }
+
+    val offsetX by animateFloatAsState(
+        targetValue = rawOffsetX,
+        animationSpec = if (isDraggingSwipe) snap() else spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "offsetX"
+    )
 
     // Detect if we are at the bottom to resume auto-scroll (with a small threshold)
     val isAtBottom by remember {
@@ -58,14 +121,14 @@ fun VoiceAgentOverlay(
         }
     }
 
-    LaunchedEffect(isDragging) {
+    LaunchedEffect(isDraggingScroll) {
         // Mark as interrupted only if dragging away from the bottom
-        if (isDragging && !isAtBottom) userHasInterrupted = true
+        if (isDraggingScroll && !isAtBottom) userHasInterrupted = true
     }
 
     // Reset interruption when user stops dragging at the bottom or flings back to bottom
-    LaunchedEffect(isAtBottom, isDragging) {
-        if (isAtBottom && !isDragging) {
+    LaunchedEffect(isAtBottom, isDraggingScroll) {
+        if (isAtBottom && !isDraggingScroll) {
             userHasInterrupted = false
         }
     }
@@ -104,8 +167,10 @@ fun VoiceAgentOverlay(
         label = "rotation"
     )
 
+    val isEffectivelyVisible = status != VoiceAgentStatus.IDLE || isFalling
+
     AnimatedVisibility(
-        visible = status != VoiceAgentStatus.IDLE,
+        visible = isEffectivelyVisible,
         enter = fadeIn(animationSpec = tween(400)) +
                 expandHorizontally(
                     expandFrom = Alignment.CenterHorizontally,
@@ -144,6 +209,56 @@ fun VoiceAgentOverlay(
                 .widthIn(max = 520.dp)
                 .heightIn(max = 400.dp) // Increased height to accommodate confirmation card
                 .wrapContentHeight()
+                .graphicsLayer {
+                    translationX = offsetX + fallingX
+                    translationY = fallingY
+                    this.rotationZ = fallingRotationZ
+                    
+                    // Pivot logic: if falling left, pivot on right; if falling right, pivot on left
+                    val pivotX = when {
+                        fallDirection < 0 -> 1f
+                        fallDirection > 0 -> 0f
+                        else -> 0.5f
+                    }
+                    transformOrigin = androidx.compose.ui.graphics.TransformOrigin(pivotX, 0.5f)
+                }
+                .pointerInput(status) {
+                    if (status == VoiceAgentStatus.IDLE || isFalling) return@pointerInput
+                    
+                    detectHorizontalDragGestures(
+                        onDragStart = { isDraggingSwipe = true },
+                        onDragCancel = {
+                            isDraggingSwipe = false
+                            rawOffsetX = 0f
+                        },
+                        onDragEnd = {
+                            isDraggingSwipe = false
+                            if (abs(rawOffsetX) > dismissThreshold) {
+                                // Trigger logic immediately
+                                when (status) {
+                                    VoiceAgentStatus.LISTENING -> onDismissListening()
+                                    VoiceAgentStatus.THINKING -> onDismissThinking()
+                                    VoiceAgentStatus.ANSWERING, VoiceAgentStatus.WAITING_FOR_CONFIRMATION -> onDismissAnswering()
+                                    else -> {}
+                                }
+                                
+                                // Start visual falling animation
+                                isFalling = true
+                                fallDirection = if (rawOffsetX > 0) 1f else -1f
+                            } else {
+                                rawOffsetX = 0f
+                            }
+                        },
+                        onHorizontalDrag = { _, dragAmount ->
+                            rawOffsetX += dragAmount
+                            
+                            // Haptic feedback when crossing threshold
+                            if (abs(rawOffsetX) >= dismissThreshold && abs(rawOffsetX - dragAmount) < dismissThreshold) {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            }
+                        }
+                    )
+                }
                 .clip(RoundedCornerShape(16.dp))
                 .animateContentSize(
                     animationSpec = spring(

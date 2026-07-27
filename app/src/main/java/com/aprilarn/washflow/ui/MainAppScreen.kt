@@ -218,7 +218,10 @@ fun MainAppScreen(
                         permissionLauncher.launch(permission)
                     }
                 },
-                isAiVoiceActive = aiAgentUiState.voiceAgentStatus != com.aprilarn.washflow.ui.aiagent.VoiceAgentStatus.IDLE,
+                isAiVoiceActive = aiAgentUiState.voiceAgentStatus != com.aprilarn.washflow.ui.aiagent.VoiceAgentStatus.IDLE ||
+                        aiAgentUiState.isAiThinking ||
+                        aiAgentUiState.isTypewriterActive ||
+                        aiAgentUiState.modelStatus == com.aprilarn.washflow.ui.aiagent.AiModelStatus.COOLDOWN,
                 onRemovePreview = { id, swiped -> notificationsViewModel.removeNotificationPreview(id, swiped) },
                 workspaceDropdown = { wsOffset ->
                     WorkspaceOptionsDropdown(
@@ -562,7 +565,10 @@ fun MainAppScreen(
                 if (lastMessage != null) {
                     aiAgentViewModel.onCancelAction(lastMessage.id)
                 }
-            }
+            },
+            onDismissListening = { aiAgentViewModel.onStopVoiceAgent() },
+            onDismissThinking = { aiAgentViewModel.onStopProcessing() },
+            onDismissAnswering = { aiAgentViewModel.onDismissVoiceOverlay() }
         )
     }
 
