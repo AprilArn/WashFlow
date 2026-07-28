@@ -63,36 +63,65 @@ fun VoiceAgentOverlay(
     val haptic = LocalHapticFeedback.current
     var rawOffsetX by remember { mutableFloatStateOf(0f) }
     var isDraggingSwipe by remember { mutableStateOf(false) }
+    var dismissedBySwipe by remember { mutableStateOf(false) }
+    
     val dismissThreshold = 300f
+    val resistanceThreshold = 350f
+    val maxDragLimit = 500f
 
     // Falling animation states
     var isFalling by remember { mutableStateOf(false) }
     var fallDirection by remember { mutableFloatStateOf(0f) } // -1f for left, 1f for right
 
+    // Dynamic screen height for better dismissal
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val screenHeightPx = with(androidx.compose.ui.platform.LocalDensity.current) { configuration.screenHeightDp.dp.toPx() }
+    val safeFallingY = screenHeightPx + 500f
+    
+    // Constant velocity: 2000px / 800ms = 2.5px/ms
+    val fallingDuration = remember(safeFallingY) { (safeFallingY / 2.5f).toInt() }
+    val rotationDuration = remember(fallingDuration) { (fallingDuration * 1.25f).toInt() }
+
     val fallingX by animateFloatAsState(
-        targetValue = if (isFalling) 1000f * fallDirection else 0f,
-        animationSpec = tween(durationMillis = 800, easing = FastOutLinearInEasing),
+        targetValue = if (isFalling || (dismissedBySwipe && status == VoiceAgentStatus.IDLE)) 1000f * fallDirection else 0f,
+        animationSpec = if (isFalling) tween(durationMillis = fallingDuration, easing = FastOutLinearInEasing) else snap(),
         label = "fallingX"
     )
 
     val fallingY by animateFloatAsState(
-        targetValue = if (isFalling) 2000f else 0f,
-        animationSpec = tween(durationMillis = 800, easing = FastOutLinearInEasing),
+        targetValue = if (isFalling || (dismissedBySwipe && status == VoiceAgentStatus.IDLE)) safeFallingY else 0f,
+        animationSpec = if (isFalling) tween(durationMillis = fallingDuration, easing = FastOutLinearInEasing) else snap(),
         label = "fallingY"
     )
 
-    val fallingRotationZ by animateFloatAsState(
-        targetValue = if (isFalling) 55f * fallDirection else 0f,
-        animationSpec = if (isFalling) tween(800) else spring(),
-        label = "fallingRotationZ"
+    // Efek miring saat digeser dan jatuh (hanya mulai miring saat mencapai dismissThreshold)
+    val overlayRotationZ by animateFloatAsState(
+        targetValue = when {
+            isFalling -> 55f * fallDirection
+            abs(rawOffsetX) > dismissThreshold -> (rawOffsetX / 20f).coerceIn(-15f, 15f)
+            else -> 0f
+        },
+        animationSpec = if (isFalling) tween(rotationDuration) else spring(),
+        label = "overlayRotationZ"
     )
 
+    // Pivot logic: if swiping left, pivot on right; if swiping right, pivot on left
+    val pivotX by remember {
+        derivedStateOf {
+            val offset = if (isFalling) fallDirection else rawOffsetX
+            when {
+                offset < 0 -> 1f
+                offset > 0 -> 0f
+                else -> 0.5f
+            }
+        }
+    }
+
     // Trigger dismissal when fallingY reaches threshold
-    if (fallingY > 1500f) {
+    if (fallingY > screenHeightPx) {
         SideEffect {
             isFalling = false
-            rawOffsetX = 0f
-            fallDirection = 0f
+            // We don't reset fallDirection or dismissedBySwipe here to keep targets stable during fade
         }
     }
     
@@ -102,6 +131,7 @@ fun VoiceAgentOverlay(
             rawOffsetX = 0f
             isFalling = false
             fallDirection = 0f
+            dismissedBySwipe = false
             
             // Trigger vibration on mode change
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -197,13 +227,15 @@ fun VoiceAgentOverlay(
                         stiffness = Spring.StiffnessLow
                     )
                 ) +
-                slideOutVertically(
-                    targetOffsetY = { fullHeight -> -fullHeight },
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioLowBouncy,
-                        stiffness = Spring.StiffnessLow
+                (if (!dismissedBySwipe) {
+                    slideOutVertically(
+                        targetOffsetY = { fullHeight -> -fullHeight },
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioLowBouncy,
+                            stiffness = Spring.StiffnessLow
+                        )
                     )
-                ),
+                } else ExitTransition.None),
         modifier = modifier
     ) {
         Surface(
@@ -215,14 +247,7 @@ fun VoiceAgentOverlay(
                 .graphicsLayer {
                     translationX = offsetX + fallingX
                     translationY = fallingY
-                    this.rotationZ = fallingRotationZ
-                    
-                    // Pivot logic: if falling left, pivot on right; if falling right, pivot on left
-                    val pivotX = when {
-                        fallDirection < 0 -> 1f
-                        fallDirection > 0 -> 0f
-                        else -> 0.5f
-                    }
+                    this.rotationZ = overlayRotationZ
                     transformOrigin = androidx.compose.ui.graphics.TransformOrigin(pivotX, 0.5f)
                 }
                 .pointerInput(status) {
@@ -246,6 +271,7 @@ fun VoiceAgentOverlay(
                                 }
                                 
                                 // Start visual falling animation
+                                dismissedBySwipe = true
                                 isFalling = true
                                 fallDirection = if (rawOffsetX > 0) 1f else -1f
                             } else {
@@ -253,10 +279,24 @@ fun VoiceAgentOverlay(
                             }
                         },
                         onHorizontalDrag = { _, dragAmount ->
-                            rawOffsetX += dragAmount
+                            val previousOffset = rawOffsetX
+                            
+                            // Hitung dragAmount dengan resistensi jika sudah melewati ambang batas
+                            val effectiveDrag = if (abs(rawOffsetX) > resistanceThreshold && 
+                                ((rawOffsetX > 0 && dragAmount > 0) || (rawOffsetX < 0 && dragAmount < 0))) {
+                                dragAmount * 0.4f // Beri beban lebih berat
+                            } else {
+                                dragAmount
+                            }
+
+                            // Batasi agar tidak terlalu jauh
+                            rawOffsetX = (rawOffsetX + effectiveDrag).coerceIn(-maxDragLimit, maxDragLimit)
                             
                             // Haptic feedback when crossing threshold
-                            if (abs(rawOffsetX) >= dismissThreshold && abs(rawOffsetX - dragAmount) < dismissThreshold) {
+                            val crossedThreshold = abs(previousOffset) < dismissThreshold && abs(rawOffsetX) >= dismissThreshold
+                            val backThreshold = abs(previousOffset) >= dismissThreshold && abs(rawOffsetX) < dismissThreshold
+
+                            if (crossedThreshold || backThreshold) {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             }
                         }
@@ -264,7 +304,7 @@ fun VoiceAgentOverlay(
                 }
                 .clip(RoundedCornerShape(16.dp))
                 .animateContentSize(
-                    animationSpec = spring(
+                    animationSpec = if (isFalling) snap() else spring(
                         dampingRatio = Spring.DampingRatioLowBouncy,
                         stiffness = Spring.StiffnessLow
                     ),
@@ -321,7 +361,7 @@ fun VoiceAgentOverlay(
                 Column(
                     modifier = Modifier
                         .weight(1f, fill = false) // Allow taking space but not forcing it
-                        .verticalScroll(scrollState) // Enable vertical scroll
+                        .verticalScroll(scrollState, enabled = !isDraggingSwipe) // Enable vertical scroll
                         .padding(horizontal = 20.dp, vertical = 16.dp),
                     verticalArrangement = Arrangement.Center
                 ) {

@@ -104,14 +104,25 @@ fun NotificationPreviewItem(
         }
     }
 
+    // Dynamic screen height for better dismissal
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val screenHeightPx = with(androidx.compose.ui.platform.LocalDensity.current) { configuration.screenHeightDp.dp.toPx() }
+    val safeFallingY = screenHeightPx + 500f
+    
+    // Constant velocity: 2000px / 800ms = 2.5px/ms
+    val fallingDuration = remember(safeFallingY) { (safeFallingY / 2.5f).toInt() }
+    val rotationDuration = remember(fallingDuration) { (fallingDuration * 1.25f).toInt() }
+
     val fallingX by animateFloatAsState(
         targetValue = if (isFalling) -1000f else 0f,
-        animationSpec = tween(durationMillis = 800, easing = FastOutLinearInEasing)
+        animationSpec = tween(durationMillis = fallingDuration, easing = FastOutLinearInEasing),
+        label = "fallingX"
     )
 
     val fallingY by animateFloatAsState(
-        targetValue = if (isFalling) 2000f else 0f,
-        animationSpec = tween(durationMillis = 800, easing = FastOutLinearInEasing)
+        targetValue = if (isFalling) safeFallingY else 0f,
+        animationSpec = tween(durationMillis = fallingDuration, easing = FastOutLinearInEasing),
+        label = "fallingY"
     )
 
     // Efek miring saat digeser
@@ -121,10 +132,11 @@ fun NotificationPreviewItem(
             offsetX < -deleteThreshold -> (offsetX / 20f).coerceIn(-15f, 0f)
             else -> 0f
         },
-        animationSpec = if (isFalling) tween(1000) else spring()
+        animationSpec = if (isFalling) tween(rotationDuration) else spring(),
+        label = "rotationZ"
     )
 
-    if (fallingY > 1500f) {
+    if (fallingY > screenHeightPx) {
         SideEffect { onRemove(true) }
     }
 
