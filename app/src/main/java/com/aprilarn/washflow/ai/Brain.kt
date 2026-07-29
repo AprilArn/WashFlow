@@ -170,7 +170,7 @@ class Brain {
                 when {
                     // ---- Timeout: try the next model ----
                     response == null -> {
-                        lastFailureReason = "⏱️ $label tidak merespons dalam 20 detik"
+                        lastFailureReason = "⏱️ $label tidak merespons dalam 12 detik"
                         onStatusUpdate(label, com.aprilarn.washflow.ui.aiagent.AiModelStatus.FAILURE)
                         if (index < models.size - 1) {
                             onStatusUpdate("Switching...", com.aprilarn.washflow.ui.aiagent.AiModelStatus.SWITCHING)

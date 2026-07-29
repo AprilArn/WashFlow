@@ -387,8 +387,8 @@ fun VoiceAgentOverlay(
                                     )
                                 }
 
-                                if (status == VoiceAgentStatus.WAITING_FOR_CONFIRMATION && 
-                                    lastMessage?.action != null && 
+                                if (status == VoiceAgentStatus.WAITING_FOR_CONFIRMATION &&
+                                    lastMessage?.action != null &&
                                     !lastMessage.actionExecuted && 
                                     !lastMessage.actionCancelled) {
                                     Spacer(modifier = Modifier.height(16.dp))
