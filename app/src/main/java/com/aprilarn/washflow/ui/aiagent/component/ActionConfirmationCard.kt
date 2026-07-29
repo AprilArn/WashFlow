@@ -1,6 +1,7 @@
 package com.aprilarn.washflow.ui.aiagent.component
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -253,23 +254,21 @@ fun ActionConfirmationCard(
         else -> AnnotatedString("")
     }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(2.dp, GrayBlue.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+            .padding(16.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Aira needs your confirmation:",
-                style = MaterialTheme.typography.labelSmall,
-                color = Gray,
-                fontWeight = FontWeight.Medium
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Aira needs your confirmation:",
+            style = MaterialTheme.typography.labelSmall,
+            color = Gray,
+            fontWeight = FontWeight.Medium
+        )
+        Spacer(modifier = Modifier.height(8.dp))
 
-            if (action is AiAgentAction.AddCustomer || action is AiAgentAction.DeleteCustomer || action is AiAgentAction.DeleteItem || action is AiAgentAction.AddItem) {
+        if (action is AiAgentAction.AddCustomer || action is AiAgentAction.DeleteCustomer || action is AiAgentAction.DeleteItem || action is AiAgentAction.AddItem) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Box {
                         OutlinedTextField(
@@ -290,7 +289,9 @@ fun ActionConfirmationCard(
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = GrayBlue,
-                                unfocusedBorderColor = Color(0xFFE0E0E0)
+                                unfocusedBorderColor = Color(0xFFE0E0E0),
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent
                             )
                         )
 
@@ -424,7 +425,9 @@ fun ActionConfirmationCard(
                                 ),
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = GrayBlue,
-                                    unfocusedBorderColor = Color(0xFFE0E0E0)
+                                    unfocusedBorderColor = Color(0xFFE0E0E0),
+                                    focusedContainerColor = Color.Transparent,
+                                    unfocusedContainerColor = Color.Transparent
                                 )
                             )
 
@@ -496,7 +499,9 @@ fun ActionConfirmationCard(
                                     singleLine = true,
                                     colors = OutlinedTextFieldDefaults.colors(
                                         focusedBorderColor = GrayBlue,
-                                        unfocusedBorderColor = Color(0xFFE0E0E0)
+                                        unfocusedBorderColor = Color(0xFFE0E0E0),
+                                        focusedContainerColor = Color.Transparent,
+                                        unfocusedContainerColor = Color.Transparent
                                     )
                                 )
 
@@ -636,5 +641,4 @@ fun ActionConfirmationCard(
                 }
             }
         }
-    }
 }

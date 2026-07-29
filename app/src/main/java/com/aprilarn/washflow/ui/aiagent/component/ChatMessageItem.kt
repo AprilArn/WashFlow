@@ -189,7 +189,9 @@ fun ChatMessageItem(
                     val isTypewriterActive by remember(progress, message.text) {
                         derivedStateOf { progress >= 0 && progress < message.text.length }
                     }
-                    var delayedShowActionCard by remember { mutableStateOf(false) }
+                    var delayedShowActionCard by remember(message.id, isAlreadyAnimated) { 
+                        mutableStateOf(isAlreadyAnimated) 
+                    }
 
                     Column(modifier = Modifier.fillMaxWidth()) {
                         TypewriterText(
@@ -205,8 +207,10 @@ fun ChatMessageItem(
                                 !message.actionCancelled &&
                                 !message.isThinking
 
-                        LaunchedEffect(isTypewriterActive, hasAction) {
-                            if (!isTypewriterActive && hasAction) {
+                        LaunchedEffect(isTypewriterActive, hasAction, isAlreadyAnimated) {
+                            if (isAlreadyAnimated) {
+                                delayedShowActionCard = hasAction
+                            } else if (!isTypewriterActive && hasAction) {
                                 delay(250L)
                                 delayedShowActionCard = true
                             } else {
@@ -222,8 +226,8 @@ fun ChatMessageItem(
 
                         AnimatedVisibility(
                             visible = delayedShowActionCard,
-                            enter = fadeIn(animationSpec = tween(500)),
-                            exit = fadeOut(animationSpec = tween(500))
+                            enter = if (isAlreadyAnimated) EnterTransition.None else fadeIn(animationSpec = tween(500)),
+                            exit = if (isAlreadyAnimated) ExitTransition.None else fadeOut(animationSpec = tween(500))
                         ) {
                             Column {
                                 Spacer(modifier = Modifier.height(12.dp))

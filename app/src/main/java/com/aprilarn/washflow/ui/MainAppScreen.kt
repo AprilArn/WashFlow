@@ -551,6 +551,7 @@ fun MainAppScreen(
             status = aiAgentUiState.voiceAgentStatus,
             text = aiAgentUiState.voiceAgentText,
             lastMessage = aiAgentUiState.messages.lastOrNull(),
+            isAlreadyAnimated = aiAgentViewModel.wasMessageAnimated(aiAgentUiState.messages.lastOrNull()?.id ?: ""),
             customers = aiAgentUiState.customers,
             items = aiAgentUiState.items,
             services = aiAgentUiState.services,

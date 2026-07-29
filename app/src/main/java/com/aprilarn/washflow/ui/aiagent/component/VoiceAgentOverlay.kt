@@ -36,6 +36,7 @@ import com.aprilarn.washflow.ui.aiagent.VoiceAgentStatus
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.MainFontBlack
 import com.aprilarn.washflow.utils.MarkdownUtils
+import kotlinx.coroutines.delay
 import kotlin.math.abs
 
 @Composable
@@ -44,6 +45,7 @@ fun VoiceAgentOverlay(
     modifier: Modifier = Modifier,
     text: String = "",
     lastMessage: ChatMessage? = null,
+    isAlreadyAnimated: Boolean = false,
     customers: List<Customers> = emptyList(),
     items: List<Items> = emptyList(),
     services: List<Services> = emptyList(),
@@ -391,15 +393,35 @@ fun VoiceAgentOverlay(
                                     lastMessage?.action != null &&
                                     !lastMessage.actionExecuted && 
                                     !lastMessage.actionCancelled) {
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    ActionConfirmationCard(
-                                        action = lastMessage.action,
-                                        customers = customers,
-                                        items = items,
-                                        services = services,
-                                        onConfirm = onConfirmAction,
-                                        onCancel = onCancelAction
-                                    )
+                                    
+                                    var showCard by remember(lastMessage.id, isAlreadyAnimated) { 
+                                        mutableStateOf(isAlreadyAnimated) 
+                                    }
+                                    
+                                    LaunchedEffect(isAlreadyAnimated) {
+                                        if (!isAlreadyAnimated) {
+                                            delay(300L) // Small delay for voice context
+                                        }
+                                        showCard = true
+                                    }
+
+                                    AnimatedVisibility(
+                                        visible = showCard,
+                                        enter = if (isAlreadyAnimated) EnterTransition.None else fadeIn() + expandVertically(),
+                                        exit = fadeOut()
+                                    ) {
+                                        Column {
+                                            Spacer(modifier = Modifier.height(16.dp))
+                                            ActionConfirmationCard(
+                                                action = lastMessage.action,
+                                                customers = customers,
+                                                items = items,
+                                                services = services,
+                                                onConfirm = onConfirmAction,
+                                                onCancel = onCancelAction
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
