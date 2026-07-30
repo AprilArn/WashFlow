@@ -3,6 +3,7 @@ package com.aprilarn.washflow.ui.aiagent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
+import com.aprilarn.washflow.ui.aiagent.component.*
 
 @Preview(showBackground = true)
 @Composable
@@ -21,10 +22,16 @@ fun AiAgentPanelChatPreview() {
         isAiThinking = false,
         currentModelName = "Gemini Flash",
         modelStatus = AiModelStatus.IDLE,
+        customers = emptyList(),
+        items = emptyList(),
+        services = emptyList(),
+        animatedMessageIds = emptySet(),
         wasMessageAnimated = { true },
         onMessageAnimated = {},
+        getAnimationProgress = { -1 },
         onInputChange = {},
         onSendMessage = {},
+        onStopProcessing = {},
         onClearHistory = {},
         onConfirmAction = { _, _ -> },
         onCancelAction = {},
@@ -49,10 +56,16 @@ fun AiAgentPanelBulletPointPreview() {
         isAiThinking = false,
         currentModelName = "Gemini Flash",
         modelStatus = AiModelStatus.IDLE,
+        customers = emptyList(),
+        items = emptyList(),
+        services = emptyList(),
+        animatedMessageIds = emptySet(),
         wasMessageAnimated = { true },  // Preview: pretend all already animated
         onMessageAnimated = {},
+        getAnimationProgress = { -1 },
         onInputChange = {},
         onSendMessage = {},
+        onStopProcessing = {},
         onClearHistory = {},
         onConfirmAction = { _, _ -> },
         onCancelAction = {},
@@ -72,10 +85,16 @@ fun AiAgentPanelIdlePreview() {
         isAiThinking = false,
         currentModelName = null,
         modelStatus = AiModelStatus.IDLE,
+        customers = emptyList(),
+        items = emptyList(),
+        services = emptyList(),
+        animatedMessageIds = emptySet(),
         wasMessageAnimated = { true },
         onMessageAnimated = {},
+        getAnimationProgress = { -1 },
         onInputChange = {},
         onSendMessage = {},
+        onStopProcessing = {},
         onClearHistory = {},
         onConfirmAction = { _, _ -> },
         onCancelAction = {},

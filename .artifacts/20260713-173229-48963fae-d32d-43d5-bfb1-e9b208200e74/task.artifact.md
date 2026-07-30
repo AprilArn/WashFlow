@@ -1,0 +1,6 @@
+- [x] Add `RECORD_AUDIO` permission to `AndroidManifest.xml`
+- [x] Create `SpeechToTextManager.kt`
+- [x] Update `AiAgentViewModel.kt` with STT integration and flow logic
+- [x] Update `VoiceAgentOverlay.kt` to show real-time STT text
+- [x] Update `MainAppScreen.kt` with permission handling and voice trigger
+- [x] Verify build and provide manual testing instructions

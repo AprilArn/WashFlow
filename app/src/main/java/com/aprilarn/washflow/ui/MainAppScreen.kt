@@ -2,6 +2,8 @@ package com.aprilarn.washflow.ui
 
 import android.content.Context
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,6 +45,7 @@ import com.aprilarn.washflow.ui.components.Header
 import com.aprilarn.washflow.ui.components.KickedDialog
 import com.aprilarn.washflow.ui.components.LeaveWorkspaceDialog
 import com.aprilarn.washflow.ui.aiagent.AiAgentPanel
+import com.aprilarn.washflow.ui.aiagent.component.VoiceAgentOverlay
 import com.aprilarn.washflow.ui.aiagent.AiAgentViewModel
 import com.aprilarn.washflow.ui.notifications.NotificationPanel
 import com.aprilarn.washflow.ui.notifications.NotificationPreviewItem
@@ -100,9 +103,21 @@ fun MainAppScreen(
     val aiAgentViewModel: AiAgentViewModel = viewModel()
     val aiAgentUiState by aiAgentViewModel.uiState.collectAsStateWithLifecycle()
 
-    val customersViewModel: com.aprilarn.washflow.ui.customers.CustomersViewModel = viewModel()
-
     val context = LocalContext.current
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            if (isGranted) {
+                aiAgentViewModel.onStartVoiceAgent(context)
+            } else {
+                Toast.makeText(context, "Microphone permission is required for voice agent", Toast.LENGTH_SHORT).show()
+            }
+        }
+    )
+
+    val customersViewModel: com.aprilarn.washflow.ui.customers.CustomersViewModel = viewModel()
+    val itemsViewModel: ItemsViewModel = viewModel()
 
     // Handle AI Agent actions (navigation)
     LaunchedEffect(Unit) {
@@ -125,6 +140,22 @@ fun MainAppScreen(
                         android.widget.Toast.makeText(context, "Customer '${action.name}' deleted successfully!", android.widget.Toast.LENGTH_SHORT).show()
                     } else {
                         android.widget.Toast.makeText(context, "Error: Customer ID not found.", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                }
+                is com.aprilarn.washflow.ui.aiagent.AiAgentAction.AddItem -> {
+                    itemsViewModel.addItem(action.serviceId, action.itemName, action.itemPrice)
+                    android.widget.Toast.makeText(context, "Item '${action.itemName}' added successfully!", android.widget.Toast.LENGTH_SHORT).show()
+                }
+                is com.aprilarn.washflow.ui.aiagent.AiAgentAction.DeleteItem -> {
+                    if (action.itemId.isNotEmpty()) {
+                        val itemToDelete = com.aprilarn.washflow.data.model.Items(
+                            itemId = action.itemId,
+                            itemName = action.itemName
+                        )
+                        itemsViewModel.deleteItem(itemToDelete)
+                        android.widget.Toast.makeText(context, "Item '${action.itemName}' deleted successfully!", android.widget.Toast.LENGTH_SHORT).show()
+                    } else {
+                        android.widget.Toast.makeText(context, "Error: Item ID not found.", android.widget.Toast.LENGTH_SHORT).show()
                     }
                 }
                 is com.aprilarn.washflow.ui.aiagent.AiAgentAction.Unknown -> {
@@ -175,6 +206,22 @@ fun MainAppScreen(
                 onWorkspaceClick = { mainViewModel.onWorkspaceNameClicked() },
                 onNotifClick = { notificationsViewModel.onNotificationIconClicked() },
                 onAiAgentClick = { aiAgentViewModel.onToggleAiAgent() },
+                onAiAgentLongClick = {
+                    val permission = android.Manifest.permission.RECORD_AUDIO
+                    val isGranted = androidx.core.content.ContextCompat.checkSelfPermission(
+                        context, permission
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+                    if (isGranted) {
+                        aiAgentViewModel.onStartVoiceAgent(context)
+                    } else {
+                        permissionLauncher.launch(permission)
+                    }
+                },
+                isAiVoiceActive = aiAgentUiState.voiceAgentStatus != com.aprilarn.washflow.ui.aiagent.VoiceAgentStatus.IDLE ||
+                        aiAgentUiState.isAiThinking ||
+                        aiAgentUiState.isTypewriterActive ||
+                        aiAgentUiState.modelStatus == com.aprilarn.washflow.ui.aiagent.AiModelStatus.COOLDOWN,
                 onRemovePreview = { id, swiped -> notificationsViewModel.removeNotificationPreview(id, swiped) },
                 workspaceDropdown = { wsOffset ->
                     WorkspaceOptionsDropdown(
@@ -477,48 +524,64 @@ fun MainAppScreen(
         }
     }
 
-    // 2. PANEL NOTIFIKASI MELAYANG (Berada paling atas karena ditulis paling akhir)
-    NotificationPanel(
-        expanded = notificationsUiState.showNotificationOptions,
-        notifications = notificationsUiState.filteredNotifications,
-        currentUid = notificationsUiState.currentUserUid,
-        filter = notificationsUiState.filter,
-        onFilterChange = { notificationsViewModel.onFilterChanged(it) },
-        onMarkAllAsRead = { notificationsViewModel.markAllAsRead() },
-        onDismiss = { notificationsViewModel.onDismissNotificationOptions() },
-        onNotificationClick = { notif ->
-            notificationsViewModel.markNotificationAsRead(notif)
-        }
-    )
+    // 2. PANEL NOTIFIKASI MELAYANG (Berada paling atas karena memiliki zIndex tinggi)
+    Box(modifier = Modifier.fillMaxSize().zIndex(100f)) {
+        NotificationPanel(
+            expanded = notificationsUiState.showNotificationOptions,
+            notifications = notificationsUiState.filteredNotifications,
+            currentUid = notificationsUiState.currentUserUid,
+            filter = notificationsUiState.filter,
+            onFilterChange = { notificationsViewModel.onFilterChanged(it) },
+            onMarkAllAsRead = { notificationsViewModel.markAllAsRead() },
+            onDismiss = { notificationsViewModel.onDismissNotificationOptions() },
+            onNotificationClick = { notif ->
+                notificationsViewModel.markNotificationAsRead(notif)
+            }
+        )
+    }
 
-    // 2.5 PANEL AI AGENT (Berada paling atas karena ditulis paling akhir)
-    AiAgentPanel(
-        expanded = aiAgentUiState.expanded,
-        userName = userData?.displayName ?: "Unknown",
-        profilePictureUrl = userData?.profilePictureUrl,
-        inputMessage = aiAgentUiState.inputMessage,
-        messages = aiAgentUiState.messages,
-        isAiThinking = aiAgentUiState.isAiThinking,
-        currentModelName = aiAgentUiState.currentModelName,
-        modelStatus = aiAgentUiState.modelStatus,
-        customers = aiAgentUiState.customers,
-        wasMessageAnimated = { aiAgentViewModel.wasMessageAnimated(it) },
-        onMessageAnimated = { aiAgentViewModel.markMessageAsAnimated(it) },
-        onInputChange = { aiAgentViewModel.onInputChange(it) },
-        onSendMessage = { aiAgentViewModel.onSendMessage() },
-        onClearHistory = { aiAgentViewModel.onClearHistory() },
-        onConfirmAction = { id, action -> aiAgentViewModel.onConfirmAction(id, action) },
-        onCancelAction = { aiAgentViewModel.onCancelAction(it) },
-        onDismiss = { aiAgentViewModel.onDismissAiAgent() }
-    )
+    // 2.5 OVERLAY VOICE AGENT (Berada di belakang AI Agent Panel jika terbuka)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .zIndex(99f), // Tetap di depan elemen UI dasar, tapi di bawah AI Panel (100f)
+        contentAlignment = Alignment.TopCenter
+    ) {
+        VoiceAgentOverlay(
+            status = aiAgentUiState.voiceAgentStatus,
+            text = aiAgentUiState.voiceAgentText,
+            lastMessage = aiAgentUiState.messages.lastOrNull(),
+            isAlreadyAnimated = aiAgentViewModel.wasMessageAnimated(aiAgentUiState.messages.lastOrNull()?.id ?: ""),
+            customers = aiAgentUiState.customers,
+            items = aiAgentUiState.items,
+            services = aiAgentUiState.services,
+            onConfirmAction = { updatedAction ->
+                val lastMessage = aiAgentUiState.messages.lastOrNull()
+                if (lastMessage != null) {
+                    aiAgentViewModel.onConfirmAction(lastMessage.id, updatedAction)
+                }
+            },
+            onCancelAction = {
+                val lastMessage = aiAgentUiState.messages.lastOrNull()
+                if (lastMessage != null) {
+                    aiAgentViewModel.onCancelAction(lastMessage.id)
+                }
+            },
+            onInteractionChange = { aiAgentViewModel.onVoiceInteractionChanged(it) },
+            onDismissListening = { aiAgentViewModel.onStopVoiceAgent() },
+            onDismissThinking = { aiAgentViewModel.onStopProcessing() },
+            onDismissAnswering = { aiAgentViewModel.onDismissVoiceOverlay() }
+        )
+    }
 
-    // 3. OVERLAY PREVIEW NOTIFIKASI JATUH (TANPA POPUP)
+    // 2.6 OVERLAY PREVIEW NOTIFIKASI JATUH (TANPA POPUP)
     if (notificationsUiState.notificationPreviews.isNotEmpty()) {
         Box(
             modifier = Modifier
                 .fillMaxSize() // Memenuhi layar agar notif bisa jatuh sampai bawah
                 // Box kosong di Compose TIDAK memblokir sentuhan (touch pass-through)
                 .padding(top = 58.dp, end = 24.dp) // Jarak dari atas dan kanan, sesuaikan sedikit agar pas di bawah lonceng
+                .zIndex(98f) // Berada satu tingkat di bawah Voice Agent Overlay (99f)
         ) {
             Column(
                 modifier = Modifier
@@ -546,6 +609,35 @@ fun MainAppScreen(
                 }
             }
         }
+    }
+
+    // 2.7 PANEL AI AGENT (Berada paling atas karena memiliki zIndex tertinggi)
+    Box(modifier = Modifier.fillMaxSize().zIndex(100f)) {
+        AiAgentPanel(
+            expanded = aiAgentUiState.expanded,
+            userName = userData?.displayName ?: "Unknown",
+            profilePictureUrl = userData?.profilePictureUrl,
+            inputMessage = aiAgentUiState.inputMessage,
+            messages = aiAgentUiState.messages,
+            isAiThinking = aiAgentUiState.isAiThinking,
+            isTypewriterActive = aiAgentUiState.isTypewriterActive,
+            currentModelName = aiAgentUiState.currentModelName,
+            modelStatus = aiAgentUiState.modelStatus,
+            customers = aiAgentUiState.customers,
+            items = aiAgentUiState.items,
+            services = aiAgentUiState.services,
+            animatedMessageIds = aiAgentUiState.animatedMessageIds,
+            wasMessageAnimated = { aiAgentViewModel.wasMessageAnimated(it) },
+            onMessageAnimated = { aiAgentViewModel.markMessageAsAnimated(it) },
+            getAnimationProgress = { aiAgentViewModel.getAnimationProgress(it) },
+            onInputChange = { aiAgentViewModel.onInputChange(it) },
+            onSendMessage = { aiAgentViewModel.onSendMessage() },
+            onStopProcessing = { aiAgentViewModel.onStopProcessing() },
+            onClearHistory = { aiAgentViewModel.onClearHistory() },
+            onConfirmAction = { id, action -> aiAgentViewModel.onConfirmAction(id, action) },
+            onCancelAction = { aiAgentViewModel.onCancelAction(it) },
+            onDismiss = { aiAgentViewModel.onDismissAiAgent() }
+        )
     }
 
     // --- DIALOG UNTUK RENAME WORKSPACE ---

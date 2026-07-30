@@ -8,7 +8,10 @@ import com.google.ai.client.generativeai.type.HarmCategory
 import com.google.ai.client.generativeai.type.SafetySetting
 import com.google.ai.client.generativeai.type.content
 import com.google.ai.client.generativeai.type.generationConfig
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withTimeoutOrNull
+import java.util.concurrent.CancellationException
 import kotlin.time.Duration.Companion.milliseconds
 
 class Brain {
@@ -29,13 +32,22 @@ class Brain {
                - NEVER include action tags for general questions that do not require an app action.
                - ONLY output action tags when explicitly requested or highly relevant.
             4. User Confirmation: Always briefly confirm with the user before or alongside providing an action tag.
+            5. Data Consistency: 
+               - Always use Title Case (capitalize the first letter of each word) for Names of people and laundry Items (e.g., "Bima", "Baju Kaos") in both your spoken response and inside action tags.
+               - ALWAYS strip all spaces, hyphens, and non-digit characters from Phone Numbers inside action tags (e.g., "0812 345 678" becomes "0812345678").
             
             # CAPABILITIES & ACTION TAGS
             You can perform in-app actions by outputting specific tags in your response. 
             
             ## 1. NAVIGATION
-            Trigger this tag when the user explicitly wants to navigate to a specific page or section.
-            Format: [ACTION:NAVIGATE:routeName]
+            Trigger these tags when the user wants to navigate to a specific page or section.
+            
+            - [ACTION:DIRECT_NAVIGATE:routeName] : Use this when the user EXPLICITLY asks to go to a page (e.g., "buka halaman order", "ke settings", "pindah ke dashboard"). This triggers navigation IMMEDIATELY.
+            - [ACTION:NAVIGATE:routeName] : Use this when the user is INQUIRING about a page, discussing its features, or when it is HIGHLY RELEVANT to the current conversation (excluding data actions like adding/deleting). This will show a confirmation card.
+            
+            **CRITICAL RULES**: 
+            1. If a user wants to perform a SPECIFIC DATA ACTION (e.g., "tambah pelanggan", "hapus item", "buat pesanan"), DO NOT trigger a navigation tag. Instead, focus on gathering the necessary information for that action (Name, Phone, Price, etc.).
+            2. If a user is only ASKING about a page or discussing what can be done there, ALWAYS offer a navigation suggestion using [ACTION:NAVIGATE:routeName].
             
             Available routeNames:
             - home : Dashboard/Main page
@@ -48,7 +60,9 @@ class Brain {
             - table_data : Master data management
             - settings : App settings and location
             
-            Example: "Sure, let's go to the orders page. [ACTION:NAVIGATE:orders]"
+            Example (Direct): "Tentu, mari ke halaman pengaturan. [ACTION:DIRECT_NAVIGATE:settings]"
+            Example (Inquiry): "Di halaman Order, Anda bisa membuat pesanan baru dan memilih layanan. Apakah Anda ingin saya arahkan ke sana? [ACTION:NAVIGATE:orders]"
+            Example (Data Action - No Navigation): "Tentu, saya bisa bantu mendaftarkan pelanggan baru. Siapa nama dan nomor teleponnya?"
             
             ## 2. ADD CUSTOMER
             Trigger this tag when the user wants to register a new customer and has provided the necessary information (Name and Phone).
@@ -63,6 +77,19 @@ class Brain {
             Example: "I understand you want to delete the customer Budi. [ACTION:DELETE_CUSTOMER:Budi:]"
             Example: "I'll help you delete the customer with number 08123. [ACTION:DELETE_CUSTOMER::08123]"
             Example: "I'll help you delete Santi (08123). [ACTION:DELETE_CUSTOMER:Santi:08123]"
+            
+            ## 4. ADD ITEM
+            Trigger this tag when the user wants to add a new laundry item. Provide the item name, price, and service name.
+            Format: [ACTION:ADD_ITEM:ItemName:Price:ServiceName]
+            
+            Example: "I've prepared the details to add 'Baju Kaos' with price 5000 to the 'Laundry Satuan' service. [ACTION:ADD_ITEM:Baju Kaos:5000:Laundry Satuan]"
+            
+            ## 5. DELETE ITEM
+            Trigger this tag when the user wants to delete a laundry item. Provide the item name and the service name if known. The app will find the closest matching item for confirmation.
+            Format: [ACTION:DELETE_ITEM:ItemName:ServiceName]
+            
+            Example: "Sure, I'll help you remove the 'Baju Kaos' item from 'Laundry Satuan'. [ACTION:DELETE_ITEM:Baju Kaos:Laundry Satuan]"
+            Example: "I'll help you delete 'Sajadah'. [ACTION:DELETE_ITEM:Sajadah:]"
             
             """.trimIndent()
         )
@@ -83,16 +110,8 @@ class Brain {
     private data class ModelEntry(val name: String, val label: String)
 
     private val modelChain: List<ModelEntry> = listOf(
-        // Tier 1 – Model Cloud Komersial Utama (Paling Pintar, Agen Terbaik)
-        ModelEntry("gemini-flash-latest",       "Gemini Flash"),          // Agen multi-step & tool-use terbaik
-        ModelEntry("gemini-flash-lite-latest",  "Gemini Flash Lite"),     // Sangat cepat, hemat token, instruksi ketat
-
-        // Tier 2 – Open Model Kategori Besar (Penalaran & Logika Tingkat Tinggi)
-        ModelEntry("gemma-4-31b-it",            "Gemma 4 31B Dense"),     // Akurasi & nalar tertinggi di seri open model Google
-        ModelEntry("gemma-4-26b-a4b-it",        "Gemma 4 26B A4B MoE"),   // Cepat (Active 4B), nalar kuat, hemat VRAM
-
-        // Tier 3 – Open Model Kategori Medium (Laptop-Ready)
-        ModelEntry("gemma-4-12b-it",            "Gemma 4 12B"),           // Encoder-free multimodal, pas untuk agen lokal
+        ModelEntry("gemini-flash-latest",       "Gemini Flash"),
+        ModelEntry("gemini-flash-lite-latest",  "Gemini Flash Lite"),
     )
 
     private val models: List<GenerativeModel> = modelChain.map { entry ->
@@ -120,7 +139,7 @@ class Brain {
 
     companion object {
         /** Maximum time (ms) to wait for a single model before falling back. */
-        private const val TIMEOUT_MS = 16_000L
+        private const val TIMEOUT_MS = 12_000L
     }
 
     // -------------------------------------------------------------------------
@@ -135,6 +154,7 @@ class Brain {
         var lastFailureReason = ""
 
         for ((index, model) in models.withIndex()) {
+            currentCoroutineContext().ensureActive() // Cek pembatalan segera sebelum update status
             val label = modelChain[index].label
             onStatusUpdate(label, com.aprilarn.washflow.ui.aiagent.AiModelStatus.THINKING)
 
@@ -150,10 +170,11 @@ class Brain {
                 when {
                     // ---- Timeout: try the next model ----
                     response == null -> {
-                        lastFailureReason = "⏱️ $label tidak merespons dalam 20 detik"
+                        lastFailureReason = "⏱️ $label tidak merespons dalam 12 detik"
                         onStatusUpdate(label, com.aprilarn.washflow.ui.aiagent.AiModelStatus.FAILURE)
                         if (index < models.size - 1) {
                             onStatusUpdate("Switching...", com.aprilarn.washflow.ui.aiagent.AiModelStatus.SWITCHING)
+                            currentCoroutineContext().ensureActive() // Cek pembatalan sebelum delay
                             kotlinx.coroutines.delay(500)
                         }
                         continue
@@ -177,6 +198,8 @@ class Brain {
                 }
 
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                
                 lastFailureReason = buildExceptionReason(label, e)
                 onStatusUpdate(label, com.aprilarn.washflow.ui.aiagent.AiModelStatus.FAILURE)
                 if (index < models.size - 1) {
@@ -188,6 +211,7 @@ class Brain {
         }
 
         // Every model in the chain has failed or timed out
+        currentCoroutineContext().ensureActive()
         return buildAllFailedMessage(lastFailureReason)
     }
 

@@ -88,9 +88,9 @@ private fun NavItem(
 ) {
     // Animasi perubahan warna background - Dibuat lebih stiff agar tidak terlalu bouncy
     val backgroundColor by animateColorAsState(
-        targetValue = if (isSelected) Color.White else Color.Transparent,
+        targetValue = if (isSelected) Color.White else Color.White.copy(alpha = 0f),
         animationSpec = spring(
-            dampingRatio = Spring.DampingRatioNoBouncy, // Menghilangkan efek bouncy
+            dampingRatio = Spring.DampingRatioNoBouncy,
             stiffness = Spring.StiffnessMedium
         ),
         label = "bgColorAnimation"

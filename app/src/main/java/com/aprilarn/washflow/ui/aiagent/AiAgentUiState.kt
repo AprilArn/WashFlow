@@ -1,6 +1,8 @@
 package com.aprilarn.washflow.ui.aiagent
 
 import com.aprilarn.washflow.data.model.Customers
+import com.aprilarn.washflow.data.model.Items
+import com.aprilarn.washflow.data.model.Services
 import androidx.compose.ui.text.input.TextFieldValue
 
 enum class AiModelStatus {
@@ -8,7 +10,8 @@ enum class AiModelStatus {
     THINKING,
     SUCCESS,
     FAILURE,
-    SWITCHING
+    SWITCHING,
+    COOLDOWN
 }
 
 data class ChatMessage(
@@ -31,5 +34,15 @@ data class AiAgentUiState(
     val isAiThinking: Boolean = false,
     val currentModelName: String? = null,
     val modelStatus: AiModelStatus = AiModelStatus.IDLE,
-    val customers: List<Customers> = emptyList()
+    val customers: List<Customers> = emptyList(),
+    val items: List<Items> = emptyList(),
+    val services: List<Services> = emptyList(),
+    val animatedMessageIds: Set<String> = emptySet(),
+    val isTypewriterActive: Boolean = false,
+    val voiceAgentStatus: VoiceAgentStatus = VoiceAgentStatus.IDLE,
+    val voiceAgentText: String = ""
 )
+
+enum class VoiceAgentStatus {
+    IDLE, LISTENING, THINKING, ANSWERING, WAITING_FOR_CONFIRMATION
+}
