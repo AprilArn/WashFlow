@@ -32,6 +32,7 @@ class AiAgentViewModel : ViewModel() {
 
     private var aiFlowJob: Job? = null
     private var cooldownJob: Job? = null
+    private var voiceAutoListenJob: Job? = null
     private var currentAiMessageId: String? = null
 
     private val _actionEvents = MutableSharedFlow<AiAgentAction>()
@@ -175,10 +176,14 @@ class AiAgentViewModel : ViewModel() {
         sttManager?.cancel()
         aiFlowJob?.cancel()
         aiFlowJob = null
+        voiceAutoListenJob?.cancel()
+        voiceAutoListenJob = null
     }
 
     fun onDismissVoiceOverlay() {
         _uiState.update { it.copy(voiceAgentStatus = VoiceAgentStatus.IDLE) }
+        voiceAutoListenJob?.cancel()
+        voiceAutoListenJob = null
     }
 
     fun onInputChange(newValue: TextFieldValue) {
@@ -208,6 +213,8 @@ class AiAgentViewModel : ViewModel() {
     fun onStopProcessing() {
         aiFlowJob?.cancel()
         aiFlowJob = null
+        voiceAutoListenJob?.cancel()
+        voiceAutoListenJob = null
 
         val messageIdToCleanup = currentAiMessageId
         currentAiMessageId = null
@@ -340,12 +347,20 @@ class AiAgentViewModel : ViewModel() {
                 _uiState.update { it.copy(voiceAgentStatus = VoiceAgentStatus.WAITING_FOR_CONFIRMATION) }
             } else {
                 // Navigasi Langsung (isImmediateNav) ATAU hanya ngobrol biasa (!hasAction)
-                // Keduanya langsung buka mic lagi setelah jeda 3 detik
-                kotlinx.coroutines.delay(3000)
-                
-                // FINAL GUARD: If user dismissed while waiting to restart mic
-                if (_uiState.value.voiceAgentStatus == VoiceAgentStatus.IDLE) return
+                // Keduanya langsung buka mic lagi setelah jeda 4 detik
+                startVoiceAutoListenTimer()
+            }
+        }
 
+        kotlinx.coroutines.delay(1000) // Small buffer before resetting model status
+        _uiState.update { it.copy(modelStatus = AiModelStatus.IDLE, currentModelName = null) }
+    }
+
+    private fun startVoiceAutoListenTimer() {
+        voiceAutoListenJob?.cancel()
+        voiceAutoListenJob = viewModelScope.launch {
+            kotlinx.coroutines.delay(4000)
+            if (_uiState.value.voiceAgentStatus != VoiceAgentStatus.IDLE) {
                 _uiState.update { it.copy(
                     voiceAgentStatus = VoiceAgentStatus.LISTENING,
                     voiceAgentText = ""
@@ -353,9 +368,17 @@ class AiAgentViewModel : ViewModel() {
                 sttManager?.startListening()
             }
         }
+    }
 
-        kotlinx.coroutines.delay(1000) // Small buffer before resetting model status
-        _uiState.update { it.copy(modelStatus = AiModelStatus.IDLE, currentModelName = null) }
+    fun onVoiceInteractionChanged(isInteracting: Boolean) {
+        if (isInteracting) {
+            voiceAutoListenJob?.cancel()
+        } else {
+            // Reset timer if we are in ANSWERING state
+            if (_uiState.value.voiceAgentStatus == VoiceAgentStatus.ANSWERING) {
+                startVoiceAutoListenTimer()
+            }
+        }
     }
 
     fun onClearHistory() {

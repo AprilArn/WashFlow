@@ -21,6 +21,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -51,6 +53,7 @@ fun VoiceAgentOverlay(
     services: List<Services> = emptyList(),
     onConfirmAction: (AiAgentAction?) -> Unit = {},
     onCancelAction: () -> Unit = {},
+    onInteractionChange: (Boolean) -> Unit = {},
     onDismissListening: () -> Unit = {},
     onDismissThinking: () -> Unit = {},
     onDismissAnswering: () -> Unit = {}
@@ -87,7 +90,22 @@ fun VoiceAgentOverlay(
         var isDraggingSwipe by remember { mutableStateOf(false) }
         var dismissedBySwipe by remember { mutableStateOf(false) }
         var isFalling by remember { mutableStateOf(false) }
-        var fallDirection by remember { mutableFloatStateOf(0f) } 
+        var fallDirection by remember { mutableFloatStateOf(0f) }
+
+        // Freeze states for falling animation consistency
+        var lastActiveStatus by remember { mutableStateOf(status) }
+        var lastActiveText by remember { mutableStateOf(text) }
+
+        // GABUNGKAN KEDUANYA DI SINI
+        LaunchedEffect(status, text) {
+            if (status != VoiceAgentStatus.IDLE) {
+                lastActiveStatus = status
+                lastActiveText = text
+            }
+        }
+
+        val displayStatus = if (isFalling) lastActiveStatus else status
+        val displayText = if (isFalling) lastActiveText else text
 
         val dismissThreshold = 300f
         val resistanceThreshold = 350f
@@ -165,7 +183,7 @@ fun VoiceAgentOverlay(
             }
         }
 
-        LaunchedEffect(scrollState.maxValue, text) {
+        LaunchedEffect(scrollState.maxValue, displayText) {
             if (!userHasInterrupted && status == VoiceAgentStatus.ANSWERING) {
                 scrollState.animateScrollTo(scrollState.maxValue)
             }
@@ -178,7 +196,7 @@ fun VoiceAgentOverlay(
             }
         }
 
-        val icon = when (status) {
+        val icon = when (displayStatus) {
             VoiceAgentStatus.LISTENING -> Icons.Default.Mic
             VoiceAgentStatus.THINKING -> Icons.Default.Sync
             VoiceAgentStatus.ANSWERING -> Icons.Default.AutoAwesome
@@ -235,7 +253,14 @@ fun VoiceAgentOverlay(
                             )
                         )
                     } else ExitTransition.None),
-            modifier = modifier
+
+            // 1. PINDAHKAN graphicsLayer KE SINI (MODIFIER ANIMATEDVISIBILITY)
+            modifier = modifier.graphicsLayer {
+                translationX = offsetX + fallingX
+                translationY = fallingY
+                this.rotationZ = overlayRotationZ
+                transformOrigin = androidx.compose.ui.graphics.TransformOrigin(pivotX, 0.5f)
+            }
         ) {
             Surface(
                 modifier = Modifier
@@ -243,15 +268,23 @@ fun VoiceAgentOverlay(
                     .widthIn(max = 520.dp)
                     .heightIn(max = 400.dp)
                     .wrapContentHeight()
-                    .graphicsLayer {
-                        translationX = offsetX + fallingX
-                        translationY = fallingY
-                        this.rotationZ = overlayRotationZ
-                        transformOrigin = androidx.compose.ui.graphics.TransformOrigin(pivotX, 0.5f)
+                    // Detect raw press/release to pause/reset timer
+                    .pointerInput(status) {
+                        if (status == VoiceAgentStatus.IDLE || isFalling) return@pointerInput
+                        awaitPointerEventScope {
+                            while (true) {
+                                val event = awaitPointerEvent(PointerEventPass.Initial)
+                                if (event.type == PointerEventType.Press) {
+                                    onInteractionChange(true)
+                                } else if (event.type == PointerEventType.Release) {
+                                    onInteractionChange(false)
+                                }
+                            }
+                        }
                     }
                     .pointerInput(status) {
                         if (status == VoiceAgentStatus.IDLE || isFalling) return@pointerInput
-                        
+
                         detectHorizontalDragGestures(
                             onDragStart = { isDraggingSwipe = true },
                             onDragCancel = {
@@ -351,7 +384,7 @@ fun VoiceAgentOverlay(
                         verticalArrangement = Arrangement.Center
                     ) {
                         AnimatedContent(
-                            targetState = status,
+                            targetState = displayStatus,
                             transitionSpec = {
                                 fadeIn(animationSpec = tween(400)) togetherWith
                                         fadeOut(animationSpec = tween(400)) using SizeTransform(clip = false)
@@ -377,10 +410,10 @@ fun VoiceAgentOverlay(
                                     )
                                 )
 
-                                if (text.isNotBlank()) {
+                                if (displayText.isNotBlank()) {
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
-                                        text = MarkdownUtils.parseMarkdown(text),
+                                        text = MarkdownUtils.parseMarkdown(displayText),
                                         style = MaterialTheme.typography.bodyMedium.copy(
                                             fontSize = 13.sp,
                                             lineHeight = 18.sp

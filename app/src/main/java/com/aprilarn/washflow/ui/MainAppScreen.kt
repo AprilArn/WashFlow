@@ -567,6 +567,7 @@ fun MainAppScreen(
                     aiAgentViewModel.onCancelAction(lastMessage.id)
                 }
             },
+            onInteractionChange = { aiAgentViewModel.onVoiceInteractionChanged(it) },
             onDismissListening = { aiAgentViewModel.onStopVoiceAgent() },
             onDismissThinking = { aiAgentViewModel.onStopProcessing() },
             onDismissAnswering = { aiAgentViewModel.onDismissVoiceOverlay() }
