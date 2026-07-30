@@ -54,6 +54,7 @@ import com.aprilarn.washflow.ui.contributors.ContributorsScreen
 import com.aprilarn.washflow.ui.contributors.ContributorsViewModel
 import com.aprilarn.washflow.ui.customers.CustomersScreen
 import com.aprilarn.washflow.ui.customers.CustomersViewModel
+import com.aprilarn.washflow.ui.financialreport.FinancialReportScreen
 import com.aprilarn.washflow.ui.home.HomeViewModel
 import com.aprilarn.washflow.ui.home.LocationAwareHomePage
 import com.aprilarn.washflow.ui.items.ItemsScreen
@@ -369,6 +370,10 @@ fun MainAppScreen(
                             bottomNavController.navigate(route)
                         }
                     )
+                }
+
+                composable(AppNavigation.FinancialReport.route) {
+                    FinancialReportScreen()
                 }
 
                 composable(AppNavigation.Customers.route) {

@@ -109,7 +109,7 @@ fun Header(
         Spacer(modifier = Modifier.width(32.dp))
 
         // --- NAVIGATION BAR ---
-        NavigationBar(navController = navController, modifier = Modifier.height(44.dp))
+        NavigationBar(navController = navController)
 
         Spacer(modifier=Modifier.weight(1f))
 

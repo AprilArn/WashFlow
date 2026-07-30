@@ -56,6 +56,7 @@ fun NavigationBar(
                 AppNavigation.Home,
                 AppNavigation.Orders,
                 AppNavigation.TableData,
+                AppNavigation.FinancialReport,
                 AppNavigation.Settings
             )
 
@@ -114,7 +115,7 @@ private fun NavItem(
                 indication = null, // Matikan ripple effect
                 onClick = onClick
             )
-            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .padding(horizontal = 14.dp, vertical = 8.dp)
     ) {
         Icon(
             imageVector = icon,
@@ -167,6 +168,7 @@ fun NavigationBarDataSelectedPreview() {
                 AppNavigation.Home,
                 AppNavigation.Orders,
                 AppNavigation.TableData,
+                AppNavigation.FinancialReport,
                 AppNavigation.Settings
             )
 
