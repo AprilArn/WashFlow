@@ -20,18 +20,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Air
-import androidx.compose.material.icons.filled.Cloud
-import androidx.compose.material.icons.filled.DoorBack
-import androidx.compose.material.icons.filled.Event
-import androidx.compose.material.icons.filled.Explore
-import androidx.compose.material.icons.filled.Storefront
-import androidx.compose.material.icons.filled.Thermostat
-import androidx.compose.material.icons.filled.Thunderstorm
-import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material.icons.filled.WaterDrop
-import androidx.compose.material.icons.filled.WbSunny
-import androidx.compose.material.icons.filled.WbTwilight
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -143,43 +132,43 @@ fun WeatherDetailsPanel(state: HomeUiState) {
         // Grid-like layout for details
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             WeatherDetailRow(
-                icon = Icons.Default.Thermostat,
+                icon = Icons.Rounded.Thermostat,
                 label = "Feels Like",
                 value = state.feelsLike,
                 isLoading = state.isLoading
             )
             WeatherDetailRow(
-                icon = Icons.Default.WaterDrop,
+                icon = Icons.Rounded.WaterDrop,
                 label = "Humidity",
                 value = state.humidity,
                 isLoading = state.isLoading
             )
             WeatherDetailRow(
-                icon = Icons.Default.Cloud,
+                icon = Icons.Rounded.Cloud,
                 label = "Precipitation",
                 value = state.precipitationProb,
                 isLoading = state.isLoading
             )
             WeatherDetailRow(
-                icon = Icons.Default.WbSunny,
+                icon = Icons.Rounded.WbSunny,
                 label = "UV Index",
                 value = state.uvIndex,
                 isLoading = state.isLoading
             )
             WeatherDetailRow(
-                icon = Icons.Default.Air,
+                icon = Icons.Rounded.Air,
                 label = "Wind Speed",
                 value = state.windSpeed,
                 isLoading = state.isLoading
             )
             WeatherDetailRow(
-                icon = Icons.Default.Explore,
+                icon = Icons.Rounded.Explore,
                 label = "Wind Direction",
                 value = state.windDirection,
                 isLoading = state.isLoading
             )
             WeatherDetailRow(
-                icon = Icons.Default.Thunderstorm,
+                icon = Icons.Rounded.Thunderstorm,
                 label = "Thunderstorm",
                 value = state.thunderstormProb,
                 isLoading = state.isLoading
@@ -426,12 +415,12 @@ fun HorizontalForecastItem(
         // 2. Ikon (Cuaca atau Event)
         if (forecast.isEvent) {
             val icon = when (forecast.iconUrl) {
-                "WS_OPEN" -> Icons.Default.Storefront
-                "WS_CLOSE" -> Icons.Default.DoorBack
-                "WS_DEADLINE" -> Icons.Default.Timer
-                "WS_SUNRISE" -> Icons.Default.WbSunny
-                "WS_SUNSET" -> Icons.Default.WbTwilight
-                else -> Icons.Default.Event
+                "WS_OPEN" -> Icons.Rounded.Storefront
+                "WS_CLOSE" -> Icons.Rounded.DoorBack
+                "WS_DEADLINE" -> Icons.Rounded.Timer
+                "WS_SUNRISE" -> Icons.Rounded.WbSunny
+                "WS_SUNSET" -> Icons.Rounded.WbTwilight
+                else -> Icons.Rounded.Event
             }
             Icon(
                 imageVector = icon,

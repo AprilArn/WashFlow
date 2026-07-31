@@ -8,8 +8,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -61,7 +61,7 @@ fun ContributorsScreen(
                             style = MaterialTheme.typography.bodyMedium.copy(color = Color.Gray, fontSize = 14.sp)
                         )
                     },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
+                    leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null, tint = Color.Gray) },
                     modifier = Modifier
                         .weight(1f)
                         .height(50.dp), // Tinggi lebih kecil
@@ -87,7 +87,7 @@ fun ContributorsScreen(
                         contentPadding = PaddingValues(horizontal = 16.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Add,
+                            imageVector = Icons.Rounded.Add,
                             contentDescription = "Add",
                             tint = GrayBlue,
                             modifier = Modifier.size(20.dp)

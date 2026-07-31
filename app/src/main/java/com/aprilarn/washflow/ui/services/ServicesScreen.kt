@@ -2,7 +2,7 @@ package com.aprilarn.washflow.ui.services
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -112,7 +112,7 @@ fun ServicesScreen(
                     weight = 0.1f,
                     content = {
                         Icon(
-                            imageVector = Icons.Default.Edit,
+                            imageVector = Icons.Rounded.Edit,
                             contentDescription = "Edit Service",
                             tint = GrayBlue.copy(alpha = 0.7f)
                         )

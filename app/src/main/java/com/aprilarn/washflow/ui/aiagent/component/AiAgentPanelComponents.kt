@@ -12,8 +12,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.rounded.Send
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -58,7 +58,7 @@ fun AiAgentPanelHeader(
         Box {
             IconButton(onClick = { showMenu = true }) {
                 Icon(
-                    imageVector = Icons.Default.MoreVert,
+                    imageVector = Icons.Rounded.MoreVert,
                     contentDescription = "More Options",
                     tint = MainFontBlack
                 )
@@ -189,7 +189,7 @@ fun AiAgentPanelInputArea(
                                 when (status) {
                                     AiModelStatus.IDLE -> {
                                         Icon(
-                                            imageVector = Icons.Default.MoreHoriz,
+                                            imageVector = Icons.Rounded.MoreHoriz,
                                             contentDescription = "Idle",
                                             modifier = Modifier.size(14.dp),
                                             tint = Gray
@@ -204,7 +204,7 @@ fun AiAgentPanelInputArea(
                                     }
                                     AiModelStatus.SUCCESS -> {
                                         Icon(
-                                            imageVector = Icons.Default.Check,
+                                            imageVector = Icons.Rounded.Check,
                                             contentDescription = "Success",
                                             modifier = Modifier.size(14.dp),
                                             tint = Color(0xFF4CAF50)
@@ -212,7 +212,7 @@ fun AiAgentPanelInputArea(
                                     }
                                     AiModelStatus.FAILURE -> {
                                         Icon(
-                                            imageVector = Icons.Default.Close,
+                                            imageVector = Icons.Rounded.Close,
                                             contentDescription = "Failed",
                                             modifier = Modifier.size(14.dp),
                                             tint = Color.Red
@@ -220,7 +220,7 @@ fun AiAgentPanelInputArea(
                                     }
                                     AiModelStatus.SWITCHING -> {
                                         Icon(
-                                            imageVector = Icons.Default.Refresh,
+                                            imageVector = Icons.Rounded.Refresh,
                                             contentDescription = "Switching",
                                             modifier = Modifier.size(14.dp),
                                             tint = GrayBlue
@@ -228,7 +228,7 @@ fun AiAgentPanelInputArea(
                                     }
                                     AiModelStatus.COOLDOWN -> {
                                         Icon(
-                                            imageVector = Icons.Default.Timer,
+                                            imageVector = Icons.Rounded.Timer,
                                             contentDescription = "Cooldown",
                                             modifier = Modifier.size(14.dp),
                                             tint = Color.Gray
@@ -261,7 +261,7 @@ fun AiAgentPanelInputArea(
                             .width(52.dp)
                     ) {
                         Icon(
-                            imageVector = if (showStopButton) Icons.Default.Stop else Icons.AutoMirrored.Filled.Send,
+                            imageVector = if (showStopButton) Icons.Rounded.Stop else Icons.AutoMirrored.Rounded.Send,
                             contentDescription = if (showStopButton) "Stop" else "Send",
                             tint = Color.White,
                             modifier = Modifier.size(20.dp)
@@ -306,7 +306,7 @@ fun AiAgentEmptyState(userName: String) {
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        Icons.Default.Refresh,
+                        Icons.Rounded.Refresh,
                         contentDescription = null,
                         tint = Color.White,
                         modifier = Modifier.size(16.dp)
@@ -374,7 +374,7 @@ fun AiAgentScrollToBottomButton(
             )
             Spacer(modifier = Modifier.width(6.dp))
             Icon(
-                imageVector = Icons.Default.KeyboardArrowDown,
+                imageVector = Icons.Rounded.KeyboardArrowDown,
                 contentDescription = null,
                 modifier = Modifier.size(18.dp),
                 tint = Color.White

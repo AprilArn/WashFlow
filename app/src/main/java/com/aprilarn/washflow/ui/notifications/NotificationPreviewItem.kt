@@ -8,11 +8,10 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.PersonAdd
-import androidx.compose.material.icons.outlined.ShoppingBasket
-import androidx.compose.material.icons.outlined.Update
+import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.PersonAdd
+import androidx.compose.material.icons.rounded.ShoppingBasket
+import androidx.compose.material.icons.rounded.Update
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -42,10 +41,10 @@ import kotlin.math.roundToInt
 @Composable
 private fun getNotificationPreviewIcon(title: String): ImageVector {
     return when (title) {
-        "Order Baru" -> Icons.Outlined.ShoppingBasket
-        "Contributor Baru" -> Icons.Outlined.PersonAdd
-        "Update Sistem" -> Icons.Outlined.Update
-        else -> Icons.Outlined.Notifications
+        "Order Baru" -> Icons.Rounded.ShoppingBasket
+        "Contributor Baru" -> Icons.Rounded.PersonAdd
+        "Update Sistem" -> Icons.Rounded.Update
+        else -> Icons.Rounded.Notifications
     }
 }
 
@@ -268,7 +267,7 @@ fun NotificationPreviewItem(
                         }
 
                         Icon(
-                            imageVector = Icons.Default.Notifications,
+                            imageVector = Icons.Rounded.Notifications,
                             contentDescription = null,
                             tint = GrayBlue.copy(alpha = 0.3f),
                             modifier = Modifier

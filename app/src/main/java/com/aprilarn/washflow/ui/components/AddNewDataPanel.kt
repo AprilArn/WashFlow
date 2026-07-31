@@ -5,7 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -104,7 +104,7 @@ fun AddNewDataPanel(
                 colors = ButtonDefaults.buttonColors(containerColor = GrayBlue),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Icon")
+                Icon(Icons.Rounded.Add, contentDescription = "Add Icon")
                 Spacer(modifier = Modifier.width(4.dp))
                 // Menggunakan addButtonText dari parameter
                 Text(addButtonText)

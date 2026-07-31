@@ -10,9 +10,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Mic
+import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -197,11 +197,11 @@ fun VoiceAgentOverlay(
         }
 
         val icon = when (displayStatus) {
-            VoiceAgentStatus.LISTENING -> Icons.Default.Mic
-            VoiceAgentStatus.THINKING -> Icons.Default.Sync
-            VoiceAgentStatus.ANSWERING -> Icons.Default.AutoAwesome
-            VoiceAgentStatus.WAITING_FOR_CONFIRMATION -> Icons.Default.AutoAwesome
-            else -> Icons.Default.AutoAwesome
+            VoiceAgentStatus.LISTENING -> Icons.Rounded.Mic
+            VoiceAgentStatus.THINKING -> Icons.Rounded.Sync
+            VoiceAgentStatus.ANSWERING -> Icons.Rounded.AutoAwesome
+            VoiceAgentStatus.WAITING_FOR_CONFIRMATION -> Icons.Rounded.AutoAwesome
+            else -> Icons.Rounded.AutoAwesome
         }
 
         val infiniteTransition = rememberInfiniteTransition(label = "SyncRotation")

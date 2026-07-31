@@ -20,10 +20,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.MyLocation
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.MyLocation
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -167,7 +167,7 @@ fun LocationSelectionPanel(
                 title = { Text("Set Location on Map") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back")
                     }
                 }
             )
@@ -262,7 +262,7 @@ fun LocationSelectionPanel(
                                     onClick = { isSearchExpanded = true } // Buka bar pencarian saat diklik
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
-                                        Icon(Icons.Default.Search, contentDescription = "Open Search", tint = Color.DarkGray)
+                                        Icon(Icons.Rounded.Search, contentDescription = "Open Search", tint = Color.DarkGray)
                                     }
                                 }
                             } else {
@@ -283,7 +283,7 @@ fun LocationSelectionPanel(
                                                 searchResults = emptyList()
                                                 focusManager.clearFocus()
                                             }) {
-                                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Close Search")
+                                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Close Search")
                                             }
                                         },
                                         trailingIcon = {
@@ -292,7 +292,7 @@ fun LocationSelectionPanel(
                                                     searchQuery = ""
                                                     searchResults = emptyList()
                                                 }) {
-                                                    Icon(Icons.Default.Close, contentDescription = "Clear")
+                                                    Icon(Icons.Rounded.Close, contentDescription = "Clear")
                                                 }
                                             }
                                         },
@@ -416,7 +416,7 @@ fun LocationSelectionPanel(
                                 },
                                 modifier = Modifier.height(50.dp)
                             ) {
-                                Icon(Icons.Default.MyLocation, contentDescription = "Current Location (Static)", tint = GrayBlue)
+                                Icon(Icons.Rounded.MyLocation, contentDescription = "Current Location (Static)", tint = GrayBlue)
                             }
 
                             // 3. Tombol Confirm

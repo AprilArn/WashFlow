@@ -3,9 +3,9 @@ package com.aprilarn.washflow.ui.settings
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.automirrored.filled.HelpOutline
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.rounded.ExitToApp
+import androidx.compose.material.icons.automirrored.rounded.HelpOutline
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -38,10 +38,10 @@ fun AccountSection(
             Column {
                 // 1. Support
                 SettingsItem(
-                    icon = Icons.AutoMirrored.Filled.HelpOutline,
+                    icon = Icons.AutoMirrored.Rounded.HelpOutline,
                     title = "Support",
                     trailingContent = {
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
+                        Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
                     }
                 )
 
@@ -49,13 +49,13 @@ fun AccountSection(
 
                 // 2. Logout
                 SettingsItem(
-                    icon = Icons.AutoMirrored.Filled.ExitToApp,
+                    icon = Icons.AutoMirrored.Rounded.ExitToApp,
                     title = "Logout",
                     titleColor = MaterialTheme.colorScheme.error, // Warna merah
                     iconTint = MaterialTheme.colorScheme.error, // Icon merah
                     onClick = onSignOut,
                     trailingContent = {
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
+                        Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
                     }
                 )
             }
