@@ -21,7 +21,7 @@ sealed class AppNavigation(val route: String, val icon: ImageVector, val label: 
 
     object TableData : AppNavigation("table_data", Icons.Rounded.Storage, "Data")
 
-    object FinancialReport : AppNavigation("financial_report", Icons.Rounded.Assessment, "Report")
+    object Analytics : AppNavigation("analytics", Icons.Rounded.Assessment, "Analytics")
 
     object Settings : AppNavigation("settings", Icons.Rounded.Settings, "Settings")
 }

@@ -1,4 +1,4 @@
-package com.aprilarn.washflow.ui.financialreport
+package com.aprilarn.washflow.ui.analytics
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,13 +12,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun FinancialReportScreen() {
+fun AnalyticsScreen() {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "Laporan Keuangan\n(Dummy Page)",
+            text = "Analytics\n(Dummy Page)",
             style = MaterialTheme.typography.headlineMedium.copy(
                 color = Color.White,
                 fontWeight = FontWeight.Bold,

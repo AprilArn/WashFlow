@@ -56,7 +56,7 @@ fun NavigationBar(
                 AppNavigation.Home,
                 AppNavigation.Orders,
                 AppNavigation.TableData,
-                AppNavigation.FinancialReport,
+                AppNavigation.Analytics,
                 AppNavigation.Settings
             )
 
@@ -168,7 +168,7 @@ fun NavigationBarDataSelectedPreview() {
                 AppNavigation.Home,
                 AppNavigation.Orders,
                 AppNavigation.TableData,
-                AppNavigation.FinancialReport,
+                AppNavigation.Analytics,
                 AppNavigation.Settings
             )
 

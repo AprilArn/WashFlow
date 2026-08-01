@@ -50,11 +50,11 @@ import com.aprilarn.washflow.ui.aiagent.AiAgentViewModel
 import com.aprilarn.washflow.ui.notifications.NotificationPanel
 import com.aprilarn.washflow.ui.notifications.NotificationPreviewItem
 import com.aprilarn.washflow.ui.notifications.NotificationsViewModel
+import com.aprilarn.washflow.ui.analytics.AnalyticsScreen
 import com.aprilarn.washflow.ui.contributors.ContributorsScreen
 import com.aprilarn.washflow.ui.contributors.ContributorsViewModel
 import com.aprilarn.washflow.ui.customers.CustomersScreen
 import com.aprilarn.washflow.ui.customers.CustomersViewModel
-import com.aprilarn.washflow.ui.financialreport.FinancialReportScreen
 import com.aprilarn.washflow.ui.home.HomeViewModel
 import com.aprilarn.washflow.ui.home.LocationAwareHomePage
 import com.aprilarn.washflow.ui.items.ItemsScreen
@@ -372,8 +372,8 @@ fun MainAppScreen(
                     )
                 }
 
-                composable(AppNavigation.FinancialReport.route) {
-                    FinancialReportScreen()
+                composable(AppNavigation.Analytics.route) {
+                    AnalyticsScreen()
                 }
 
                 composable(AppNavigation.Customers.route) {

@@ -125,7 +125,11 @@ fun Header(
                 Text(
                     modifier = Modifier.padding(start = 8.dp, top = 4.dp, bottom = 4.dp),
                     text = workspaceName,
-                    style = MaterialTheme.typography.bodyMedium.copy(color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Light)
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
                 )
                 Icon(
                     imageVector = if (isWorkspaceExpanded) Icons.Rounded.ArrowDropUp else Icons.Rounded.ArrowDropDown,
