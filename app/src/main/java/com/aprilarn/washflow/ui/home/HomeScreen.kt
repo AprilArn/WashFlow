@@ -36,17 +36,11 @@ fun HomeScreen(
     onEnterDataClick: () -> Unit,
     onStatusCardClick: () -> Unit
 ) {
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
             // Left panel: Weather Details
             Box(
                 modifier = Modifier
@@ -175,7 +169,6 @@ fun HomeScreen(
                 }
 
                 Spacer(modifier = Modifier.weight(2f))
-            }
         }
     }
 }
