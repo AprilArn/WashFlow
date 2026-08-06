@@ -505,7 +505,7 @@ fun AnalyticsScreen() {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(text = "Recent transactions", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = ThemeNavy)
+                        Text(text = "Recent orders", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = ThemeNavy)
                         Surface(
                             shape = RoundedCornerShape(12.dp),
                             border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f))
@@ -521,7 +521,7 @@ fun AnalyticsScreen() {
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     LazyColumn(
                         modifier = Modifier.fillMaxWidth(),
