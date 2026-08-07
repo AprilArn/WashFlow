@@ -9,6 +9,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
+import androidx.compose.foundation.gestures.snapping.SnapPosition
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -441,6 +445,7 @@ fun MiniCardItem(card: CardInfo) {
 
 // --- Main Screen ---
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AnalyticsScreen() {
     Row(
@@ -483,16 +488,35 @@ fun AnalyticsScreen() {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(text = "Upcoming deadlines", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = ThemeNavy)
                             Spacer(modifier = Modifier.height(24.dp))
-                            LazyRow(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(ThemeBgGray.copy(alpha = 0.5f), RoundedCornerShape(24.dp))
-                                    .clip(RoundedCornerShape(24.dp)),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                contentPadding = PaddingValues(16.dp)
-                            ) {
-                                items(mockUpcomingPayments) { payment ->
-                                    UpcomingPaymentCard(payment)
+                            BoxWithConstraints {
+                                val state = rememberLazyListState()
+                                val flingBehavior = rememberSnapFlingBehavior(
+                                    lazyListState = state,
+                                    snapPosition = SnapPosition.Start
+                                )
+                                LazyRow(
+                                    state = state,
+                                    flingBehavior = flingBehavior,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(ThemeBgGray.copy(alpha = 0.5f), RoundedCornerShape(24.dp))
+                                        .clip(RoundedCornerShape(24.dp)),
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp)
+                                ) {
+                                    items(mockUpcomingPayments) { payment ->
+                                        UpcomingPaymentCard(payment)
+                                    }
+                                    // Trailing spacer to allow the last item to snap to the left (16dp from edge)
+                                    item {
+                                        val itemWidth = 130.dp
+                                        val startPadding = 16.dp
+                                        val spacing = 16.dp
+                                        // The goal is to have enough space so the last item can reach the snap point (16dp)
+                                        // Space needed after the last item = maxWidth - startPadding - itemWidth - spacing - endPadding
+                                        val spacerWidth = (maxWidth - startPadding - itemWidth - spacing - startPadding).coerceAtLeast(0.dp)
+                                        Spacer(modifier = Modifier.width(spacerWidth))
+                                    }
                                 }
                             }
                         }
