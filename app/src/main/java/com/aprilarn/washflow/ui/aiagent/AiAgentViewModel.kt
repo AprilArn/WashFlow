@@ -347,7 +347,7 @@ class AiAgentViewModel : ViewModel() {
                 _uiState.update { it.copy(voiceAgentStatus = VoiceAgentStatus.WAITING_FOR_CONFIRMATION) }
             } else {
                 // Navigasi Langsung (isImmediateNav) ATAU hanya ngobrol biasa (!hasAction)
-                // Keduanya langsung buka mic lagi setelah jeda 4 detik
+                // Keduanya langsung buka mic lagi setelah jeda 3.5 detik
                 startVoiceAutoListenTimer()
             }
         }
@@ -359,7 +359,7 @@ class AiAgentViewModel : ViewModel() {
     private fun startVoiceAutoListenTimer() {
         voiceAutoListenJob?.cancel()
         voiceAutoListenJob = viewModelScope.launch {
-            kotlinx.coroutines.delay(4000)
+            kotlinx.coroutines.delay(3500)
             if (_uiState.value.voiceAgentStatus != VoiceAgentStatus.IDLE) {
                 _uiState.update { it.copy(
                     voiceAgentStatus = VoiceAgentStatus.LISTENING,
