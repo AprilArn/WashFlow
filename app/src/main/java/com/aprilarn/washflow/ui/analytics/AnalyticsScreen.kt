@@ -357,6 +357,15 @@ fun SpendingChart(modifier: Modifier = Modifier) {
                     cap = StrokeCap.Round
                 )
 
+                // Connector Line to Label
+                val lineDistancePx = 20.dp.toPx()
+                drawLine(
+                    color = ThemeNavy,
+                    start = Offset(indicatorX, indicatorY),
+                    end = Offset(indicatorX, indicatorY - lineDistancePx),
+                    strokeWidth = 1.dp.toPx()
+                )
+
                 // Active Dot
                 drawCircle(
                     color = ThemeNavy,
@@ -373,13 +382,15 @@ fun SpendingChart(modifier: Modifier = Modifier) {
             // Pop-up label for the active dot
             val indicatorX = stepX * 2
             val indicatorY = topPadding + chartHeight * (1 - points[2])
+            val labelGap = 20.dp
 
             Surface(
                 modifier = Modifier
-                    .offset(
-                        x = indicatorX - 30.dp, // Adjusting so the label is centered over the dot
-                        y = indicatorY - 35.dp  // Positioning label above the dot
-                    ),
+                    .offset(indicatorX, indicatorY - labelGap)
+                    .graphicsLayer {
+                        translationY = -size.height
+                        transformOrigin = TransformOrigin(0f, 1f)
+                    },
                 shape = RoundedCornerShape(8.dp),
                 color = ThemeNavy
             ) {
