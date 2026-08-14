@@ -99,7 +99,7 @@ fun AnalyticsScreen() {
                                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                                         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp)
                                     ) {
-                                        items(mockUpcomingPayments) { payment ->
+                                        items(mockUpcomingDeadlines) { payment ->
                                             UpcomingPaymentCard(payment)
                                         }
                                         // Trailing spacer to allow the last item to snap to the left (16dp from edge)
@@ -146,7 +146,7 @@ fun AnalyticsScreen() {
                             modifier = Modifier.fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            items(mockTransactions) { transaction ->
+                            items(mockRecentOrders) { transaction ->
                                 TransactionItem(transaction)
                                 HorizontalDivider(color = Color.LightGray.copy(alpha = 0.2f))
                             }

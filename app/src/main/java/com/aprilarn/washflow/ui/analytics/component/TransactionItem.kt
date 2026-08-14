@@ -33,7 +33,13 @@ fun TransactionItem(transaction: Transaction) {
                 .background(Color.White, RoundedCornerShape(12.dp)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(transaction.icon, contentDescription = null, tint = GrayBlue, modifier = Modifier.size(20.dp))
+            val initial = transaction.title.firstOrNull()?.uppercase() ?: ""
+            Text(
+                text = initial,
+                color = GrayBlue,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 16.sp
+            )
         }
 
         Spacer(modifier = Modifier.width(16.dp))

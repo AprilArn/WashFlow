@@ -1,5 +1,6 @@
 package com.aprilarn.washflow.ui.analytics.component
 
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
@@ -182,15 +183,44 @@ fun SpendingChart(modifier: Modifier = Modifier) {
             val indicatorX = animatedX.dp
             val indicatorY = topPadding + chartHeight * (1 - animatedYFactor)
             val labelGap = 20.dp
+            
+            // Flip label to the left if it's near the right edge
+            val isFarRight = selectedIndex >= days.size - 2
+            val targetTranslationXFactor = if (isFarRight) -1f else 0f
+            val animatedTranslationXFactor by animateFloatAsState(
+                targetValue = targetTranslationXFactor,
+                animationSpec = tween(durationMillis = 300),
+                label = "labelTranslationX"
+            )
+
+            val bottomStartRadius by animateDpAsState(
+                targetValue = if (isFarRight) 8.dp else 0.dp,
+                animationSpec = tween(durationMillis = 300),
+                label = "bottomStartRadius"
+            )
+            val bottomEndRadius by animateDpAsState(
+                targetValue = if (isFarRight) 0.dp else 8.dp,
+                animationSpec = tween(durationMillis = 300),
+                label = "bottomEndRadius"
+            )
 
             Surface(
                 modifier = Modifier
-                    .offset(indicatorX - 0.5.dp, indicatorY - labelGap)
+                    .offset(
+                        x = indicatorX + if (isFarRight) 0.5.dp else (-0.5).dp, 
+                        y = indicatorY - labelGap
+                    )
                     .graphicsLayer {
+                        translationX = size.width * animatedTranslationXFactor
                         translationY = -size.height
-                        transformOrigin = TransformOrigin(0f, 1f)
+                        transformOrigin = TransformOrigin(if (isFarRight) 1f else 0f, 1f)
                     },
-                shape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp, bottomStart = 0.dp, bottomEnd = 8.dp),
+                shape = RoundedCornerShape(
+                    topStart = 8.dp, 
+                    topEnd = 8.dp, 
+                    bottomStart = bottomStartRadius, 
+                    bottomEnd = bottomEndRadius
+                ),
                 color = GrayBlue
             ) {
                 Text(
