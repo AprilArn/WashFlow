@@ -33,8 +33,11 @@ val ThemeBgGray = Color(0xFFF3F4F6)
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun AnalyticsScreen() {
-    var selectedTab by remember { mutableStateOf("Order") }
+fun AnalyticsScreen(
+    uiState: AnalyticsUiState,
+    onTabClick: (String) -> Unit
+) {
+    val selectedTab = uiState.selectedTab
 
     Row(
         modifier = Modifier
@@ -43,7 +46,7 @@ fun AnalyticsScreen() {
         // 1. Sidebar Menu (Left)
         SidebarMenu(
             selectedTab = selectedTab,
-            onTabClick = { selectedTab = it }
+            onTabClick = onTabClick
         )
 
         Spacer(modifier = Modifier.width(16.dp))
@@ -99,7 +102,7 @@ fun AnalyticsScreen() {
                                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                                         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp)
                                     ) {
-                                        items(mockUpcomingDeadlines) { payment ->
+                                        items(uiState.upcomingDeadlines) { payment ->
                                             UpcomingPaymentCard(payment)
                                         }
                                         // Trailing spacer to allow the last item to snap to the left (16dp from edge)
@@ -146,7 +149,7 @@ fun AnalyticsScreen() {
                             modifier = Modifier.fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            items(mockRecentOrders) { transaction ->
+                            items(uiState.recentOrders) { transaction ->
                                 TransactionItem(transaction)
                                 HorizontalDivider(color = Color.LightGray.copy(alpha = 0.2f))
                             }
@@ -182,7 +185,7 @@ fun AnalyticsScreen() {
                             Spacer(modifier = Modifier.height(24.dp))
 
                             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                                mockCards.forEach { card ->
+                                uiState.cards.forEach { card ->
                                     MiniCardItem(card)
                                 }
                             }
@@ -204,6 +207,14 @@ fun AnalyticsScreenPreview() {
             )
         )
     ) {
-        AnalyticsScreen()
+        AnalyticsScreen(
+            uiState = AnalyticsUiState(
+                recentOrders = mockRecentOrders,
+                upcomingDeadlines = mockUpcomingDeadlines,
+                cards = mockCards
+            ),
+            onTabClick = {}
+        )
     }
 }
+

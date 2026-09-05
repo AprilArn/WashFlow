@@ -373,7 +373,13 @@ fun MainAppScreen(
                 }
 
                 composable(AppNavigation.Analytics.route) {
-                    AnalyticsScreen()
+                    val viewModel: com.aprilarn.washflow.ui.analytics.AnalyticsViewModel = viewModel()
+                    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+                    AnalyticsScreen(
+                        uiState = uiState,
+                        onTabClick = { viewModel.onTabSelected(it) }
+                    )
                 }
 
                 composable(AppNavigation.Customers.route) {
