@@ -3,8 +3,8 @@ package com.aprilarn.washflow.ui.components
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -83,7 +83,7 @@ fun EditDataPanel(
                         brush = SolidColor(Color(0xFFF44336))
                     )
                 ) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete Icon")
+                    Icon(Icons.Rounded.Delete, contentDescription = "Delete Icon")
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Delete")
                 }
@@ -96,7 +96,7 @@ fun EditDataPanel(
                     colors = ButtonDefaults.buttonColors(containerColor = GrayBlue),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Icon(Icons.Default.Check, contentDescription = "Done Icon")
+                    Icon(Icons.Rounded.Check, contentDescription = "Done Icon")
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Done")
                 }

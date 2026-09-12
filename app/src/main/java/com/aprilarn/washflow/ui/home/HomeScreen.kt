@@ -26,9 +26,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.LocationOff
-import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.rounded.LocationOff
+import androidx.compose.material.icons.rounded.LocationOn
+import androidx.compose.material.icons.rounded.MyLocation
 
 @Composable
 fun HomeScreen(
@@ -36,17 +36,11 @@ fun HomeScreen(
     onEnterDataClick: () -> Unit,
     onStatusCardClick: () -> Unit
 ) {
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
             // Left panel: Weather Details
             Box(
                 modifier = Modifier
@@ -137,7 +131,7 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.width(4.dp))
                     Icon(
                         // Jika Auto (Gps) gunakan LocationOn, jika manual (Map Pin/Sniper) gunakan LocationOff (dicoret)
-                        imageVector = if (state.isGpsLocation) Icons.Default.LocationOn else Icons.Default.LocationOff,
+                        imageVector = if (state.isGpsLocation) Icons.Rounded.LocationOn else Icons.Rounded.LocationOff,
                         contentDescription = "Location Type",
                         tint = GrayBlue,
                         modifier = Modifier.size(14.dp)
@@ -175,7 +169,6 @@ fun HomeScreen(
                 }
 
                 Spacer(modifier = Modifier.weight(2f))
-            }
         }
     }
 }

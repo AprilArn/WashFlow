@@ -6,14 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.Category
-import androidx.compose.material.icons.filled.ConfirmationNumber
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -235,13 +228,13 @@ private fun LeftDetailPanel(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                item { InfoRow(Icons.Default.Person, "Nama Pelanggan", order.customerName ?: "N/A") }
-                item { InfoRow(Icons.Default.Phone, "No Telp/WhatsApp", customer?.contact ?: "N/A") }
-                item { InfoRow(Icons.Default.CalendarToday, "Tanggal Order", SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault()).format(order.orderDate.toDate())) }
-                item { InfoRow(Icons.Default.Timer, "Batas Waktu", order.orderDueDate?.let { SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault()).format(it.toDate()) } ?: "N/A") }
-                item { InfoRow(Icons.Default.ConfirmationNumber, "ID Order", order.orderId) }
-                item { InfoRow(Icons.Default.Info, "Status", order.status ?: "N/A") }
-                item { InfoRow(Icons.Default.Category, "Layanan", services.joinToString(" + ") { it.serviceName }) }
+                item { InfoRow(Icons.Rounded.Person, "Nama Pelanggan", order.customerName ?: "N/A") }
+                item { InfoRow(Icons.Rounded.Phone, "No Telp/WhatsApp", customer?.contact ?: "N/A") }
+                item { InfoRow(Icons.Rounded.CalendarToday, "Tanggal Order", SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault()).format(order.orderDate.toDate())) }
+                item { InfoRow(Icons.Rounded.Timer, "Batas Waktu", order.orderDueDate?.let { SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault()).format(it.toDate()) } ?: "N/A") }
+                item { InfoRow(Icons.Rounded.ConfirmationNumber, "ID Order", order.orderId) }
+                item { InfoRow(Icons.Rounded.Info, "Status", order.status ?: "N/A") }
+                item { InfoRow(Icons.Rounded.Category, "Layanan", services.joinToString(" + ") { it.serviceName }) }
                 
                 // --- TOGGLE PEMBAYARAN ---
                 item {
@@ -480,7 +473,7 @@ private fun PaymentStatusRow(isPaid: Boolean, onToggle: (Boolean) -> Unit) {
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = Icons.Default.Payments,
+                        imageVector = Icons.Rounded.Payments,
                         contentDescription = null,
                         tint = contentColor,
                         modifier = Modifier.size(20.dp)

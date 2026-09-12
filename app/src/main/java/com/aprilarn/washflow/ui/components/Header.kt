@@ -16,10 +16,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.ArrowDropUp
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.rounded.ArrowDropDown
+import androidx.compose.material.icons.rounded.ArrowDropUp
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
@@ -109,7 +109,7 @@ fun Header(
         Spacer(modifier = Modifier.width(32.dp))
 
         // --- NAVIGATION BAR ---
-        NavigationBar(navController = navController, modifier = Modifier.height(44.dp))
+        NavigationBar(navController = navController)
 
         Spacer(modifier=Modifier.weight(1f))
 
@@ -125,10 +125,14 @@ fun Header(
                 Text(
                     modifier = Modifier.padding(start = 8.dp, top = 4.dp, bottom = 4.dp),
                     text = workspaceName,
-                    style = MaterialTheme.typography.bodyMedium.copy(color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Light)
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
                 )
                 Icon(
-                    imageVector = if (isWorkspaceExpanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                    imageVector = if (isWorkspaceExpanded) Icons.Rounded.ArrowDropUp else Icons.Rounded.ArrowDropDown,
                     contentDescription = "Workspace Options",
                     tint = Color.White
                 )
@@ -179,7 +183,7 @@ fun Header(
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = Icons.Default.AutoAwesome,
+                imageVector = Icons.Rounded.AutoAwesome,
                 contentDescription = "AI Agent",
                 tint = Color.White
             )
@@ -198,7 +202,7 @@ fun Header(
                         }
                     }
                 ) {
-                    Icon(Icons.Default.Notifications, contentDescription = "Notifikasi", tint = Color.White)
+                    Icon(Icons.Rounded.Notifications, contentDescription = "Notifikasi", tint = Color.White)
                 }
             }
         }

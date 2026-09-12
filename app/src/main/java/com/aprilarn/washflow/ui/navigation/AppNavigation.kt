@@ -2,25 +2,26 @@
 package com.aprilarn.washflow
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.rounded.List
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class AppNavigation(val route: String, val icon: ImageVector, val label: String) {
-    object Home : AppNavigation("home", Icons.Default.Home, "Home")
+    object Home : AppNavigation("home", Icons.Rounded.Home, "Home")
 
-    object Contributors : AppNavigation("contributors", Icons.Default.Group, "Contributors")
+    object Contributors : AppNavigation("contributors", Icons.Rounded.Group, "Contributors")
 
-    object Orders : AppNavigation("orders", Icons.Default.ShoppingCart, "Create Order")
+    object Orders : AppNavigation("orders", Icons.Rounded.ShoppingCart, "Create Order")
 
-    object ManageOrder : AppNavigation("manage_order", Icons.Default.Phone, "Manage Order")
+    object ManageOrder : AppNavigation("manage_order", Icons.Rounded.Phone, "Manage Order")
 
-    object Customers : AppNavigation("customers", Icons.Default.Person, "Customers")
-    object Services : AppNavigation("services", Icons.AutoMirrored.Filled.List, "Services")
-    object Items : AppNavigation("items", Icons.Default.ShoppingCart, "Items")
+    object Customers : AppNavigation("customers", Icons.Rounded.Person, "Customers")
+    object Services : AppNavigation("services", Icons.AutoMirrored.Rounded.List, "Services")
+    object Items : AppNavigation("items", Icons.Rounded.ShoppingCart, "Items")
 
-    // Tambahkan rute baru untuk 'TableDataScreen'
-    object TableData : AppNavigation("table_data", Icons.Default.Storage, "Data")
+    object TableData : AppNavigation("table_data", Icons.Rounded.Storage, "Data")
 
-    object Settings : AppNavigation("settings", Icons.Default.Settings, "Settings")
+    object Analytics : AppNavigation("analytics", Icons.Rounded.Assessment, "Analytics")
+
+    object Settings : AppNavigation("settings", Icons.Rounded.Settings, "Settings")
 }

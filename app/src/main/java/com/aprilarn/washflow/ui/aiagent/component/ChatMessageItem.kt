@@ -10,9 +10,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -42,7 +42,7 @@ import kotlinx.coroutines.delay
 fun AiMessageHeader() {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(
-            imageVector = Icons.Default.AutoAwesome,
+            imageVector = Icons.Rounded.AutoAwesome,
             contentDescription = null,
             tint = GrayBlue,
             modifier = Modifier.size(16.dp)
@@ -246,7 +246,7 @@ fun ChatMessageItem(
                             Spacer(modifier = Modifier.height(8.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
-                                    Icons.Default.Check,
+                                    Icons.Rounded.Check,
                                     contentDescription = null,
                                     tint = Color(0xFF4CAF50),
                                     modifier = Modifier.size(14.dp)
@@ -264,7 +264,7 @@ fun ChatMessageItem(
                             Spacer(modifier = Modifier.height(8.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
-                                    Icons.Default.Close,
+                                    Icons.Rounded.Close,
                                     contentDescription = null,
                                     tint = Gray,
                                     modifier = Modifier.size(14.dp)

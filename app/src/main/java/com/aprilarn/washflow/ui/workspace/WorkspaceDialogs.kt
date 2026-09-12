@@ -16,7 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -248,7 +248,7 @@ fun ActiveInviteDialog(
                         clipboardManager.setText(AnnotatedString(invite.inviteId ?: ""))
                         Toast.makeText(context, "Code copied!", Toast.LENGTH_SHORT).show()
                     }) {
-                        Icon(Icons.Default.ContentCopy, contentDescription = "Copy Code")
+                        Icon(Icons.Rounded.ContentCopy, contentDescription = "Copy Code")
                     }
                 }
                 // Info Section

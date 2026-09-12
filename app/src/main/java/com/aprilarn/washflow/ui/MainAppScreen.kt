@@ -50,6 +50,7 @@ import com.aprilarn.washflow.ui.aiagent.AiAgentViewModel
 import com.aprilarn.washflow.ui.notifications.NotificationPanel
 import com.aprilarn.washflow.ui.notifications.NotificationPreviewItem
 import com.aprilarn.washflow.ui.notifications.NotificationsViewModel
+import com.aprilarn.washflow.ui.analytics.AnalyticsScreen
 import com.aprilarn.washflow.ui.contributors.ContributorsScreen
 import com.aprilarn.washflow.ui.contributors.ContributorsViewModel
 import com.aprilarn.washflow.ui.customers.CustomersScreen
@@ -368,6 +369,16 @@ fun MainAppScreen(
                         onNavigate = { route ->
                             bottomNavController.navigate(route)
                         }
+                    )
+                }
+
+                composable(AppNavigation.Analytics.route) {
+                    val viewModel: com.aprilarn.washflow.ui.analytics.AnalyticsViewModel = viewModel()
+                    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+                    AnalyticsScreen(
+                        uiState = uiState,
+                        onTabClick = { viewModel.onTabSelected(it) }
                     )
                 }
 

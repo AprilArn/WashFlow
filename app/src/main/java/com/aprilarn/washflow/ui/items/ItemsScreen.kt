@@ -6,10 +6,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -159,7 +159,7 @@ fun ItemsScreen (
                                     brush = SolidColor(Color(0xFFF44336))
                                 )
                             ) {
-                                Icon(Icons.Default.Delete, "Delete")
+                                Icon(Icons.Rounded.Delete, "Delete")
                                 Spacer(Modifier.width(4.dp))
                                 Text("Delete")
                             }
@@ -177,7 +177,7 @@ fun ItemsScreen (
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = GrayBlue)
                             ) {
-                                Icon(Icons.Default.Check, "Done")
+                                Icon(Icons.Rounded.Check, "Done")
                                 Spacer(Modifier.width(4.dp))
                                 Text("Done")
                             }
@@ -218,7 +218,7 @@ fun ItemsScreen (
                         // Hapus tombol dari sini karena aksi sekarang via onRowClick
                         // Bisa diganti dengan ikon atau indikator lain jika perlu
                         Icon(
-                            imageVector = Icons.Default.Edit,
+                            imageVector = Icons.Rounded.Edit,
                             contentDescription = "Edit Item",
                             tint = GrayBlue.copy(alpha = 0.7f)
                         )
@@ -325,7 +325,7 @@ fun ItemsScreen (
                         colors = ButtonDefaults.buttonColors(containerColor = GrayBlue),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = "Add Icon")
+                        Icon(Icons.Rounded.Add, contentDescription = "Add Icon")
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Add Item")
                     }

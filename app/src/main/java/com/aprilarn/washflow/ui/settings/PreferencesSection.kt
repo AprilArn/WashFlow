@@ -5,11 +5,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.MyLocation
-import androidx.compose.material.icons.filled.NotificationsActive
-import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.Language
+import androidx.compose.material.icons.rounded.MyLocation
+import androidx.compose.material.icons.rounded.NotificationsActive
+import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -49,7 +49,7 @@ fun PreferencesSection(
             Column {
                 // 1. Notifications and sounds (Switch)
                 SettingsItem(
-                    icon = Icons.Default.NotificationsActive,
+                    icon = Icons.Rounded.NotificationsActive,
                     title = "Notifications and sounds",
                     trailingContent = {
                         Switch(
@@ -71,12 +71,12 @@ fun PreferencesSection(
 
                 // 2. Language
                 SettingsItem(
-                    icon = Icons.Default.Language,
+                    icon = Icons.Rounded.Language,
                     title = "Language",
                     trailingContent = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("English", color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
-                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
+                            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
                         }
                     }
                 )
@@ -85,7 +85,7 @@ fun PreferencesSection(
 
                 // 3. Set location
                 SettingsItem(
-                    icon = Icons.Default.MyLocation,
+                    icon = Icons.Rounded.MyLocation,
                     title = "Set location",
                     onClick = onSetLocationClicked,
                     trailingContent = {
@@ -104,7 +104,7 @@ fun PreferencesSection(
                                     .weight(1f, fill = false)
                                     .basicMarquee()
                             )
-                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
+                            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
                         }
                     }
                 )
@@ -113,12 +113,12 @@ fun PreferencesSection(
 
                 // 3. Theme
                 SettingsItem(
-                    icon = Icons.Default.Palette,
+                    icon = Icons.Rounded.Palette,
                     title = "Theme",
                     trailingContent = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("Light", color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
-                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
+                            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
                         }
                     }
                 )
