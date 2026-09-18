@@ -35,7 +35,11 @@ val ThemeBgGray = Color(0xFFF3F4F6)
 @Composable
 fun AnalyticsScreen(
     uiState: AnalyticsUiState,
-    onTabClick: (String) -> Unit
+    onTabClick: (String) -> Unit,
+    onMonthSelected: (String) -> Unit = {},
+    onSearchQueryChanged: (String) -> Unit = {},
+    onStatusFilterChanged: (String) -> Unit = {},
+    onSortColumnClicked: (ReportSortColumn) -> Unit = {}
 ) {
     val selectedTab = uiState.selectedTab
 
@@ -60,8 +64,19 @@ fun AnalyticsScreen(
             color = Color.White
         ) {
             if (selectedTab == "Report") {
-                // Blank White Page for Report
-                Box(modifier = Modifier.fillMaxSize())
+                OrderReportPanel(
+                    orders = uiState.orders,
+                    isLoading = uiState.isLoading,
+                    selectedMonth = uiState.selectedMonth,
+                    searchQuery = uiState.searchQuery,
+                    selectedStatusFilter = uiState.selectedStatusFilter,
+                    sortColumn = uiState.sortColumn,
+                    isAscending = uiState.isAscending,
+                    onMonthSelected = onMonthSelected,
+                    onSearchQueryChanged = onSearchQueryChanged,
+                    onStatusFilterChanged = onStatusFilterChanged,
+                    onSortColumnClicked = onSortColumnClicked
+                )
             } else {
                 Row(
                     modifier = Modifier
@@ -217,4 +232,3 @@ fun AnalyticsScreenPreview() {
         )
     }
 }
-

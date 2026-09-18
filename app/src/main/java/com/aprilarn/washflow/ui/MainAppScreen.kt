@@ -378,7 +378,11 @@ fun MainAppScreen(
 
                     AnalyticsScreen(
                         uiState = uiState,
-                        onTabClick = { viewModel.onTabSelected(it) }
+                        onTabClick = { viewModel.onTabSelected(it) },
+                        onMonthSelected = { viewModel.onMonthSelected(it) },
+                        onSearchQueryChanged = { viewModel.onSearchQueryChanged(it) },
+                        onStatusFilterChanged = { viewModel.onStatusFilterChanged(it) },
+                        onSortColumnClicked = { viewModel.onSortColumnClicked(it) }
                     )
                 }
 

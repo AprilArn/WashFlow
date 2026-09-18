@@ -5,6 +5,15 @@ import androidx.compose.material.icons.rounded.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 
+enum class ReportSortColumn(val label: String) {
+    DATE("Tanggal"),
+    TIME("Waktu"),
+    CUSTOMER_NAME("Nama Pelanggan"),
+    ORDER_ITEMS("Order"),
+    TOTAL_PRICE("Total"),
+    STATUS("Status Order")
+}
+
 data class Transaction(
     val icon: ImageVector,
     val title: String,
