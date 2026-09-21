@@ -66,6 +66,7 @@ fun AnalyticsScreen(
             if (selectedTab == "Report") {
                 OrderReportPanel(
                     orders = uiState.orders,
+                    services = uiState.services,
                     isLoading = uiState.isLoading,
                     selectedMonth = uiState.selectedMonth,
                     searchQuery = uiState.searchQuery,

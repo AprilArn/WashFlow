@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
@@ -17,11 +18,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aprilarn.washflow.data.model.Orders
+import com.aprilarn.washflow.data.model.Services
 import com.aprilarn.washflow.ui.analytics.ReportSortColumn
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.utils.CurrencyUtils
@@ -33,6 +36,7 @@ import java.util.Locale
 @Composable
 fun OrderReportPanel(
     orders: List<Orders>,
+    services: List<Services>,
     isLoading: Boolean,
     selectedMonth: String,
     searchQuery: String,
@@ -42,7 +46,7 @@ fun OrderReportPanel(
     onMonthSelected: (String) -> Unit,
     onSearchQueryChanged: (String) -> Unit,
     onStatusFilterChanged: (String) -> Unit,
-    onSortColumnClicked: (ReportSortColumn) -> Unit,
+    onSortColumnClicked: (ReportSortColumn) -> Unit
 ) {
     // 1. Ekstrak daftar bulan unik dari data order
     val monthList = remember(orders) {
@@ -57,7 +61,11 @@ fun OrderReportPanel(
             val customerNameMatch = (order.customerName ?: "").contains(searchQuery, ignoreCase = true)
             val itemsMatch = order.orderItems.any { (it.itemName ?: "").contains(searchQuery, ignoreCase = true) }
             val idMatch = order.orderId.contains(searchQuery, ignoreCase = true)
-            customerNameMatch || itemsMatch || idMatch
+            val serviceMatch = order.orderItems.any { item ->
+                val sName = services.find { it.serviceId == item.serviceId }?.serviceName ?: item.serviceId ?: ""
+                sName.contains(searchQuery, ignoreCase = true)
+            }
+            customerNameMatch || itemsMatch || idMatch || serviceMatch
         }
     }
 
@@ -182,7 +190,7 @@ fun OrderReportPanel(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // --- Metric Summary Cards & Search/Filter Row ---
+        // --- Metric Summary Cards ---
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -317,29 +325,55 @@ fun OrderReportPanel(
             }
 
             // Search Text Field
-            TextField(
+            BasicTextField(
                 value = searchQuery,
                 onValueChange = onSearchQueryChanged,
-                placeholder = { Text("Cari nama/order...", fontSize = 12.sp, color = Color.Gray) },
-                leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.Gray) },
-                trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { onSearchQueryChanged("") }) {
-                            Icon(Icons.Rounded.Clear, contentDescription = "Clear", modifier = Modifier.size(16.dp), tint = Color.Gray)
+                singleLine = true,
+                textStyle = TextStyle(
+                    fontSize = 13.sp,
+                    color = GrayBlue
+                ),
+                decorationBox = { innerTextField ->
+                    Row(
+                        modifier = Modifier
+                            .width(260.dp)
+                            .height(44.dp)
+                            .background(Color(0xFFF1F5F9), RoundedCornerShape(22.dp))
+                            .padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Rounded.Search,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = Color.Gray
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier.weight(1f),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            if (searchQuery.isEmpty()) {
+                                Text("Cari nama/order...", fontSize = 13.sp, color = Color.Gray)
+                            }
+                            innerTextField()
+                        }
+                        if (searchQuery.isNotEmpty()) {
+                            Spacer(modifier = Modifier.width(4.dp))
+                            IconButton(
+                                onClick = { onSearchQueryChanged("") },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    Icons.Rounded.Clear,
+                                    contentDescription = "Clear",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = Color.Gray
+                                )
+                            }
                         }
                     }
-                },
-                modifier = Modifier
-                    .width(240.dp)
-                    .height(44.dp),
-                shape = RoundedCornerShape(22.dp),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color(0xFFF1F5F9),
-                    unfocusedContainerColor = Color(0xFFF1F5F9),
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent
-                ),
-                singleLine = true
+                }
             )
         }
 
@@ -363,13 +397,13 @@ fun OrderReportPanel(
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TableHeaderCell("Tanggal", ReportSortColumn.DATE, sortColumn, isAscending, 1.2f, onSortColumnClicked)
+                    TableHeaderCell("Tanggal", ReportSortColumn.DATE, sortColumn, isAscending, 1.1f, onSortColumnClicked)
                     TableHeaderCell("Waktu", ReportSortColumn.TIME, sortColumn, isAscending, 0.8f, onSortColumnClicked)
-                    TableHeaderCell("Nama Pelanggan", ReportSortColumn.CUSTOMER_NAME, sortColumn, isAscending, 1.5f, onSortColumnClicked)
-                    TableHeaderCell("Order", ReportSortColumn.ORDER_ITEMS, sortColumn, isAscending, 2.2f, onSortColumnClicked)
+                    TableHeaderCell("Nama Pelanggan", ReportSortColumn.CUSTOMER_NAME, sortColumn, isAscending, 1.3f, onSortColumnClicked)
+                    TableHeaderCell("Order", ReportSortColumn.ORDER_ITEMS, sortColumn, isAscending, 2.6f, onSortColumnClicked)
                     TableHeaderCell("Total", ReportSortColumn.TOTAL_PRICE, sortColumn, isAscending, 1.2f, onSortColumnClicked)
-                    TableHeaderCell("Status Order", ReportSortColumn.STATUS, sortColumn, isAscending, 1.2f, onSortColumnClicked)
-                    TableHeaderCell("Bayar", null, sortColumn, isAscending, 1.0f, onSortColumnClicked)
+                    TableHeaderCell("Status Order", ReportSortColumn.STATUS, sortColumn, isAscending, 1.1f, onSortColumnClicked)
+                    TableHeaderCell("Bayar", null, sortColumn, isAscending, 0.9f, onSortColumnClicked)
                 }
 
                 HorizontalDivider(color = Color(0xFFE2E8F0))
@@ -423,7 +457,7 @@ fun OrderReportPanel(
                                 }
 
                                 items(orderList) { order ->
-                                    OrderLedgerRow(order)
+                                    OrderLedgerRow(order = order, services = services)
                                     HorizontalDivider(color = Color(0xFFF1F5F9))
                                 }
                             }
@@ -432,7 +466,7 @@ fun OrderReportPanel(
                         // Jika memilih bulan spesifik, tampilkan baris langsung
                         LazyColumn(modifier = Modifier.fillMaxSize()) {
                             items(sortedOrders) { order ->
-                                OrderLedgerRow(order)
+                                OrderLedgerRow(order = order, services = services)
                                 HorizontalDivider(color = Color(0xFFF1F5F9))
                             }
                         }
@@ -481,19 +515,24 @@ private fun RowScope.TableHeaderCell(
 }
 
 @Composable
-private fun OrderLedgerRow(order: Orders) {
+private fun OrderLedgerRow(
+    order: Orders,
+    services: List<Services>
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.Top
     ) {
         // 1. Tanggal
         Text(
             text = order.orderDate.toDateString(),
             fontSize = 12.sp,
             color = GrayBlue,
-            modifier = Modifier.weight(1.2f)
+            modifier = Modifier
+                .weight(1.1f)
+                .padding(top = 2.dp)
         )
 
         // 2. Waktu
@@ -501,7 +540,9 @@ private fun OrderLedgerRow(order: Orders) {
             text = order.orderDate.toTimeString(),
             fontSize = 12.sp,
             color = Color.Gray,
-            modifier = Modifier.weight(0.8f)
+            modifier = Modifier
+                .weight(0.8f)
+                .padding(top = 2.dp)
         )
 
         // 3. Nama Pelanggan
@@ -510,25 +551,63 @@ private fun OrderLedgerRow(order: Orders) {
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold,
             color = GrayBlue,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1.5f)
-        )
-
-        // 4. Order (Daftar barang & kuantitas)
-        val itemsSummary = if (order.orderItems.isEmpty()) "-"
-        else order.orderItems.joinToString(", ") { item ->
-            val qty = item.itemQuantity ?: 1
-            "${item.itemName ?: "Item"} ($qty)"
-        }
-        Text(
-            text = itemsSummary,
-            fontSize = 12.sp,
-            color = Color(0xFF475569),
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(2.2f)
+            modifier = Modifier
+                .weight(1.3f)
+                .padding(top = 2.dp)
         )
+
+        // 4. Order (List Barang memanjang ke bawah per Kategori & New Line)
+        Column(
+            modifier = Modifier
+                .weight(2.6f)
+                .padding(end = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            if (order.orderItems.isEmpty()) {
+                Text("-", fontSize = 12.sp, color = Color.Gray)
+            } else {
+                val groupedItems = remember(order.orderItems, services) {
+                    order.orderItems.groupBy { item ->
+                        val matchedService = services.find { it.serviceId == item.serviceId }
+                        matchedService?.serviceName?.ifBlank { null }
+                            ?: item.serviceId?.ifBlank { null }
+                            ?: "Layanan Utama"
+                    }
+                }
+
+                groupedItems.forEach { (serviceName, items) ->
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        // Label Header Kategori
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = Color(0xFFE0F2FE)
+                        ) {
+                            Text(
+                                text = serviceName,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF0369A1),
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+
+                        // List Barang di Bawah Kategori
+                        items.forEach { item ->
+                            val qty = item.itemQuantity ?: 1
+                            Text(
+                                text = "• ${item.itemName ?: "Item"} ($qty)",
+                                fontSize = 11.sp,
+                                color = Color(0xFF334155),
+                                fontWeight = FontWeight.Medium,
+                                lineHeight = 15.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
 
         // 5. Total Price
         Text(
@@ -536,16 +615,26 @@ private fun OrderLedgerRow(order: Orders) {
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             color = GrayBlue,
-            modifier = Modifier.weight(1.2f)
+            modifier = Modifier
+                .weight(1.2f)
+                .padding(top = 2.dp)
         )
 
         // 6. Status Order Badge
-        Box(modifier = Modifier.weight(1.2f)) {
+        Box(
+            modifier = Modifier
+                .weight(1.1f)
+                .padding(top = 2.dp)
+        ) {
             StatusBadge(status = order.status ?: "On Queue")
         }
 
         // 7. Status Pembayaran Badge
-        Box(modifier = Modifier.weight(1.0f)) {
+        Box(
+            modifier = Modifier
+                .weight(0.9f)
+                .padding(top = 2.dp)
+        ) {
             PaymentBadge(alreadyPaid = order.alreadyPaid)
         }
     }

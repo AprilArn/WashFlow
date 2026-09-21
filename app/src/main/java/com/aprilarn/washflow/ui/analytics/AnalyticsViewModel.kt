@@ -3,14 +3,17 @@ package com.aprilarn.washflow.ui.analytics
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aprilarn.washflow.data.repository.OrderRepository
+import com.aprilarn.washflow.data.repository.ServiceRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class AnalyticsViewModel(
-    private val orderRepository: OrderRepository = OrderRepository()
+    private val orderRepository: OrderRepository = OrderRepository(),
+    private val serviceRepository: ServiceRepository = ServiceRepository()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AnalyticsUiState())
@@ -24,24 +27,26 @@ class AnalyticsViewModel(
                 cards = mockCards
             )
         }
-        listenForOrders()
+        listenForData()
     }
 
-    private fun listenForOrders() {
+    private fun listenForData() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            orderRepository.getOrdersRealtime()
-                .catch { e ->
-                    _uiState.update { it.copy(isLoading = false) }
+            val ordersFlow = orderRepository.getOrdersRealtime()
+            val servicesFlow = serviceRepository.getServicesRealtime()
+
+            combine(ordersFlow, servicesFlow) { orders, services ->
+                _uiState.update {
+                    it.copy(
+                        orders = orders,
+                        services = services,
+                        isLoading = false
+                    )
                 }
-                .collect { orders ->
-                    _uiState.update {
-                        it.copy(
-                            orders = orders,
-                            isLoading = false
-                        )
-                    }
-                }
+            }.catch {
+                _uiState.update { it.copy(isLoading = false) }
+            }.collect {}
         }
     }
 
