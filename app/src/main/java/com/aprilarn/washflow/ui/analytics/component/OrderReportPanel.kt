@@ -577,33 +577,78 @@ private fun OrderLedgerRow(
                     }
                 }
 
-                groupedItems.forEach { (serviceName, items) ->
-                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        // Label Header Kategori
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = Color(0xFFE0F2FE)
+                val entries = groupedItems.entries.toList()
+                entries.forEachIndexed { index, entry ->
+                    val (serviceName, items) = entry
+                    val categoryTotal = items.sumOf { it.subtotal ?: ((it.itemPrice ?: 0.0) * (it.itemQuantity ?: 1)) }
+                    
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        // Label Header Kategori dan Total Harga
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = serviceName,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF0369A1),
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = Color(0xFFE0F2FE)
+                            ) {
+                                Text(
+                                    text = serviceName,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0369A1),
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                            
+                            if (categoryTotal > 0) {
+                                Text(
+                                    text = CurrencyUtils.formatRupiahWithSymbol(categoryTotal),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = GrayBlue.copy(alpha = 0.8f)
+                                )
+                            }
                         }
 
                         // List Barang di Bawah Kategori
                         items.forEach { item ->
                             val qty = item.itemQuantity ?: 1
-                            Text(
-                                text = "• ${item.itemName ?: "Item"} ($qty)",
-                                fontSize = 11.sp,
-                                color = Color(0xFF334155),
-                                fontWeight = FontWeight.Medium,
-                                lineHeight = 15.sp
-                            )
+                            val itemTotal = item.subtotal ?: ((item.itemPrice ?: 0.0) * qty)
+                            
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "• ${item.itemName ?: "Item"} ($qty)",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF334155),
+                                    fontWeight = FontWeight.Medium,
+                                    lineHeight = 15.sp
+                                )
+                                
+                                if (itemTotal > 0) {
+                                    Text(
+                                        text = CurrencyUtils.formatRupiahWithSymbol(itemTotal),
+                                        fontSize = 10.sp,
+                                        color = Color.Gray,
+                                    )
+                                }
+                            }
                         }
+                    }
+
+                    if (index < entries.size - 1) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(top = 4.dp),
+                            color = Color(0xFFE2E8F0)
+                        )
                     }
                 }
             }
