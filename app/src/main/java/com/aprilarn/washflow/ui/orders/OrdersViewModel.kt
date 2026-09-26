@@ -122,6 +122,46 @@ class OrdersViewModel(
         _uiState.update { it.copy(itemForQuantityInput = null) }
     }
 
+    fun setEditingOrder(orderId: String?) {
+        if (orderId == null) {
+            // Mode Buat Baru
+            _uiState.update {
+                it.copy(
+                    editingOrderId = null,
+                    selectedCustomer = null,
+                    customerSearchQuery = "",
+                    dueDate = null,
+                    selectedItems = emptyMap()
+                )
+            }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val order = orderRepository.getOrderById(orderId)
+            if (order != null) {
+                // Konversi list OrderItem ke map
+                val itemsMap = order.orderItems.associateBy { it.itemId }
+                val customer = _uiState.value.customers.find { it.customerId == order.customerId }
+                    ?: Customers(order.customerId, order.customerName ?: "Tanpa Nama")
+
+                _uiState.update {
+                    it.copy(
+                        editingOrderId = order.orderId,
+                        selectedCustomer = customer,
+                        customerSearchQuery = customer.name,
+                        dueDate = order.orderDueDate,
+                        selectedItems = itemsMap,
+                        isLoading = false
+                    )
+                }
+            } else {
+                _uiState.update { it.copy(isLoading = false, errorMessage = "Failed to load order.") }
+            }
+        }
+    }
+
     fun createOrder() {
         viewModelScope.launch {
             val state = _uiState.value
@@ -139,34 +179,65 @@ class OrdersViewModel(
             // Jumlahkan subtotal yang sudah ada di setiap OrderItem.
             val totalPrice = orderItems.sumOf { it.subtotal ?: 0.0 }
 
-            val newOrder = Orders(
-                orderId = "", // Akan dibuat oleh repository
-                customerId = state.selectedCustomer.customerId,
-                customerName = state.selectedCustomer.name,
-                orderDate = Timestamp.now(),
-                orderDueDate = state.dueDate,
-                orderItems = orderItems, // Gunakan list yang sudah benar
-                totalPrice = totalPrice, // Gunakan total harga yang sudah benar
-                status = "On Queue",
-                alreadyPaid = false
-            )
+            if (state.editingOrderId != null) {
+                // Update Order
+                val updatedOrder = orderRepository.getOrderById(state.editingOrderId)?.copy(
+                    customerId = state.selectedCustomer.customerId,
+                    customerName = state.selectedCustomer.name,
+                    orderDueDate = state.dueDate,
+                    orderItems = orderItems,
+                    totalPrice = totalPrice
+                ) ?: return@launch
 
-            val success = orderRepository.createOrder(newOrder)
-            if (success) {
-                // Reset state setelah order berhasil
-                _uiState.update {
-                    it.copy(
-                        isCreatingOrder = false,
-                        successMessage = "Order created successfully!",
-                        customerSearchQuery = "",
-                        selectedCustomer = null,
-                        dueDate = null,
-                        selectedItems = emptyMap()
-                    )
+                val success = orderRepository.updateOrder(updatedOrder)
+                if (success) {
+                    _uiState.update {
+                        it.copy(
+                            isCreatingOrder = false,
+                            successMessage = "Order updated successfully!",
+                            editingOrderId = null,
+                            customerSearchQuery = "",
+                            selectedCustomer = null,
+                            dueDate = null,
+                            selectedItems = emptyMap()
+                        )
+                    }
+                } else {
+                    _uiState.update {
+                        it.copy(isCreatingOrder = false, errorMessage = "Failed to update order.")
+                    }
                 }
             } else {
-                _uiState.update {
-                    it.copy(isCreatingOrder = false, errorMessage = "Failed to create order.")
+                // Create New Order
+                val newOrder = Orders(
+                    orderId = "", // Akan dibuat oleh repository
+                    customerId = state.selectedCustomer.customerId,
+                    customerName = state.selectedCustomer.name,
+                    orderDate = Timestamp.now(),
+                    orderDueDate = state.dueDate,
+                    orderItems = orderItems,
+                    totalPrice = totalPrice,
+                    status = "On Queue",
+                    alreadyPaid = false
+                )
+
+                val success = orderRepository.createOrder(newOrder)
+                if (success) {
+                    // Reset state setelah order berhasil
+                    _uiState.update {
+                        it.copy(
+                            isCreatingOrder = false,
+                            successMessage = "Order created successfully!",
+                            customerSearchQuery = "",
+                            selectedCustomer = null,
+                            dueDate = null,
+                            selectedItems = emptyMap()
+                        )
+                    }
+                } else {
+                    _uiState.update {
+                        it.copy(isCreatingOrder = false, errorMessage = "Failed to create order.")
+                    }
                 }
             }
         }

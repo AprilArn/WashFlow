@@ -119,7 +119,7 @@ fun OrderPanel(
                     if (uiState.isCreatingOrder) {
                         CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
                     } else {
-                        Text("Create Order", color = Color.White)
+                        Text(if (uiState.editingOrderId != null) "Update Order" else "Create Order", color = Color.White)
                     }
                 }
             }

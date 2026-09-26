@@ -13,6 +13,7 @@ data class OrdersUiState(
     val items: List<Items> = emptyList(),
 
     // State untuk interaksi UI
+    val editingOrderId: String? = null,
     val customerSearchQuery: String = "",
     val selectedCustomer: Customers? = null,
     val dueDate: Timestamp? = null,

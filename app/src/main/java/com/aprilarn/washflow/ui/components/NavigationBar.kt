@@ -62,12 +62,13 @@ fun NavigationBar(
 
             // Loop untuk membuat setiap item
             items.forEach { screen ->
+                val isSelected = currentRoute?.substringBefore("?") == screen.route
                 NavItem(
                     icon = screen.icon,
                     label = screen.label,
-                    isSelected = currentRoute == screen.route,
+                    isSelected = isSelected,
                     onClick = {
-                        if (currentRoute != screen.route) {
+                        if (!isSelected) {
                             navController.navigate(screen.route) {
                                 popUpTo(navController.graph.startDestinationId)
                                 launchSingleTop = true

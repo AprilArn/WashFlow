@@ -174,6 +174,54 @@ class OrderRepository {
         }
     }
 
+    suspend fun getOrderById(orderId: String): Orders? {
+        val workspaceId = getWorkspaceId() ?: return null
+        return try {
+            val doc = db.collection("workspaces")
+                .document(workspaceId)
+                .collection("orders")
+                .document(orderId)
+                .get()
+                .await()
+            doc.toObject(Orders::class.java)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun updateOrder(order: Orders): Boolean {
+        val workspaceId = getWorkspaceId() ?: return false
+        val currentUser = Firebase.auth.currentUser ?: return false
+
+        val userName = currentUser.displayName ?: "Anggota tim"
+
+        return try {
+            val workspaceRef = db.collection("workspaces").document(workspaceId)
+            val orderRef = workspaceRef.collection("orders").document(order.orderId)
+            val newNotifDoc = workspaceRef.collection("notifications").document()
+
+            // Siapkan data Notifikasi (Order Diperbarui)
+            val notification = Notifications(
+                notificationId = newNotifDoc.id,
+                title = "Order Diperbarui",
+                message = "$userName memperbarui order milik ${order.customerName}",
+                senderUid = currentUser.uid,
+                timestamp = Timestamp.now(),
+                readBy = listOf(currentUser.uid)
+            )
+
+            db.runBatch { batch ->
+                batch.set(orderRef, order) // Timpa dokumen dengan data baru
+                batch.set(newNotifDoc, notification)
+            }.await()
+
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
     suspend fun updateOrderPaymentStatus(orderId: String, isPaid: Boolean): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
         return try {

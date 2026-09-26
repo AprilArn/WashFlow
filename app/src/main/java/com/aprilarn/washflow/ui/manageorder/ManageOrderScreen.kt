@@ -57,7 +57,8 @@ fun ManageOrderScreen(
     onOrderClick: (Orders) -> Unit,
     onTogglePayment: (String, Boolean) -> Unit,
     onDismissDialog: () -> Unit,
-    onDeleteOrder: (String) -> Unit
+    onDeleteOrder: (String) -> Unit,
+    onEditOrder: (String) -> Unit
 ) {
     if (uiState.isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -115,7 +116,11 @@ fun ManageOrderScreen(
                 uiState = uiState,
                 onTogglePayment = onTogglePayment,
                 onDismiss = onDismissDialog,
-                onDelete = { onDeleteOrder(order.orderId) }
+                onDelete = { onDeleteOrder(order.orderId) },
+                onEditOrder = {
+                    onDismissDialog()
+                    onEditOrder(order.orderId)
+                }
             )
         }
     }
@@ -127,7 +132,8 @@ fun OrderDetailDialog(
     uiState: ManageOrderUiState,
     onTogglePayment: (String, Boolean) -> Unit,
     onDismiss: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEditOrder: () -> Unit
 ) {
     val customer = remember(order.customerId, uiState.customers) {
         uiState.customers.find { it.customerId == order.customerId }
@@ -181,7 +187,8 @@ fun OrderDetailDialog(
                         onDelete = {
                             // Ubah state untuk memicu dialog konfirmasi
                             showDeleteConfirmation = true
-                        }
+                        },
+                        onEditOrder = onEditOrder
                     )
                     Spacer(Modifier.width(16.dp))
                     RightDetailPanel(
@@ -203,7 +210,8 @@ private fun LeftDetailPanel(
     services: List<Services>,
     onTogglePayment: (String, Boolean) -> Unit,
     onCancel: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEditOrder: () -> Unit
 ) {
     // Panel kiri menggunakan Card sebagai dasar (efek glassmorphism)
     Card(
@@ -213,14 +221,45 @@ private fun LeftDetailPanel(
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
-            Text(
-                text = "Order Detail",
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = GrayBlue
-                ),
-                modifier = Modifier.padding(bottom = 24.dp)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Order Detail",
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = GrayBlue
+                    )
+                )
+                // Tombol Edit (Kecil)
+                Surface(
+                    onClick = onEditOrder,
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFF1F5F9),
+                    modifier = Modifier.clip(RoundedCornerShape(12.dp))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Edit,
+                            contentDescription = "Edit Order",
+                            tint = GrayBlue,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "Edit",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = GrayBlue
+                        )
+                    }
+                }
+            }
 
             // Spacer akan mendorong tombol ke bawah
             
@@ -553,7 +592,8 @@ fun ManageOrderScreenPreview() {
                 onOrderClick = {},
                 onTogglePayment = { _, _ -> },
                 onDismissDialog = {},
-                onDeleteOrder = {}
+                onDeleteOrder = {},
+                onEditOrder = {}
             )
         }
     }
@@ -594,7 +634,8 @@ fun LeftDetailPanelPreview() {
             services = sampleServices,
             onTogglePayment = { _, _ -> },
             onCancel = {},
-            onDelete = {}
+            onDelete = {},
+            onEditOrder = {}
         )
     }
 }
@@ -662,7 +703,8 @@ fun OrderDetailDialogPreview() {
             uiState = sampleUiState,
             onTogglePayment = { _, _ -> },
             onDismiss = {},
-            onDelete = {}
+            onDelete = {},
+            onEditOrder = {}
         )
     }
 }
