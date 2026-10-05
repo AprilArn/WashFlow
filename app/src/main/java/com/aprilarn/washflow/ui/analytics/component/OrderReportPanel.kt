@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aprilarn.washflow.data.model.Orders
@@ -741,4 +742,82 @@ private fun Timestamp.toTimeString(): String {
 private fun Timestamp.toMonthYearString(): String {
     val sdf = SimpleDateFormat("MMMM yyyy", Locale("id", "ID"))
     return sdf.format(this.toDate())
+}
+
+@Preview(showBackground = true, widthDp = 1000, heightDp = 700)
+@Composable
+fun OrderReportPanelPreview() {
+    val mockServices = listOf(
+        Services("s1", "Laundry Satuan"),
+        Services("s2", "Dry Clean"),
+        Services("s3", "Setrika Saja")
+    )
+
+    val mockOrders = listOf(
+        Orders(
+            orderId = "1",
+            customerId = "c1",
+            customerName = "Budi Santoso",
+            orderDate = Timestamp.now(),
+            status = "On Process",
+            alreadyPaid = false,
+            totalPrice = 55000.0,
+            orderItems = listOf(
+                com.aprilarn.washflow.data.model.OrderItem(
+                    itemId = "i1",
+                    itemName = "Kemeja",
+                    serviceId = "s1",
+                    itemQuantity = 3,
+                    itemPrice = 15000.0,
+                    subtotal = 45000.0
+                ),
+                com.aprilarn.washflow.data.model.OrderItem(
+                    itemId = "i2",
+                    itemName = "Celana Jeans",
+                    serviceId = "s1",
+                    itemQuantity = 1,
+                    itemPrice = 10000.0,
+                    subtotal = 10000.0
+                )
+            )
+        ),
+        Orders(
+            orderId = "2",
+            customerId = "c2",
+            customerName = "Siti Aminah",
+            orderDate = Timestamp.now(),
+            status = "Done",
+            alreadyPaid = true,
+            totalPrice = 120000.0,
+            orderItems = listOf(
+                com.aprilarn.washflow.data.model.OrderItem(
+                    itemId = "i3",
+                    itemName = "Jas Pria",
+                    serviceId = "s2",
+                    itemQuantity = 1,
+                    itemPrice = 120000.0,
+                    subtotal = 120000.0
+                )
+            )
+        )
+    )
+
+    MaterialTheme {
+        Box(modifier = Modifier.background(Color.White)) {
+            OrderReportPanel(
+                orders = mockOrders,
+                services = mockServices,
+                isLoading = false,
+                selectedMonth = "Semua Bulan",
+                searchQuery = "",
+                selectedStatusFilter = "Semua",
+                sortColumn = ReportSortColumn.DATE,
+                isAscending = false,
+                onMonthSelected = {},
+                onSearchQueryChanged = {},
+                onStatusFilterChanged = {},
+                onSortColumnClicked = {}
+            )
+        }
+    }
 }

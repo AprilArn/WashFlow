@@ -9,7 +9,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.gestures.snapping.SnapPosition
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -31,7 +30,6 @@ val ThemeBgGray = Color(0xFFF3F4F6)
 
 // --- Main Screen ---
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AnalyticsScreen(
     uiState: AnalyticsUiState,
@@ -39,7 +37,7 @@ fun AnalyticsScreen(
     onMonthSelected: (String) -> Unit = {},
     onSearchQueryChanged: (String) -> Unit = {},
     onStatusFilterChanged: (String) -> Unit = {},
-    onSortColumnClicked: (ReportSortColumn) -> Unit = {}
+    onSortColumnClicked: (ReportSortColumn) -> Unit = {},
 ) {
     val selectedTab = uiState.selectedTab
 
@@ -215,7 +213,7 @@ fun AnalyticsScreen(
 
 @Preview(showBackground = true, widthDp = 960, heightDp = 600)
 @Composable
-fun AnalyticsScreenPreview() {
+fun AnalyticsScreenOrderPreview() {
     Box(
         modifier = Modifier.background(
             Brush.linearGradient(
