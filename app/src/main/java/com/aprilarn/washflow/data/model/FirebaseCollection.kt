@@ -58,7 +58,8 @@ data class Workspaces (
         val orderItems: List<OrderItem> = emptyList(),
         val totalPrice: Double? = 0.0,
         val status: String? = null,  // e.g., "in queue", "in progress", "ready for pickup", "completed"
-        val alreadyPaid: Boolean = false
+        val alreadyPaid: Boolean = false,
+        val alreadyPickedUp: Boolean = false
     )
 
         data class OrderItem (

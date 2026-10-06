@@ -346,6 +346,9 @@ fun MainAppScreen(
                         onTogglePayment = { orderId, isPaid ->
                             viewModel.toggleOrderPaymentStatus(orderId, isPaid)
                         },
+                        onTogglePickup = { orderId, isPickedUp ->
+                            viewModel.toggleOrderPickupStatus(orderId, isPickedUp)
+                        },
                         onDismissDialog = { viewModel.onDismissOrderDetailDialog() },
                         onDeleteOrder = { orderId -> viewModel.deleteOrder(orderId) },
                         onEditOrder = { orderId ->

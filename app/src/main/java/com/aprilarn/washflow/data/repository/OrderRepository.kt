@@ -238,6 +238,22 @@ class OrderRepository {
         }
     }
 
+    suspend fun updateOrderPickupStatus(orderId: String, isPickedUp: Boolean): Boolean {
+        val workspaceId = getWorkspaceId() ?: return false
+        return try {
+            db.collection("workspaces")
+                .document(workspaceId)
+                .collection("orders")
+                .document(orderId)
+                .update("alreadyPickedUp", isPickedUp)
+                .await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
     suspend fun deleteOrder(orderId: String, status: String?): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
         return try {

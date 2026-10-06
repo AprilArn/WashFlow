@@ -56,6 +56,7 @@ fun ManageOrderScreen(
     onDrop: (orderId: String, newStatus: String) -> Unit,
     onOrderClick: (Orders) -> Unit,
     onTogglePayment: (String, Boolean) -> Unit,
+    onTogglePickup: (String, Boolean) -> Unit,
     onDismissDialog: () -> Unit,
     onDeleteOrder: (String) -> Unit,
     onEditOrder: (String) -> Unit
@@ -115,6 +116,7 @@ fun ManageOrderScreen(
                 order = order,
                 uiState = uiState,
                 onTogglePayment = onTogglePayment,
+                onTogglePickup = onTogglePickup,
                 onDismiss = onDismissDialog,
                 onDelete = { onDeleteOrder(order.orderId) },
                 onEditOrder = {
@@ -131,6 +133,7 @@ fun OrderDetailDialog(
     order: Orders,
     uiState: ManageOrderUiState,
     onTogglePayment: (String, Boolean) -> Unit,
+    onTogglePickup: (String, Boolean) -> Unit,
     onDismiss: () -> Unit,
     onDelete: () -> Unit,
     onEditOrder: () -> Unit
@@ -183,6 +186,7 @@ fun OrderDetailDialog(
                         customer = customer,
                         services = groupedItemsByService.keys.toList(),
                         onTogglePayment = onTogglePayment,
+                        onTogglePickup = onTogglePickup,
                         onCancel = onDismiss,
                         onDelete = {
                             // Ubah state untuk memicu dialog konfirmasi
@@ -209,6 +213,7 @@ private fun LeftDetailPanel(
     customer: Customers?,
     services: List<Services>,
     onTogglePayment: (String, Boolean) -> Unit,
+    onTogglePickup: (String, Boolean) -> Unit,
     onCancel: () -> Unit,
     onDelete: () -> Unit,
     onEditOrder: () -> Unit
@@ -280,6 +285,15 @@ private fun LeftDetailPanel(
                     PaymentStatusRow(
                         isPaid = order.alreadyPaid,
                         onToggle = { isPaid -> onTogglePayment(order.orderId, isPaid) }
+                    )
+                }
+                
+                // --- TOGGLE PENGAMBILAN ---
+                item {
+                    PickupStatusRow(
+                        isPickedUp = order.alreadyPickedUp,
+                        orderStatus = order.status ?: "On Queue",
+                        onToggle = { isPickedUp -> onTogglePickup(order.orderId, isPickedUp) }
                     )
                 }
             }
@@ -488,7 +502,10 @@ private fun InfoRow(icon: ImageVector, label: String, value: String) {
 }
 
 @Composable
-private fun PaymentStatusRow(isPaid: Boolean, onToggle: (Boolean) -> Unit) {
+private fun PaymentStatusRow(
+    isPaid: Boolean, 
+    onToggle: (Boolean) -> Unit
+) {
     val haptic = LocalHapticFeedback.current
     val backgroundColor = if (isPaid) Color(0xFFE3F2FD) else Color(0xFFFFF3E0)
     val contentColor = if (isPaid) Color(0xFF1976D2) else Color(0xFFEF6C00)
@@ -553,6 +570,92 @@ private fun PaymentStatusRow(isPaid: Boolean, onToggle: (Boolean) -> Unit) {
     }
 }
 
+@Composable
+private fun PickupStatusRow(
+    isPickedUp: Boolean,
+    orderStatus: String,
+    onToggle: (Boolean) -> Unit
+) {
+    val isDone = orderStatus.equals("Done", ignoreCase = true)
+    val displayState = if (isDone) isPickedUp else false
+    
+    val bgColor = if (!isDone) Color(0xFFF1F5F9) 
+                  else if (displayState) Color(0xFFDCFCE7) 
+                  else Color(0xFFFEF3C7) 
+    val contentColor = if (!isDone) Color(0xFF94A3B8)
+                       else if (displayState) Color(0xFF166534) 
+                       else Color(0xFF92400E)
+    val icon = if (displayState) Icons.Rounded.CheckCircle else Icons.Rounded.Storefront
+    val statusText = if (!isDone) "Belum bisa diambil"
+                     else if (displayState) "Sudah Diambil" 
+                     else "Belum Diambil"
+    
+    val haptic = LocalHapticFeedback.current
+
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = bgColor,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(contentColor.copy(alpha = 0.1f), RoundedCornerShape(12.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = contentColor,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Status Pengambilan",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = contentColor.copy(alpha = 0.7f)
+                )
+                Text(
+                    text = statusText,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = contentColor
+                    )
+                )
+            }
+
+            Switch(
+                checked = displayState,
+                onCheckedChange = {
+                    if (isDone) {
+                        haptic.performHapticFeedback(if (it) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff)
+                        onToggle(it)
+                    }
+                },
+                enabled = isDone,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = Color(0xFF22C55E), // Warna hijau terang untuk aktif
+                    uncheckedThumbColor = Color.White,
+                    uncheckedTrackColor = Color(0xFFB0BEC5),
+                    uncheckedBorderColor = Color.Transparent,
+                    disabledCheckedTrackColor = Color(0xFFE2E8F0),
+                    disabledUncheckedTrackColor = Color(0xFFE2E8F0),
+                    disabledCheckedThumbColor = Color(0xFFCBD5E1),
+                    disabledUncheckedThumbColor = Color(0xFFCBD5E1)
+                )
+            )
+        }
+    }
+}
+
 // --- PREVIEW BARU DITAMBAHKAN DI SINI ---
 @Preview(showBackground = true, widthDp = 1200, heightDp = 800)
 @Composable
@@ -591,6 +694,7 @@ fun ManageOrderScreenPreview() {
                 onDrop = { _, _ -> },
                 onOrderClick = {},
                 onTogglePayment = { _, _ -> },
+                onTogglePickup = { _, _ -> },
                 onDismissDialog = {},
                 onDeleteOrder = {},
                 onEditOrder = {}
@@ -633,6 +737,7 @@ fun LeftDetailPanelPreview() {
             customer = sampleCustomer,
             services = sampleServices,
             onTogglePayment = { _, _ -> },
+            onTogglePickup = { _, _ -> },
             onCancel = {},
             onDelete = {},
             onEditOrder = {}
@@ -702,6 +807,7 @@ fun OrderDetailDialogPreview() {
             order = sampleOrder,
             uiState = sampleUiState,
             onTogglePayment = { _, _ -> },
+            onTogglePickup = { _, _ -> },
             onDismiss = {},
             onDelete = {},
             onEditOrder = {}

@@ -15,6 +15,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Payments
+import androidx.compose.material.icons.rounded.Storefront
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -438,39 +440,50 @@ fun OrderCardContent(
             )
         }
 
-        // --- TAG PAID ---
-        if (order.alreadyPaid) {
-            Surface(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(18.dp),
-//                    .border(
-//                        width = 1.dp,
-//                        color = borderColor,
-//                        shape = RoundedCornerShape(6.dp)
-//                    ),
-                shape = RoundedCornerShape(6.dp),
-                // shadowElevation = 8.dp,
-                color = Color(0xFF4EB0FF) // Biru Pastel Sangat Muda
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+        // --- TAGS (PAID & PICKED UP) ---
+        Row(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 0.dp, end = 24.dp), // Mentok atas, ada jarak di kanan
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            // TAG PAID
+            if (order.alreadyPaid) {
+                Surface(
+                    shape = RoundedCornerShape(bottomStart = 6.dp, bottomEnd = 6.dp), // Radius hanya di bawah
+                    color = Color(0xFF4EB0FF) // Biru Pastel Sangat Muda
                 ) {
-                    Text(
-                        text = "Paid",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = Color.White, // Biru Tua
-                            fontSize = 10.sp
+                    Box(
+                        modifier = Modifier.padding(start = 6.dp, end = 6.dp, top = 10.dp, bottom = 6.dp), // Padding diperbesar agar label memanjang ke bawah
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Payments,
+                            contentDescription = "Paid",
+                            modifier = Modifier.size(16.dp),
+                            tint = Color.White
                         )
-                    )
-                    Icon(
-                        imageVector = Icons.Rounded.Check,
-                        contentDescription = null,
-                        modifier = Modifier.size(12.dp),
-                        tint = Color.White
-                    )
+                    }
+                }
+            }
+
+            // TAG PICKED UP
+            if (order.alreadyPickedUp) {
+                Surface(
+                    shape = RoundedCornerShape(bottomStart = 6.dp, bottomEnd = 6.dp), // Radius hanya di bawah
+                    color = Color(0xFF22C55E) // Hijau Terang
+                ) {
+                    Box(
+                        modifier = Modifier.padding(start = 6.dp, end = 6.dp, top = 10.dp, bottom = 6.dp), // Padding diperbesar agar label memanjang ke bawah
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Storefront,
+                            contentDescription = "Picked Up",
+                            modifier = Modifier.size(16.dp),
+                            tint = Color.White
+                        )
+                    }
                 }
             }
         }
@@ -490,6 +503,7 @@ fun OrderCardContentPreview() {
         orderId = "1",
         customerName = "Budi Santoso",
         alreadyPaid = true,
+        alreadyPickedUp = true,
         orderDate = Timestamp.now(),
         orderDueDate = Timestamp(Date(System.currentTimeMillis() + 86400000)), // Besok
         orderItems = listOf(

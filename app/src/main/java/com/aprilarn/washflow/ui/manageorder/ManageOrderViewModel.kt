@@ -99,6 +99,15 @@ class ManageOrderViewModel(
         }
     }
 
+    fun toggleOrderPickupStatus(orderId: String, isPickedUp: Boolean) {
+        viewModelScope.launch {
+            val success = orderRepository.updateOrderPickupStatus(orderId, isPickedUp)
+            if (!success) {
+                _uiState.update { it.copy(errorMessage = "Failed to update pickup status.") }
+            }
+        }
+    }
+
     fun onOrderCardClicked(order: Orders) {
         _uiState.update { it.copy(selectedOrderForDetail = order) }
     }
