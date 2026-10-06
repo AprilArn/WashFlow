@@ -149,6 +149,12 @@ class OrderRepository {
 
             db.runBatch { batch ->
                 batch.update(orderRef, "status", newStatus)
+                
+                if (newStatus == "Done") {
+                    batch.update(orderRef, "orderFinishDate", Timestamp.now())
+                } else {
+                    batch.update(orderRef, "orderFinishDate", null)
+                }
 
                 // Update metadata counts
                 val oldField = when (oldStatus) {

@@ -54,6 +54,7 @@ data class Workspaces (
         val customerId: String = "",
         val customerName: String? = null,
         val orderDate: Timestamp = Timestamp.now(),
+        val orderFinishDate: Timestamp? = null,
         val orderDueDate: Timestamp? = null,
         val orderItems: List<OrderItem> = emptyList(),
         val totalPrice: Double? = 0.0,

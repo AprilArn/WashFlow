@@ -181,13 +181,17 @@ class OrdersViewModel(
 
             if (state.editingOrderId != null) {
                 // Update Order
-                val updatedOrder = orderRepository.getOrderById(state.editingOrderId)?.copy(
+                val existingOrder = orderRepository.getOrderById(state.editingOrderId) ?: return@launch
+                
+                val updatedOrder = existingOrder.copy(
                     customerId = state.selectedCustomer.customerId,
                     customerName = state.selectedCustomer.name,
                     orderDueDate = state.dueDate,
                     orderItems = orderItems,
-                    totalPrice = totalPrice
-                ) ?: return@launch
+                    totalPrice = totalPrice,
+                    // Pastikan orderFinishDate diperbarui jika statusnya Done
+                    orderFinishDate = if (existingOrder.status == "Done") Timestamp.now() else null
+                )
 
                 val success = orderRepository.updateOrder(updatedOrder)
                 if (success) {
