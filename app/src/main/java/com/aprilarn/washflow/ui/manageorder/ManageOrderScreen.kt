@@ -276,6 +276,7 @@ private fun LeftDetailPanel(
                 item { InfoRow(Icons.Rounded.Phone, "No Telp/WhatsApp", customer?.contact ?: "N/A") }
                 item { InfoRow(Icons.Rounded.CalendarToday, "Tanggal Order", SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault()).format(order.orderDate.toDate())) }
                 item { InfoRow(Icons.Rounded.Timer, "Batas Waktu", order.orderDueDate?.let { SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault()).format(it.toDate()) } ?: "N/A") }
+                item { InfoRow(Icons.Rounded.TaskAlt, "Waktu Selesai", order.orderFinishDate?.let { SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault()).format(it.toDate()) } ?: "-") }
                 item { InfoRow(Icons.Rounded.ConfirmationNumber, "ID Order", order.orderId) }
                 item { InfoRow(Icons.Rounded.Info, "Status", order.status ?: "N/A") }
                 item { InfoRow(Icons.Rounded.Category, "Layanan", services.joinToString(" + ") { it.serviceName }) }
@@ -292,6 +293,7 @@ private fun LeftDetailPanel(
                 item {
                     PickupStatusRow(
                         isPickedUp = order.alreadyPickedUp,
+                        pickupDate = order.orderPickupDate,
                         orderStatus = order.status ?: "On Queue",
                         onToggle = { isPickedUp -> onTogglePickup(order.orderId, isPickedUp) }
                     )
@@ -573,6 +575,7 @@ private fun PaymentStatusRow(
 @Composable
 private fun PickupStatusRow(
     isPickedUp: Boolean,
+    pickupDate: com.google.firebase.Timestamp?,
     orderStatus: String,
     onToggle: (Boolean) -> Unit
 ) {
@@ -586,8 +589,15 @@ private fun PickupStatusRow(
                        else if (displayState) Color(0xFF166534) 
                        else Color(0xFF92400E)
     val icon = if (displayState) Icons.Rounded.CheckCircle else Icons.Rounded.Storefront
+    
+    // Menambahkan tanggal jika sudah diambil
+    val dateText = if (displayState && pickupDate != null) {
+        val format = SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault())
+        format.format(pickupDate.toDate())
+    } else ""
+    
     val statusText = if (!isDone) "Belum bisa diambil"
-                     else if (displayState) "Sudah Diambil" 
+                     else if (displayState) "Sudah Diambil\n$dateText" 
                      else "Belum Diambil"
     
     val haptic = LocalHapticFeedback.current

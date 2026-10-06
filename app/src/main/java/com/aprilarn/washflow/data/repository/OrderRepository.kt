@@ -154,6 +154,9 @@ class OrderRepository {
                     batch.update(orderRef, "orderFinishDate", Timestamp.now())
                 } else {
                     batch.update(orderRef, "orderFinishDate", null)
+                    // Reset field picked up jika status dikembalikan ke On Queue / On Process
+                    batch.update(orderRef, "alreadyPickedUp", false)
+                    batch.update(orderRef, "orderPickupDate", null)
                 }
 
                 // Update metadata counts
@@ -247,11 +250,18 @@ class OrderRepository {
     suspend fun updateOrderPickupStatus(orderId: String, isPickedUp: Boolean): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
         return try {
+            val pickupDate = if (isPickedUp) Timestamp.now() else null
+            
             db.collection("workspaces")
                 .document(workspaceId)
                 .collection("orders")
                 .document(orderId)
-                .update("alreadyPickedUp", isPickedUp)
+                .update(
+                    mapOf(
+                        "alreadyPickedUp" to isPickedUp,
+                        "orderPickupDate" to pickupDate
+                    )
+                )
                 .await()
             true
         } catch (e: Exception) {
