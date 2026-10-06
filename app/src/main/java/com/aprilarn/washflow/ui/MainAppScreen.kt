@@ -632,7 +632,7 @@ fun MainAppScreen(
                             modifier = Modifier.zIndex(notificationsUiState.notificationPreviews.size - index.toFloat()),
                             notification = notif,
                             onClick = {
-                                if (notif.title == "Order Baru") {
+                                if (notif.title == "Order Baru" || notif.title == "Order Diperbarui") {
                                     bottomNavController.navigate(AppNavigation.ManageOrder.route)
                                 }
                                 notificationsViewModel.removeNotificationPreview(notif.notificationId, true)

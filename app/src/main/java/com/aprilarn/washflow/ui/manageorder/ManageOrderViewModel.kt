@@ -38,23 +38,7 @@ class ManageOrderViewModel(
 
             // Gabungkan data orders dan services secara real-time
             combine(ordersFlow, customersFlow, servicesFlow) { orders, customers, services  ->
-                val currentTime = System.currentTimeMillis()
-                val oneDayInMillis = 24 * 60 * 60 * 1000L
-
-                // Filter order untuk tidak menampilkan order yang sudah selesai sempurna lebih dari 1 hari
-                val filteredOrders = orders.filterNot { order ->
-                    val isDone = order.status == "Done"
-                    val isPaidAndPickedUp = order.alreadyPaid && order.alreadyPickedUp
-                    val pickupTime = order.orderPickupDate?.toDate()?.time ?: 0L
-
-                    val isPickedUpMoreThanOneDayAgo = if (pickupTime > 0) {
-                        (currentTime - pickupTime) > oneDayInMillis
-                    } else false
-
-                    isDone && isPaidAndPickedUp && isPickedUpMoreThanOneDayAgo
-                }
-
-                val groupedOrders = filteredOrders.groupBy { it.status }
+                val groupedOrders = orders.groupBy { it.status }
                 _uiState.update { currentState ->
                     // Sinkronkan selectedOrderForDetail dengan data terbaru dari Firestore
                     // Tetap cari di list original (orders) supaya kalau sedang dibuka tidak crash/hilang
