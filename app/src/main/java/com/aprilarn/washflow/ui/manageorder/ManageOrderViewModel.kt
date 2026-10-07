@@ -32,7 +32,7 @@ class ManageOrderViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
-            val ordersFlow = orderRepository.getOrdersRealtime()
+            val ordersFlow = orderRepository.getOrdersRealtime(activeOnly = true)
             val servicesFlow = serviceRepository.getServicesRealtime()
             val customersFlow = customerRepository.getCustomersRealtime()
 

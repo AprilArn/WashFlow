@@ -13,6 +13,9 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class OrderRepository {
     private val db = Firebase.firestore
@@ -28,7 +31,7 @@ class OrderRepository {
     }
 
     // Fungsi untuk mendapatkan semua order secara realtime
-    suspend fun getOrdersRealtime(): Flow<List<Orders>> {
+    suspend fun getOrdersRealtime(activeOnly: Boolean = false): Flow<List<Orders>> {
         return callbackFlow {
             val workspaceId = getWorkspaceId()
             if (workspaceId == null) {
@@ -36,24 +39,81 @@ class OrderRepository {
                 return@callbackFlow
             }
 
-            val listener = db.collection("workspaces")
+            var query: Query = db.collection("workspaces")
                 .document(workspaceId)
                 .collection("orders")
-                .orderBy("orderDate", Query.Direction.ASCENDING) // Urutkan berdasarkan tanggal order
-                .addSnapshotListener { snapshot, error ->
-                    if (error != null) {
-                        if (error is FirebaseFirestoreException && error.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
-                            close()
-                            return@addSnapshotListener
-                        }
-                        close(error)
+
+            if (activeOnly) {
+                // Hanya ambil yang isArchived == false untuk hemat reads di halaman ManageOrder
+                // Perhatikan: properti Kotlin 'isArchived' secara default dipetakan ke field 'archived' di Firestore
+                query = query.whereEqualTo("archived", false)
+            }
+
+            val listener = query.addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    if (error is FirebaseFirestoreException && error.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+                        close()
                         return@addSnapshotListener
                     }
-                    if (snapshot != null) {
-                        val orders = snapshot.toObjects(Orders::class.java)
-                        trySend(orders).isSuccess
-                    }
+                    close(error)
+                    return@addSnapshotListener
                 }
+                if (snapshot != null) {
+                    var orders = snapshot.toObjects(Orders::class.java)
+                    
+                    // Sort secara lokal (berdasarkan tanggal) untuk menghindari kebutuhan Index Composite Firestore
+                    orders = orders.sortedBy { it.orderDate }
+
+                    // Evaluasi lazy saat ada trigger data masuk (seperti metode awal yang hemat)
+                    if (activeOnly) {
+                        val currentTime = System.currentTimeMillis()
+                        val oneDayInMillis = 24 * 60 * 60 * 1000L
+                        
+                        val ordersToHide = orders.filter { order ->
+                            val isDone = order.status == "Done"
+                            val isPaidAndPickedUp = order.alreadyPaid && order.alreadyPickedUp
+                            val pickupTime = order.orderPickupDate?.toDate()?.time ?: 0L
+                            val isPickedUpMoreThanOneDayAgo = if (pickupTime > 0) {
+                                (currentTime - pickupTime) > oneDayInMillis
+                            } else false
+                            
+                            isDone && isPaidAndPickedUp && isPickedUpMoreThanOneDayAgo
+                        }
+                        
+                        if (ordersToHide.isNotEmpty()) {
+                            CoroutineScope(Dispatchers.IO).launch {
+                                try {
+                                    val batch = db.batch()
+                                    ordersToHide.forEach { order ->
+                                        val ref = db.collection("workspaces")
+                                            .document(workspaceId)
+                                            .collection("orders")
+                                            .document(order.orderId)
+                                        batch.update(ref, "archived", true)
+                                    }
+                                    
+                                    val metadataRef = db.collection("workspaces")
+                                        .document(workspaceId)
+                                        .collection("metadata")
+                                        .document("counts")
+                                    
+                                    val hiddenCount = ordersToHide.size.toLong()
+                                    batch.update(metadataRef, "orderCount", FieldValue.increment(-hiddenCount))
+                                    batch.update(metadataRef, "orderDoneCount", FieldValue.increment(-hiddenCount))
+
+                                    batch.commit().await()
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                            }
+                            orders = orders.filterNot { it in ordersToHide }
+                        }
+                    }
+
+                    trySend(orders).isSuccess
+                }
+            }
+
             // Pastikan listener dihapus saat flow ditutup
             awaitClose { listener.remove() }
         }

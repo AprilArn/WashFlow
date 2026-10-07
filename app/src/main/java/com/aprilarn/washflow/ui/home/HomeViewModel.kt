@@ -58,8 +58,9 @@ class HomeViewModel(
                     
                     val workspaceId = workspaceRepository.getCurrentWorkspaceId()
                     if (workspaceId != null) {
-                        // Jika metadata benar-benar kosong (dokumen belum ada), atau perlu migrasi
-                        if ((metadata.orderCount == 0 && totalStatusCount == 0) || (metadata.orderCount > 0 && totalStatusCount == 0)) {
+                        // Hanya sync jika orderCount > 0 TAPI semua statusnya 0 (indikasi data lama belum termigrasi dengan benar)
+                        // JANGAN sync jika orderCount == 0, karena itu wajar jika workspace baru atau semua order sudah diarsipkan
+                        if (metadata.orderCount > 0 && totalStatusCount == 0) {
                             workspaceRepository.syncMetadata(workspaceId)
                         }
                     }
