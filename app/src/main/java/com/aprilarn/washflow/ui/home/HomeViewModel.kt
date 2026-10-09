@@ -58,9 +58,8 @@ class HomeViewModel(
                     
                     val workspaceId = workspaceRepository.getCurrentWorkspaceId()
                     if (workspaceId != null) {
-                        // Hanya sync jika orderCount > 0 TAPI semua statusnya 0 (indikasi data lama belum termigrasi dengan benar)
-                        // JANGAN sync jika orderCount == 0, karena itu wajar jika workspace baru atau semua order sudah diarsipkan
-                        if (metadata.orderCount > 0 && totalStatusCount == 0) {
+                        // Sinkronisasi otomatis jika data tidak seimbang, misalnya akibat penghapusan paksa dari console Firestore.
+                        if (metadata.orderCount != totalStatusCount) {
                             workspaceRepository.syncMetadata(workspaceId)
                         }
                     }
