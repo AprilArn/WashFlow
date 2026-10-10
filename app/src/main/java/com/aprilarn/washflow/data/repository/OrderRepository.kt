@@ -72,12 +72,19 @@ class OrderRepository {
                         val ordersToHide = orders.filter { order ->
                             val isDone = order.status == "Done"
                             val isPaidAndPickedUp = order.alreadyPaid && order.alreadyPickedUp
+                            
                             val pickupTime = order.orderPickupDate?.toDate()?.time ?: 0L
                             val isPickedUpMoreThanOneDayAgo = if (pickupTime > 0) {
                                 (currentTime - pickupTime) > oneDayInMillis
-                            } else false
+                            } else true // Jika data lama tidak punya timestamp tapi alreadyPickedUp true, anggap sudah lewat 1 hari
                             
-                            isDone && isPaidAndPickedUp && isPickedUpMoreThanOneDayAgo
+                            val paidTime = order.orderPaidDate?.toDate()?.time ?: 0L
+                            val isPaidMoreThanOneDayAgo = if (paidTime > 0) {
+                                (currentTime - paidTime) > oneDayInMillis
+                            } else true // Jika data lama tidak punya timestamp tapi alreadyPaid true, anggap sudah lewat 1 hari
+                            
+                            // Sembunyikan HANYA JIKA kedua aktivitas (Pickup & Paid) sudah lewat 1 hari
+                            isDone && isPaidAndPickedUp && isPickedUpMoreThanOneDayAgo && isPaidMoreThanOneDayAgo
                         }
                         
                         if (ordersToHide.isNotEmpty()) {
@@ -294,11 +301,17 @@ class OrderRepository {
     suspend fun updateOrderPaymentStatus(orderId: String, isPaid: Boolean): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
         return try {
+            val paidDate = if (isPaid) Timestamp.now() else null
             db.collection("workspaces")
                 .document(workspaceId)
                 .collection("orders")
                 .document(orderId)
-                .update("alreadyPaid", isPaid)
+                .update(
+                    mapOf(
+                        "alreadyPaid" to isPaid,
+                        "orderPaidDate" to paidDate
+                    )
+                )
                 .await()
             true
         } catch (e: Exception) {

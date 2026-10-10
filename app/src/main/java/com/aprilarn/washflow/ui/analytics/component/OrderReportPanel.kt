@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -33,7 +34,7 @@ import com.google.firebase.Timestamp
 import java.text.SimpleDateFormat
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun OrderReportPanel(
     orders: List<Orders>,
@@ -93,6 +94,7 @@ fun OrderReportPanel(
             }
             ReportSortColumn.TOTAL_PRICE -> compareBy<Orders> { it.totalPrice ?: 0.0 }
             ReportSortColumn.STATUS -> compareBy<Orders> { (it.status ?: "").lowercase() }
+            ReportSortColumn.FINISH_DATE -> compareBy<Orders> { it.orderFinishDate?.toDate()?.time ?: 0L }
         }
         if (isAscending) monthFiltered.sortedWith(comparator)
         else monthFiltered.sortedWith(comparator.reversed())
@@ -398,11 +400,11 @@ fun OrderReportPanel(
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TableHeaderCell("Tanggal", ReportSortColumn.DATE, sortColumn, isAscending, 1.1f, onSortColumnClicked)
-                    TableHeaderCell("Waktu", ReportSortColumn.TIME, sortColumn, isAscending, 0.8f, onSortColumnClicked)
+                    TableHeaderCell("Tanggal Masuk", ReportSortColumn.DATE, sortColumn, isAscending, 1.3f, onSortColumnClicked)
                     TableHeaderCell("Nama Pelanggan", ReportSortColumn.CUSTOMER_NAME, sortColumn, isAscending, 1.3f, onSortColumnClicked)
-                    TableHeaderCell("Order", ReportSortColumn.ORDER_ITEMS, sortColumn, isAscending, 2.6f, onSortColumnClicked)
+                    TableHeaderCell("Order", ReportSortColumn.ORDER_ITEMS, sortColumn, isAscending, 2.7f, onSortColumnClicked)
                     TableHeaderCell("Total", ReportSortColumn.TOTAL_PRICE, sortColumn, isAscending, 1.2f, onSortColumnClicked)
+                    TableHeaderCell("Tgl. Selesai", ReportSortColumn.FINISH_DATE, sortColumn, isAscending, 1.1f, onSortColumnClicked)
                     TableHeaderCell("Status Order", ReportSortColumn.STATUS, sortColumn, isAscending, 1.1f, onSortColumnClicked)
                     TableHeaderCell("Bayar", null, sortColumn, isAscending, 0.9f, onSortColumnClicked)
                 }
@@ -429,8 +431,8 @@ fun OrderReportPanel(
 
                         LazyColumn(modifier = Modifier.fillMaxSize()) {
                             groupedByMonth.forEach { (monthName, orderList) ->
-                                // Month Section Banner
-                                item {
+                                // Month Section Banner (Sticky Header)
+                                stickyHeader {
                                     val monthTotal = orderList.sumOf { it.totalPrice ?: 0.0 }
                                     Row(
                                         modifier = Modifier
@@ -526,27 +528,18 @@ private fun OrderLedgerRow(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.Top
     ) {
-        // 1. Tanggal
+        // 1. Tanggal Masuk (Digabung dengan Waktu)
         Text(
-            text = order.orderDate.toDateString(),
+            text = order.orderDate.toDateString() + "\n" + order.orderDate.toTimeString(),
             fontSize = 12.sp,
             color = GrayBlue,
+            lineHeight = 16.sp,
             modifier = Modifier
-                .weight(1.1f)
+                .weight(1.3f)
                 .padding(top = 2.dp)
         )
 
-        // 2. Waktu
-        Text(
-            text = order.orderDate.toTimeString(),
-            fontSize = 12.sp,
-            color = Color.Gray,
-            modifier = Modifier
-                .weight(0.8f)
-                .padding(top = 2.dp)
-        )
-
-        // 3. Nama Pelanggan
+        // 2. Nama Pelanggan
         Text(
             text = order.customerName ?: "Tanpa Nama",
             fontSize = 13.sp,
@@ -559,10 +552,10 @@ private fun OrderLedgerRow(
                 .padding(top = 2.dp)
         )
 
-        // 4. Order (List Barang memanjang ke bawah per Kategori & New Line)
+        // 3. Order (List Barang memanjang ke bawah per Kategori & New Line)
         Column(
             modifier = Modifier
-                .weight(2.6f)
+                .weight(2.7f)
                 .padding(end = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -666,7 +659,20 @@ private fun OrderLedgerRow(
                 .padding(top = 2.dp)
         )
 
-        // 6. Status Order Badge
+        // 6. Tanggal Selesai
+        Text(
+            text = order.orderFinishDate?.let { 
+                it.toDateString() + "\n" + it.toTimeString() 
+            } ?: "-",
+            fontSize = 11.sp,
+            color = if (order.orderFinishDate != null) Color(0xFF059669) else Color.Gray,
+            lineHeight = 16.sp,
+            modifier = Modifier
+                .weight(1.1f)
+                .padding(top = 2.dp)
+        )
+
+        // 7. Status Order Badge
         Box(
             modifier = Modifier
                 .weight(1.1f)
@@ -675,7 +681,7 @@ private fun OrderLedgerRow(
             StatusBadge(status = order.status ?: "On Queue")
         }
 
-        // 7. Status Pembayaran Badge
+        // 8. Status Pembayaran Badge
         Box(
             modifier = Modifier
                 .weight(0.9f)

@@ -11,7 +11,8 @@ enum class ReportSortColumn(val label: String) {
     CUSTOMER_NAME("Nama Pelanggan"),
     ORDER_ITEMS("Order"),
     TOTAL_PRICE("Total"),
-    STATUS("Status Order")
+    STATUS("Status Order"),
+    FINISH_DATE("Tanggal Selesai")
 }
 
 data class Transaction(

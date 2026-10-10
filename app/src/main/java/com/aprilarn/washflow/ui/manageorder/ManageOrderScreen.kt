@@ -285,6 +285,7 @@ private fun LeftDetailPanel(
                 item {
                     PaymentStatusRow(
                         isPaid = order.alreadyPaid,
+                        paidDate = order.orderPaidDate,
                         onToggle = { isPaid -> onTogglePayment(order.orderId, isPaid) }
                     )
                 }
@@ -506,12 +507,19 @@ private fun InfoRow(icon: ImageVector, label: String, value: String) {
 @Composable
 private fun PaymentStatusRow(
     isPaid: Boolean, 
+    paidDate: com.google.firebase.Timestamp?,
     onToggle: (Boolean) -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
     val backgroundColor = if (isPaid) Color(0xFFE3F2FD) else Color(0xFFFFF3E0)
     val contentColor = if (isPaid) Color(0xFF1976D2) else Color(0xFFEF6C00)
-    val statusText = if (isPaid) "Lunas" else "Belum Dibayar"
+    
+    val dateText = if (isPaid && paidDate != null) {
+        val format = SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault())
+        format.format(paidDate.toDate())
+    } else ""
+    
+    val statusText = if (isPaid) "Lunas\n$dateText" else "Belum Dibayar"
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
