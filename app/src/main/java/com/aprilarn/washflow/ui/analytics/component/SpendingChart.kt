@@ -3,7 +3,6 @@ package com.aprilarn.washflow.ui.analytics.component
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -24,16 +23,76 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aprilarn.washflow.data.model.Orders
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 import com.aprilarn.washflow.ui.theme.GrayBlue
+import com.aprilarn.washflow.utils.CurrencyUtils
 import kotlin.math.roundToInt
 
 @Composable
-fun SpendingChart(modifier: Modifier = Modifier) {
-    val points = listOf(0.6f, 0.4f, 0.8f, 0.3f, 0.45f, 0.2f, 0.4f)
-    val days = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
-    val dayAmounts = listOf("$194.80", "$129.85", "$259.75", "$97.40", "$146.10", "$64.90", "$129.85")
+fun SpendingChart(
+    orders: List<Orders>,
+    modifier: Modifier = Modifier
+) {
+    var selectedPeriod by remember { mutableStateOf("Week") }
+
+    // 1. Generate lists based on selectedPeriod
+    val daysList = mutableListOf<String>()
+    val dateList = mutableListOf<String>()
     
-    var selectedIndex by remember { mutableIntStateOf(2) }
+    if (selectedPeriod == "Week") {
+        val daysFormat = SimpleDateFormat("EEE", Locale.US)
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        // Create dates from 6 days ago up to today
+        for (i in 6 downTo 0) {
+            val tempCal = Calendar.getInstance()
+            tempCal.add(Calendar.DAY_OF_YEAR, -i)
+            daysList.add(daysFormat.format(tempCal.time))
+            dateList.add(dateFormat.format(tempCal.time))
+        }
+    } else {
+        val monthFormat = SimpleDateFormat("MMM", Locale.US)
+        val dateFormat = SimpleDateFormat("yyyy-MM", Locale.getDefault())
+        // Create dates from 6 months ago up to this month
+        for (i in 6 downTo 0) {
+            val tempCal = Calendar.getInstance()
+            tempCal.add(Calendar.MONTH, -i)
+            daysList.add(monthFormat.format(tempCal.time))
+            dateList.add(dateFormat.format(tempCal.time))
+        }
+    }
+
+    // 2. Calculate daily/monthly income (sum of totalPrice for orders that period)
+    val incomes = DoubleArray(7) { 0.0 }
+    
+    orders.forEach { order ->
+        if (order.totalPrice != null && order.totalPrice > 0) {
+            val formatStr = if (selectedPeriod == "Week") "yyyy-MM-dd" else "yyyy-MM"
+            val orderDateStr = SimpleDateFormat(formatStr, Locale.getDefault()).format(order.orderDate.toDate())
+            val index = dateList.indexOf(orderDateStr)
+            if (index != -1) {
+                incomes[index] += order.totalPrice
+            }
+        }
+    }
+
+    // Calculate chart points (0f to 1f based on max income)
+    val maxIncome = incomes.maxOrNull() ?: 0.0
+    val points = if (maxIncome > 0) {
+        incomes.map { (it / maxIncome).toFloat() }
+    } else {
+        List(7) { 0f }
+    }
+    
+    val dayAmounts = incomes.map { CurrencyUtils.formatRupiahWithSymbol(it) }
+    val days = daysList
+
+    // Set default selected index to today/this month (index 6, the last item)
+    var selectedIndex by remember { mutableIntStateOf(6) }
+    // Update selectedIndex automatically if it exceeds list size (though it's fixed at 7)
+    if (selectedIndex >= days.size) selectedIndex = days.size - 1
 
     Column(modifier = modifier) {
         Row(
@@ -42,24 +101,21 @@ fun SpendingChart(modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.Top
         ) {
             Column {
-                Text(text = "Daily income", fontSize = 12.sp, color = Color.Gray)
+                Text(
+                    text = if (selectedPeriod == "Week") "Daily income" else "Monthly income", 
+                    fontSize = 12.sp, color = Color.Gray
+                )
                 Text(text = dayAmounts[selectedIndex], fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = GrayBlue)
             }
 
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = Color.White,
-                border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f))
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = "Week", fontSize = 12.sp, color = GrayBlue)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, modifier = Modifier.size(16.dp), tint = GrayBlue)
+            GeneralDropdown(
+                selectedText = selectedPeriod,
+                items = listOf("Week", "Month"),
+                onItemSelected = { 
+                    selectedPeriod = it
+                    selectedIndex = 6 // Reset to right-most
                 }
-            }
+            )
         }
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -70,24 +126,28 @@ fun SpendingChart(modifier: Modifier = Modifier) {
                 .height(180.dp)
                 .pointerInput(Unit) {
                     detectDragGestures { change, _ ->
-                        val x = change.position.x
-                        val stepX = size.width / (points.size - 1)
-                        val index = (x / stepX).roundToInt().coerceIn(0, points.size - 1)
+                        // Hapus margin horizontal saat menghitung posisi X agar index tidak meleset saat di-drag
+                        val x = change.position.x - 15.dp.toPx() 
+                        val stepXPx = (size.width - 30.dp.toPx()) / (points.size - 1)
+                        val index = (x / stepXPx).roundToInt().coerceIn(0, points.size - 1)
                         selectedIndex = index
                     }
                 }
                 .pointerInput(Unit) {
                     detectTapGestures { offset ->
-                        val x = offset.x
-                        val stepX = size.width / (points.size - 1)
-                        val index = (x / stepX).roundToInt().coerceIn(0, points.size - 1)
+                        // Hapus margin horizontal saat menghitung posisi X agar tap akurat
+                        val x = offset.x - 15.dp.toPx()
+                        val stepXPx = (size.width - 30.dp.toPx()) / (points.size - 1)
+                        val index = (x / stepXPx).roundToInt().coerceIn(0, points.size - 1)
                         selectedIndex = index
                     }
                 }
         ) {
             val topPadding = 40.dp
             val chartHeight = maxHeight - topPadding
-            val stepX = maxWidth / (points.size - 1)
+            val horizontalPadding = 15.dp
+            val innerWidth = maxWidth - (horizontalPadding * 2)
+            val stepX = innerWidth / (points.size - 1)
 
             val animatedX by animateFloatAsState(
                 targetValue = (selectedIndex * stepX.value),
@@ -101,7 +161,7 @@ fun SpendingChart(modifier: Modifier = Modifier) {
                 label = "indicatorYFactor"
             )
 
-            Canvas(modifier = Modifier.fillMaxSize()) {
+            Canvas(modifier = Modifier.fillMaxSize().padding(horizontal = horizontalPadding)) {
                 val stepXCanvas = size.width / (points.size - 1)
                 val chartHeightCanvas = size.height - topPadding.toPx()
 
@@ -180,7 +240,6 @@ fun SpendingChart(modifier: Modifier = Modifier) {
             }
 
             // Pop-up label for the active dot
-            val indicatorX = animatedX.dp
             val indicatorY = topPadding + chartHeight * (1 - animatedYFactor)
             val labelGap = 20.dp
             
@@ -207,7 +266,8 @@ fun SpendingChart(modifier: Modifier = Modifier) {
             Surface(
                 modifier = Modifier
                     .offset(
-                        x = indicatorX + if (isFarRight) 0.5.dp else (-0.5).dp, 
+                        // Karena label digambar SEBELUM padding canvas, kita tambahkan manual padding-nya ke offset pop-up ini
+                        x = animatedX.dp + horizontalPadding + if (isFarRight) 0.5.dp else (-0.5).dp, 
                         y = indicatorY - labelGap
                     )
                     .graphicsLayer {
@@ -243,7 +303,9 @@ fun SpendingChart(modifier: Modifier = Modifier) {
                     text = day,
                     fontSize = 11.sp,
                     color = if (isSelected) GrayBlue else Color.Gray,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    modifier = Modifier.width(30.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             }
         }

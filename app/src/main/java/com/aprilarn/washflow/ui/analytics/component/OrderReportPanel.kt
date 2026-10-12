@@ -129,66 +129,18 @@ fun OrderReportPanel(
                 )
             }
 
-            // Dropdown Filter Bulan
-            var monthDropdownExpanded by remember { mutableStateOf(value = false) }
-            ExposedDropdownMenuBox(
-                expanded = monthDropdownExpanded,
-                onExpandedChange = { monthDropdownExpanded = !monthDropdownExpanded }
-            ) {
-                Surface(
-                    modifier = Modifier.menuAnchor(),
-                    shape = RoundedCornerShape(20.dp),
-                    color = Color(0xFFF3F4F6),
-                    border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Rounded.CalendarToday,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                            tint = GrayBlue
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = selectedMonth,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 13.sp,
-                            color = GrayBlue
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Icon(
-                            Icons.Default.ArrowDropDown,
-                            contentDescription = null,
-                            tint = GrayBlue
-                        )
-                    }
-                }
-
-                ExposedDropdownMenu(
-                    expanded = monthDropdownExpanded,
-                    onDismissRequest = { monthDropdownExpanded = false },
-                    modifier = Modifier.background(Color.White)
-                ) {
-                    monthList.forEach { month ->
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    text = month,
-                                    fontWeight = if (month == selectedMonth) FontWeight.Bold else FontWeight.Normal,
-                                    color = GrayBlue
-                                )
-                            },
-                            onClick = {
-                                onMonthSelected(month)
-                                monthDropdownExpanded = false
-                            }
-                        )
-                    }
-                }
-            }
+            // Dropdown Filter Bulan Menggunakan GeneralDropdown
+            GeneralDropdown(
+                selectedText = selectedMonth,
+                items = monthList,
+                onItemSelected = { onMonthSelected(it) },
+                icon = Icons.Rounded.CalendarToday, // Menambahkan icon custom jika diperlukan oleh GeneralDropdown
+                modifier = Modifier,
+                dropdownWidth = 160.dp, // Sedikit lebih lebar untuk nama bulan
+                backgroundColor = Color(0xFFF3F4F6),
+                shapeRadius = 20.dp,
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))

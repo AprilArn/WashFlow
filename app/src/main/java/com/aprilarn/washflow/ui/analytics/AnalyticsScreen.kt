@@ -183,7 +183,7 @@ fun AnalyticsScreen(
                                 .fillMaxSize()
                                 .padding(24.dp) // Padding internal di dalam kontainer abu-abu
                         ) {
-                            SpendingChart(modifier = Modifier.fillMaxWidth())
+                            SpendingChart(orders = uiState.orders, modifier = Modifier.fillMaxWidth())
 
                             Spacer(modifier = Modifier.height(48.dp))
 
