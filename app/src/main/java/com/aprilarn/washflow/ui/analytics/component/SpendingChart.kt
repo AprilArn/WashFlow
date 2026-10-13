@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.automirrored.rounded.TrendingDown
+import androidx.compose.material.icons.automirrored.rounded.TrendingFlat
+import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -93,6 +96,29 @@ fun SpendingChart(
     var selectedIndex by remember { mutableIntStateOf(6) }
     // Update selectedIndex automatically if it exceeds list size (though it's fixed at 7)
     if (selectedIndex >= days.size) selectedIndex = days.size - 1
+    
+    // Hitung tren (naik/turun/tetap)
+    val currentIncome = incomes[selectedIndex]
+    val previousIncome = if (selectedIndex > 0) incomes[selectedIndex - 1] else 0.0
+    val trendIsUp = currentIncome > previousIncome
+    val trendIsDown = currentIncome < previousIncome
+    val trendColor = if (trendIsUp) Color(0xFF059669) else if (trendIsDown) Color(0xFFDC2626) else Color.Gray
+    val trendIcon = if (trendIsUp) Icons.AutoMirrored.Rounded.TrendingUp else if (trendIsDown) Icons.AutoMirrored.Rounded.TrendingDown else Icons.AutoMirrored.Rounded.TrendingFlat
+    
+    // Kalkulasi persentase perbedaan
+    val percentageDiff = if (previousIncome > 0) {
+        ((currentIncome - previousIncome) / previousIncome) * 100
+    } else if (currentIncome > 0) {
+        100.0 // Anggap kenaikan 100% jika sebelumnya 0
+    } else {
+        0.0
+    }
+    
+    val formattedPercentage = if (percentageDiff % 1 == 0.0) {
+        "${kotlin.math.abs(percentageDiff).toInt()}%"
+    } else {
+        String.format(Locale.US, "%.1f%%", kotlin.math.abs(percentageDiff))
+    }
 
     Column(modifier = modifier) {
         Row(
@@ -101,10 +127,29 @@ fun SpendingChart(
             verticalAlignment = Alignment.Top
         ) {
             Column {
-                Text(
-                    text = if (selectedPeriod == "Week") "Daily income" else "Monthly income", 
-                    fontSize = 12.sp, color = Color.Gray
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = if (selectedPeriod == "Week") "Daily income" else "Monthly income", 
+                        fontSize = 12.sp, color = Color.Gray
+                    )
+                    
+                    if (selectedIndex > 0 && (trendIsUp || trendIsDown)) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Icon(
+                            imageVector = trendIcon,
+                            contentDescription = null,
+                            tint = trendColor,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(2.dp))
+                        Text(
+                            text = formattedPercentage,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = trendColor
+                        )
+                    }
+                }
                 Text(text = dayAmounts[selectedIndex], fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = GrayBlue)
             }
 
