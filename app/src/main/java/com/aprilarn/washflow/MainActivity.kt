@@ -87,7 +87,12 @@ class MainActivity : ComponentActivity() {
                             }
 
                             // Efek ini akan memantau status workspace dan menavigasi
-                            LaunchedEffect(key1 = state.userHasWorkspace) {
+                            LaunchedEffect(key1 = state.userHasWorkspace, key2 = state.showTimeoutDialog) {
+                                if (state.showTimeoutDialog) {
+                                    // Cegah navigasi jika terjadi timeout/error
+                                    return@LaunchedEffect
+                                }
+                                
                                 if (state.userHasWorkspace == true) { // Punya workspace
                                     Toast.makeText(applicationContext, "Welcome back!", Toast.LENGTH_SHORT).show()
                                     navController.navigate("main") {

@@ -34,10 +34,16 @@ import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.utils.CurrencyUtils
 import kotlin.math.roundToInt
 
+enum class AnalyticsChartType {
+    INCOME, CUSTOMER
+}
+
 @Composable
 fun SpendingChart(
     orders: List<Orders>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    chartType: AnalyticsChartType = AnalyticsChartType.INCOME,
+    onInteractionStateChange: (Boolean) -> Unit = {}
 ) {
     var selectedPeriod by remember { mutableStateOf("Week") }
 
@@ -67,29 +73,46 @@ fun SpendingChart(
         }
     }
 
-    // 2. Calculate daily/monthly income (sum of totalPrice for orders that period)
-    val incomes = DoubleArray(7) { 0.0 }
+    // 2. Calculate daily/monthly values
+    val values = DoubleArray(7) { 0.0 }
+    val uniqueCustomers = Array(7) { mutableSetOf<String>() }
     
     orders.forEach { order ->
-        if (order.totalPrice != null && order.totalPrice > 0) {
-            val formatStr = if (selectedPeriod == "Week") "yyyy-MM-dd" else "yyyy-MM"
-            val orderDateStr = SimpleDateFormat(formatStr, Locale.getDefault()).format(order.orderDate.toDate())
-            val index = dateList.indexOf(orderDateStr)
-            if (index != -1) {
-                incomes[index] += order.totalPrice
+        val formatStr = if (selectedPeriod == "Week") "yyyy-MM-dd" else "yyyy-MM"
+        val orderDateStr = SimpleDateFormat(formatStr, Locale.getDefault()).format(order.orderDate.toDate())
+        val index = dateList.indexOf(orderDateStr)
+        
+        if (index != -1) {
+            if (chartType == AnalyticsChartType.INCOME) {
+                if (order.totalPrice != null && order.totalPrice > 0) {
+                    values[index] += order.totalPrice
+                }
+            } else {
+                if (order.customerId.isNotBlank()) {
+                    uniqueCustomers[index].add(order.customerId)
+                }
             }
         }
     }
 
-    // Calculate chart points (0f to 1f based on max income)
-    val maxIncome = incomes.maxOrNull() ?: 0.0
-    val points = if (maxIncome > 0) {
-        incomes.map { (it / maxIncome).toFloat() }
+    if (chartType == AnalyticsChartType.CUSTOMER) {
+        for (i in 0..6) {
+            values[i] = uniqueCustomers[i].size.toDouble()
+        }
+    }
+
+    // Calculate chart points (0f to 1f based on max value)
+    val maxValue = values.maxOrNull() ?: 0.0
+    val points = if (maxValue > 0) {
+        values.map { (it / maxValue).toFloat() }
     } else {
         List(7) { 0f }
     }
     
-    val dayAmounts = incomes.map { CurrencyUtils.formatRupiahWithSymbol(it) }
+    val dayAmounts = values.map { 
+        if (chartType == AnalyticsChartType.INCOME) CurrencyUtils.formatRupiahWithSymbol(it) 
+        else "${it.toInt()} User"
+    }
     val days = daysList
 
     // Set default selected index to today/this month (index 6, the last item)
@@ -98,8 +121,8 @@ fun SpendingChart(
     if (selectedIndex >= days.size) selectedIndex = days.size - 1
     
     // Hitung tren (naik/turun/tetap)
-    val currentIncome = incomes[selectedIndex]
-    val previousIncome = if (selectedIndex > 0) incomes[selectedIndex - 1] else 0.0
+    val currentIncome = values[selectedIndex]
+    val previousIncome = if (selectedIndex > 0) values[selectedIndex - 1] else 0.0
     val trendIsUp = currentIncome > previousIncome
     val trendIsDown = currentIncome < previousIncome
     val trendColor = if (trendIsUp) Color(0xFF059669) else if (trendIsDown) Color(0xFFDC2626) else Color.Gray
@@ -128,8 +151,11 @@ fun SpendingChart(
         ) {
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    val titlePrefix = if (selectedPeriod == "Week") "Daily" else "Monthly"
+                    val titleSuffix = if (chartType == AnalyticsChartType.INCOME) "income" else "customers"
+                    
                     Text(
-                        text = if (selectedPeriod == "Week") "Daily income" else "Monthly income", 
+                        text = "$titlePrefix $titleSuffix", 
                         fontSize = 12.sp, color = Color.Gray
                     )
                     
@@ -170,8 +196,11 @@ fun SpendingChart(
                 .fillMaxWidth()
                 .height(180.dp)
                 .pointerInput(Unit) {
-                    detectDragGestures { change, _ ->
-                        // Hapus margin horizontal saat menghitung posisi X agar index tidak meleset saat di-drag
+                    detectDragGestures(
+                        onDragStart = { onInteractionStateChange(true) },
+                        onDragEnd = { onInteractionStateChange(false) },
+                        onDragCancel = { onInteractionStateChange(false) }
+                    ) { change, _ ->
                         val x = change.position.x - 15.dp.toPx() 
                         val stepXPx = (size.width - 30.dp.toPx()) / (points.size - 1)
                         val index = (x / stepXPx).roundToInt().coerceIn(0, points.size - 1)
@@ -179,12 +208,23 @@ fun SpendingChart(
                     }
                 }
                 .pointerInput(Unit) {
-                    detectTapGestures { offset ->
-                        // Hapus margin horizontal saat menghitung posisi X agar tap akurat
-                        val x = offset.x - 15.dp.toPx()
-                        val stepXPx = (size.width - 30.dp.toPx()) / (points.size - 1)
-                        val index = (x / stepXPx).roundToInt().coerceIn(0, points.size - 1)
-                        selectedIndex = index
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            when (event.type) {
+                                androidx.compose.ui.input.pointer.PointerEventType.Press -> {
+                                    onInteractionStateChange(true)
+                                    val position = event.changes.first().position
+                                    val x = position.x - 15.dp.toPx()
+                                    val stepXPx = (size.width - 30.dp.toPx()) / (points.size - 1)
+                                    val index = (x / stepXPx).roundToInt().coerceIn(0, points.size - 1)
+                                    selectedIndex = index
+                                }
+                                androidx.compose.ui.input.pointer.PointerEventType.Release -> {
+                                    onInteractionStateChange(false)
+                                }
+                            }
+                        }
                     }
                 }
         ) {

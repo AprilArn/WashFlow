@@ -9,6 +9,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.gestures.snapping.SnapPosition
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -23,6 +26,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aprilarn.washflow.ui.analytics.component.*
+import kotlinx.coroutines.launch
 import com.aprilarn.washflow.ui.theme.GrayBlue
 
 // --- Konstanta Warna Tema ---
@@ -183,7 +187,75 @@ fun AnalyticsScreen(
                                 .fillMaxSize()
                                 .padding(24.dp) // Padding internal di dalam kontainer abu-abu
                         ) {
-                            SpendingChart(orders = uiState.orders, modifier = Modifier.fillMaxWidth())
+                            val pagerState = rememberPagerState(
+                                pageCount = { 2 }
+                            )
+                            
+                            // State untuk melacak apakah pengguna sedang berinteraksi dengan grafik (drag/tap label)
+                            var isInteractingWithChart by remember { mutableStateOf(false) }
+
+                            // Gunakan coroutine scope dari luar komponen yang tidak akan tercancel saat recompose
+                            val coroutineScope = rememberCoroutineScope()
+
+                            // Efek auto-slide memutar balik (Rewind)
+                            LaunchedEffect(pagerState.isScrollInProgress, isInteractingWithChart) {
+                                // Hanya jalankan auto-slide jika tidak sedang digeser (scroll) DAN tidak sedang berinteraksi (tap/drag) dengan grafik
+                                if (!pagerState.isScrollInProgress && !isInteractingWithChart) {
+                                    while (true) {
+                                        kotlinx.coroutines.delay(6000)
+                                        // Pindah ke Coroutine Scope UI agar tidak tercancel oleh LaunchedEffect
+                                        val nextPage = if (pagerState.currentPage == 1) 0 else pagerState.currentPage + 1
+
+                                        // Jangan di-try/catch dalam LaunchedEffect scope, biarkan coroutineScope yang handle
+                                        coroutineScope.launch {
+                                            try {
+                                                pagerState.animateScrollToPage(
+                                                    page = nextPage,
+                                                    animationSpec = androidx.compose.animation.core.tween(800)
+                                                )
+                                            } catch (e: Exception) {
+                                                // Abaikan error cancellation jika ada
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            HorizontalPager(state = pagerState, modifier = Modifier.fillMaxWidth()) { page ->
+                                if (page == 0) {
+                                    SpendingChart(
+                                        orders = uiState.orders, 
+                                        modifier = Modifier.fillMaxWidth(),
+                                        onInteractionStateChange = { isInteractingWithChart = it }
+                                    )
+                                } else {
+                                    SpendingChart(
+                                        orders = uiState.orders, 
+                                        modifier = Modifier.fillMaxWidth(),
+                                        chartType = AnalyticsChartType.CUSTOMER,
+                                        onInteractionStateChange = { isInteractingWithChart = it }
+                                    )
+                                }
+                            }
+                            
+                            // Pager indicator
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 16.dp),
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                repeat(2) { iteration ->
+                                    val color = if (pagerState.currentPage == iteration) GrayBlue else Color.LightGray
+                                    Box(
+                                        modifier = Modifier
+                                            .padding(horizontal = 4.dp)
+                                            .clip(CircleShape)
+                                            .background(color)
+                                            .size(8.dp)
+                                    )
+                                }
+                            }
 
                             Spacer(modifier = Modifier.height(48.dp))
 
