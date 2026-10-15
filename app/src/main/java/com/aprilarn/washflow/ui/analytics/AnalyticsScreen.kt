@@ -195,7 +195,7 @@ fun AnalyticsScreen(
                             var isInteractingWithChart by remember { mutableStateOf(false) }
                             
                             // Shared state untuk sinkronisasi periode (Day/Week/Month) di semua chart Pager
-                            var selectedChartPeriod by remember { mutableStateOf("Week") }
+                            var selectedChartPeriod by remember { mutableStateOf("Day") }
 
                             // Gunakan coroutine scope dari luar komponen yang tidak akan tercancel saat recompose
                             val coroutineScope = rememberCoroutineScope()

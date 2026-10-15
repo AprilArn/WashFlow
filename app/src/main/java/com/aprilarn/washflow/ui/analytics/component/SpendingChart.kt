@@ -63,26 +63,38 @@ fun SpendingChart(
             dateList.add(dateFormat.format(tempCal.time))
         }
     } else if (selectedPeriod == "Week") {
-        // 7 Minggu terakhir (Termasuk minggu ini sampai hari ini)
+        // 7 Minggu terakhir (Berdasarkan kalender nyata: Senin hingga Minggu)
         for (i in 6 downTo 0) {
-            val endCal = Calendar.getInstance()
-            endCal.add(Calendar.DAY_OF_YEAR, -(i * 7)) // Titik akhirnya
-            
             val startCal = Calendar.getInstance()
-            startCal.timeInMillis = endCal.timeInMillis
-            startCal.add(Calendar.DAY_OF_YEAR, -6) // 6 hari sebelumnya (total 7 hari)
+            // Mundur sebanyak 'i' minggu
+            startCal.add(Calendar.WEEK_OF_YEAR, -i)
             
-            // Atur waktu agar presisi di jam 00:00 - 23:59
+            // Geser ke hari Senin pada minggu tersebut
+            // Calendar.SUNDAY = 1, MONDAY = 2, ..., SATURDAY = 7
+            // Rumus ini akan selalu menemukan hari Senin terdekat di minggu itu.
+            val dayOfWeek = startCal.get(Calendar.DAY_OF_WEEK)
+            val daysToShift = (dayOfWeek + 5) % 7
+            startCal.add(Calendar.DAY_OF_YEAR, -daysToShift)
+            
+            // Atur waktu agar presisi di jam 00:00:00 hari Senin
             startCal.set(Calendar.HOUR_OF_DAY, 0)
             startCal.set(Calendar.MINUTE, 0)
             startCal.set(Calendar.SECOND, 0)
+            startCal.set(Calendar.MILLISECOND, 0)
             
+            val endCal = Calendar.getInstance()
+            endCal.timeInMillis = startCal.timeInMillis
+            // Tambahkan 6 hari untuk mencapai hari Minggu
+            endCal.add(Calendar.DAY_OF_YEAR, 6) 
+            
+            // Atur waktu agar presisi di jam 23:59:59 hari Minggu
             endCal.set(Calendar.HOUR_OF_DAY, 23)
             endCal.set(Calendar.MINUTE, 59)
             endCal.set(Calendar.SECOND, 59)
+            endCal.set(Calendar.MILLISECOND, 999)
             
             val dateFormat = SimpleDateFormat("dd MMM", Locale.US)
-            // Labelnya: "12 Oct", dll (menunjukkan awal minggu)
+            // Labelnya: "12 Oct", menunjukkan hari Senin di awal minggu tersebut
             daysList.add(dateFormat.format(startCal.time)) 
             weekRanges.add(Pair(startCal.timeInMillis, endCal.timeInMillis))
         }
