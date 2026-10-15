@@ -41,30 +41,55 @@ enum class AnalyticsChartType {
 @Composable
 fun SpendingChart(
     orders: List<Orders>,
+    selectedPeriod: String,
+    onPeriodChanged: (String) -> Unit,
     modifier: Modifier = Modifier,
     chartType: AnalyticsChartType = AnalyticsChartType.INCOME,
     onInteractionStateChange: (Boolean) -> Unit = {}
 ) {
-    var selectedPeriod by remember { mutableStateOf("Week") }
-
     // 1. Generate lists based on selectedPeriod
     val daysList = mutableListOf<String>()
-    val dateList = mutableListOf<String>()
+    val dateList = mutableListOf<String>() // Digunakan untuk mencocokkan format dengan Order
+    val weekRanges = mutableListOf<Pair<Long, Long>>() // Khusus untuk Week: batas awal dan akhir milidetik
     
-    if (selectedPeriod == "Week") {
+    if (selectedPeriod == "Day") {
         val daysFormat = SimpleDateFormat("EEE", Locale.US)
         val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        // Create dates from 6 days ago up to today
+        // 7 Hari terakhir
         for (i in 6 downTo 0) {
             val tempCal = Calendar.getInstance()
             tempCal.add(Calendar.DAY_OF_YEAR, -i)
             daysList.add(daysFormat.format(tempCal.time))
             dateList.add(dateFormat.format(tempCal.time))
         }
-    } else {
+    } else if (selectedPeriod == "Week") {
+        // 7 Minggu terakhir (Termasuk minggu ini sampai hari ini)
+        for (i in 6 downTo 0) {
+            val endCal = Calendar.getInstance()
+            endCal.add(Calendar.DAY_OF_YEAR, -(i * 7)) // Titik akhirnya
+            
+            val startCal = Calendar.getInstance()
+            startCal.timeInMillis = endCal.timeInMillis
+            startCal.add(Calendar.DAY_OF_YEAR, -6) // 6 hari sebelumnya (total 7 hari)
+            
+            // Atur waktu agar presisi di jam 00:00 - 23:59
+            startCal.set(Calendar.HOUR_OF_DAY, 0)
+            startCal.set(Calendar.MINUTE, 0)
+            startCal.set(Calendar.SECOND, 0)
+            
+            endCal.set(Calendar.HOUR_OF_DAY, 23)
+            endCal.set(Calendar.MINUTE, 59)
+            endCal.set(Calendar.SECOND, 59)
+            
+            val dateFormat = SimpleDateFormat("dd MMM", Locale.US)
+            // Labelnya: "12 Oct", dll (menunjukkan awal minggu)
+            daysList.add(dateFormat.format(startCal.time)) 
+            weekRanges.add(Pair(startCal.timeInMillis, endCal.timeInMillis))
+        }
+    } else { // "Month"
         val monthFormat = SimpleDateFormat("MMM", Locale.US)
         val dateFormat = SimpleDateFormat("yyyy-MM", Locale.getDefault())
-        // Create dates from 6 months ago up to this month
+        // 7 Bulan terakhir
         for (i in 6 downTo 0) {
             val tempCal = Calendar.getInstance()
             tempCal.add(Calendar.MONTH, -i)
@@ -73,23 +98,45 @@ fun SpendingChart(
         }
     }
 
-    // 2. Calculate daily/monthly values
+    // 2. Calculate values
     val values = DoubleArray(7) { 0.0 }
     val uniqueCustomers = Array(7) { mutableSetOf<String>() }
     
     orders.forEach { order ->
-        val formatStr = if (selectedPeriod == "Week") "yyyy-MM-dd" else "yyyy-MM"
-        val orderDateStr = SimpleDateFormat(formatStr, Locale.getDefault()).format(order.orderDate.toDate())
-        val index = dateList.indexOf(orderDateStr)
+        val orderTime = order.orderDate.toDate().time
         
-        if (index != -1) {
-            if (chartType == AnalyticsChartType.INCOME) {
-                if (order.totalPrice != null && order.totalPrice > 0) {
-                    values[index] += order.totalPrice
+        if (selectedPeriod == "Week") {
+            // Logika pencarian untuk range mingguan
+            for (i in 0..6) {
+                val (start, end) = weekRanges[i]
+                if (orderTime in start..end) {
+                    if (chartType == AnalyticsChartType.INCOME) {
+                        if (order.totalPrice != null && order.totalPrice > 0) {
+                            values[i] += order.totalPrice
+                        }
+                    } else {
+                        if (order.customerId.isNotBlank()) {
+                            uniqueCustomers[i].add(order.customerId)
+                        }
+                    }
+                    break // Sudah ketemu tempatnya, lanjut order berikutnya
                 }
-            } else {
-                if (order.customerId.isNotBlank()) {
-                    uniqueCustomers[index].add(order.customerId)
+            }
+        } else {
+            // Logika harian / bulanan (pencocokan string)
+            val formatStr = if (selectedPeriod == "Day") "yyyy-MM-dd" else "yyyy-MM"
+            val orderDateStr = SimpleDateFormat(formatStr, Locale.getDefault()).format(order.orderDate.toDate())
+            val index = dateList.indexOf(orderDateStr)
+            
+            if (index != -1) {
+                if (chartType == AnalyticsChartType.INCOME) {
+                    if (order.totalPrice != null && order.totalPrice > 0) {
+                        values[index] += order.totalPrice
+                    }
+                } else {
+                    if (order.customerId.isNotBlank()) {
+                        uniqueCustomers[index].add(order.customerId)
+                    }
                 }
             }
         }
@@ -151,7 +198,11 @@ fun SpendingChart(
         ) {
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    val titlePrefix = if (selectedPeriod == "Week") "Daily" else "Monthly"
+                    val titlePrefix = when (selectedPeriod) {
+                        "Day" -> "Daily"
+                        "Week" -> "Weekly"
+                        else -> "Monthly"
+                    }
                     val titleSuffix = if (chartType == AnalyticsChartType.INCOME) "income" else "customers"
                     
                     Text(
@@ -181,10 +232,13 @@ fun SpendingChart(
 
             GeneralDropdown(
                 selectedText = selectedPeriod,
-                items = listOf("Week", "Month"),
+                items = listOf("Day", "Week", "Month"),
                 onItemSelected = { 
-                    selectedPeriod = it
+                    onPeriodChanged(it)
                     selectedIndex = 6 // Reset to right-most
+                },
+                onExpandedChange = { expanded ->
+                    onInteractionStateChange(expanded)
                 }
             )
         }

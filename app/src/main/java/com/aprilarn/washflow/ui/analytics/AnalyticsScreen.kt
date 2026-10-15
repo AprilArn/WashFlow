@@ -193,6 +193,9 @@ fun AnalyticsScreen(
                             
                             // State untuk melacak apakah pengguna sedang berinteraksi dengan grafik (drag/tap label)
                             var isInteractingWithChart by remember { mutableStateOf(false) }
+                            
+                            // Shared state untuk sinkronisasi periode (Day/Week/Month) di semua chart Pager
+                            var selectedChartPeriod by remember { mutableStateOf("Week") }
 
                             // Gunakan coroutine scope dari luar komponen yang tidak akan tercancel saat recompose
                             val coroutineScope = rememberCoroutineScope()
@@ -225,12 +228,22 @@ fun AnalyticsScreen(
                                 if (page == 0) {
                                     SpendingChart(
                                         orders = uiState.orders, 
+                                        selectedPeriod = selectedChartPeriod,
+                                        onPeriodChanged = { 
+                                            selectedChartPeriod = it
+                                            isInteractingWithChart = false // Reset timer otomatis setelah milih 
+                                        },
                                         modifier = Modifier.fillMaxWidth(),
                                         onInteractionStateChange = { isInteractingWithChart = it }
                                     )
                                 } else {
                                     SpendingChart(
                                         orders = uiState.orders, 
+                                        selectedPeriod = selectedChartPeriod,
+                                        onPeriodChanged = { 
+                                            selectedChartPeriod = it
+                                            isInteractingWithChart = false // Reset timer otomatis setelah milih 
+                                        },
                                         modifier = Modifier.fillMaxWidth(),
                                         chartType = AnalyticsChartType.CUSTOMER,
                                         onInteractionStateChange = { isInteractingWithChart = it }

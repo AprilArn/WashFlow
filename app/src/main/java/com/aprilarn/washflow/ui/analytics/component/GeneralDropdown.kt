@@ -36,10 +36,15 @@ fun GeneralDropdown(
     icon: ImageVector? = null,
     backgroundColor: Color = Color.White,
     shapeRadius: Dp = 12.dp,
-    contentPadding: PaddingValues = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+    contentPadding: PaddingValues = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+    onExpandedChange: ((Boolean) -> Unit)? = null
 ) {
     var expanded by remember { mutableStateOf(false) }
     var popTriggerSize by remember { mutableStateOf(androidx.compose.ui.unit.IntSize.Zero) }
+
+    LaunchedEffect(expanded) {
+        onExpandedChange?.invoke(expanded)
+    }
 
     Box(modifier = modifier) {
         Surface(
