@@ -179,21 +179,30 @@ fun SpendingChart(
     // Update selectedIndex automatically if it exceeds list size (though it's fixed at 7)
     if (selectedIndex >= days.size) selectedIndex = days.size - 1
     
-    // Hitung tren (naik/turun/tetap)
+    // Hitung tren (naik/turun/tetap) berdasarkan titik awal yang BUKAN NOL
     val currentIncome = values[selectedIndex]
-    val previousIncome = if (selectedIndex > 0) values[selectedIndex - 1] else 0.0
-    val trendIsUp = currentIncome > previousIncome
-    val trendIsDown = currentIncome < previousIncome
+
+    // Cari titik awal (base income) yang nilainya tidak nol dari kiri ke kanan.
+    // Jika semua nilai sebelumnya 0 (atau user sedang menekan titik pertama), kembalikan 0.0
+    var baseIncome = 0.0
+    for (i in 0 until selectedIndex) {
+        if (values[i] > 0) {
+            baseIncome = values[i]
+            break // Gunakan transaksi pertama yang pernah terjadi sebagai garis start historis
+        }
+    }
+
+    val trendIsUp = currentIncome > baseIncome && baseIncome > 0
+    val trendIsDown = currentIncome < baseIncome && baseIncome > 0
+    val trendIsFlat = currentIncome == baseIncome && baseIncome > 0 // Menambahkan kondisi trend flat (setara)
     val trendColor = if (trendIsUp) Color(0xFF059669) else if (trendIsDown) Color(0xFFDC2626) else Color.Gray
     val trendIcon = if (trendIsUp) Icons.AutoMirrored.Rounded.TrendingUp else if (trendIsDown) Icons.AutoMirrored.Rounded.TrendingDown else Icons.AutoMirrored.Rounded.TrendingFlat
     
-    // Kalkulasi persentase perbedaan
-    val percentageDiff = if (previousIncome > 0) {
-        ((currentIncome - previousIncome) / previousIncome) * 100
-    } else if (currentIncome > 0) {
-        100.0 // Anggap kenaikan 100% jika sebelumnya 0
+    // Kalkulasi persentase perbedaan dari nilai dasar (baseIncome)
+    val percentageDiff = if (baseIncome > 0) {
+        ((currentIncome - baseIncome) / baseIncome) * 100
     } else {
-        0.0
+        0.0 // Jangan tampilkan persentase palsu (100%) jika tidak ada riwayat sebelumnya untuk dibandingkan
     }
     
     val formattedPercentage = if (percentageDiff % 1 == 0.0) {
@@ -222,7 +231,9 @@ fun SpendingChart(
                         fontSize = 12.sp, color = Color.Gray
                     )
                     
-                    if (selectedIndex > 0 && (trendIsUp || trendIsDown)) {
+                    // Sembunyikan persentase jika user sedang memilih titik awal (index 0) 
+                    // karena perbandingannya akan selalu 0% terhadap dirinya sendiri
+                    if (selectedIndex > 0 && (trendIsUp || trendIsDown || trendIsFlat)) {
                         Spacer(modifier = Modifier.width(6.dp))
                         Icon(
                             imageVector = trendIcon,
