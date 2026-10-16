@@ -11,7 +11,6 @@ import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.gestures.snapping.SnapPosition
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -199,26 +198,41 @@ fun AnalyticsScreen(
 
                             // Gunakan coroutine scope dari luar komponen yang tidak akan tercancel saat recompose
                             val coroutineScope = rememberCoroutineScope()
+                            
+                            // State untuk animasi progress bar timer
+                            val slideProgress = remember { androidx.compose.animation.core.Animatable(0f) }
 
                             // Efek auto-slide memutar balik (Rewind)
                             LaunchedEffect(pagerState.isScrollInProgress, isInteractingWithChart) {
                                 // Hanya jalankan auto-slide jika tidak sedang digeser (scroll) DAN tidak sedang berinteraksi (tap/drag) dengan grafik
-                                if (!pagerState.isScrollInProgress && !isInteractingWithChart) {
-                                    while (true) {
-                                        kotlinx.coroutines.delay(6000)
-                                        // Pindah ke Coroutine Scope UI agar tidak tercancel oleh LaunchedEffect
-                                        val nextPage = if (pagerState.currentPage == 1) 0 else pagerState.currentPage + 1
+                                if (pagerState.isScrollInProgress || isInteractingWithChart) {
+                                    slideProgress.snapTo(0f) // Reset progress bar
+                                    return@LaunchedEffect
+                                }
+                                
+                                while (true) {
+                                    slideProgress.snapTo(0f)
+                                    // Animasi progress bar selama 6 detik
+                                    slideProgress.animateTo(
+                                        targetValue = 1f,
+                                        animationSpec = androidx.compose.animation.core.tween(
+                                            durationMillis = 6000, 
+                                            easing = androidx.compose.animation.core.LinearEasing
+                                        )
+                                    )
+                                    
+                                    // Pindah ke Coroutine Scope UI agar tidak tercancel oleh LaunchedEffect
+                                    val nextPage = if (pagerState.currentPage == 1) 0 else pagerState.currentPage + 1
 
-                                        // Jangan di-try/catch dalam LaunchedEffect scope, biarkan coroutineScope yang handle
-                                        coroutineScope.launch {
-                                            try {
-                                                pagerState.animateScrollToPage(
-                                                    page = nextPage,
-                                                    animationSpec = androidx.compose.animation.core.tween(800)
-                                                )
-                                            } catch (e: Exception) {
-                                                // Abaikan error cancellation jika ada
-                                            }
+                                    // Jangan di-try/catch dalam LaunchedEffect scope, biarkan coroutineScope yang handle
+                                    coroutineScope.launch {
+                                        try {
+                                            pagerState.animateScrollToPage(
+                                                page = nextPage,
+                                                animationSpec = androidx.compose.animation.core.tween(800)
+                                            )
+                                        } catch (e: Exception) {
+                                            // Abaikan error cancellation jika ada
                                         }
                                     }
                                 }
@@ -251,22 +265,42 @@ fun AnalyticsScreen(
                                 }
                             }
                             
-                            // Pager indicator
+                            // Pager Indicator dengan Progress Bar Menyatu (Instagram Stories style)
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(top = 16.dp),
-                                horizontalArrangement = Arrangement.Center
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 repeat(2) { iteration ->
-                                    val color = if (pagerState.currentPage == iteration) GrayBlue else Color.LightGray
+                                    val isCurrentPage = pagerState.currentPage == iteration
+                                    
+                                    // Animasi lebar bar (smooth transisi antara titik bulat dan garis memanjang)
+                                    val width by androidx.compose.animation.core.animateDpAsState(
+                                        targetValue = if (isCurrentPage) 32.dp else 8.dp,
+                                        animationSpec = androidx.compose.animation.core.tween(durationMillis = 400)
+                                    )
+                                    
                                     Box(
                                         modifier = Modifier
                                             .padding(horizontal = 4.dp)
-                                            .clip(CircleShape)
-                                            .background(color)
-                                            .size(8.dp)
-                                    )
+                                            .width(width)
+                                            .height(8.dp)
+                                            .clip(RoundedCornerShape(50)) // 50% radius memastikan bentuk selalu pil/bulat sempurna
+                                            .background(Color.LightGray.copy(alpha = 0.5f))
+                                    ) {
+                                        if (isCurrentPage) {
+                                            // Isi bar hanya untuk halaman yang sedang aktif (dengan ujung rounded)
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxHeight()
+                                                    .fillMaxWidth(slideProgress.value)
+                                                    .clip(RoundedCornerShape(50))
+                                                    .background(GrayBlue)
+                                            )
+                                        }
+                                    }
                                 }
                             }
 
