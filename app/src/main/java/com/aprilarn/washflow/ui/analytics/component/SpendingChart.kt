@@ -260,6 +260,7 @@ fun SpendingChart(
                     onPeriodChanged(it)
                     selectedIndex = 6 // Reset to right-most
                 },
+                backgroundColor = Color.Transparent, // Menghapus background putih
                 onExpandedChange = { expanded ->
                     onInteractionStateChange(expanded)
                 }

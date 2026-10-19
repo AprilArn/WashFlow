@@ -23,6 +23,7 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.aprilarn.washflow.ui.theme.GrayBlue
 
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 
 @Composable
@@ -50,9 +51,10 @@ fun GeneralDropdown(
         Surface(
             shape = RoundedCornerShape(shapeRadius),
             color = backgroundColor,
-            border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f)),
+            //border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f)),
             modifier = Modifier
                 .onGloballyPositioned { popTriggerSize = it.size }
+                .clip(RoundedCornerShape(shapeRadius)) // Potong area ripple effect agar bulat
                 .clickable { expanded = true }
         ) {
             Row(
