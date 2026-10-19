@@ -58,8 +58,11 @@ class HomeViewModel(
                     
                     val workspaceId = workspaceRepository.getCurrentWorkspaceId()
                     if (workspaceId != null) {
-                        // Sinkronisasi otomatis jika data tidak seimbang, misalnya akibat penghapusan paksa dari console Firestore.
-                        if (metadata.orderCount != totalStatusCount) {
+                        // Sinkronisasi otomatis jika data tidak seimbang, minus, atau indikasi manipulasi console
+                        val isMinus = metadata.orderCount < 0 || metadata.orderDoneCount < 0 || metadata.orderOnProcessCount < 0 || metadata.orderOnQueueCount < 0
+                        val isUnbalanced = metadata.orderCount != totalStatusCount
+                        
+                        if (isMinus || isUnbalanced) {
                             workspaceRepository.syncMetadata(workspaceId)
                         }
                     }

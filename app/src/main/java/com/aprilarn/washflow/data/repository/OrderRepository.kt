@@ -69,21 +69,24 @@ class OrderRepository {
                         val currentTime = System.currentTimeMillis()
                         val oneDayInMillis = 24 * 60 * 60 * 1000L
                         
+                        // Cek apakah ada order yang sudah seharusnya disembunyikan
+                        // KITA HANYA INGIN MENYEMBUNYIKAN ORDER YANG BELUM PERNAH DIARSIPKAN SEBELUMNYA
                         val ordersToHide = orders.filter { order ->
+                            if (order.isArchived) return@filter false // Sudah pernah diarsipkan, abaikan
+
                             val isDone = order.status == "Done"
                             val isPaidAndPickedUp = order.alreadyPaid && order.alreadyPickedUp
                             
                             val pickupTime = order.orderPickupDate?.toDate()?.time ?: 0L
                             val isPickedUpMoreThanOneDayAgo = if (pickupTime > 0) {
                                 (currentTime - pickupTime) > oneDayInMillis
-                            } else true // Jika data lama tidak punya timestamp tapi alreadyPickedUp true, anggap sudah lewat 1 hari
+                            } else true
                             
                             val paidTime = order.orderPaidDate?.toDate()?.time ?: 0L
                             val isPaidMoreThanOneDayAgo = if (paidTime > 0) {
                                 (currentTime - paidTime) > oneDayInMillis
-                            } else true // Jika data lama tidak punya timestamp tapi alreadyPaid true, anggap sudah lewat 1 hari
+                            } else true
                             
-                            // Sembunyikan HANYA JIKA kedua aktivitas (Pickup & Paid) sudah lewat 1 hari
                             isDone && isPaidAndPickedUp && isPickedUpMoreThanOneDayAgo && isPaidMoreThanOneDayAgo
                         }
                         
