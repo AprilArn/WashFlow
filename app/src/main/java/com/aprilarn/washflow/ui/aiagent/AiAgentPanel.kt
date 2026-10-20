@@ -304,7 +304,15 @@ fun AiAgentPanel(
                             )
                         ) {
                             if (messages.isEmpty()) {
-                                item { AiAgentEmptyState(userName = userName) }
+                                item {
+                                    AiAgentEmptyState(
+                                        userName = userName,
+                                        onPromptClick = { prompt ->
+                                            onInputChange(TextFieldValue(prompt))
+                                            onSendMessage()
+                                        }
+                                    )
+                                }
                             } else {
                                 items(
                                     items = messages,

@@ -101,13 +101,14 @@ fun TypewriterText(
 }
 
 @Composable
-fun PromptItem(text: String) {
+fun PromptItem(text: String, onClick: () -> Unit = {}) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
+            .clip(RoundedCornerShape(8.dp))
             .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(8.dp))
-            .clickable { }
+            .clickable { onClick() }
             .padding(12.dp)
     ) {
         Text(text, color = MainFontBlack, fontSize = 13.sp)
