@@ -1,10 +1,19 @@
 package com.aprilarn.washflow.ui.manageorder
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateColor
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.keyframes
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Payments
 import androidx.compose.material.icons.rounded.Storefront
+import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -29,7 +39,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -380,17 +392,101 @@ fun OrderCardContent(
             .joinToString(" + ")
     }
 
+    val isDeadlineNear = remember(order.orderDueDate, order.status) {
+        if (order.status == "Done") return@remember false
+        val dueDate = order.orderDueDate?.toDate()?.time ?: return@remember false
+        val currentTime = System.currentTimeMillis()
+        val timeDiff = dueDate - currentTime
+        timeDiff <= 24L * 60 * 60 * 1000 // H-1 to H-0
+    }
+
+    // Menggunakan animasi global berbasis waktu agar tersinkronisasi 100% antar komponen
+    var globalAnimationProgress by remember { mutableFloatStateOf(0f) }
+    
+    // Ini berjalan terus-menerus dan terikat dengan frame render Compose
+    LaunchedEffect(Unit) {
+        while (true) {
+            withFrameMillis { time ->
+                // Animasi siklus 1200ms
+                val duration = 1200L
+                val timeInCycle = time % duration
+                
+                // Menghitung progress (0.0f hingga 1.0f) berdasarkan keyframes kita:
+                // 0 -> 150ms: Naik cepat dari 0f ke 1f (FastOutLinearInEasing)
+                // 150 -> 300ms: Tetap 1f (Tahan di merah)
+                // 300 -> 1200ms: Turun pelan dari 1f ke 0f (LinearOutSlowInEasing)
+                globalAnimationProgress = when {
+                    timeInCycle < 150 -> FastOutLinearInEasing.transform(timeInCycle / 150f)
+                    timeInCycle < 300 -> 1f
+                    else -> 1f - LinearOutSlowInEasing.transform((timeInCycle - 300) / 900f)
+                }
+            }
+        }
+    }
+
+    // Lerp (Linear Interpolation) warna berdasarkan progress global
+    val breathingColor = lerp(borderColor, SoftRed, globalAnimationProgress)
+    val textBreathingColor = lerp(Gray, SoftRed, globalAnimationProgress)
+
+    // Buat brush (gradient) horizontal dengan 3 area
+    val urgencyBrush = Brush.horizontalGradient(
+        colors = listOf(
+            breathingColor, // Kiri beranimasi
+            borderColor,    // Tengah warna default
+            borderColor     // Kanan warna default
+        ),
+        startX = 0f,
+        endX = Float.POSITIVE_INFINITY
+    )
+
     Box(
         modifier = Modifier
             //.fillMaxWidth()
             .clip(borderRadius)
             .background(Color.White.copy(alpha = alpha), shape = borderRadius)
-            .border(
-                width = 2.dp,
-                color = borderColor,
-                shape = borderRadius
+            .then(
+                if (isDeadlineNear) {
+                    Modifier.border(
+                        width = 2.dp,
+                        brush = urgencyBrush, // Gunakan gradient
+                        shape = borderRadius
+                    )
+                } else {
+                    Modifier.border(
+                        width = 2.dp,
+                        color = borderColor, // Gunakan warna solid default
+                        shape = borderRadius
+                    )
+                }
             ),
     ) {
+        // --- BACKGROUND WATERMARK ICON ---
+        if (isDeadlineNear) {
+            Icon(
+                imageVector = Icons.Rounded.Timer,
+                contentDescription = null,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    // Offset ke kiri sedikit (posisi 3/4)
+                    .offset(x = (-60).dp)
+                    .size(72.dp)
+                    .graphicsLayer {
+                        // Skala berdenyut sinkron dengan global progress (1x ke 1.15x)
+                        val currentScale = 1f + (0.15f * globalAnimationProgress)
+                        scaleX = currentScale
+                        scaleY = currentScale
+                        
+                        // Rotasi kemiringan statis (-15 derajat agar miring sedikit ke kiri)
+                        rotationZ = -15f
+                        
+                        // Transparansi dari hampir tidak terlihat (0.05f) ke samar-samar (0.15f)
+                        // Gunakan this.alpha untuk menghindari bentrok dengan parameter alpha di luar scope
+                        this.alpha = 0.05f + (0.1f * globalAnimationProgress)
+                    },
+                tint = SoftRed // Menggunakan warna merah
+            )
+        }
+
         Row(
             modifier = Modifier
                 //.fillMaxWidth()
@@ -426,7 +522,7 @@ fun OrderCardContent(
                 Text(
                     text = formattedDueDate,
                     style = MaterialTheme.typography.bodySmall.copy(
-                        color = SoftRed
+                        color = if (isDeadlineNear) textBreathingColor else Gray
                     )
                 )
             }
