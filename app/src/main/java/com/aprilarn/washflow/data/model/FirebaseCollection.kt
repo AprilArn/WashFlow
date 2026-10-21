@@ -54,11 +54,16 @@ data class Workspaces (
         val customerId: String = "",
         val customerName: String? = null,
         val orderDate: Timestamp = Timestamp.now(),
+        val orderFinishDate: Timestamp? = null,
+        val orderPickupDate: Timestamp? = null,
         val orderDueDate: Timestamp? = null,
         val orderItems: List<OrderItem> = emptyList(),
         val totalPrice: Double? = 0.0,
         val status: String? = null,  // e.g., "in queue", "in progress", "ready for pickup", "completed"
-        val alreadyPaid: Boolean = false
+        val alreadyPaid: Boolean = false,
+        val orderPaidDate: Timestamp? = null,
+        val alreadyPickedUp: Boolean = false,
+        val isArchived: Boolean = false
     )
 
         data class OrderItem (

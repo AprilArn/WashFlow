@@ -274,7 +274,10 @@ fun AiAgentPanelInputArea(
 }
 
 @Composable
-fun AiAgentEmptyState(userName: String) {
+fun AiAgentEmptyState(
+    userName: String,
+    onPromptClick: (String) -> Unit
+) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Spacer(modifier = Modifier.height(64.dp))
         Text(
@@ -338,10 +341,26 @@ fun AiAgentEmptyState(userName: String) {
         )
         Spacer(modifier = Modifier.height(12.dp))
 
-        PromptItem("Extract all hardcoded strings from this class and move them into strings.xml")
-        PromptItem("Add documentation to my current file")
-        PromptItem("Update kotlin in @libs.version.toml to the latest version")
-        PromptItem("Make my Theme's color scheme warmer")
+        PromptItem(
+            text = "Saya ingin menambahkan pelanggan baru",
+            onClick = { onPromptClick("Saya ingin menambahkan pelanggan baru") }
+        )
+        PromptItem(
+            text = "Tolong hapus data pelanggan",
+            onClick = { onPromptClick("Tolong hapus data pelanggan") }
+        )
+        PromptItem(
+            text = "Saya mau menambahkan item/layanan baru",
+            onClick = { onPromptClick("Saya mau menambahkan item/layanan baru") }
+        )
+        PromptItem(
+            text = "Tolong hapus data item/layanan",
+            onClick = { onPromptClick("Tolong hapus data item/layanan") }
+        )
+        PromptItem(
+            text = "Tolong arahkan ke halaman",
+            onClick = { onPromptClick("Tolong arahkan ke halaman") }
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
     }

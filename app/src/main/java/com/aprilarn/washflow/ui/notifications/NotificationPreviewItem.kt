@@ -43,7 +43,7 @@ private fun getNotificationPreviewIcon(title: String): ImageVector {
     return when (title) {
         "Order Baru" -> Icons.Rounded.ShoppingBasket
         "Contributor Baru" -> Icons.Rounded.PersonAdd
-        "Update Sistem" -> Icons.Rounded.Update
+        "Update Sistem", "Order Diperbarui" -> Icons.Rounded.Update
         else -> Icons.Rounded.Notifications
     }
 }

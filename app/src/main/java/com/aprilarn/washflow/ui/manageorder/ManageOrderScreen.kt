@@ -56,8 +56,10 @@ fun ManageOrderScreen(
     onDrop: (orderId: String, newStatus: String) -> Unit,
     onOrderClick: (Orders) -> Unit,
     onTogglePayment: (String, Boolean) -> Unit,
+    onTogglePickup: (String, Boolean) -> Unit,
     onDismissDialog: () -> Unit,
-    onDeleteOrder: (String) -> Unit
+    onDeleteOrder: (String) -> Unit,
+    onEditOrder: (String) -> Unit
 ) {
     if (uiState.isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -114,8 +116,13 @@ fun ManageOrderScreen(
                 order = order,
                 uiState = uiState,
                 onTogglePayment = onTogglePayment,
+                onTogglePickup = onTogglePickup,
                 onDismiss = onDismissDialog,
-                onDelete = { onDeleteOrder(order.orderId) }
+                onDelete = { onDeleteOrder(order.orderId) },
+                onEditOrder = {
+                    onDismissDialog()
+                    onEditOrder(order.orderId)
+                }
             )
         }
     }
@@ -126,8 +133,10 @@ fun OrderDetailDialog(
     order: Orders,
     uiState: ManageOrderUiState,
     onTogglePayment: (String, Boolean) -> Unit,
+    onTogglePickup: (String, Boolean) -> Unit,
     onDismiss: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEditOrder: () -> Unit
 ) {
     val customer = remember(order.customerId, uiState.customers) {
         uiState.customers.find { it.customerId == order.customerId }
@@ -177,11 +186,13 @@ fun OrderDetailDialog(
                         customer = customer,
                         services = groupedItemsByService.keys.toList(),
                         onTogglePayment = onTogglePayment,
+                        onTogglePickup = onTogglePickup,
                         onCancel = onDismiss,
                         onDelete = {
                             // Ubah state untuk memicu dialog konfirmasi
                             showDeleteConfirmation = true
-                        }
+                        },
+                        onEditOrder = onEditOrder
                     )
                     Spacer(Modifier.width(16.dp))
                     RightDetailPanel(
@@ -202,8 +213,10 @@ private fun LeftDetailPanel(
     customer: Customers?,
     services: List<Services>,
     onTogglePayment: (String, Boolean) -> Unit,
+    onTogglePickup: (String, Boolean) -> Unit,
     onCancel: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEditOrder: () -> Unit
 ) {
     // Panel kiri menggunakan Card sebagai dasar (efek glassmorphism)
     Card(
@@ -213,14 +226,45 @@ private fun LeftDetailPanel(
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
-            Text(
-                text = "Order Detail",
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = GrayBlue
-                ),
-                modifier = Modifier.padding(bottom = 24.dp)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Order Detail",
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = GrayBlue
+                    )
+                )
+                // Tombol Edit (Kecil)
+                Surface(
+                    onClick = onEditOrder,
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFF1F5F9),
+                    modifier = Modifier.clip(RoundedCornerShape(12.dp))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Edit,
+                            contentDescription = "Edit Order",
+                            tint = GrayBlue,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "Edit",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = GrayBlue
+                        )
+                    }
+                }
+            }
 
             // Spacer akan mendorong tombol ke bawah
             
@@ -232,6 +276,7 @@ private fun LeftDetailPanel(
                 item { InfoRow(Icons.Rounded.Phone, "No Telp/WhatsApp", customer?.contact ?: "N/A") }
                 item { InfoRow(Icons.Rounded.CalendarToday, "Tanggal Order", SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault()).format(order.orderDate.toDate())) }
                 item { InfoRow(Icons.Rounded.Timer, "Batas Waktu", order.orderDueDate?.let { SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault()).format(it.toDate()) } ?: "N/A") }
+                item { InfoRow(Icons.Rounded.TaskAlt, "Waktu Selesai", order.orderFinishDate?.let { SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault()).format(it.toDate()) } ?: "-") }
                 item { InfoRow(Icons.Rounded.ConfirmationNumber, "ID Order", order.orderId) }
                 item { InfoRow(Icons.Rounded.Info, "Status", order.status ?: "N/A") }
                 item { InfoRow(Icons.Rounded.Category, "Layanan", services.joinToString(" + ") { it.serviceName }) }
@@ -240,7 +285,18 @@ private fun LeftDetailPanel(
                 item {
                     PaymentStatusRow(
                         isPaid = order.alreadyPaid,
+                        paidDate = order.orderPaidDate,
                         onToggle = { isPaid -> onTogglePayment(order.orderId, isPaid) }
+                    )
+                }
+                
+                // --- TOGGLE PENGAMBILAN ---
+                item {
+                    PickupStatusRow(
+                        isPickedUp = order.alreadyPickedUp,
+                        pickupDate = order.orderPickupDate,
+                        orderStatus = order.status ?: "On Queue",
+                        onToggle = { isPickedUp -> onTogglePickup(order.orderId, isPickedUp) }
                     )
                 }
             }
@@ -449,11 +505,21 @@ private fun InfoRow(icon: ImageVector, label: String, value: String) {
 }
 
 @Composable
-private fun PaymentStatusRow(isPaid: Boolean, onToggle: (Boolean) -> Unit) {
+private fun PaymentStatusRow(
+    isPaid: Boolean, 
+    paidDate: com.google.firebase.Timestamp?,
+    onToggle: (Boolean) -> Unit
+) {
     val haptic = LocalHapticFeedback.current
     val backgroundColor = if (isPaid) Color(0xFFE3F2FD) else Color(0xFFFFF3E0)
     val contentColor = if (isPaid) Color(0xFF1976D2) else Color(0xFFEF6C00)
-    val statusText = if (isPaid) "Lunas" else "Belum Dibayar"
+    
+    val dateText = if (isPaid && paidDate != null) {
+        val format = SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault())
+        format.format(paidDate.toDate())
+    } else ""
+    
+    val statusText = if (isPaid) "Lunas\n$dateText" else "Belum Dibayar"
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -514,6 +580,100 @@ private fun PaymentStatusRow(isPaid: Boolean, onToggle: (Boolean) -> Unit) {
     }
 }
 
+@Composable
+private fun PickupStatusRow(
+    isPickedUp: Boolean,
+    pickupDate: com.google.firebase.Timestamp?,
+    orderStatus: String,
+    onToggle: (Boolean) -> Unit
+) {
+    val isDone = orderStatus.equals("Done", ignoreCase = true)
+    val displayState = if (isDone) isPickedUp else false
+    
+    val bgColor = if (!isDone) Color(0xFFF1F5F9) 
+                  else if (displayState) Color(0xFFDCFCE7) 
+                  else Color(0xFFFEF3C7) 
+    val contentColor = if (!isDone) Color(0xFF94A3B8)
+                       else if (displayState) Color(0xFF166534) 
+                       else Color(0xFF92400E)
+    val icon = if (displayState) Icons.Rounded.CheckCircle else Icons.Rounded.Storefront
+    
+    // Menambahkan tanggal jika sudah diambil
+    val dateText = if (displayState && pickupDate != null) {
+        val format = SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault())
+        format.format(pickupDate.toDate())
+    } else ""
+    
+    val statusText = if (!isDone) "Belum bisa diambil"
+                     else if (displayState) "Sudah Diambil\n$dateText" 
+                     else "Belum Diambil"
+    
+    val haptic = LocalHapticFeedback.current
+
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = bgColor,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(contentColor.copy(alpha = 0.1f), RoundedCornerShape(12.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = contentColor,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Status Pengambilan",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = contentColor.copy(alpha = 0.7f)
+                )
+                Text(
+                    text = statusText,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = contentColor
+                    )
+                )
+            }
+
+            Switch(
+                checked = displayState,
+                onCheckedChange = {
+                    if (isDone) {
+                        haptic.performHapticFeedback(if (it) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff)
+                        onToggle(it)
+                    }
+                },
+                enabled = isDone,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = Color(0xFF22C55E), // Warna hijau terang untuk aktif
+                    uncheckedThumbColor = Color.White,
+                    uncheckedTrackColor = Color(0xFFB0BEC5),
+                    uncheckedBorderColor = Color.Transparent,
+                    disabledCheckedTrackColor = Color(0xFFE2E8F0),
+                    disabledUncheckedTrackColor = Color(0xFFE2E8F0),
+                    disabledCheckedThumbColor = Color(0xFFCBD5E1),
+                    disabledUncheckedThumbColor = Color(0xFFCBD5E1)
+                )
+            )
+        }
+    }
+}
+
 // --- PREVIEW BARU DITAMBAHKAN DI SINI ---
 @Preview(showBackground = true, widthDp = 1200, heightDp = 800)
 @Composable
@@ -552,8 +712,10 @@ fun ManageOrderScreenPreview() {
                 onDrop = { _, _ -> },
                 onOrderClick = {},
                 onTogglePayment = { _, _ -> },
+                onTogglePickup = { _, _ -> },
                 onDismissDialog = {},
-                onDeleteOrder = {}
+                onDeleteOrder = {},
+                onEditOrder = {}
             )
         }
     }
@@ -593,8 +755,10 @@ fun LeftDetailPanelPreview() {
             customer = sampleCustomer,
             services = sampleServices,
             onTogglePayment = { _, _ -> },
+            onTogglePickup = { _, _ -> },
             onCancel = {},
-            onDelete = {}
+            onDelete = {},
+            onEditOrder = {}
         )
     }
 }
@@ -661,8 +825,10 @@ fun OrderDetailDialogPreview() {
             order = sampleOrder,
             uiState = sampleUiState,
             onTogglePayment = { _, _ -> },
+            onTogglePickup = { _, _ -> },
             onDismiss = {},
-            onDelete = {}
+            onDelete = {},
+            onEditOrder = {}
         )
     }
 }

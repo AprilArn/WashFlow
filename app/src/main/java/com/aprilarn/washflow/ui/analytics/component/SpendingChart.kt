@@ -3,7 +3,6 @@ package com.aprilarn.washflow.ui.analytics.component
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -11,6 +10,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.automirrored.rounded.TrendingDown
+import androidx.compose.material.icons.automirrored.rounded.TrendingFlat
+import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -24,16 +26,190 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aprilarn.washflow.data.model.Orders
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 import com.aprilarn.washflow.ui.theme.GrayBlue
+import com.aprilarn.washflow.utils.CurrencyUtils
 import kotlin.math.roundToInt
 
+enum class AnalyticsChartType {
+    INCOME, CUSTOMER
+}
+
 @Composable
-fun SpendingChart(modifier: Modifier = Modifier) {
-    val points = listOf(0.6f, 0.4f, 0.8f, 0.3f, 0.45f, 0.2f, 0.4f)
-    val days = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
-    val dayAmounts = listOf("$194.80", "$129.85", "$259.75", "$97.40", "$146.10", "$64.90", "$129.85")
+fun SpendingChart(
+    orders: List<Orders>,
+    selectedPeriod: String,
+    onPeriodChanged: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    chartType: AnalyticsChartType = AnalyticsChartType.INCOME,
+    onInteractionStateChange: (Boolean) -> Unit = {}
+) {
+    // 1. Generate lists based on selectedPeriod
+    val daysList = mutableListOf<String>()
+    val dateList = mutableListOf<String>() // Digunakan untuk mencocokkan format dengan Order
+    val weekRanges = mutableListOf<Pair<Long, Long>>() // Khusus untuk Week: batas awal dan akhir milidetik
     
-    var selectedIndex by remember { mutableIntStateOf(2) }
+    if (selectedPeriod == "Day") {
+        val daysFormat = SimpleDateFormat("EEE", Locale.US)
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        // 7 Hari terakhir
+        for (i in 6 downTo 0) {
+            val tempCal = Calendar.getInstance()
+            tempCal.add(Calendar.DAY_OF_YEAR, -i)
+            daysList.add(daysFormat.format(tempCal.time))
+            dateList.add(dateFormat.format(tempCal.time))
+        }
+    } else if (selectedPeriod == "Week") {
+        // 7 Minggu terakhir (Berdasarkan kalender nyata: Senin hingga Minggu)
+        for (i in 6 downTo 0) {
+            val startCal = Calendar.getInstance()
+            // Mundur sebanyak 'i' minggu
+            startCal.add(Calendar.WEEK_OF_YEAR, -i)
+            
+            // Geser ke hari Senin pada minggu tersebut
+            // Calendar.SUNDAY = 1, MONDAY = 2, ..., SATURDAY = 7
+            // Rumus ini akan selalu menemukan hari Senin terdekat di minggu itu.
+            val dayOfWeek = startCal.get(Calendar.DAY_OF_WEEK)
+            val daysToShift = (dayOfWeek + 5) % 7
+            startCal.add(Calendar.DAY_OF_YEAR, -daysToShift)
+            
+            // Atur waktu agar presisi di jam 00:00:00 hari Senin
+            startCal.set(Calendar.HOUR_OF_DAY, 0)
+            startCal.set(Calendar.MINUTE, 0)
+            startCal.set(Calendar.SECOND, 0)
+            startCal.set(Calendar.MILLISECOND, 0)
+            
+            val endCal = Calendar.getInstance()
+            endCal.timeInMillis = startCal.timeInMillis
+            // Tambahkan 6 hari untuk mencapai hari Minggu
+            endCal.add(Calendar.DAY_OF_YEAR, 6) 
+            
+            // Atur waktu agar presisi di jam 23:59:59 hari Minggu
+            endCal.set(Calendar.HOUR_OF_DAY, 23)
+            endCal.set(Calendar.MINUTE, 59)
+            endCal.set(Calendar.SECOND, 59)
+            endCal.set(Calendar.MILLISECOND, 999)
+            
+            val dateFormat = SimpleDateFormat("dd MMM", Locale.US)
+            // Labelnya: "12 Oct", menunjukkan hari Senin di awal minggu tersebut
+            daysList.add(dateFormat.format(startCal.time)) 
+            weekRanges.add(Pair(startCal.timeInMillis, endCal.timeInMillis))
+        }
+    } else { // "Month"
+        val monthFormat = SimpleDateFormat("MMM", Locale.US)
+        val dateFormat = SimpleDateFormat("yyyy-MM", Locale.getDefault())
+        // 7 Bulan terakhir
+        for (i in 6 downTo 0) {
+            val tempCal = Calendar.getInstance()
+            tempCal.add(Calendar.MONTH, -i)
+            daysList.add(monthFormat.format(tempCal.time))
+            dateList.add(dateFormat.format(tempCal.time))
+        }
+    }
+
+    // 2. Calculate values
+    val values = DoubleArray(7) { 0.0 }
+    val uniqueCustomers = Array(7) { mutableSetOf<String>() }
+    
+    orders.forEach { order ->
+        val orderTime = order.orderDate.toDate().time
+        
+        if (selectedPeriod == "Week") {
+            // Logika pencarian untuk range mingguan
+            for (i in 0..6) {
+                val (start, end) = weekRanges[i]
+                if (orderTime in start..end) {
+                    if (chartType == AnalyticsChartType.INCOME) {
+                        if (order.totalPrice != null && order.totalPrice > 0) {
+                            values[i] += order.totalPrice
+                        }
+                    } else {
+                        if (order.customerId.isNotBlank()) {
+                            uniqueCustomers[i].add(order.customerId)
+                        }
+                    }
+                    break // Sudah ketemu tempatnya, lanjut order berikutnya
+                }
+            }
+        } else {
+            // Logika harian / bulanan (pencocokan string)
+            val formatStr = if (selectedPeriod == "Day") "yyyy-MM-dd" else "yyyy-MM"
+            val orderDateStr = SimpleDateFormat(formatStr, Locale.getDefault()).format(order.orderDate.toDate())
+            val index = dateList.indexOf(orderDateStr)
+            
+            if (index != -1) {
+                if (chartType == AnalyticsChartType.INCOME) {
+                    if (order.totalPrice != null && order.totalPrice > 0) {
+                        values[index] += order.totalPrice
+                    }
+                } else {
+                    if (order.customerId.isNotBlank()) {
+                        uniqueCustomers[index].add(order.customerId)
+                    }
+                }
+            }
+        }
+    }
+
+    if (chartType == AnalyticsChartType.CUSTOMER) {
+        for (i in 0..6) {
+            values[i] = uniqueCustomers[i].size.toDouble()
+        }
+    }
+
+    // Calculate chart points (0f to 1f based on max value)
+    val maxValue = values.maxOrNull() ?: 0.0
+    val points = if (maxValue > 0) {
+        values.map { (it / maxValue).toFloat() }
+    } else {
+        List(7) { 0f }
+    }
+    
+    val dayAmounts = values.map { 
+        if (chartType == AnalyticsChartType.INCOME) CurrencyUtils.formatRupiahWithSymbol(it) 
+        else "${it.toInt()} User"
+    }
+    val days = daysList
+
+    // Set default selected index to today/this month (index 6, the last item)
+    var selectedIndex by remember { mutableIntStateOf(6) }
+    // Update selectedIndex automatically if it exceeds list size (though it's fixed at 7)
+    if (selectedIndex >= days.size) selectedIndex = days.size - 1
+    
+    // Hitung tren (naik/turun/tetap) berdasarkan titik awal yang BUKAN NOL
+    val currentIncome = values[selectedIndex]
+
+    // Cari titik awal (base income) yang nilainya tidak nol dari kiri ke kanan.
+    // Jika semua nilai sebelumnya 0 (atau user sedang menekan titik pertama), kembalikan 0.0
+    var baseIncome = 0.0
+    for (i in 0 until selectedIndex) {
+        if (values[i] > 0) {
+            baseIncome = values[i]
+            break // Gunakan transaksi pertama yang pernah terjadi sebagai garis start historis
+        }
+    }
+
+    val trendIsUp = currentIncome > baseIncome && baseIncome > 0
+    val trendIsDown = currentIncome < baseIncome && baseIncome > 0
+    val trendIsFlat = currentIncome == baseIncome && baseIncome > 0 // Menambahkan kondisi trend flat (setara)
+    val trendColor = if (trendIsUp) Color(0xFF059669) else if (trendIsDown) Color(0xFFDC2626) else Color.Gray
+    val trendIcon = if (trendIsUp) Icons.AutoMirrored.Rounded.TrendingUp else if (trendIsDown) Icons.AutoMirrored.Rounded.TrendingDown else Icons.AutoMirrored.Rounded.TrendingFlat
+    
+    // Kalkulasi persentase perbedaan dari nilai dasar (baseIncome)
+    val percentageDiff = if (baseIncome > 0) {
+        ((currentIncome - baseIncome) / baseIncome) * 100
+    } else {
+        0.0 // Jangan tampilkan persentase palsu (100%) jika tidak ada riwayat sebelumnya untuk dibandingkan
+    }
+    
+    val formattedPercentage = if (percentageDiff % 1 == 0.0) {
+        "${kotlin.math.abs(percentageDiff).toInt()}%"
+    } else {
+        String.format(Locale.US, "%.1f%%", kotlin.math.abs(percentageDiff))
+    }
 
     Column(modifier = modifier) {
         Row(
@@ -42,24 +218,53 @@ fun SpendingChart(modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.Top
         ) {
             Column {
-                Text(text = "Daily income", fontSize = 12.sp, color = Color.Gray)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val titlePrefix = when (selectedPeriod) {
+                        "Day" -> "Daily"
+                        "Week" -> "Weekly"
+                        else -> "Monthly"
+                    }
+                    val titleSuffix = if (chartType == AnalyticsChartType.INCOME) "income" else "customers"
+                    
+                    Text(
+                        text = "$titlePrefix $titleSuffix", 
+                        fontSize = 12.sp, color = Color.Gray
+                    )
+                    
+                    // Sembunyikan persentase jika user sedang memilih titik awal (index 0) 
+                    // karena perbandingannya akan selalu 0% terhadap dirinya sendiri
+                    if (selectedIndex > 0 && (trendIsUp || trendIsDown || trendIsFlat)) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Icon(
+                            imageVector = trendIcon,
+                            contentDescription = null,
+                            tint = trendColor,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(2.dp))
+                        Text(
+                            text = formattedPercentage,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = trendColor
+                        )
+                    }
+                }
                 Text(text = dayAmounts[selectedIndex], fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = GrayBlue)
             }
 
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = Color.White,
-                border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f))
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = "Week", fontSize = 12.sp, color = GrayBlue)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, modifier = Modifier.size(16.dp), tint = GrayBlue)
+            GeneralDropdown(
+                selectedText = selectedPeriod,
+                items = listOf("Day", "Week", "Month"),
+                onItemSelected = { 
+                    onPeriodChanged(it)
+                    selectedIndex = 6 // Reset to right-most
+                },
+                backgroundColor = Color.Transparent, // Menghapus background putih
+                onExpandedChange = { expanded ->
+                    onInteractionStateChange(expanded)
                 }
-            }
+            )
         }
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -69,25 +274,43 @@ fun SpendingChart(modifier: Modifier = Modifier) {
                 .fillMaxWidth()
                 .height(180.dp)
                 .pointerInput(Unit) {
-                    detectDragGestures { change, _ ->
-                        val x = change.position.x
-                        val stepX = size.width / (points.size - 1)
-                        val index = (x / stepX).roundToInt().coerceIn(0, points.size - 1)
+                    detectDragGestures(
+                        onDragStart = { onInteractionStateChange(true) },
+                        onDragEnd = { onInteractionStateChange(false) },
+                        onDragCancel = { onInteractionStateChange(false) }
+                    ) { change, _ ->
+                        val x = change.position.x - 15.dp.toPx() 
+                        val stepXPx = (size.width - 30.dp.toPx()) / (points.size - 1)
+                        val index = (x / stepXPx).roundToInt().coerceIn(0, points.size - 1)
                         selectedIndex = index
                     }
                 }
                 .pointerInput(Unit) {
-                    detectTapGestures { offset ->
-                        val x = offset.x
-                        val stepX = size.width / (points.size - 1)
-                        val index = (x / stepX).roundToInt().coerceIn(0, points.size - 1)
-                        selectedIndex = index
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            when (event.type) {
+                                androidx.compose.ui.input.pointer.PointerEventType.Press -> {
+                                    onInteractionStateChange(true)
+                                    val position = event.changes.first().position
+                                    val x = position.x - 15.dp.toPx()
+                                    val stepXPx = (size.width - 30.dp.toPx()) / (points.size - 1)
+                                    val index = (x / stepXPx).roundToInt().coerceIn(0, points.size - 1)
+                                    selectedIndex = index
+                                }
+                                androidx.compose.ui.input.pointer.PointerEventType.Release -> {
+                                    onInteractionStateChange(false)
+                                }
+                            }
+                        }
                     }
                 }
         ) {
             val topPadding = 40.dp
             val chartHeight = maxHeight - topPadding
-            val stepX = maxWidth / (points.size - 1)
+            val horizontalPadding = 15.dp
+            val innerWidth = maxWidth - (horizontalPadding * 2)
+            val stepX = innerWidth / (points.size - 1)
 
             val animatedX by animateFloatAsState(
                 targetValue = (selectedIndex * stepX.value),
@@ -101,7 +324,7 @@ fun SpendingChart(modifier: Modifier = Modifier) {
                 label = "indicatorYFactor"
             )
 
-            Canvas(modifier = Modifier.fillMaxSize()) {
+            Canvas(modifier = Modifier.fillMaxSize().padding(horizontal = horizontalPadding)) {
                 val stepXCanvas = size.width / (points.size - 1)
                 val chartHeightCanvas = size.height - topPadding.toPx()
 
@@ -180,7 +403,6 @@ fun SpendingChart(modifier: Modifier = Modifier) {
             }
 
             // Pop-up label for the active dot
-            val indicatorX = animatedX.dp
             val indicatorY = topPadding + chartHeight * (1 - animatedYFactor)
             val labelGap = 20.dp
             
@@ -207,7 +429,8 @@ fun SpendingChart(modifier: Modifier = Modifier) {
             Surface(
                 modifier = Modifier
                     .offset(
-                        x = indicatorX + if (isFarRight) 0.5.dp else (-0.5).dp, 
+                        // Karena label digambar SEBELUM padding canvas, kita tambahkan manual padding-nya ke offset pop-up ini
+                        x = animatedX.dp + horizontalPadding + if (isFarRight) 0.5.dp else (-0.5).dp, 
                         y = indicatorY - labelGap
                     )
                     .graphicsLayer {
@@ -243,7 +466,9 @@ fun SpendingChart(modifier: Modifier = Modifier) {
                     text = day,
                     fontSize = 11.sp,
                     color = if (isSelected) GrayBlue else Color.Gray,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    modifier = Modifier.width(30.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             }
         }

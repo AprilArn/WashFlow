@@ -35,8 +35,8 @@ class LoginViewModel : ViewModel() {
             _state.update { it.copy(isCheckingWorkspace = true, showTimeoutDialog = false) }
 
             try {
-                // Berikan timeout selama 10 detik
-                val workspaceId = withTimeout(10000L) {
+                // Berikan timeout selama 20 detik
+                val workspaceId = withTimeout(20000L) {
                     // kotlinx.coroutines.delay(11000L)
                     userRepository.saveUserAndGetWorkspace(
                         uid = userData.userId,
@@ -54,11 +54,12 @@ class LoginViewModel : ViewModel() {
                     )
                 }
             } catch (e: TimeoutCancellationException) {
-                // Jika sudah 10 detik dan masih loading
+                // Jika sudah melewati timeout
                 _state.update {
                     it.copy(
                         isCheckingWorkspace = false,
-                        showTimeoutDialog = true
+                        showTimeoutDialog = true, // Tampilkan popup error
+                        userHasWorkspace = null // Kembalikan ke null (tidak tahu), bukan true/false
                     )
                 }
             } catch (e: Exception) {
@@ -66,7 +67,8 @@ class LoginViewModel : ViewModel() {
                 _state.update {
                     it.copy(
                         isCheckingWorkspace = false,
-                        signInError = e.message ?: "An unexpected error occurred"
+                        signInError = e.message ?: "An unexpected error occurred",
+                        userHasWorkspace = null
                     )
                 }
             }

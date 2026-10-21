@@ -34,6 +34,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.aprilarn.washflow.AppNavigation
 import com.aprilarn.washflow.data.repository.CustomerRepository
 import com.aprilarn.washflow.data.repository.ItemRepository
@@ -345,8 +346,14 @@ fun MainAppScreen(
                         onTogglePayment = { orderId, isPaid ->
                             viewModel.toggleOrderPaymentStatus(orderId, isPaid)
                         },
+                        onTogglePickup = { orderId, isPickedUp ->
+                            viewModel.toggleOrderPickupStatus(orderId, isPickedUp)
+                        },
                         onDismissDialog = { viewModel.onDismissOrderDetailDialog() },
-                        onDeleteOrder = { orderId -> viewModel.deleteOrder(orderId) }
+                        onDeleteOrder = { orderId -> viewModel.deleteOrder(orderId) },
+                        onEditOrder = { orderId ->
+                            bottomNavController.navigate("${AppNavigation.Orders.route}?orderId=$orderId")
+                        }
                     )
                 }
 
@@ -378,7 +385,11 @@ fun MainAppScreen(
 
                     AnalyticsScreen(
                         uiState = uiState,
-                        onTabClick = { viewModel.onTabSelected(it) }
+                        onTabClick = { viewModel.onTabSelected(it) },
+                        onMonthSelected = { viewModel.onMonthSelected(it) },
+                        onSearchQueryChanged = { viewModel.onSearchQueryChanged(it) },
+                        onStatusFilterChanged = { viewModel.onStatusFilterChanged(it) },
+                        onSortColumnClicked = { viewModel.onSortColumnClicked(it) }
                     )
                 }
 
@@ -460,7 +471,15 @@ fun MainAppScreen(
                     )
                 }
 
-                composable(AppNavigation.Orders.route) {
+                composable(
+                    route = "${AppNavigation.Orders.route}?orderId={orderId}",
+                    arguments = listOf(navArgument("orderId") {
+                        nullable = true
+                        defaultValue = null
+                    })
+                ) { backStackEntry ->
+                    val orderId = backStackEntry.arguments?.getString("orderId")
+                    
                     val factory = object : ViewModelProvider.Factory {
                         @Suppress("UNCHECKED_CAST")
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -473,6 +492,12 @@ fun MainAppScreen(
                         }
                     }
                     val viewModel: OrdersViewModel = viewModel(factory = factory)
+                    
+                    // Trigger setEditingOrder when screen is loaded with orderId
+                    LaunchedEffect(orderId) {
+                        viewModel.setEditingOrder(orderId)
+                    }
+
                     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                     val context = LocalContext.current
 
@@ -607,7 +632,7 @@ fun MainAppScreen(
                             modifier = Modifier.zIndex(notificationsUiState.notificationPreviews.size - index.toFloat()),
                             notification = notif,
                             onClick = {
-                                if (notif.title == "Order Baru") {
+                                if (notif.title == "Order Baru" || notif.title == "Order Diperbarui") {
                                     bottomNavController.navigate(AppNavigation.ManageOrder.route)
                                 }
                                 notificationsViewModel.removeNotificationPreview(notif.notificationId, true)

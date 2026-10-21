@@ -13,6 +13,9 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class OrderRepository {
     private val db = Firebase.firestore
@@ -28,7 +31,7 @@ class OrderRepository {
     }
 
     // Fungsi untuk mendapatkan semua order secara realtime
-    suspend fun getOrdersRealtime(): Flow<List<Orders>> {
+    suspend fun getOrdersRealtime(activeOnly: Boolean = false): Flow<List<Orders>> {
         return callbackFlow {
             val workspaceId = getWorkspaceId()
             if (workspaceId == null) {
@@ -36,24 +39,91 @@ class OrderRepository {
                 return@callbackFlow
             }
 
-            val listener = db.collection("workspaces")
+            var query: Query = db.collection("workspaces")
                 .document(workspaceId)
                 .collection("orders")
-                .orderBy("orderDate", Query.Direction.ASCENDING) // Urutkan berdasarkan tanggal order
-                .addSnapshotListener { snapshot, error ->
-                    if (error != null) {
-                        if (error is FirebaseFirestoreException && error.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
-                            close()
-                            return@addSnapshotListener
-                        }
-                        close(error)
+
+            if (activeOnly) {
+                // Hanya ambil yang isArchived == false untuk hemat reads di halaman ManageOrder
+                // Perhatikan: properti Kotlin 'isArchived' secara default dipetakan ke field 'archived' di Firestore
+                query = query.whereEqualTo("archived", false)
+            }
+
+            val listener = query.addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    if (error is FirebaseFirestoreException && error.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+                        close()
                         return@addSnapshotListener
                     }
-                    if (snapshot != null) {
-                        val orders = snapshot.toObjects(Orders::class.java)
-                        trySend(orders).isSuccess
-                    }
+                    close(error)
+                    return@addSnapshotListener
                 }
+                if (snapshot != null) {
+                    var orders = snapshot.toObjects(Orders::class.java)
+                    
+                    // Sort secara lokal (berdasarkan tanggal) untuk menghindari kebutuhan Index Composite Firestore
+                    orders = orders.sortedBy { it.orderDate }
+
+                    // Evaluasi lazy saat ada trigger data masuk (seperti metode awal yang hemat)
+                    if (activeOnly) {
+                        val currentTime = System.currentTimeMillis()
+                        val oneDayInMillis = 24 * 60 * 60 * 1000L
+                        
+                        // Cek apakah ada order yang sudah seharusnya disembunyikan
+                        // KITA HANYA INGIN MENYEMBUNYIKAN ORDER YANG BELUM PERNAH DIARSIPKAN SEBELUMNYA
+                        val ordersToHide = orders.filter { order ->
+                            if (order.isArchived) return@filter false // Sudah pernah diarsipkan, abaikan
+
+                            val isDone = order.status == "Done"
+                            val isPaidAndPickedUp = order.alreadyPaid && order.alreadyPickedUp
+                            
+                            val pickupTime = order.orderPickupDate?.toDate()?.time ?: 0L
+                            val isPickedUpMoreThanOneDayAgo = if (pickupTime > 0) {
+                                (currentTime - pickupTime) > oneDayInMillis
+                            } else true
+                            
+                            val paidTime = order.orderPaidDate?.toDate()?.time ?: 0L
+                            val isPaidMoreThanOneDayAgo = if (paidTime > 0) {
+                                (currentTime - paidTime) > oneDayInMillis
+                            } else true
+                            
+                            isDone && isPaidAndPickedUp && isPickedUpMoreThanOneDayAgo && isPaidMoreThanOneDayAgo
+                        }
+                        
+                        if (ordersToHide.isNotEmpty()) {
+                            CoroutineScope(Dispatchers.IO).launch {
+                                try {
+                                    val batch = db.batch()
+                                    ordersToHide.forEach { order ->
+                                        val ref = db.collection("workspaces")
+                                            .document(workspaceId)
+                                            .collection("orders")
+                                            .document(order.orderId)
+                                        batch.update(ref, "archived", true)
+                                    }
+                                    
+                                    val metadataRef = db.collection("workspaces")
+                                        .document(workspaceId)
+                                        .collection("metadata")
+                                        .document("counts")
+                                    
+                                    val hiddenCount = ordersToHide.size.toLong()
+                                    batch.update(metadataRef, "orderCount", FieldValue.increment(-hiddenCount))
+                                    batch.update(metadataRef, "orderDoneCount", FieldValue.increment(-hiddenCount))
+
+                                    batch.commit().await()
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                            }
+                            orders = orders.filterNot { it in ordersToHide }
+                        }
+                    }
+
+                    trySend(orders).isSuccess
+                }
+            }
+
             // Pastikan listener dihapus saat flow ditutup
             awaitClose { listener.remove() }
         }
@@ -149,6 +219,15 @@ class OrderRepository {
 
             db.runBatch { batch ->
                 batch.update(orderRef, "status", newStatus)
+                
+                if (newStatus == "Done") {
+                    batch.update(orderRef, "orderFinishDate", Timestamp.now())
+                } else {
+                    batch.update(orderRef, "orderFinishDate", null)
+                    // Reset field picked up jika status dikembalikan ke On Queue / On Process
+                    batch.update(orderRef, "alreadyPickedUp", false)
+                    batch.update(orderRef, "orderPickupDate", null)
+                }
 
                 // Update metadata counts
                 val oldField = when (oldStatus) {
@@ -174,14 +253,91 @@ class OrderRepository {
         }
     }
 
+    suspend fun getOrderById(orderId: String): Orders? {
+        val workspaceId = getWorkspaceId() ?: return null
+        return try {
+            val doc = db.collection("workspaces")
+                .document(workspaceId)
+                .collection("orders")
+                .document(orderId)
+                .get()
+                .await()
+            doc.toObject(Orders::class.java)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun updateOrder(order: Orders): Boolean {
+        val workspaceId = getWorkspaceId() ?: return false
+        val currentUser = Firebase.auth.currentUser ?: return false
+
+        val userName = currentUser.displayName ?: "Anggota tim"
+
+        return try {
+            val workspaceRef = db.collection("workspaces").document(workspaceId)
+            val orderRef = workspaceRef.collection("orders").document(order.orderId)
+            val newNotifDoc = workspaceRef.collection("notifications").document()
+
+            // Siapkan data Notifikasi (Order Diperbarui)
+            val notification = Notifications(
+                notificationId = newNotifDoc.id,
+                title = "Order Diperbarui",
+                message = "$userName memperbarui order milik ${order.customerName}",
+                senderUid = currentUser.uid,
+                timestamp = Timestamp.now(),
+                readBy = listOf(currentUser.uid)
+            )
+
+            db.runBatch { batch ->
+                batch.set(orderRef, order) // Timpa dokumen dengan data baru
+                batch.set(newNotifDoc, notification)
+            }.await()
+
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
     suspend fun updateOrderPaymentStatus(orderId: String, isPaid: Boolean): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
         return try {
+            val paidDate = if (isPaid) Timestamp.now() else null
             db.collection("workspaces")
                 .document(workspaceId)
                 .collection("orders")
                 .document(orderId)
-                .update("alreadyPaid", isPaid)
+                .update(
+                    mapOf(
+                        "alreadyPaid" to isPaid,
+                        "orderPaidDate" to paidDate
+                    )
+                )
+                .await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    suspend fun updateOrderPickupStatus(orderId: String, isPickedUp: Boolean): Boolean {
+        val workspaceId = getWorkspaceId() ?: return false
+        return try {
+            val pickupDate = if (isPickedUp) Timestamp.now() else null
+            
+            db.collection("workspaces")
+                .document(workspaceId)
+                .collection("orders")
+                .document(orderId)
+                .update(
+                    mapOf(
+                        "alreadyPickedUp" to isPickedUp,
+                        "orderPickupDate" to pickupDate
+                    )
+                )
                 .await()
             true
         } catch (e: Exception) {

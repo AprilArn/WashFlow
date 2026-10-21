@@ -58,8 +58,11 @@ class HomeViewModel(
                     
                     val workspaceId = workspaceRepository.getCurrentWorkspaceId()
                     if (workspaceId != null) {
-                        // Jika metadata benar-benar kosong (dokumen belum ada), atau perlu migrasi
-                        if ((metadata.orderCount == 0 && totalStatusCount == 0) || (metadata.orderCount > 0 && totalStatusCount == 0)) {
+                        // Sinkronisasi otomatis jika data tidak seimbang, minus, atau indikasi manipulasi console
+                        val isMinus = metadata.orderCount < 0 || metadata.orderDoneCount < 0 || metadata.orderOnProcessCount < 0 || metadata.orderOnQueueCount < 0
+                        val isUnbalanced = metadata.orderCount != totalStatusCount
+                        
+                        if (isMinus || isUnbalanced) {
                             workspaceRepository.syncMetadata(workspaceId)
                         }
                     }

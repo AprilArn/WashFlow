@@ -32,7 +32,7 @@ class ManageOrderViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
-            val ordersFlow = orderRepository.getOrdersRealtime()
+            val ordersFlow = orderRepository.getOrdersRealtime(activeOnly = true)
             val servicesFlow = serviceRepository.getServicesRealtime()
             val customersFlow = customerRepository.getCustomersRealtime()
 
@@ -41,6 +41,7 @@ class ManageOrderViewModel(
                 val groupedOrders = orders.groupBy { it.status }
                 _uiState.update { currentState ->
                     // Sinkronkan selectedOrderForDetail dengan data terbaru dari Firestore
+                    // Tetap cari di list original (orders) supaya kalau sedang dibuka tidak crash/hilang
                     val updatedSelectedOrder = currentState.selectedOrderForDetail?.let { current ->
                         orders.find { it.orderId == current.orderId }
                     }
@@ -95,6 +96,15 @@ class ManageOrderViewModel(
             val success = orderRepository.updateOrderPaymentStatus(orderId, isPaid)
             if (!success) {
                 _uiState.update { it.copy(errorMessage = "Failed to update payment status.") }
+            }
+        }
+    }
+
+    fun toggleOrderPickupStatus(orderId: String, isPickedUp: Boolean) {
+        viewModelScope.launch {
+            val success = orderRepository.updateOrderPickupStatus(orderId, isPickedUp)
+            if (!success) {
+                _uiState.update { it.copy(errorMessage = "Failed to update pickup status.") }
             }
         }
     }

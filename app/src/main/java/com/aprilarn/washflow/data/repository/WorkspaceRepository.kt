@@ -309,11 +309,14 @@ class WorkspaceRepository {
             val customerCount = workspaceRef.collection("customers").count().get(AggregateSource.SERVER).await().count
             val serviceCount = workspaceRef.collection("services").count().get(AggregateSource.SERVER).await().count
             val itemCount = workspaceRef.collection("items").count().get(AggregateSource.SERVER).await().count
-            val orderCount = workspaceRef.collection("orders").count().get(AggregateSource.SERVER).await().count
+            
+            // Untuk order, HANYA hitung yang belum di-archive (archived == false)
+            val activeOrdersQuery = workspaceRef.collection("orders").whereEqualTo("archived", false)
+            val orderCount = activeOrdersQuery.count().get(AggregateSource.SERVER).await().count
 
-            val orderOnQueueCount = workspaceRef.collection("orders").whereEqualTo("status", "On Queue").count().get(AggregateSource.SERVER).await().count
-            val orderOnProcessCount = workspaceRef.collection("orders").whereEqualTo("status", "On Process").count().get(AggregateSource.SERVER).await().count
-            val orderDoneCount = workspaceRef.collection("orders").whereEqualTo("status", "Done").count().get(AggregateSource.SERVER).await().count
+            val orderOnQueueCount = activeOrdersQuery.whereEqualTo("status", "On Queue").count().get(AggregateSource.SERVER).await().count
+            val orderOnProcessCount = activeOrdersQuery.whereEqualTo("status", "On Process").count().get(AggregateSource.SERVER).await().count
+            val orderDoneCount = activeOrdersQuery.whereEqualTo("status", "Done").count().get(AggregateSource.SERVER).await().count
 
             val metadata = WorkspaceMetadata(
                 customerCount = customerCount.toInt(),

@@ -9,7 +9,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.gestures.snapping.SnapPosition
-import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -24,6 +25,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aprilarn.washflow.ui.analytics.component.*
+import kotlinx.coroutines.launch
 import com.aprilarn.washflow.ui.theme.GrayBlue
 
 // --- Konstanta Warna Tema ---
@@ -31,11 +33,14 @@ val ThemeBgGray = Color(0xFFF3F4F6)
 
 // --- Main Screen ---
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AnalyticsScreen(
     uiState: AnalyticsUiState,
-    onTabClick: (String) -> Unit
+    onTabClick: (String) -> Unit,
+    onMonthSelected: (String) -> Unit = {},
+    onSearchQueryChanged: (String) -> Unit = {},
+    onStatusFilterChanged: (String) -> Unit = {},
+    onSortColumnClicked: (ReportSortColumn) -> Unit = {},
 ) {
     val selectedTab = uiState.selectedTab
 
@@ -60,8 +65,20 @@ fun AnalyticsScreen(
             color = Color.White
         ) {
             if (selectedTab == "Report") {
-                // Blank White Page for Report
-                Box(modifier = Modifier.fillMaxSize())
+                OrderReportPanel(
+                    orders = uiState.orders,
+                    services = uiState.services,
+                    isLoading = uiState.isLoading,
+                    selectedMonth = uiState.selectedMonth,
+                    searchQuery = uiState.searchQuery,
+                    selectedStatusFilter = uiState.selectedStatusFilter,
+                    sortColumn = uiState.sortColumn,
+                    isAscending = uiState.isAscending,
+                    onMonthSelected = onMonthSelected,
+                    onSearchQueryChanged = onSearchQueryChanged,
+                    onStatusFilterChanged = onStatusFilterChanged,
+                    onSortColumnClicked = onSortColumnClicked
+                )
             } else {
                 Row(
                     modifier = Modifier
@@ -169,7 +186,123 @@ fun AnalyticsScreen(
                                 .fillMaxSize()
                                 .padding(24.dp) // Padding internal di dalam kontainer abu-abu
                         ) {
-                            SpendingChart(modifier = Modifier.fillMaxWidth())
+                            val pagerState = rememberPagerState(
+                                pageCount = { 2 }
+                            )
+                            
+                            // State untuk melacak apakah pengguna sedang berinteraksi dengan grafik (drag/tap label)
+                            var isInteractingWithChart by remember { mutableStateOf(false) }
+                            
+                            // Shared state untuk sinkronisasi periode (Day/Week/Month) di semua chart Pager
+                            var selectedChartPeriod by remember { mutableStateOf("Day") }
+
+                            // Gunakan coroutine scope dari luar komponen yang tidak akan tercancel saat recompose
+                            val coroutineScope = rememberCoroutineScope()
+                            
+                            // State untuk animasi progress bar timer
+                            val slideProgress = remember { androidx.compose.animation.core.Animatable(0f) }
+
+                            // Efek auto-slide memutar balik (Rewind)
+                            LaunchedEffect(pagerState.isScrollInProgress, isInteractingWithChart) {
+                                // Hanya jalankan auto-slide jika tidak sedang digeser (scroll) DAN tidak sedang berinteraksi (tap/drag) dengan grafik
+                                if (pagerState.isScrollInProgress || isInteractingWithChart) {
+                                    slideProgress.snapTo(0f) // Reset progress bar
+                                    return@LaunchedEffect
+                                }
+                                
+                                while (true) {
+                                    slideProgress.snapTo(0f)
+                                    // Animasi progress bar selama 6 detik
+                                    slideProgress.animateTo(
+                                        targetValue = 1f,
+                                        animationSpec = androidx.compose.animation.core.tween(
+                                            durationMillis = 6000, 
+                                            easing = androidx.compose.animation.core.LinearEasing
+                                        )
+                                    )
+                                    
+                                    // Pindah ke Coroutine Scope UI agar tidak tercancel oleh LaunchedEffect
+                                    val nextPage = if (pagerState.currentPage == 1) 0 else pagerState.currentPage + 1
+
+                                    // Jangan di-try/catch dalam LaunchedEffect scope, biarkan coroutineScope yang handle
+                                    coroutineScope.launch {
+                                        try {
+                                            pagerState.animateScrollToPage(
+                                                page = nextPage,
+                                                animationSpec = androidx.compose.animation.core.tween(800)
+                                            )
+                                        } catch (e: Exception) {
+                                            // Abaikan error cancellation jika ada
+                                        }
+                                    }
+                                }
+                            }
+
+                            HorizontalPager(state = pagerState, modifier = Modifier.fillMaxWidth()) { page ->
+                                if (page == 0) {
+                                    SpendingChart(
+                                        orders = uiState.orders, 
+                                        selectedPeriod = selectedChartPeriod,
+                                        onPeriodChanged = { 
+                                            selectedChartPeriod = it
+                                            isInteractingWithChart = false // Reset timer otomatis setelah milih 
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        onInteractionStateChange = { isInteractingWithChart = it }
+                                    )
+                                } else {
+                                    SpendingChart(
+                                        orders = uiState.orders, 
+                                        selectedPeriod = selectedChartPeriod,
+                                        onPeriodChanged = { 
+                                            selectedChartPeriod = it
+                                            isInteractingWithChart = false // Reset timer otomatis setelah milih 
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        chartType = AnalyticsChartType.CUSTOMER,
+                                        onInteractionStateChange = { isInteractingWithChart = it }
+                                    )
+                                }
+                            }
+                            
+                            // Pager Indicator dengan Progress Bar Menyatu (Instagram Stories style)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 16.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                repeat(2) { iteration ->
+                                    val isCurrentPage = pagerState.currentPage == iteration
+                                    
+                                    // Animasi lebar bar (smooth transisi antara titik bulat dan garis memanjang)
+                                    val width by androidx.compose.animation.core.animateDpAsState(
+                                        targetValue = if (isCurrentPage) 32.dp else 8.dp,
+                                        animationSpec = androidx.compose.animation.core.tween(durationMillis = 400)
+                                    )
+                                    
+                                    Box(
+                                        modifier = Modifier
+                                            .padding(horizontal = 4.dp)
+                                            .width(width)
+                                            .height(8.dp)
+                                            .clip(RoundedCornerShape(50)) // 50% radius memastikan bentuk selalu pil/bulat sempurna
+                                            .background(Color.LightGray.copy(alpha = 0.5f))
+                                    ) {
+                                        if (isCurrentPage) {
+                                            // Isi bar hanya untuk halaman yang sedang aktif (dengan ujung rounded)
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxHeight()
+                                                    .fillMaxWidth(slideProgress.value)
+                                                    .clip(RoundedCornerShape(50))
+                                                    .background(GrayBlue)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
 
                             Spacer(modifier = Modifier.height(48.dp))
 
@@ -199,7 +332,7 @@ fun AnalyticsScreen(
 
 @Preview(showBackground = true, widthDp = 960, heightDp = 600)
 @Composable
-fun AnalyticsScreenPreview() {
+fun AnalyticsScreenOrderPreview() {
     Box(
         modifier = Modifier.background(
             Brush.linearGradient(
@@ -217,4 +350,3 @@ fun AnalyticsScreenPreview() {
         )
     }
 }
-
