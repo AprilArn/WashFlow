@@ -41,6 +41,15 @@ class HomeViewModel(
     private val gson = Gson()
 
     init {
+        // Lakukan sinkronisasi penuh satu kali saat aplikasi/Home dibuka
+        // Untuk memastikan data tidak out-of-sync akibat perubahan manual di database
+        viewModelScope.launch {
+            val workspaceId = workspaceRepository.getCurrentWorkspaceId()
+            if (workspaceId != null) {
+                workspaceRepository.syncMetadata(workspaceId)
+            }
+        }
+        
         listenForMetadataUpdates()
         listenForDeadlineUpdates()
         startPeriodicRefresh()
