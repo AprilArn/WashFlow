@@ -25,7 +25,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import com.aprilarn.washflow.ui.theme.AlertRed
+import com.aprilarn.washflow.ui.theme.SuccessGreen
+import com.aprilarn.washflow.ui.theme.WashFlowTheme
 
 @Composable
 fun rememberConnectivityState(): State<Boolean> {
@@ -70,8 +80,55 @@ fun OfflineBanner(
     isOffline: Boolean,
     modifier: Modifier = Modifier
 ) {
+    var isVisible by remember { mutableStateOf(isOffline) }
+    var isError by remember { mutableStateOf(isOffline) }
+
+    LaunchedEffect(isOffline) {
+        if (isOffline) {
+            isError = true
+            isVisible = true
+        } else {
+            if (isVisible && isError) {
+                // Sebelumnya offline, lalu online kembali
+                isError = false
+                delay(3000) // Tampilkan pesan hijau selama 3 detik
+                isVisible = false
+            } else {
+                isVisible = false
+                isError = false
+            }
+        }
+    }
+
+    val backgroundColor by animateColorAsState(
+        targetValue = if (isError) AlertRed else SuccessGreen,
+        animationSpec = tween(500),
+        label = "BannerBackgroundColor"
+    )
+
+    val displayText = if (isError) {
+        "Tidak ada koneksi internet. Beberapa fitur mungkin dibatasi."
+    } else {
+        "Koneksi internet telah pulih."
+    }
+
+    OfflineBannerContent(
+        isVisible = isVisible,
+        backgroundColor = backgroundColor,
+        displayText = displayText,
+        modifier = modifier
+    )
+}
+
+@Composable
+fun OfflineBannerContent(
+    isVisible: Boolean,
+    backgroundColor: Color,
+    displayText: String,
+    modifier: Modifier = Modifier
+) {
     AnimatedVisibility(
-        visible = isOffline,
+        visible = isVisible,
         enter = slideInVertically(animationSpec = tween(400)) { it }, // Muncul dari bawah
         exit = slideOutVertically(animationSpec = tween(400)) { it }, // Hilang ke bawah
         modifier = modifier
@@ -79,17 +136,41 @@ fun OfflineBanner(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(AlertRed)
+                .background(backgroundColor)
                 .padding(vertical = 4.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Anda sedang offline. Beberapa fitur mungkin tidak tersedia.",
+                text = displayText,
                 color = Color.White,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
         }
+    }
+}
+
+@Preview(showBackground = true, name = "1. Offline State")
+@Composable
+fun OfflineBannerPreview() {
+    WashFlowTheme {
+        OfflineBannerContent(
+            isVisible = true,
+            backgroundColor = AlertRed,
+            displayText = "Tidak ada koneksi internet. Beberapa fitur mungkin dibatasi."
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "2. Reconnected State")
+@Composable
+fun OfflineBannerReconnectedPreview() {
+    WashFlowTheme {
+        OfflineBannerContent(
+            isVisible = true,
+            backgroundColor = SuccessGreen,
+            displayText = "Koneksi internet telah pulih."
+        )
     }
 }

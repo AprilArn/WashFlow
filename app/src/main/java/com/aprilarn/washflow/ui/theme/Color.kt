@@ -14,6 +14,7 @@ val SoftRed = Color(0xFFA25A5A)
 val AlertRed = Color(0xFFC54C4C) // Merah cerah untuk peringatan
 val SoftBlue = Color(0xFF8B98B2)
 val Pinkish = Color(0xFFF48FB1)
+val SuccessGreen = Color(0xFF4CAF50)
 
 val MainFontBlack = Color(0xFF323232) // Soft Black
 
