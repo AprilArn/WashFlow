@@ -59,7 +59,9 @@ import androidx.compose.ui.unit.toSize
 import com.aprilarn.washflow.data.model.OrderItem
 import com.aprilarn.washflow.data.model.Orders
 import com.aprilarn.washflow.data.model.Services
+import com.aprilarn.washflow.ui.theme.AlertRed
 import com.aprilarn.washflow.ui.theme.Gray
+import com.aprilarn.washflow.ui.theme.AlertRed
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.SoftRed
 import com.google.firebase.Timestamp
@@ -425,8 +427,8 @@ fun OrderCardContent(
     }
 
     // Lerp (Linear Interpolation) warna berdasarkan progress global
-    val breathingColor = lerp(borderColor, SoftRed, globalAnimationProgress)
-    val textBreathingColor = lerp(Gray, SoftRed, globalAnimationProgress)
+    val breathingColor = lerp(borderColor, AlertRed, globalAnimationProgress)
+    val textBreathingColor = lerp(Gray, AlertRed, globalAnimationProgress)
 
     // Buat brush (gradient) horizontal dengan 3 area
     val urgencyBrush = Brush.horizontalGradient(
@@ -483,7 +485,7 @@ fun OrderCardContent(
                         // Gunakan this.alpha untuk menghindari bentrok dengan parameter alpha di luar scope
                         this.alpha = 0.05f + (0.1f * globalAnimationProgress)
                     },
-                tint = SoftRed // Menggunakan warna merah
+                tint = AlertRed // Menggunakan warna merah cerah
             )
         }
 
