@@ -742,4 +742,15 @@ fun MainAppScreen(
             onConfirm = { mainViewModel.onKickedDialogConfirm() }
         )
     }
+
+    // --- BANNER OFFLINE (Paling Atas Z-Index) ---
+    val isOnline by com.aprilarn.washflow.ui.components.rememberConnectivityState()
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .zIndex(200f),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        com.aprilarn.washflow.ui.components.OfflineBanner(isOffline = !isOnline)
+    }
 }
