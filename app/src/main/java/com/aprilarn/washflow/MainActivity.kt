@@ -31,9 +31,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.aprilarn.washflow.data.repository.InviteRepository
 import com.aprilarn.washflow.data.repository.WorkspaceRepository
-import com.aprilarn.washflow.ui.MainAppScreen
-import com.aprilarn.washflow.ui.MainNavigationEvent
-import com.aprilarn.washflow.ui.MainViewModel
+import com.aprilarn.washflow.ui.main.MainAppScreen
+import com.aprilarn.washflow.ui.main.MainNavigationEvent
+import com.aprilarn.washflow.ui.main.MainViewModel
 import com.aprilarn.washflow.ui.login.GoogleAuthUiClient
 import com.aprilarn.washflow.ui.login.LoginScreen
 import com.aprilarn.washflow.ui.login.LoginViewModel

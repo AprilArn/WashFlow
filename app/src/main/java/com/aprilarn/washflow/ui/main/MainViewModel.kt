@@ -1,6 +1,7 @@
 // com/aprilarn/washflow/ui/MainViewModel.kt
-package com.aprilarn.washflow.ui
+package com.aprilarn.washflow.ui.main
 
+import android.content.SharedPreferences
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -28,7 +29,7 @@ sealed class MainNavigationEvent {
 class MainViewModel(
     private val workspaceRepository: WorkspaceRepository,
     private val inviteRepository: InviteRepository,
-    private val sharedPreferences: android.content.SharedPreferences
+    private val sharedPreferences: SharedPreferences
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MainUiState())
