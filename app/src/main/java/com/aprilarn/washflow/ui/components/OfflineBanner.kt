@@ -107,9 +107,9 @@ fun OfflineBanner(
     )
 
     val displayText = if (isError) {
-        "Tidak ada koneksi internet. Beberapa fitur mungkin dibatasi."
+        "No internet connection. Some features may be limited."
     } else {
-        "Koneksi internet telah pulih."
+        "Internet connection restored."
     }
 
     OfflineBannerContent(
@@ -158,7 +158,7 @@ fun OfflineBannerPreview() {
         OfflineBannerContent(
             isVisible = true,
             backgroundColor = AlertRed,
-            displayText = "Tidak ada koneksi internet. Beberapa fitur mungkin dibatasi."
+            displayText = "No internet connection. Some features may be limited."
         )
     }
 }
@@ -170,7 +170,7 @@ fun OfflineBannerReconnectedPreview() {
         OfflineBannerContent(
             isVisible = true,
             backgroundColor = SuccessGreen,
-            displayText = "Koneksi internet telah pulih."
+            displayText = "Internet connection restored."
         )
     }
 }
