@@ -4,7 +4,6 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,9 +30,9 @@ fun SidebarMenu(
 ) {
     Column(
         modifier = Modifier
-            .width(180.dp)
-            .padding(top = 32.dp, bottom = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .width(160.dp) // Lebar dipertajam agar lebih menyerupai tab buku ketimbang blok besar
+            .padding(top = 40.dp, bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp) // Jarak antar tab dirapatkan
     ) {
         val menuItems = listOf(
             "Order" to Icons.Rounded.ShoppingCart,
@@ -42,48 +41,49 @@ fun SidebarMenu(
 
         menuItems.forEach { (title, icon) ->
             val isSelected = selectedTab == title
-            
-            // Animasi Warna & Radius
+
+            // Animasi Warna
             val animatedContentColor by animateColorAsState(
-                targetValue = if (isSelected) GrayBlue.copy(alpha = 0.9f) else GrayBlue.copy(alpha = 0.5f),
+                targetValue = if (isSelected) GrayBlue else GrayBlue.copy(alpha = 0.6f),
                 animationSpec = tween(durationMillis = 300),
                 label = "contentColor"
             )
             val animatedBgColor by animateColorAsState(
-                targetValue = if (isSelected) Color.White else Color.Transparent,
+                targetValue = if (isSelected) Color.White else Color(0xFFD8DDE6), // Warna solid abu-abu yang mengesankan posisi di belakang/terkena bayangan
                 animationSpec = tween(durationMillis = 300),
                 label = "bgColor"
             )
-            val animatedBorderColor by animateColorAsState(
-                targetValue = if (isSelected) Color.Transparent else animatedContentColor,
+            // Animasi efek tab "masuk/tucked in" saat tidak dipilih (ukurannya mengecil dari arah luar)
+            val animatedStartPadding by animateDpAsState(
+                targetValue = if (isSelected) 0.dp else 24.dp,
                 animationSpec = tween(durationMillis = 300),
-                label = "borderColor"
-            )
-            val animatedEndRadius by animateDpAsState(
-                targetValue = if (isSelected) 12.dp else 32.dp,
-                animationSpec = tween(durationMillis = 300),
-                label = "endRadius"
+                label = "startPadding"
             )
 
+            // Geser sedikit ke kanan saat dipilih agar menutupi celah anti-aliasing dengan panel utama
+            val animatedOffsetX by animateDpAsState(
+                targetValue = if (isSelected) 1.dp else 0.dp,
+                animationSpec = tween(durationMillis = 300),
+                label = "offsetX"
+            )
+
+            // Sudut kanan selalu siku-siku (0.dp) agar selalu menempel pada kontainer seperti label buku sungguhan
             val shape = RoundedCornerShape(
-                topStart = 32.dp,
-                bottomStart = 32.dp,
-                topEnd = animatedEndRadius,
-                bottomEnd = animatedEndRadius
+                topStart = 8.dp,
+                bottomStart = 18.dp,
+                topEnd = 0.dp,
+                bottomEnd = 0.dp
             )
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(
-                        width = 1.dp,
-                        color = animatedBorderColor,
-                        shape = shape
-                    )
+                    .padding(start = animatedStartPadding) // Menambahkan ruang kosong di kiri agar tab memendek saat tidak aktif
+                    .offset(x = animatedOffsetX)
                     .clip(shape)
                     .background(animatedBgColor)
                     .clickable { onTabClick(title) }
-                    .padding(horizontal = 20.dp, vertical = 14.dp),
+                    .padding(horizontal = 16.dp, vertical = 18.dp), // Padding internal disesuaikan agar konten muat
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
@@ -92,10 +92,10 @@ fun SidebarMenu(
                     tint = animatedContentColor,
                     modifier = Modifier.size(24.dp)
                 )
-                Spacer(Modifier.width(16.dp))
+                Spacer(Modifier.width(12.dp))
                 Text(
                     text = title,
-                    fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Bold,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                     color = animatedContentColor,
                     fontSize = 15.sp,
                     letterSpacing = 0.5.sp

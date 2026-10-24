@@ -54,14 +54,12 @@ fun AnalyticsScreen(
             onTabClick = onTabClick
         )
 
-        Spacer(modifier = Modifier.width(16.dp))
-
         // 2. Main White Container
         Surface(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight(),
-            shape = RoundedCornerShape(40.dp),
+            shape = RoundedCornerShape(24.dp),
             color = Color.White
         ) {
             if (selectedTab == "Report") {
@@ -178,7 +176,7 @@ fun AnalyticsScreen(
                         modifier = Modifier
                             .width(320.dp) // Sedikit dilebarkan untuk memberi ruang pada padding dalam
                             .fillMaxHeight(),
-                        shape = RoundedCornerShape(32.dp), // Radius melengkung
+                        shape = RoundedCornerShape(24.dp), // Radius melengkung disesuaikan dengan tema
                         color = ThemeBgGray // Latar belakang abu-abu
                     ) {
                         Column(

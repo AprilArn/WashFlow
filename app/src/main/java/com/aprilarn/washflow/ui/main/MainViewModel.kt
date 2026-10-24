@@ -48,8 +48,7 @@ class MainViewModel(
     private fun listenForWorkspaceChanges() {
         viewModelScope.launch {
             workspaceRepository.getCurrentWorkspaceRealtime().collect { workspace ->
-                val currentUser = Firebase.auth.currentUser
-                if (currentUser == null) return@collect
+                val currentUser = Firebase.auth.currentUser ?: return@collect
 
                 val previousState = _uiState.value
                 val previouslyHadWorkspace = previousState.workspaceName != "Loading..." && previousState.workspaceName.isNotEmpty()
@@ -75,11 +74,7 @@ class MainViewModel(
                         }
                     }
                 } else {
-                    val isOwner = if (currentUser != null) {
-                        workspace.contributors?.get(currentUser.uid) == "owner"
-                    } else {
-                        false
-                    }
+                    val isOwner = workspace.contributors?.get(currentUser.uid) == "owner"
 
                     _uiState.update {
                         it.copy(
