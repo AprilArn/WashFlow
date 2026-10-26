@@ -17,10 +17,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
+import androidx.compose.animation.core.animateFloatAsState
 import com.aprilarn.washflow.ui.theme.GrayBlue
 
 @Composable
@@ -67,6 +72,13 @@ fun SidebarMenu(
                 label = "offsetX"
             )
 
+            // Alpha untuk animasi fillet (rounded corner ke arah luar)
+            val filletAlpha by animateFloatAsState(
+                targetValue = if (isSelected) 1f else 0f,
+                animationSpec = tween(durationMillis = 300),
+                label = "filletAlpha"
+            )
+
             // Sudut kanan selalu siku-siku (0.dp) agar selalu menempel pada kontainer seperti label buku sungguhan
             val shape = RoundedCornerShape(
                 topStart = 8.dp,
@@ -78,8 +90,53 @@ fun SidebarMenu(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .zIndex(if (isSelected) 1f else 0f)
                     .padding(start = animatedStartPadding) // Menambahkan ruang kosong di kiri agar tab memendek saat tidak aktif
                     .offset(x = animatedOffsetX)
+                    .drawBehind {
+                        if (filletAlpha > 0f) {
+                            val cornerRadius = 16.dp.toPx()
+                            val filletColor = Color.White.copy(alpha = filletAlpha)
+
+                            // Top Fillet
+                            val topPath = Path().apply {
+                                moveTo(size.width, 0f)
+                                lineTo(size.width, -cornerRadius)
+                                arcTo(
+                                    rect = Rect(
+                                        left = size.width - 2 * cornerRadius,
+                                        top = -2 * cornerRadius,
+                                        right = size.width,
+                                        bottom = 0f
+                                    ),
+                                    startAngleDegrees = 0f,
+                                    sweepAngleDegrees = 90f,
+                                    forceMoveTo = false
+                                )
+                                close()
+                            }
+                            drawPath(topPath, filletColor)
+
+                            // Bottom Fillet
+                            val bottomPath = Path().apply {
+                                moveTo(size.width, size.height)
+                                lineTo(size.width, size.height + cornerRadius)
+                                arcTo(
+                                    rect = Rect(
+                                        left = size.width - 2 * cornerRadius,
+                                        top = size.height,
+                                        right = size.width,
+                                        bottom = size.height + 2 * cornerRadius
+                                    ),
+                                    startAngleDegrees = 0f,
+                                    sweepAngleDegrees = -90f,
+                                    forceMoveTo = false
+                                )
+                                close()
+                            }
+                            drawPath(bottomPath, filletColor)
+                        }
+                    }
                     .clip(shape)
                     .background(animatedBgColor)
                     .clickable { onTabClick(title) }
