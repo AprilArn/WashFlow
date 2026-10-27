@@ -85,13 +85,19 @@ fun LongPressLeaveButton(
     var isPressed by remember { mutableStateOf(false) }
     var triggerAction by remember { mutableStateOf(false) }
 
-    // Durasi 4000ms (4 detik) sesuai permintaan
+    // Durasi 4000ms (4 detik)    
     val progress by animateFloatAsState(
         targetValue = if (isPressed) 1f else 0f,
         animationSpec = if (isPressed) {
-            tween(durationMillis = 4000, easing = LinearEasing)
+            tween(
+                durationMillis = 1500, 
+                easing = androidx.compose.animation.core.LinearOutSlowInEasing // Cepat di awal, semakin ke kanan semakin melambat
+            )
         } else {
-            tween(durationMillis = 250, easing = LinearEasing)
+            tween(
+                durationMillis = 250, 
+                easing = LinearEasing
+            )
         },
         label = "LeaveProgress",
         finishedListener = { finalValue ->

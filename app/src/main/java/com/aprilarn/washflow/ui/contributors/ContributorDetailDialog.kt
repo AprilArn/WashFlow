@@ -133,9 +133,15 @@ fun LongPressKickButton(
     val progress by animateFloatAsState(
         targetValue = if (isPressed) 1f else 0f,
         animationSpec = if (isPressed) {
-            tween(durationMillis = 4000, easing = LinearEasing)
+            tween(
+                durationMillis = 4000, 
+                easing = androidx.compose.animation.core.LinearOutSlowInEasing // Cepat di awal, melambat di akhir
+            )
         } else {
-            tween(durationMillis = 250, easing = LinearEasing)
+            tween(
+                durationMillis = 250, 
+                easing = LinearEasing
+            )
         },
         label = "KickProgress",
         finishedListener = { finalValue ->

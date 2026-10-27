@@ -53,11 +53,15 @@ fun LogoutConfirmationDialog(
     val progress by animateFloatAsState(
         targetValue = if (isPressed) 1f else 0f,
         animationSpec = if (isPressed) {
-            // Jika ditekan (MAJU ke kanan): Durasi 1 detik (lambat/beban berat)
-            tween(durationMillis = 1000, easing = LinearEasing)
+            tween(
+                durationMillis = 1500, 
+                easing = androidx.compose.animation.core.LinearOutSlowInEasing // Cepat di awal, semakin ke kanan semakin melambat
+            )
         } else {
-            // Jika dilepas/batal (MUNDUR ke kiri): Durasi 0.25 detik (cepat/snappy)
-            tween(durationMillis = 250, easing = LinearEasing)
+            tween(
+                durationMillis = 250, 
+                easing = LinearEasing
+            )
         },
         label = "LogoutProgress",
         finishedListener = { if (it >= 1f) triggerAction = true }
