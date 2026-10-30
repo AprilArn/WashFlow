@@ -10,10 +10,8 @@ import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 import java.util.Date
-import kotlin.random.Random
 
 class InviteRepository {
     private val db = Firebase.firestore
@@ -25,7 +23,7 @@ class InviteRepository {
         val user = Firebase.auth.currentUser ?: return null
         return try {
             usersCollection.document(user.uid).get().await().getString("workspaceId")
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
@@ -33,10 +31,12 @@ class InviteRepository {
     suspend fun createInvite(maxContributors: Int, expiresAt: Timestamp): Invites? {
         val workspaceId = getCurrentWorkspaceId() ?: return null
         return try {
-            val inviteCode = generateSequence {
-                (1..6).map { "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".random() }.joinToString("")
-            }.first { code ->
-                runBlocking { invitesCollection.document(code).get().await().exists().not() }
+            var inviteCode: String
+            while (true) {
+                inviteCode = (1..6).map { "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".random() }.joinToString("")
+                if (!invitesCollection.document(inviteCode).get().await().exists()) {
+                    break
+                }
             }
 
             val newInvite = Invites(
@@ -75,7 +75,7 @@ class InviteRepository {
             // 1. UTAMA: Dengarkan dokumen pengguna
             val userListener = userDocRef.addSnapshotListener { userSnapshot, userError ->
                 if (userError != null) {
-                    if (userError is FirebaseFirestoreException && userError.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+                    if (userError.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
                         close() // Tutup dengan aman jika sedang logout
                         return@addSnapshotListener
                     }
@@ -159,7 +159,7 @@ class InviteRepository {
         return try {
             invitesCollection.document(inviteId).update("status", "expired").await()
             true
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
     }
@@ -202,9 +202,8 @@ class InviteRepository {
             val maxContributors = inviteData.maxContributors ?: 0
             if (inviteData.usersWhoJoined.size >= maxContributors) {
                 // Kuota habis, update status di luar transaksi
-                if (inviteData.status != "used") {
-                    inviteDocRef.update("status", "used").await() // Update terpisah
-                }
+                inviteDocRef.update("status", "used").await() // Update terpisah
+                
                 // Kembalikan error
                 return Pair(false, "Kode undangan sudah penuh")
             }
