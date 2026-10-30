@@ -7,7 +7,6 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import android.view.HapticFeedbackConstants
 import android.view.View
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -32,7 +31,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -70,8 +68,8 @@ fun HoldToConfirmButton(
             )
         } else {
             tween(
-                durationMillis = 250,
-                easing = LinearEasing
+                durationMillis = 300,
+                easing = androidx.compose.animation.core.FastOutLinearInEasing // Animasi mundur ke kiri: dari lambat ke cepat (Ease-In)
             )
         },
         label = "HoldToConfirmProgress",
@@ -108,7 +106,20 @@ fun HoldToConfirmButton(
         }
     }
 
-    val buttonShape: Shape = RoundedCornerShape(cornerRadius)
+    val buttonShape = RoundedCornerShape(cornerRadius)
+
+    // Bentuk dinamis untuk progress fill:
+    // - Sisi kiri (topStart & bottomStart) SELALU tetap cornerRadius (12.dp) agar selalu pas/presisi dengan bingkai kiri container.
+    // - Sisi kanan (topEnd & bottomEnd) bergerak dinamis dari 25.dp (kapsul bulat di awal) memudar hingga 0.dp saat 100%.
+    val maxEndRadius = 25.dp
+    val dynamicEndRadius = maxEndRadius * (1f - progress)
+
+    val progressShape = RoundedCornerShape(
+        topStart = cornerRadius,
+        bottomStart = cornerRadius,
+        topEnd = dynamicEndRadius,
+        bottomEnd = dynamicEndRadius
+    )
 
     Box(
         modifier = modifier
@@ -128,12 +139,12 @@ fun HoldToConfirmButton(
             },
         contentAlignment = Alignment.CenterStart
     ) {
-        // Progress Fill (dengan clip buttonShape agar bagian ujung yang bergerak selalu rounded)
+        // Progress Fill (dengan kelengkungan kanan yang berkurang secara dinamis saat bergerak ke kanan)
         Box(
             modifier = Modifier
                 .fillMaxHeight()
                 .fillMaxWidth(fraction = progress)
-                .clip(buttonShape)
+                .clip(progressShape)
                 .background(progressColor)
         )
 
@@ -209,7 +220,8 @@ fun HoldToConfirmButtonStatesPreview() {
             .fillMaxWidth()
             .padding(16.dp)
     ) {
-        Text("Progress 0%", fontWeight = FontWeight.Bold)
+        Text("Progress 0% (Idle)", fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(4.dp))
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -223,7 +235,15 @@ fun HoldToConfirmButtonStatesPreview() {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text("Progress 50%", fontWeight = FontWeight.Bold)
+        Text("Progress 5% (Just Starting - Flush Left, Capsule Right)", fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(4.dp))
+        val p05 = 0.05f
+        val shape05 = RoundedCornerShape(
+            topStart = 12.dp,
+            bottomStart = 12.dp,
+            topEnd = 25.dp * (1f - p05),
+            bottomEnd = 25.dp * (1f - p05)
+        )
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -235,8 +255,8 @@ fun HoldToConfirmButtonStatesPreview() {
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .fillMaxWidth(0.5f)
-                    .clip(buttonShape)
+                    .fillMaxWidth(p05)
+                    .clip(shape05)
                     .background(Color(0xFFD32F2F))
             )
             Box(
@@ -249,7 +269,15 @@ fun HoldToConfirmButtonStatesPreview() {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text("Progress 100%", fontWeight = FontWeight.Bold)
+        Text("Progress 50% (Transitioning)", fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(4.dp))
+        val p50 = 0.5f
+        val shape50 = RoundedCornerShape(
+            topStart = 12.dp,
+            bottomStart = 12.dp,
+            topEnd = 25.dp * (1f - p50),
+            bottomEnd = 25.dp * (1f - p50)
+        )
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -261,8 +289,42 @@ fun HoldToConfirmButtonStatesPreview() {
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .fillMaxWidth(1f)
-                    .clip(buttonShape)
+                    .fillMaxWidth(p50)
+                    .clip(shape50)
+                    .background(Color(0xFFD32F2F))
+            )
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Hold to Delete (1s)", color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text("Progress 100% (Confirmed)", fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(4.dp))
+        val p100 = 1.0f
+        val shape100 = RoundedCornerShape(
+            topStart = 12.dp,
+            bottomStart = 12.dp,
+            topEnd = 25.dp * (1f - p100),
+            bottomEnd = 25.dp * (1f - p100)
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp)
+                .clip(buttonShape)
+                .background(Color(0xFFFFEBEE)),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(p100)
+                    .clip(shape100)
                     .background(Color(0xFFD32F2F))
             )
             Box(
