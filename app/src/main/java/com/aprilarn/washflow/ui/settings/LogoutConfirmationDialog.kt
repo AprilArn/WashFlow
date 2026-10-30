@@ -2,20 +2,13 @@ package com.aprilarn.washflow.ui.components
 
 import android.content.Context
 import android.media.MediaPlayer
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -46,32 +39,7 @@ fun LogoutConfirmationDialog(
         }
     }
 
-    var isPressed by remember { mutableStateOf(false) }
-    var triggerAction by remember { mutableStateOf(false) }
 
-    // Animasi Progress (Target 1 detik)
-    val progress by animateFloatAsState(
-        targetValue = if (isPressed) 1f else 0f,
-        animationSpec = if (isPressed) {
-            tween(
-                durationMillis = 1500, 
-                easing = androidx.compose.animation.core.LinearOutSlowInEasing // Cepat di awal, semakin ke kanan semakin melambat
-            )
-        } else {
-            tween(
-                durationMillis = 250, 
-                easing = LinearEasing
-            )
-        },
-        label = "LogoutProgress",
-        finishedListener = { if (it >= 1f) triggerAction = true }
-    )
-
-    LaunchedEffect(triggerAction) {
-        if (triggerAction) {
-            onLogoutConfirmed()
-        }
-    }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -103,41 +71,12 @@ fun LogoutConfirmationDialog(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // Indikator Hold to Logout
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFFFFEBEE))
-                        .pointerInput(Unit) {
-                            detectTapGestures(
-                                onPress = {
-                                    isPressed = true
-                                    tryAwaitRelease()
-                                    isPressed = false
-                                }
-                            )
-                        },
-                    contentAlignment = Alignment.CenterStart
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .fillMaxWidth(fraction = progress)
-                            .background(Color(0xFFD32F2F))
-                    )
-
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = if (progress >= 1f) "Logging out..." else "Hold to Logout (1s)",
-                            color = if (progress > 0.5f) Color.White else Color(0xFFD32F2F),
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
+                HoldToConfirmButton(
+                    defaultText = "Hold to Logout (1s)",
+                    progressText = "Logging out...",
+                    durationMillis = 1500,
+                    onConfirm = onLogoutConfirmed
+                )
 
                 Spacer(modifier = Modifier.height(12.dp))
 

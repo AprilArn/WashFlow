@@ -1,10 +1,5 @@
 package com.aprilarn.washflow.ui.components
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -13,7 +8,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -60,7 +54,10 @@ fun LeaveWorkspaceDialog(
                 Spacer(modifier = Modifier.height(32.dp))
 
                 // Tombol Hold-to-Leave (4 Detik)
-                LongPressLeaveButton(
+                HoldToConfirmButton(
+                    defaultText = "Hold to Leave (4s)",
+                    progressText = "Leaving...",
+                    durationMillis = 4000,
                     onConfirm = onConfirm
                 )
 
@@ -74,80 +71,6 @@ fun LeaveWorkspaceDialog(
                     Text("Cancel", color = Color.Gray)
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun LongPressLeaveButton(
-    onConfirm: () -> Unit
-) {
-    var isPressed by remember { mutableStateOf(false) }
-    var triggerAction by remember { mutableStateOf(false) }
-
-    // Durasi 4000ms (4 detik)    
-    val progress by animateFloatAsState(
-        targetValue = if (isPressed) 1f else 0f,
-        animationSpec = if (isPressed) {
-            tween(
-                durationMillis = 1500, 
-                easing = androidx.compose.animation.core.LinearOutSlowInEasing // Cepat di awal, semakin ke kanan semakin melambat
-            )
-        } else {
-            tween(
-                durationMillis = 250, 
-                easing = LinearEasing
-            )
-        },
-        label = "LeaveProgress",
-        finishedListener = { finalValue ->
-            if (finalValue == 1f) {
-                triggerAction = true
-            }
-        }
-    )
-
-    LaunchedEffect(triggerAction) {
-        if (triggerAction) {
-            onConfirm()
-        }
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(50.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFFFFEBEE)) // Merah muda pudar
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onPress = {
-                        isPressed = true
-                        tryAwaitRelease()
-                        isPressed = false
-                    }
-                )
-            },
-        contentAlignment = Alignment.CenterStart
-    ) {
-        // Progress Fill (Merah)
-        Box(
-            modifier = Modifier
-                .fillMaxHeight()
-                .fillMaxWidth(fraction = progress)
-                .background(Color(0xFFD32F2F))
-        )
-
-        // Teks Label
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = if (progress >= 1f) "Leaving..." else "Hold to Leave (4s)",
-                color = if (progress > 0.5f) Color.White else Color(0xFFD32F2F),
-                fontWeight = FontWeight.Bold
-            )
         }
     }
 }

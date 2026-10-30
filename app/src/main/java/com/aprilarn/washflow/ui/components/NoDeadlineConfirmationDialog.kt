@@ -2,11 +2,6 @@ package com.aprilarn.washflow.ui.components
 
 import android.content.Context
 import android.media.MediaPlayer
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -15,7 +10,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -73,8 +67,14 @@ fun NoDeadlineConfirmationDialog(
                 )
                 Spacer(modifier = Modifier.height(24.dp))
 
-                LongPressProceedButton(
-                    onProceedConfirmed = onConfirm
+                HoldToConfirmButton(
+                    defaultText = "Hold to Proceed (1s)",
+                    progressText = "Memproses...",
+                    durationMillis = 1500,
+                    containerColor = Color(0xFFE3F2FD),
+                    progressColor = com.aprilarn.washflow.ui.theme.GrayBlue,
+                    defaultTextColor = com.aprilarn.washflow.ui.theme.GrayBlue,
+                    onConfirm = onConfirm
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -90,73 +90,3 @@ fun NoDeadlineConfirmationDialog(
     }
 }
 
-@Composable
-private fun LongPressProceedButton(
-    onProceedConfirmed: () -> Unit
-) {
-    var isPressed by remember { mutableStateOf(false) }
-    var triggerAction by remember { mutableStateOf(false) }
-
-    val progress by animateFloatAsState(
-        targetValue = if (isPressed) 1f else 0f,
-        animationSpec = if (isPressed) {
-            tween(
-                durationMillis = 1500, 
-                easing = androidx.compose.animation.core.LinearOutSlowInEasing // Cepat di awal, semakin ke kanan semakin melambat
-            )
-        } else {
-            tween(
-                durationMillis = 250, 
-                easing = LinearEasing
-            )
-        },
-        label = "ProceedProgress",
-        finishedListener = { finalValue ->
-            if (finalValue == 1f) {
-                triggerAction = true
-            }
-        }
-    )
-
-    LaunchedEffect(triggerAction) {
-        if (triggerAction) {
-            onProceedConfirmed()
-        }
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(50.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFFE3F2FD)) // Warna background biru muda (GrayBlue theme)
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onPress = {
-                        isPressed = true
-                        tryAwaitRelease()
-                        isPressed = false
-                    }
-                )
-            },
-        contentAlignment = Alignment.CenterStart
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxHeight()
-                .fillMaxWidth(fraction = progress)
-                .background(com.aprilarn.washflow.ui.theme.GrayBlue)
-        )
-
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = if (progress >= 1f) "Memproses..." else "Hold to Proceed (1s)",
-                color = if (progress > 0.5f) Color.White else com.aprilarn.washflow.ui.theme.GrayBlue,
-                fontWeight = FontWeight.Bold
-            )
-        }
-    }
-}

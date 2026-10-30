@@ -2,11 +2,6 @@ package com.aprilarn.washflow.ui.components
 
 import android.content.Context
 import android.media.MediaPlayer
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -15,7 +10,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import com.aprilarn.washflow.R
 import androidx.compose.ui.text.font.FontWeight
@@ -74,8 +68,11 @@ fun DeleteConfirmationDialog(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // Tombol Delete Khusus (Long Press)
-                LongPressDeleteButton(
-                    onDeleteConfirmed = onConfirm
+                HoldToConfirmButton(
+                    defaultText = "Hold to Delete (1s)",
+                    progressText = "Deleting...",
+                    durationMillis = 1500,
+                    onConfirm = onConfirm
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -88,80 +85,6 @@ fun DeleteConfirmationDialog(
                     Text("Cancel", color = Color.Gray)
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun LongPressDeleteButton(
-    onDeleteConfirmed: () -> Unit
-) {
-    var isPressed by remember { mutableStateOf(false) }
-    var triggerAction by remember { mutableStateOf(false) }
-
-    val progress by animateFloatAsState(
-        targetValue = if (isPressed) 1f else 0f,
-        animationSpec = if (isPressed) {
-            tween(
-                durationMillis = 1500, 
-                easing = androidx.compose.animation.core.LinearOutSlowInEasing // Cepat di awal, semakin ke kanan semakin melambat
-            )
-        } else {
-            tween(
-                durationMillis = 250, 
-                easing = LinearEasing
-            )
-        },
-        label = "DeleteProgress",
-        finishedListener = { finalValue ->
-            if (finalValue == 1f) {
-                triggerAction = true
-            }
-        }
-    )
-
-    // Efek samping ketika progress mencapai 100%
-    LaunchedEffect(triggerAction) {
-        if (triggerAction) {
-            onDeleteConfirmed()
-        }
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(50.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFFFFEBEE)) // Warna background merah sangat muda
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onPress = {
-                        isPressed = true
-                        tryAwaitRelease()
-                        isPressed = false // Reset jika dilepas sebelum selesai
-                    }
-                )
-            },
-        contentAlignment = Alignment.CenterStart
-    ) {
-        // Progress Fill (Merah Gelap)
-        Box(
-            modifier = Modifier
-                .fillMaxHeight()
-                .fillMaxWidth(fraction = progress)
-                .background(Color(0xFFD32F2F))
-        )
-
-        // Teks Label (di tengah)
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = if (progress >= 1f) "Deleting..." else "Hold to Delete (1s)",
-                color = if (progress > 0.5f) Color.White else Color(0xFFD32F2F),
-                fontWeight = FontWeight.Bold
-            )
         }
     }
 }
