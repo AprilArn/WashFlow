@@ -48,7 +48,7 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
-    private val GoogleAuthUiClient by lazy {
+    private val googleAuthUiClient by lazy {
         GoogleAuthUiClient(
             context = applicationContext,
             oneTapClient = Identity.getSignInClient(applicationContext)
@@ -78,7 +78,7 @@ class MainActivity : ComponentActivity() {
                             val state by viewModel.state.collectAsStateWithLifecycle()
 
                             LaunchedEffect(Unit) {
-                                val currentUser = GoogleAuthUiClient.getSignedUser()
+                                val currentUser = googleAuthUiClient.getSignedUser()
                                 if (currentUser != null) {
                                     // Jika user sudah pernah login, langsung jalankan pengecekan Workspace
                                     // Ini otomatis akan memutar loading (isCheckingWorkspace = true)
@@ -112,7 +112,7 @@ class MainActivity : ComponentActivity() {
                                 onResult = { result ->
                                     if (result.resultCode == RESULT_OK) {
                                         lifecycleScope.launch {
-                                            val signInResult = GoogleAuthUiClient.signInWithIntent(
+                                            val signInResult = googleAuthUiClient.signInWithIntent(
                                                 intent = result.data ?: return@launch
                                             )
                                             viewModel.onSignInResult(signInResult)
@@ -137,7 +137,7 @@ class MainActivity : ComponentActivity() {
                                     state = state,
                                     onGoogleSignInClick = {
                                         lifecycleScope.launch {
-                                            val signInIntentSender = GoogleAuthUiClient.signIn()
+                                            val signInIntentSender = googleAuthUiClient.signIn()
                                             launcher.launch(
                                                 IntentSenderRequest.Builder(
                                                     signInIntentSender ?: return@launch
@@ -211,7 +211,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                             val mainViewModel: MainViewModel = viewModel(factory = mainViewModelFactory)
-                            val userData = GoogleAuthUiClient.getSignedUser()
+                            val userData = googleAuthUiClient.getSignedUser()
 
 
                             // --- EFEK UNTUK NAVIGASI KELUAR ---
@@ -236,7 +236,7 @@ class MainActivity : ComponentActivity() {
                                     lifecycleScope.launch {
                                         // 1. TUNGGU proses Sign Out selesai sepenuhnya (Google & Firebase)
                                         try {
-                                            GoogleAuthUiClient.signOut()
+                                            googleAuthUiClient.signOut()
                                         } catch (e: Exception) {
                                             e.printStackTrace()
                                         }
