@@ -80,6 +80,22 @@ fun HoldToConfirmButton(
         }
     )
 
+    val radiusProgress by animateFloatAsState(
+        targetValue = if (isPressed) 1f else 0f,
+        animationSpec = if (isPressed) {
+            tween(
+                durationMillis = durationMillis,
+                easing = androidx.compose.animation.core.LinearOutSlowInEasing
+            )
+        } else {
+            tween(
+                durationMillis = 50, // Cepat kembali menjadi rounded pill
+                easing = androidx.compose.animation.core.FastOutLinearInEasing
+            )
+        },
+        label = "RadiusProgress"
+    )
+
     // Efek getaran bertahap (semakin ke kanan progress, getaran semakin rapat/banyak)
     LaunchedEffect(isPressed) {
         if (isPressed) {
@@ -112,7 +128,7 @@ fun HoldToConfirmButton(
     // - Sisi kiri (topStart & bottomStart) SELALU tetap cornerRadius (12.dp) agar selalu pas/presisi dengan bingkai kiri container.
     // - Sisi kanan (topEnd & bottomEnd) bergerak dinamis dari 25.dp (kapsul bulat di awal) memudar hingga 0.dp saat 100%.
     val maxEndRadius = 25.dp
-    val dynamicEndRadius = maxEndRadius * (1f - progress)
+    val dynamicEndRadius = maxEndRadius * (1f - radiusProgress)
 
     val progressShape = RoundedCornerShape(
         topStart = cornerRadius,
