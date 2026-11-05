@@ -19,8 +19,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -52,6 +54,7 @@ import com.aprilarn.washflow.ui.aiagent.AiAgentAction
 import com.aprilarn.washflow.ui.components.Header
 import com.aprilarn.washflow.ui.components.KickedDialog
 import com.aprilarn.washflow.ui.components.LeaveWorkspaceDialog
+import com.aprilarn.washflow.ui.components.ExitConfirmationDialog
 import com.aprilarn.washflow.ui.aiagent.AiAgentPanel
 import com.aprilarn.washflow.ui.aiagent.component.VoiceAgentOverlay
 import com.aprilarn.washflow.ui.aiagent.AiAgentViewModel
@@ -209,6 +212,8 @@ fun MainAppScreen(
     }
     val homeViewModel: HomeViewModel = viewModel(factory = homeViewModelFactory)
 
+    var showExitDialog by remember { mutableStateOf(false) }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -291,6 +296,10 @@ fun MainAppScreen(
             NavHost(navController = bottomNavController, startDestination = AppNavigation.Home.route) {
 
                 composable(AppNavigation.Home.route) {
+                    androidx.activity.compose.BackHandler(enabled = true) {
+                        showExitDialog = true
+                    }
+                    
                     LocationAwareHomePage(
                         homeViewModel = homeViewModel,
                         onNavigateToManageOrder = {
@@ -570,6 +579,12 @@ fun MainAppScreen(
                         onBackClick = { bottomNavController.popBackStack() }
                     )
                 }
+            }
+
+            if (showExitDialog) {
+                ExitConfirmationDialog(
+                    onDismiss = { showExitDialog = false }
+                )
             }
         }
     }
