@@ -48,7 +48,8 @@ fun OrderReportPanel(
     onMonthSelected: (String) -> Unit,
     onSearchQueryChanged: (String) -> Unit,
     onStatusFilterChanged: (String) -> Unit,
-    onSortColumnClicked: (ReportSortColumn) -> Unit
+    onSortColumnClicked: (ReportSortColumn) -> Unit,
+    onLoadMoreMonths: () -> Unit
 ) {
     // 1. Ekstrak daftar bulan unik dari data order
     val monthList = remember(orders) {
@@ -416,6 +417,18 @@ fun OrderReportPanel(
                                     HorizontalDivider(color = Color(0xFFF1F5F9))
                                 }
                             }
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    OutlinedButton(onClick = onLoadMoreMonths) {
+                                        Text("Load 1 more month data")
+                                    }
+                                }
+                            }
                         }
                     } else {
                         // Jika memilih bulan spesifik, tampilkan baris langsung
@@ -423,6 +436,18 @@ fun OrderReportPanel(
                             items(sortedOrders) { order ->
                                 OrderLedgerRow(order = order, services = services)
                                 HorizontalDivider(color = Color(0xFFF1F5F9))
+                            }
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    OutlinedButton(onClick = onLoadMoreMonths) {
+                                        Text("Load 1 more month data")
+                                    }
+                                }
                             }
                         }
                     }
@@ -774,7 +799,8 @@ fun OrderReportPanelPreview() {
                 onMonthSelected = {},
                 onSearchQueryChanged = {},
                 onStatusFilterChanged = {},
-                onSortColumnClicked = {}
+                onSortColumnClicked = {},
+                onLoadMoreMonths = {}
             )
         }
     }

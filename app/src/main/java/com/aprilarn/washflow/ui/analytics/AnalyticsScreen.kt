@@ -24,6 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 import com.aprilarn.washflow.ui.analytics.component.*
 import kotlinx.coroutines.launch
 import com.aprilarn.washflow.ui.theme.GrayBlue
@@ -41,7 +43,18 @@ fun AnalyticsScreen(
     onSearchQueryChanged: (String) -> Unit = {},
     onStatusFilterChanged: (String) -> Unit = {},
     onSortColumnClicked: (ReportSortColumn) -> Unit = {},
+    onLoadMoreMonths: () -> Unit = {},
+    onToastShown: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+
+    LaunchedEffect(uiState.toastMessage) {
+        uiState.toastMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            onToastShown()
+        }
+    }
+
     val selectedTab = uiState.selectedTab
 
     Row(
@@ -75,7 +88,8 @@ fun AnalyticsScreen(
                     onMonthSelected = onMonthSelected,
                     onSearchQueryChanged = onSearchQueryChanged,
                     onStatusFilterChanged = onStatusFilterChanged,
-                    onSortColumnClicked = onSortColumnClicked
+                    onSortColumnClicked = onSortColumnClicked,
+                    onLoadMoreMonths = onLoadMoreMonths
                 )
             } else {
                 Row(
@@ -344,7 +358,9 @@ fun AnalyticsScreenOrderPreview() {
                 upcomingDeadlines = mockUpcomingDeadlines,
                 cards = mockCards
             ),
-            onTabClick = {}
+            onTabClick = {},
+            onLoadMoreMonths = {},
+            onToastShown = {}
         )
     }
 }

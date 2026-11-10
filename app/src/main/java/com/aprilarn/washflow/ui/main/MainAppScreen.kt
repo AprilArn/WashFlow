@@ -412,7 +412,9 @@ fun MainAppScreen(
                         onMonthSelected = { viewModel.onMonthSelected(it) },
                         onSearchQueryChanged = { viewModel.onSearchQueryChanged(it) },
                         onStatusFilterChanged = { viewModel.onStatusFilterChanged(it) },
-                        onSortColumnClicked = { viewModel.onSortColumnClicked(it) }
+                        onSortColumnClicked = { viewModel.onSortColumnClicked(it) },
+                        onLoadMoreMonths = { viewModel.loadMoreMonths() },
+                        onToastShown = { viewModel.onToastShown() }
                     )
                 }
 

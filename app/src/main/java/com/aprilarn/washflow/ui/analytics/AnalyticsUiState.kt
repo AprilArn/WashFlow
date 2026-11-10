@@ -17,5 +17,6 @@ data class AnalyticsUiState(
     val searchQuery: String = "",
     val selectedStatusFilter: String = "Semua",
     val sortColumn: ReportSortColumn = ReportSortColumn.DATE,
-    val isAscending: Boolean = false
+    val isAscending: Boolean = false,
+    val toastMessage: String? = null
 )

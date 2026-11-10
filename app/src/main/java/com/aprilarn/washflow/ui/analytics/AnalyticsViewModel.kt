@@ -19,6 +19,9 @@ class AnalyticsViewModel(
     private val _uiState = MutableStateFlow(AnalyticsUiState())
     val uiState = _uiState.asStateFlow()
 
+    private var listenJob: kotlinx.coroutines.Job? = null
+    private var currentMonthsBack = 3
+
     init {
         _uiState.update {
             it.copy(
@@ -31,9 +34,16 @@ class AnalyticsViewModel(
     }
 
     private fun listenForData() {
-        viewModelScope.launch {
+        listenJob?.cancel()
+        listenJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val ordersFlow = orderRepository.getOrdersRealtime()
+            
+            // Calculate the date for N months ago
+            val calendar = java.util.Calendar.getInstance()
+            calendar.add(java.util.Calendar.MONTH, -currentMonthsBack)
+            val startDate = com.google.firebase.Timestamp(calendar.time)
+            
+            val ordersFlow = orderRepository.getOrdersRealtime(startDate = startDate)
             val servicesFlow = serviceRepository.getServicesRealtime()
 
             combine(ordersFlow, servicesFlow) { orders, services ->
@@ -48,6 +58,26 @@ class AnalyticsViewModel(
                 _uiState.update { it.copy(isLoading = false) }
             }.collect {}
         }
+    }
+
+    fun loadMoreMonths() {
+        viewModelScope.launch {
+            val calendar = java.util.Calendar.getInstance()
+            calendar.add(java.util.Calendar.MONTH, -currentMonthsBack)
+            val currentStartDate = com.google.firebase.Timestamp(calendar.time)
+
+            val hasMore = orderRepository.hasOrdersBefore(currentStartDate)
+            if (hasMore) {
+                currentMonthsBack += 1
+                listenForData()
+            } else {
+                _uiState.update { it.copy(toastMessage = "Tidak ada data order yang lebih lama") }
+            }
+        }
+    }
+
+    fun onToastShown() {
+        _uiState.update { it.copy(toastMessage = null) }
     }
 
     fun onTabSelected(tab: String) {

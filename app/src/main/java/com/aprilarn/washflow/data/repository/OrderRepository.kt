@@ -30,8 +30,24 @@ class OrderRepository {
         }
     }
 
+    suspend fun hasOrdersBefore(date: Timestamp): Boolean {
+        val workspaceId = getWorkspaceId() ?: return false
+        return try {
+            val snapshot = db.collection("workspaces")
+                .document(workspaceId)
+                .collection("orders")
+                .whereLessThan("orderDate", date)
+                .limit(1)
+                .get()
+                .await()
+            !snapshot.isEmpty
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     // Fungsi untuk mendapatkan semua order secara realtime
-    suspend fun getOrdersRealtime(activeOnly: Boolean = false): Flow<List<Orders>> {
+    suspend fun getOrdersRealtime(activeOnly: Boolean = false, startDate: Timestamp? = null): Flow<List<Orders>> {
         return callbackFlow {
             val workspaceId = getWorkspaceId()
             if (workspaceId == null) {
@@ -47,6 +63,10 @@ class OrderRepository {
                 // Hanya ambil yang isArchived == false untuk hemat reads di halaman ManageOrder
                 // Perhatikan: properti Kotlin 'isArchived' secara default dipetakan ke field 'archived' di Firestore
                 query = query.whereEqualTo("archived", false)
+            }
+
+            if (startDate != null) {
+                query = query.whereGreaterThanOrEqualTo("orderDate", startDate)
             }
 
             val listener = query.addSnapshotListener { snapshot, error ->
