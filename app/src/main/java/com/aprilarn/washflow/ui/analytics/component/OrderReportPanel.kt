@@ -1,5 +1,12 @@
 package com.aprilarn.washflow.ui.analytics.component
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -7,12 +14,16 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -31,6 +42,8 @@ import com.aprilarn.washflow.ui.analytics.ReportSortColumn
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.utils.CurrencyUtils
 import com.google.firebase.Timestamp
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -104,6 +117,8 @@ fun OrderReportPanel(
     // Summary ringkasan
     val totalRevenue = sortedOrders.sumOf { it.totalPrice ?: 0.0 }
     val doneCount = sortedOrders.count { (it.status ?: "").lowercase() == "done" }
+
+    val listState = rememberLazyListState()
 
     Column(
         modifier = Modifier
@@ -344,8 +359,9 @@ fun OrderReportPanel(
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                // Table Header Row with Column Sorting
+            Box(modifier = Modifier.fillMaxSize()) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    // Table Header Row with Column Sorting
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -382,7 +398,7 @@ fun OrderReportPanel(
                     if (selectedMonth == "Semua Bulan") {
                         val groupedByMonth = sortedOrders.groupBy { it.orderDate.toMonthYearString() }
 
-                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        LazyColumn(modifier = Modifier.fillMaxSize(), state = listState) {
                             groupedByMonth.forEach { (monthName, orderList) ->
                                 // Month Section Banner (Sticky Header)
                                 stickyHeader {
@@ -432,7 +448,7 @@ fun OrderReportPanel(
                         }
                     } else {
                         // Jika memilih bulan spesifik, tampilkan baris langsung
-                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        LazyColumn(modifier = Modifier.fillMaxSize(), state = listState) {
                             items(sortedOrders) { order ->
                                 OrderLedgerRow(order = order, services = services)
                                 HorizontalDivider(color = Color(0xFFF1F5F9))
@@ -452,10 +468,19 @@ fun OrderReportPanel(
                         }
                     }
                 }
-            }
-        }
-    }
-}
+            } // Close Column
+                
+            // FAB for Scroll to Top
+            ScrollToTopFab(
+                listState = listState,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(bottom = 24.dp, end = 24.dp)
+            )
+        } // Close Box
+        } // Close Card
+    } // Close outer Column
+} // Close OrderReportPanel function
 
 @Composable
 private fun RowScope.TableHeaderCell(
@@ -723,8 +748,88 @@ private fun Timestamp.toTimeString(): String {
 }
 
 private fun Timestamp.toMonthYearString(): String {
-    val sdf = SimpleDateFormat("MMMM yyyy", Locale("id", "ID"))
+    val sdf = java.text.SimpleDateFormat("MMMM yyyy", java.util.Locale("id", "ID"))
     return sdf.format(this.toDate())
+}
+
+@Composable
+fun ScrollToTopFab(
+    listState: LazyListState,
+    modifier: Modifier = Modifier
+) {
+    val coroutineScope = rememberCoroutineScope()
+    
+    val progress by remember {
+        derivedStateOf {
+            val layoutInfo = listState.layoutInfo
+            val totalItems = layoutInfo.totalItemsCount
+            val visibleItems = layoutInfo.visibleItemsInfo.size
+            val maxScrollable = maxOf(0, totalItems - visibleItems)
+            if (maxScrollable == 0) 0f
+            else {
+                val currentItem = listState.firstVisibleItemIndex
+                (currentItem.toFloat() / maxScrollable).coerceIn(0f, 1f)
+            }
+        }
+    }
+    
+    val isNotAtTop by remember {
+        derivedStateOf { listState.firstVisibleItemIndex > 0 }
+    }
+    
+    var isVisible by remember { mutableStateOf(false) }
+
+    LaunchedEffect(listState.isScrollInProgress, isNotAtTop) {
+        if (isNotAtTop) {
+            isVisible = true
+            if (!listState.isScrollInProgress) {
+                delay(2000)
+                isVisible = false
+            }
+        } else {
+            isVisible = false
+        }
+    }
+
+    val animatedProgress by animateFloatAsState(
+        targetValue = progress,
+        animationSpec = tween(durationMillis = 150),
+        label = "progressAnimation"
+    )
+
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = fadeIn() + scaleIn(),
+        exit = fadeOut() + scaleOut(),
+        modifier = modifier
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.size(56.dp)
+        ) {
+            CircularProgressIndicator(
+                progress = { animatedProgress },
+                modifier = Modifier.fillMaxSize(),
+                color = GrayBlue,
+                trackColor = Color.LightGray.copy(alpha = 0.5f),
+                strokeWidth = 3.dp
+            )
+            FloatingActionButton(
+                onClick = { 
+                    coroutineScope.launch { 
+                        listState.animateScrollToItem(0) 
+                    } 
+                },
+                modifier = Modifier.size(48.dp),
+                shape = CircleShape,
+                containerColor = Color(0xFFEDEEF4), // Warna GrayBlue yang sangat terang (mendekati putih)
+                contentColor = GrayBlue,
+                elevation = FloatingActionButtonDefaults.elevation(0.dp)
+            ) {
+                Icon(Icons.Rounded.KeyboardArrowUp, contentDescription = "Scroll to top")
+            }
+        }
+    }
 }
 
 @Preview(showBackground = true, widthDp = 1000, heightDp = 700)

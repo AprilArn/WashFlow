@@ -104,7 +104,6 @@ class OrderRepository {
                             
                             val paidTime = order.orderPaidDate?.toDate()?.time ?: 0L
                             val isPaidMoreThanOneDayAgo = paidTime <= 0 || (currentTime - paidTime) > oneDayInMillis
-                            
                             isDone && isPaidAndPickedUp && isPickedUpMoreThanOneDayAgo && isPaidMoreThanOneDayAgo
                         }
                         
