@@ -59,11 +59,8 @@ import androidx.compose.ui.unit.toSize
 import com.aprilarn.washflow.data.model.OrderItem
 import com.aprilarn.washflow.data.model.Orders
 import com.aprilarn.washflow.data.model.Services
-import com.aprilarn.washflow.ui.theme.AlertRed
 import com.aprilarn.washflow.ui.theme.Gray
-import com.aprilarn.washflow.ui.theme.AlertRed
 import com.aprilarn.washflow.ui.theme.GrayBlue
-import com.aprilarn.washflow.ui.theme.SoftRed
 import com.google.firebase.Timestamp
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -426,9 +423,10 @@ fun OrderCardContent(
         }
     }
 
-    // Lerp (Linear Interpolation) warna berdasarkan progress global
-    val breathingColor = lerp(borderColor, AlertRed, globalAnimationProgress)
-    val textBreathingColor = lerp(Gray, AlertRed, globalAnimationProgress)
+    // Lerp (Linear Interpolation) warna berdasarkan progress global (pastel dusty rose)
+    val deadlineUrgencyColor = Color(0xFFB06868)
+    val breathingColor = lerp(borderColor, deadlineUrgencyColor, globalAnimationProgress)
+    val textBreathingColor = lerp(Gray, deadlineUrgencyColor, globalAnimationProgress)
 
     // Buat brush (gradient) horizontal dengan 3 area
     val urgencyBrush = Brush.horizontalGradient(
@@ -485,7 +483,7 @@ fun OrderCardContent(
                         // Gunakan this.alpha untuk menghindari bentrok dengan parameter alpha di luar scope
                         this.alpha = 0.05f + (0.1f * globalAnimationProgress)
                     },
-                tint = AlertRed // Menggunakan warna merah cerah
+                tint = deadlineUrgencyColor
             )
         }
 
@@ -549,7 +547,7 @@ fun OrderCardContent(
             if (order.alreadyPaid) {
                 Surface(
                     shape = RoundedCornerShape(bottomStart = 6.dp, bottomEnd = 6.dp), // Radius hanya di bawah
-                    color = Color(0xFF4EB0FF) // Biru Pastel Sangat Muda
+                    color = Color(0xFF7FA3D1) // Periwinkle blue pastel medium
                 ) {
                     Box(
                         modifier = Modifier.padding(start = 6.dp, end = 6.dp, top = 10.dp, bottom = 6.dp), // Padding diperbesar agar label memanjang ke bawah
@@ -569,7 +567,7 @@ fun OrderCardContent(
             if (order.alreadyPickedUp) {
                 Surface(
                     shape = RoundedCornerShape(bottomStart = 6.dp, bottomEnd = 6.dp), // Radius hanya di bawah
-                    color = Color(0xFF22C55E) // Hijau Terang
+                    color = Color(0xFF72B08B) // Sage green pastel medium
                 ) {
                     Box(
                         modifier = Modifier.padding(start = 6.dp, end = 6.dp, top = 10.dp, bottom = 6.dp), // Padding diperbesar agar label memanjang ke bawah

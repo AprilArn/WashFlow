@@ -202,7 +202,7 @@ fun OrderReportPanel(
             Card(
                 modifier = Modifier.weight(1.3f),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF6FF))
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFEEF2FA))
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -211,10 +211,10 @@ fun OrderReportPanel(
                     Box(
                         modifier = Modifier
                             .size(40.dp)
-                            .background(Color(0xFFDBEAFE), RoundedCornerShape(10.dp)),
+                            .background(Color(0xFFE2E8F5), RoundedCornerShape(10.dp)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Rounded.Payments, contentDescription = null, tint = Color(0xFF1D4ED8))
+                        Icon(Icons.Rounded.Payments, contentDescription = null, tint = Color(0xFF4B628E))
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
@@ -223,7 +223,7 @@ fun OrderReportPanel(
                             text = CurrencyUtils.formatRupiahWithSymbol(totalRevenue),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1E3A8A)
+                            color = GrayBlue
                         )
                     }
                 }
@@ -233,7 +233,7 @@ fun OrderReportPanel(
             Card(
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF0FDF4))
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F7F3))
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -242,10 +242,10 @@ fun OrderReportPanel(
                     Box(
                         modifier = Modifier
                             .size(40.dp)
-                            .background(Color(0xFFDCFCE7), RoundedCornerShape(10.dp)),
+                            .background(Color(0xFFE3F0E8), RoundedCornerShape(10.dp)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = Color(0xFF15803D))
+                        Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = Color(0xFF4F7F63))
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
@@ -254,7 +254,7 @@ fun OrderReportPanel(
                             text = "$doneCount Selesai",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF166534)
+                            color = Color(0xFF446E55)
                         )
                     }
                 }
@@ -590,13 +590,13 @@ private fun OrderLedgerRow(
                         ) {
                             Surface(
                                 shape = RoundedCornerShape(6.dp),
-                                color = Color(0xFFE0F2FE)
+                                color = Color(0xFFEAF0F8)
                             ) {
                                 Text(
                                     text = serviceName,
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF0369A1),
+                                    color = Color(0xFF4B6D8E),
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                 )
                             }
@@ -667,7 +667,7 @@ private fun OrderLedgerRow(
                 it.toDateString() + "\n" + it.toTimeString() 
             } ?: "-",
             fontSize = 11.sp,
-            color = if (order.orderFinishDate != null) Color(0xFF059669) else Color.Gray,
+            color = if (order.orderFinishDate != null) Color(0xFF4F7F63) else Color.Gray,
             lineHeight = 16.sp,
             modifier = Modifier
                 .weight(1.1f)
@@ -697,9 +697,9 @@ private fun OrderLedgerRow(
 @Composable
 internal fun StatusBadge(status: String) {
     val (bgColor, textColor, label) = when (status.lowercase()) {
-        "done", "completed" -> Triple(Color(0xFFDCFCE7), Color(0xFF15803D), "Done")
-        "on process", "in progress" -> Triple(Color(0xFFDBEAFE), Color(0xFF1D4ED8), "On Process")
-        else -> Triple(Color(0xFFFEF3C7), Color(0xFFB45309), "On Queue")
+        "done", "completed" -> Triple(Color(0xFFE7F3EC), Color(0xFF4F7F63), "Done")
+        "on process", "in progress" -> Triple(Color(0xFFE8EEF8), Color(0xFF4B628E), "On Process")
+        else -> Triple(Color(0xFFF8F0E2), Color(0xFF9C7844), "On Queue")
     }
 
     Surface(
@@ -718,8 +718,8 @@ internal fun StatusBadge(status: String) {
 
 @Composable
 internal fun PaymentBadge(alreadyPaid: Boolean) {
-    val bgColor = if (alreadyPaid) Color(0xFFDCFCE7) else Color(0xFFFEE2E2)
-    val textColor = if (alreadyPaid) Color(0xFF15803D) else Color(0xFFB91C1C)
+    val bgColor = if (alreadyPaid) Color(0xFFE7F3EC) else Color(0xFFF7EAEA)
+    val textColor = if (alreadyPaid) Color(0xFF4F7F63) else Color(0xFFA65E5E)
     val label = if (alreadyPaid) "Lunas" else "Belum"
 
     Surface(

@@ -3,12 +3,8 @@ package com.aprilarn.washflow.ui.analytics
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
-import androidx.compose.foundation.gestures.snapping.SnapPosition
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -115,53 +112,48 @@ fun AnalyticsScreen(
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(32.dp)
+                            horizontalArrangement = Arrangement.spacedBy(20.dp)
                         ) {
-                            Column(modifier = Modifier.weight(1.2f)) {
-                                Text(text = "Ringkasan", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = GrayBlue)
-                                Spacer(modifier = Modifier.height(16.dp))
+                            Column(modifier = Modifier.weight(1.02f)) {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().height(26.dp),
+                                    contentAlignment = Alignment.CenterStart
+                                ) {
+                                    Text(
+                                        text = "Ringkasan",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = GrayBlue,
+                                        maxLines = 1
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(14.dp))
                                 MonthlySummaryCard(summary = summary)
                             }
 
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(text = "Deadline terdekat", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = GrayBlue)
-                                Spacer(modifier = Modifier.height(16.dp))
-                                if (summary.upcomingDeadlines.isEmpty()) {
-                                    DeadlineEmptyState(
-                                        modifier = Modifier
-                                            .background(ThemeBgGray.copy(alpha = 0.5f), RoundedCornerShape(24.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().height(26.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Deadline terdekat",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = GrayBlue,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f)
                                     )
-                                } else {
-                                    BoxWithConstraints {
-                                        val state = rememberLazyListState()
-                                        val flingBehavior = rememberSnapFlingBehavior(
-                                            lazyListState = state,
-                                            snapPosition = SnapPosition.Start
-                                        )
-                                        LazyRow(
-                                            state = state,
-                                            flingBehavior = flingBehavior,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .background(ThemeBgGray.copy(alpha = 0.5f), RoundedCornerShape(24.dp))
-                                                .clip(RoundedCornerShape(24.dp)),
-                                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                            contentPadding = PaddingValues(16.dp)
-                                        ) {
-                                            items(summary.upcomingDeadlines, key = { it.orderId }) { order ->
-                                                DeadlineOrderCard(order)
-                                            }
-                                            // Trailing spacer agar item terakhir tetap bisa snap ke kiri (16dp dari tepi)
-                                            item {
-                                                val itemWidth = 130.dp
-                                                val edgePadding = 16.dp
-                                                val spacing = 16.dp
-                                                val spacerWidth = (maxWidth - edgePadding - itemWidth - spacing - edgePadding).coerceAtLeast(0.dp)
-                                                Spacer(modifier = Modifier.width(spacerWidth))
-                                            }
-                                        }
-                                    }
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    DeadlineCountBadge(deadlines = summary.upcomingDeadlines)
                                 }
+                                Spacer(modifier = Modifier.height(14.dp))
+                                UpcomingDeadlinesCard(
+                                    deadlines = summary.upcomingDeadlines,
+                                    containerColor = ThemeBgGray
+                                )
                             }
                         }
 
@@ -172,7 +164,7 @@ fun AnalyticsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(text = "Order terbaru", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = GrayBlue)
+                            Text(text = "Order terbaru", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = GrayBlue)
                             GeneralDropdown(
                                 selectedText = recentFilter.label,
                                 items = RecentOrderFilter.entries.map { it.label },

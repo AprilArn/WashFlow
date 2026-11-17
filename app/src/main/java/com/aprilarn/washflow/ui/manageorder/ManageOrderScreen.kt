@@ -315,7 +315,10 @@ private fun LeftDetailPanel(
                 }
                 Button(
                     onClick = onDelete,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFF7EAEA),
+                        contentColor = Color(0xFFA65E5E)
+                    ),
                     shape = RoundedCornerShape(12.dp),
                     contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
                 ) {
@@ -511,8 +514,8 @@ private fun PaymentStatusRow(
     onToggle: (Boolean) -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
-    val backgroundColor = if (isPaid) Color(0xFFE3F2FD) else Color(0xFFFFF3E0)
-    val contentColor = if (isPaid) Color(0xFF1976D2) else Color(0xFFEF6C00)
+    val backgroundColor = if (isPaid) Color(0xFFE8EEF8) else Color(0xFFF8F0E2)
+    val contentColor = if (isPaid) Color(0xFF4B628E) else Color(0xFF9C7844)
     
     val dateText = if (isPaid && paidDate != null) {
         val format = SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault())
@@ -570,9 +573,9 @@ private fun PaymentStatusRow(
                 },
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = Color.White,
-                    checkedTrackColor = Color(0xFF42A5F5),
+                    checkedTrackColor = Color(0xFF7A91BA),
                     uncheckedThumbColor = Color.White,
-                    uncheckedTrackColor = Color(0xFFB0BEC5),
+                    uncheckedTrackColor = Color(0xFFC5CDD8),
                     uncheckedBorderColor = Color.Transparent
                 )
             )
@@ -590,12 +593,12 @@ private fun PickupStatusRow(
     val isDone = orderStatus.equals("Done", ignoreCase = true)
     val displayState = if (isDone) isPickedUp else false
     
-    val bgColor = if (!isDone) Color(0xFFF1F5F9) 
-                  else if (displayState) Color(0xFFDCFCE7) 
-                  else Color(0xFFFEF3C7) 
-    val contentColor = if (!isDone) Color(0xFF94A3B8)
-                       else if (displayState) Color(0xFF166534) 
-                       else Color(0xFF92400E)
+    val bgColor = if (!isDone) Color(0xFFF1F5F9)
+                  else if (displayState) Color(0xFFE7F3EC)
+                  else Color(0xFFF8F0E2)
+    val contentColor = if (!isDone) Color(0xFF8896AA)
+                       else if (displayState) Color(0xFF4F7F63)
+                       else Color(0xFF9C7844)
     val icon = if (displayState) Icons.Rounded.CheckCircle else Icons.Rounded.Storefront
     
     // Menambahkan tanggal jika sudah diambil
@@ -660,9 +663,9 @@ private fun PickupStatusRow(
                 enabled = isDone,
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = Color.White,
-                    checkedTrackColor = Color(0xFF22C55E), // Warna hijau terang untuk aktif
+                    checkedTrackColor = Color(0xFF7AA88C),
                     uncheckedThumbColor = Color.White,
-                    uncheckedTrackColor = Color(0xFFB0BEC5),
+                    uncheckedTrackColor = Color(0xFFC5CDD8),
                     uncheckedBorderColor = Color.Transparent,
                     disabledCheckedTrackColor = Color(0xFFE2E8F0),
                     disabledUncheckedTrackColor = Color(0xFFE2E8F0),

@@ -195,7 +195,7 @@ fun SpendingChart(
     val trendIsUp = currentIncome > baseIncome && baseIncome > 0
     val trendIsDown = currentIncome < baseIncome && baseIncome > 0
     val trendIsFlat = currentIncome == baseIncome && baseIncome > 0 // Menambahkan kondisi trend flat (setara)
-    val trendColor = if (trendIsUp) Color(0xFF059669) else if (trendIsDown) Color(0xFFDC2626) else Color.Gray
+    val trendColor = if (trendIsUp) Color(0xFF4F7F63) else if (trendIsDown) Color(0xFFB06868) else Color.Gray
     val trendIcon = if (trendIsUp) Icons.AutoMirrored.Rounded.TrendingUp else if (trendIsDown) Icons.AutoMirrored.Rounded.TrendingDown else Icons.AutoMirrored.Rounded.TrendingFlat
     
     // Kalkulasi persentase perbedaan dari nilai dasar (baseIncome)

@@ -3,6 +3,9 @@ package com.aprilarn.washflow.ui.analytics.component
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.TrendingDown
@@ -11,6 +14,7 @@ import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.material.icons.rounded.EventAvailable
 import androidx.compose.material.icons.rounded.HourglassTop
 import androidx.compose.material.icons.rounded.LocalLaundryService
+import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -24,7 +28,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -41,10 +44,13 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlin.math.abs
 
-private val OverdueColor = Color(0xFFDC2626)
-private val TodayColor = Color(0xFFD97706)
-private val GrowthUpColor = Color(0xFF6EE7B7)
-private val GrowthDownColor = Color(0xFFFCA5A5)
+private val OverdueColor = Color(0xFFB06868)      // Dusty rose pastel (tidak terlalu merah terang)
+private val OverdueBgColor = Color(0xFFF7EAEA)
+private val TodayColor = Color(0xFFA68049)        // Warm ochre pastel
+private val TodayBgColor = Color(0xFFF8F0E2)
+private val UpcomingBgColor = Color(0xFFEDF0F7)   // Soft slate-blue pastel
+private val GrowthUpColor = Color(0xFFA7DFC6)     // Soft mint pastel
+private val GrowthDownColor = Color(0xFFF2B8B5)   // Soft rose pastel
 
 // ------------------------------------------------------------------
 // Kartu ringkasan pendapatan bulan ini
@@ -81,8 +87,12 @@ fun MonthlySummaryCard(
                     Text(
                         text = "Pendapatan bulan ini",
                         color = Color.White.copy(alpha = 0.75f),
-                        fontSize = 12.sp
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
                     )
+                    Spacer(modifier = Modifier.width(6.dp))
                     GrowthChip(summary.revenueGrowthPercent)
                 }
 
@@ -160,7 +170,14 @@ private fun GrowthChip(growthPercent: Double?) {
         ) {
             Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(14.dp))
             Spacer(modifier = Modifier.width(3.dp))
-            Text(text = text, color = color, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Text(
+                text = text,
+                color = color,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                softWrap = false
+            )
         }
     }
 }
@@ -190,70 +207,158 @@ private fun StatDivider() {
 }
 
 // ------------------------------------------------------------------
-// Kartu deadline order
+// Panel & kartu deadline order
 // ------------------------------------------------------------------
 
 @Composable
-fun DeadlineOrderCard(order: Orders, modifier: Modifier = Modifier) {
+fun DeadlineCountBadge(
+    deadlines: List<Orders>,
+    modifier: Modifier = Modifier
+) {
+    if (deadlines.isEmpty()) return
+
+    val overdueCount = deadlines.count { order ->
+        val due = order.orderDueDate?.toDate() ?: return@count false
+        deadlineInfo(due).urgency == DeadlineUrgency.OVERDUE
+    }
+
+    val (textColor, label) = if (overdueCount > 0) {
+        OverdueColor to "$overdueCount terlambat"
+    } else {
+        Color.Gray to "${deadlines.size} aktif"
+    }
+
+    Text(
+        text = label,
+        fontSize = 12.sp,
+        fontWeight = FontWeight.SemiBold,
+        color = textColor,
+        maxLines = 1,
+        softWrap = false,
+        modifier = modifier
+    )
+}
+
+@Composable
+fun UpcomingDeadlinesCard(
+    deadlines: List<Orders>,
+    containerColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(180.dp),
+        shape = RoundedCornerShape(24.dp),
+        color = containerColor
+    ) {
+        if (deadlines.isEmpty()) {
+            DeadlineEmptyState()
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(10.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(deadlines, key = { it.orderId }) { order ->
+                    DeadlineOrderRow(order)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DeadlineOrderRow(order: Orders, modifier: Modifier = Modifier) {
     val due = order.orderDueDate?.toDate() ?: return
     val info = deadlineInfo(due)
-    val accentColor = when (info.urgency) {
-        DeadlineUrgency.OVERDUE -> OverdueColor
-        DeadlineUrgency.TODAY -> TodayColor
-        DeadlineUrgency.UPCOMING -> GrayBlue
+    val (accentColor, badgeBgColor) = when (info.urgency) {
+        DeadlineUrgency.OVERDUE -> OverdueColor to OverdueBgColor
+        DeadlineUrgency.TODAY -> TodayColor to TodayBgColor
+        DeadlineUrgency.UPCOMING -> GrayBlue to UpcomingBgColor
     }
+    val customerName = order.customerName?.takeIf { it.isNotBlank() } ?: "Tanpa nama"
     val isOnProcess = order.status.equals("On Process", ignoreCase = true)
-    val statusIcon: ImageVector = if (isOnProcess) Icons.Rounded.LocalLaundryService else Icons.Rounded.HourglassTop
+    val statusIcon = if (isOnProcess) Icons.Rounded.LocalLaundryService else Icons.Rounded.HourglassTop
 
-    Card(
-        modifier = modifier
-            .width(130.dp)
-            .height(160.dp),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .background(accentColor, RoundedCornerShape(12.dp)),
+                    .size(32.dp)
+                    .background(badgeBgColor, RoundedCornerShape(10.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(statusIcon, contentDescription = order.status, tint = Color.White, modifier = Modifier.size(20.dp))
-            }
-
-            Column {
-                Text(
-                    text = order.customerName?.takeIf { it.isNotBlank() } ?: "Tanpa nama",
-                    fontWeight = FontWeight.Bold,
-                    color = GrayBlue,
-                    fontSize = 14.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = info.label,
-                    fontSize = 10.sp,
-                    fontWeight = if (info.urgency == DeadlineUrgency.UPCOMING) FontWeight.Normal else FontWeight.Bold,
-                    color = if (info.urgency == DeadlineUrgency.UPCOMING) Color.Gray else accentColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                Icon(
+                    imageVector = statusIcon,
+                    contentDescription = order.status,
+                    tint = accentColor,
+                    modifier = Modifier.size(16.dp)
                 )
             }
 
-            Text(
-                text = CurrencyUtils.formatRupiahWithSymbol(order.totalPrice),
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 15.sp,
-                color = GrayBlue,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Spacer(modifier = Modifier.width(10.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = customerName,
+                        fontWeight = FontWeight.Bold,
+                        color = GrayBlue,
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = CurrencyUtils.formatRupiahWithSymbol(order.totalPrice),
+                        fontWeight = FontWeight.Bold,
+                        color = GrayBlue,
+                        fontSize = 11.sp,
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = badgeBgColor
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Schedule,
+                            contentDescription = null,
+                            tint = accentColor,
+                            modifier = Modifier.size(10.dp)
+                        )
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text(
+                            text = info.label,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = accentColor,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -262,22 +367,36 @@ fun DeadlineOrderCard(order: Orders, modifier: Modifier = Modifier) {
 fun DeadlineEmptyState(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
-            .fillMaxWidth()
-            .height(192.dp)
+            .fillMaxSize()
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(
-            Icons.Rounded.EventAvailable,
-            contentDescription = null,
-            tint = GrayBlue.copy(alpha = 0.6f),
-            modifier = Modifier.size(32.dp)
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .background(Color.White, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                Icons.Rounded.EventAvailable,
+                contentDescription = null,
+                tint = GrayBlue.copy(alpha = 0.7f),
+                modifier = Modifier.size(22.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(10.dp))
+        Text(
+            text = "Semua deadline aman",
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
+            color = GrayBlue,
+            textAlign = TextAlign.Center
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = "Tidak ada order aktif dengan deadline",
-            fontSize = 12.sp,
+            fontSize = 11.sp,
             color = Color.Gray,
             textAlign = TextAlign.Center
         )
