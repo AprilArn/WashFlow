@@ -354,9 +354,10 @@ fun AnalyticsScreen(
 
                             Spacer(modifier = Modifier.height(28.dp))
 
-                            val topServices = remember(uiState.orders, uiState.services) {
-                                buildTopServices(uiState.orders, uiState.services)
+                            val topServices = remember(uiState.orders, uiState.services, selectedChartPeriod) {
+                                buildTopServices(uiState.orders, uiState.services, period = selectedChartPeriod)
                             }
+                            val topServicesPeriodText = topServicesPeriodLabel(selectedChartPeriod)
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -364,13 +365,13 @@ fun AnalyticsScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(text = "Layanan terlaris", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = GrayBlue)
-                                Text(text = "Bulan ini", color = Color.Gray, fontSize = 13.sp)
+                                Text(text = topServicesPeriodText, color = Color.Gray, fontSize = 13.sp)
                             }
 
                             Spacer(modifier = Modifier.height(16.dp))
 
                             if (topServices.isEmpty()) {
-                                TopServicesEmptyState()
+                                TopServicesEmptyState(periodLabel = topServicesPeriodText)
                             } else {
                                 LazyColumn(
                                     modifier = Modifier.fillMaxWidth().weight(1f),

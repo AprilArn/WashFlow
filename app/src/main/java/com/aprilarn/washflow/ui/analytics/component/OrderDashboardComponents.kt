@@ -436,14 +436,17 @@ fun TopServiceItem(
 }
 
 @Composable
-fun TopServicesEmptyState(modifier: Modifier = Modifier) {
+fun TopServicesEmptyState(
+    periodLabel: String = "Bulan ini",
+    modifier: Modifier = Modifier
+) {
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         color = Color.White
     ) {
         Text(
-            text = "Belum ada transaksi layanan bulan ini",
+            text = "Belum ada transaksi layanan ${periodLabel.lowercase()}",
             fontSize = 12.sp,
             color = Color.Gray,
             textAlign = TextAlign.Center,

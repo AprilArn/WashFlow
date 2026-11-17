@@ -189,18 +189,33 @@ data class ServicePerformance(
     val share: Float
 )
 
+fun topServicesPeriodLabel(period: String): String = when (period) {
+    "Day" -> "Hari ini"
+    "Week" -> "Minggu ini"
+    else -> "Bulan ini"
+}
+
 /**
- * Mengelompokkan item order bulan berjalan berdasarkan layanan, diurutkan dari pendapatan terbesar.
+ * Mengelompokkan item order pada periode berjalan ([period]: "Day", "Week", atau "Month")
+ * berdasarkan layanan, diurutkan dari pendapatan terbesar.
  * Item dengan layanan yang sudah dihapus / tidak dikenal digabung ke "Lainnya".
  */
 fun buildTopServices(
     orders: List<Orders>,
     services: List<Services>,
+    period: String = "Month",
     now: Date = Date()
 ): List<ServicePerformance> {
-    val startOfMonth = Calendar.getInstance().apply {
+    val startOfPeriod = Calendar.getInstance().apply {
         time = now
-        set(Calendar.DAY_OF_MONTH, 1)
+        when (period) {
+            "Day" -> Unit
+            "Week" -> {
+                val daysToMonday = (get(Calendar.DAY_OF_WEEK) + 5) % 7
+                add(Calendar.DAY_OF_YEAR, -daysToMonday)
+            }
+            else -> set(Calendar.DAY_OF_MONTH, 1)
+        }
         startOfDay()
     }.timeInMillis
 
@@ -209,7 +224,7 @@ fun buildTopServices(
     val quantityById = mutableMapOf<String, Int>()
 
     orders
-        .filter { it.orderDate.toDate().time >= startOfMonth }
+        .filter { it.orderDate.toDate().time >= startOfPeriod }
         .forEach { order ->
             order.orderItems.forEach { item ->
                 val key = item.serviceId?.takeIf { it in serviceNames } ?: OTHER_SERVICE_KEY
