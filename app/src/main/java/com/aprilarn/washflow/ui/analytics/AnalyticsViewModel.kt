@@ -23,13 +23,6 @@ class AnalyticsViewModel(
     private var currentMonthsBack = 3
 
     init {
-        _uiState.update {
-            it.copy(
-                recentOrders = mockRecentOrders,
-                upcomingDeadlines = mockUpcomingDeadlines,
-                cards = mockCards
-            )
-        }
         listenForData()
     }
 

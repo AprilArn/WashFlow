@@ -695,7 +695,7 @@ private fun OrderLedgerRow(
 }
 
 @Composable
-private fun StatusBadge(status: String) {
+internal fun StatusBadge(status: String) {
     val (bgColor, textColor, label) = when (status.lowercase()) {
         "done", "completed" -> Triple(Color(0xFFDCFCE7), Color(0xFF15803D), "Done")
         "on process", "in progress" -> Triple(Color(0xFFDBEAFE), Color(0xFF1D4ED8), "On Process")
@@ -717,7 +717,7 @@ private fun StatusBadge(status: String) {
 }
 
 @Composable
-private fun PaymentBadge(alreadyPaid: Boolean) {
+internal fun PaymentBadge(alreadyPaid: Boolean) {
     val bgColor = if (alreadyPaid) Color(0xFFDCFCE7) else Color(0xFFFEE2E2)
     val textColor = if (alreadyPaid) Color(0xFF15803D) else Color(0xFFB91C1C)
     val label = if (alreadyPaid) "Lunas" else "Belum"
