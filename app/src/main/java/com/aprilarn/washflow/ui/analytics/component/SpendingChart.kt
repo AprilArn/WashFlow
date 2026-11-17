@@ -31,6 +31,8 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import com.aprilarn.washflow.ui.theme.GrayBlue
+import com.aprilarn.washflow.ui.theme.PastelGreen
+import com.aprilarn.washflow.ui.theme.PastelRose
 import com.aprilarn.washflow.utils.CurrencyUtils
 import kotlin.math.roundToInt
 
@@ -195,7 +197,7 @@ fun SpendingChart(
     val trendIsUp = currentIncome > baseIncome && baseIncome > 0
     val trendIsDown = currentIncome < baseIncome && baseIncome > 0
     val trendIsFlat = currentIncome == baseIncome && baseIncome > 0 // Menambahkan kondisi trend flat (setara)
-    val trendColor = if (trendIsUp) Color(0xFF4F7F63) else if (trendIsDown) Color(0xFFB06868) else Color.Gray
+    val trendColor = if (trendIsUp) PastelGreen else if (trendIsDown) PastelRose else Color.Gray
     val trendIcon = if (trendIsUp) Icons.AutoMirrored.Rounded.TrendingUp else if (trendIsDown) Icons.AutoMirrored.Rounded.TrendingDown else Icons.AutoMirrored.Rounded.TrendingFlat
     
     // Kalkulasi persentase perbedaan dari nilai dasar (baseIncome)

@@ -15,8 +15,6 @@ import androidx.compose.material.icons.rounded.EventAvailable
 import androidx.compose.material.icons.rounded.HourglassTop
 import androidx.compose.material.icons.rounded.LocalLaundryService
 import androidx.compose.material.icons.rounded.Schedule
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Surface
@@ -26,7 +24,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -38,19 +35,21 @@ import com.aprilarn.washflow.ui.analytics.DeadlineUrgency
 import com.aprilarn.washflow.ui.analytics.OrderDashboardSummary
 import com.aprilarn.washflow.ui.analytics.ServicePerformance
 import com.aprilarn.washflow.ui.analytics.deadlineInfo
+import com.aprilarn.washflow.ui.theme.Gray
 import com.aprilarn.washflow.ui.theme.GrayBlue
+import com.aprilarn.washflow.ui.theme.PastelAmber
+import com.aprilarn.washflow.ui.theme.PastelAmberBg
+import com.aprilarn.washflow.ui.theme.PastelBlue
+import com.aprilarn.washflow.ui.theme.PastelGreen
+import com.aprilarn.washflow.ui.theme.PastelGreenBg
+import com.aprilarn.washflow.ui.theme.PastelNeutralBg
+import com.aprilarn.washflow.ui.theme.PastelRose
+import com.aprilarn.washflow.ui.theme.PastelRoseBg
+import com.aprilarn.washflow.ui.theme.PastelSlateBg
 import com.aprilarn.washflow.utils.CurrencyUtils
 import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlin.math.abs
-
-private val OverdueColor = Color(0xFFB06868)      // Dusty rose pastel (tidak terlalu merah terang)
-private val OverdueBgColor = Color(0xFFF7EAEA)
-private val TodayColor = Color(0xFFA68049)        // Warm ochre pastel
-private val TodayBgColor = Color(0xFFF8F0E2)
-private val UpcomingBgColor = Color(0xFFEDF0F7)   // Soft slate-blue pastel
-private val GrowthUpColor = Color(0xFFA7DFC6)     // Soft mint pastel
-private val GrowthDownColor = Color(0xFFF2B8B5)   // Soft rose pastel
 
 // ------------------------------------------------------------------
 // Kartu ringkasan pendapatan bulan ini
@@ -59,87 +58,118 @@ private val GrowthDownColor = Color(0xFFF2B8B5)   // Soft rose pastel
 @Composable
 fun MonthlySummaryCard(
     summary: OrderDashboardSummary,
+    containerColor: Color = Color(0xFFF3F4F6),
     modifier: Modifier = Modifier
 ) {
-    Card(
+    Surface(
         modifier = modifier
             .fillMaxWidth()
             .height(180.dp),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+        color = containerColor
     ) {
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(Color(0xFF3B4570), GrayBlue, Color(0xFF7F8BB8))
-                    )
-                )
-                .padding(horizontal = 20.dp, vertical = 18.dp)
+                .padding(10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Pendapatan bulan ini",
-                        color = Color.White.copy(alpha = 0.75f),
-                        fontSize = 12.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    GrowthChip(summary.revenueGrowthPercent)
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = CurrencyUtils.formatRupiahWithSymbol(summary.monthRevenue),
-                    color = Color.White,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                Text(
-                    text = "${summary.monthOrderCount} order masuk bulan ini",
-                    color = Color.White.copy(alpha = 0.6f),
-                    fontSize = 10.sp
-                )
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                Row(
+            // Kartu Utama: Pendapatan Bulan Ini
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1.15f),
+                shape = RoundedCornerShape(16.dp),
+                color = Color.White
+            ) {
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color.White.copy(alpha = 0.12f), RoundedCornerShape(14.dp))
-                        .padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .fillMaxSize()
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    SummaryStat(
-                        label = "Diproses",
-                        value = summary.activeOrderCount.toString(),
-                        modifier = Modifier.weight(1f)
-                    )
-                    StatDivider()
-                    SummaryStat(
-                        label = "Siap diambil",
-                        value = summary.readyForPickupCount.toString(),
-                        modifier = Modifier.weight(1f)
-                    )
-                    StatDivider()
-                    SummaryStat(
-                        label = "Belum lunas",
-                        value = summary.unpaidCount.toString(),
-                        modifier = Modifier.weight(1f)
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Pendapatan bulan ini",
+                            color = Gray,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        GrowthChip(summary.revenueGrowthPercent)
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Bottom
+                    ) {
+                        Text(
+                            text = CurrencyUtils.formatRupiahWithSymbol(summary.monthRevenue),
+                            color = GrayBlue,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = PastelSlateBg
+                        ) {
+                            Text(
+                                text = "${summary.monthOrderCount} order",
+                                color = PastelBlue,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                softWrap = false,
+                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                            )
+                        }
+                    }
                 }
+            }
+
+            // 3 Kartu Status Mini Sejajar
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(0.85f),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                SummaryStatCard(
+                    label = "Diproses",
+                    value = summary.activeOrderCount.toString(),
+                    accentColor = PastelBlue,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                )
+                SummaryStatCard(
+                    label = "Siap diambil",
+                    value = summary.readyForPickupCount.toString(),
+                    accentColor = PastelGreen,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                )
+                SummaryStatCard(
+                    label = "Belum lunas",
+                    value = summary.unpaidCount.toString(),
+                    accentColor = PastelAmber,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                )
             }
         }
     }
@@ -149,10 +179,10 @@ fun MonthlySummaryCard(
 private fun GrowthChip(growthPercent: Double?) {
     if (growthPercent == null) return
 
-    val (icon, color) = when {
-        growthPercent > 0 -> Icons.AutoMirrored.Rounded.TrendingUp to GrowthUpColor
-        growthPercent < 0 -> Icons.AutoMirrored.Rounded.TrendingDown to GrowthDownColor
-        else -> Icons.AutoMirrored.Rounded.TrendingFlat to Color.White.copy(alpha = 0.8f)
+    val (icon, contentColor, bgColor) = when {
+        growthPercent > 0 -> Triple(Icons.AutoMirrored.Rounded.TrendingUp, PastelGreen, PastelGreenBg)
+        growthPercent < 0 -> Triple(Icons.AutoMirrored.Rounded.TrendingDown, PastelRose, PastelRoseBg)
+        else -> Triple(Icons.AutoMirrored.Rounded.TrendingFlat, Gray, PastelNeutralBg)
     }
     val text = if (growthPercent % 1 == 0.0) {
         "${abs(growthPercent).toInt()}%"
@@ -161,18 +191,18 @@ private fun GrowthChip(growthPercent: Double?) {
     }
 
     Surface(
-        shape = RoundedCornerShape(50),
-        color = Color.White.copy(alpha = 0.15f)
+        shape = RoundedCornerShape(6.dp),
+        color = bgColor
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(14.dp))
+            Icon(icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(12.dp))
             Spacer(modifier = Modifier.width(3.dp))
             Text(
                 text = text,
-                color = color,
+                color = contentColor,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
@@ -183,27 +213,52 @@ private fun GrowthChip(growthPercent: Double?) {
 }
 
 @Composable
-private fun SummaryStat(label: String, value: String, modifier: Modifier = Modifier) {
-    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = value, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-        Text(
-            text = label,
-            color = Color.White.copy(alpha = 0.7f),
-            fontSize = 9.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
+private fun SummaryStatCard(
+    label: String,
+    value: String,
+    accentColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(14.dp),
+        color = Color.White
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 8.dp, vertical = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .background(accentColor, CircleShape)
+                )
+                Text(
+                    text = value,
+                    color = accentColor,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    maxLines = 1
+                )
+            }
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = label,
+                color = Gray,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
-}
-
-@Composable
-private fun StatDivider() {
-    Box(
-        modifier = Modifier
-            .width(1.dp)
-            .height(24.dp)
-            .background(Color.White.copy(alpha = 0.25f))
-    )
 }
 
 // ------------------------------------------------------------------
@@ -223,7 +278,7 @@ fun DeadlineCountBadge(
     }
 
     val (textColor, label) = if (overdueCount > 0) {
-        OverdueColor to "$overdueCount terlambat"
+        PastelRose to "$overdueCount terlambat"
     } else {
         Color.Gray to "${deadlines.size} aktif"
     }
@@ -273,9 +328,9 @@ fun DeadlineOrderRow(order: Orders, modifier: Modifier = Modifier) {
     val due = order.orderDueDate?.toDate() ?: return
     val info = deadlineInfo(due)
     val (accentColor, badgeBgColor) = when (info.urgency) {
-        DeadlineUrgency.OVERDUE -> OverdueColor to OverdueBgColor
-        DeadlineUrgency.TODAY -> TodayColor to TodayBgColor
-        DeadlineUrgency.UPCOMING -> GrayBlue to UpcomingBgColor
+        DeadlineUrgency.OVERDUE -> PastelRose to PastelRoseBg
+        DeadlineUrgency.TODAY -> PastelAmber to PastelAmberBg
+        DeadlineUrgency.UPCOMING -> GrayBlue to PastelSlateBg
     }
     val customerName = order.customerName?.takeIf { it.isNotBlank() } ?: "Tanpa nama"
     val isOnProcess = order.status.equals("On Process", ignoreCase = true)

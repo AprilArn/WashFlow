@@ -44,8 +44,25 @@ import com.aprilarn.washflow.data.model.Services
 import com.aprilarn.washflow.ui.components.DeleteConfirmationDialog
 import com.aprilarn.washflow.ui.manageorder.DragDropContainer
 import com.aprilarn.washflow.ui.manageorder.OrderStatusColumn
+import com.aprilarn.washflow.ui.theme.Gray
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.MainFontBlack
+import com.aprilarn.washflow.ui.theme.PastelAmber
+import com.aprilarn.washflow.ui.theme.PastelAmberBg
+import com.aprilarn.washflow.ui.theme.PastelBlue
+import com.aprilarn.washflow.ui.theme.PastelBlueBg
+import com.aprilarn.washflow.ui.theme.PastelBlueIconBg
+import com.aprilarn.washflow.ui.theme.PastelBlueSoftBg
+import com.aprilarn.washflow.ui.theme.PastelBlueTrack
+import com.aprilarn.washflow.ui.theme.PastelGreen
+import com.aprilarn.washflow.ui.theme.PastelGreenBg
+import com.aprilarn.washflow.ui.theme.PastelGreenMedium
+import com.aprilarn.washflow.ui.theme.PastelNeutralBg
+import com.aprilarn.washflow.ui.theme.PastelNeutralText
+import com.aprilarn.washflow.ui.theme.PastelRoseBg
+import com.aprilarn.washflow.ui.theme.PastelRoseText
+import com.aprilarn.washflow.ui.theme.PastelSlateBg
+import com.aprilarn.washflow.ui.theme.PastelSwitchOffTrack
 import com.aprilarn.washflow.utils.CurrencyUtils
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -184,7 +201,6 @@ fun OrderDetailDialog(
                         modifier = Modifier.weight(6f),
                         order = order,
                         customer = customer,
-                        services = groupedItemsByService.keys.toList(),
                         onTogglePayment = onTogglePayment,
                         onTogglePickup = onTogglePickup,
                         onCancel = onDismiss,
@@ -211,14 +227,12 @@ private fun LeftDetailPanel(
     modifier: Modifier = Modifier,
     order: Orders,
     customer: Customers?,
-    services: List<Services>,
     onTogglePayment: (String, Boolean) -> Unit,
     onTogglePickup: (String, Boolean) -> Unit,
     onCancel: () -> Unit,
     onDelete: () -> Unit,
     onEditOrder: () -> Unit
 ) {
-    // Panel kiri menggunakan Card sebagai dasar (efek glassmorphism)
     Card(
         modifier = modifier.fillMaxHeight(),
         shape = RoundedCornerShape(24.dp),
@@ -226,27 +240,36 @@ private fun LeftDetailPanel(
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
+            // Header: Judul + Status Badge + Tombol Edit
             Row(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 20.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Order Detail",
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = GrayBlue
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Detail Order",
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = GrayBlue
+                        )
                     )
-                )
-                // Tombol Edit (Kecil)
+                    OrderStatusChip(status = order.status ?: "On Queue")
+                }
+
                 Surface(
                     onClick = onEditOrder,
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFF1F5F9),
-                    modifier = Modifier.clip(RoundedCornerShape(12.dp))
+                    shape = RoundedCornerShape(10.dp),
+                    color = PastelNeutralBg,
+                    modifier = Modifier.clip(RoundedCornerShape(10.dp))
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
@@ -254,7 +277,7 @@ private fun LeftDetailPanel(
                             imageVector = Icons.Rounded.Edit,
                             contentDescription = "Edit Order",
                             tint = GrayBlue,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(15.dp)
                         )
                         Text(
                             text = "Edit",
@@ -266,22 +289,29 @@ private fun LeftDetailPanel(
                 }
             }
 
-            // Spacer akan mendorong tombol ke bawah
-            
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                item { InfoRow(Icons.Rounded.Person, "Nama Pelanggan", order.customerName ?: "N/A") }
-                item { InfoRow(Icons.Rounded.Phone, "No Telp/WhatsApp", customer?.contact ?: "N/A") }
-                item { InfoRow(Icons.Rounded.CalendarToday, "Tanggal Order", SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault()).format(order.orderDate.toDate())) }
-                item { InfoRow(Icons.Rounded.Timer, "Batas Waktu", order.orderDueDate?.let { SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault()).format(it.toDate()) } ?: "N/A") }
-                item { InfoRow(Icons.Rounded.TaskAlt, "Waktu Selesai", order.orderFinishDate?.let { SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault()).format(it.toDate()) } ?: "-") }
-                item { InfoRow(Icons.Rounded.ConfirmationNumber, "ID Order", order.orderId) }
-                item { InfoRow(Icons.Rounded.Info, "Status", order.status ?: "N/A") }
-                item { InfoRow(Icons.Rounded.Category, "Layanan", services.joinToString(" + ") { it.serviceName }) }
-                
-                // --- TOGGLE PEMBAYARAN ---
+                // 1. Hero Profil Pelanggan + ID Order
+                item {
+                    CustomerProfileCard(
+                        customerName = order.customerName ?: "Pelanggan",
+                        contact = customer?.contact,
+                        orderId = order.orderId
+                    )
+                }
+
+                // 2. Grid Waktu Ringkas (3 Kolom Sejajar)
+                item {
+                    OrderTimelineRow(
+                        orderDate = order.orderDate,
+                        dueDate = order.orderDueDate,
+                        finishDate = order.orderFinishDate
+                    )
+                }
+
+                // 3. Toggle Pembayaran
                 item {
                     PaymentStatusRow(
                         isPaid = order.alreadyPaid,
@@ -289,8 +319,8 @@ private fun LeftDetailPanel(
                         onToggle = { isPaid -> onTogglePayment(order.orderId, isPaid) }
                     )
                 }
-                
-                // --- TOGGLE PENGAMBILAN ---
+
+                // 4. Toggle Pengambilan
                 item {
                     PickupStatusRow(
                         isPickedUp = order.alreadyPickedUp,
@@ -301,29 +331,240 @@ private fun LeftDetailPanel(
                 }
             }
 
+            // Footer Aksi
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End)
+                    .padding(top = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 TextButton(
                     onClick = onCancel,
                     modifier = Modifier.padding(horizontal = 8.dp)
                 ) {
-                    Text("Cancel", color = GrayBlue)
+                    Text(
+                        text = "Tutup",
+                        color = GrayBlue,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
                 Button(
                     onClick = onDelete,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFF7EAEA),
-                        contentColor = Color(0xFFA65E5E)
+                        containerColor = PastelRoseBg,
+                        contentColor = PastelRoseText
                     ),
                     shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
+                    contentPadding = PaddingValues(horizontal = 18.dp, vertical = 10.dp)
                 ) {
-                    Text("Delete Order", fontWeight = FontWeight.Bold)
+                    Icon(
+                        imageVector = Icons.Rounded.DeleteOutline,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Hapus Order", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun OrderStatusChip(status: String) {
+    val (bgColor, textColor, label) = when {
+        status.equals("Done", ignoreCase = true) -> Triple(PastelGreenBg, PastelGreen, "Selesai")
+        status.equals("On Process", ignoreCase = true) -> Triple(PastelBlueBg, PastelBlue, "Diproses")
+        else -> Triple(PastelAmberBg, PastelAmber, "Dalam Antrian")
+    }
+
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = bgColor
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.SemiBold,
+                color = textColor
+            )
+        )
+    }
+}
+
+@Composable
+private fun CustomerProfileCard(
+    customerName: String,
+    contact: String?,
+    orderId: String
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = PastelNeutralBg
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Surface(
+                modifier = Modifier.size(44.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = PastelBlueIconBg
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Rounded.Person,
+                        contentDescription = null,
+                        tint = PastelBlue,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(3.dp)
+            ) {
+                Text(
+                    text = customerName,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = MainFontBlack
+                    )
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Phone,
+                        contentDescription = null,
+                        tint = Gray,
+                        modifier = Modifier.size(13.dp)
+                    )
+                    Text(
+                        text = contact?.takeIf { it.isNotBlank() } ?: "Tidak ada kontak",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = Gray
+                        )
+                    )
+                }
+            }
+
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = Color.White
+            ) {
+                Text(
+                    text = "#$orderId",
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        color = GrayBlue
+                    ),
+                    maxLines = 1
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun OrderTimelineRow(
+    orderDate: com.google.firebase.Timestamp,
+    dueDate: com.google.firebase.Timestamp?,
+    finishDate: com.google.firebase.Timestamp?
+) {
+    val dateFormat = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
+    val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
+
+    val orderDateObj = orderDate.toDate()
+    val dueDateObj = dueDate?.toDate()
+    val finishDateObj = finishDate?.toDate()
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        TimelineCard(
+            modifier = Modifier.weight(1f),
+            icon = Icons.Rounded.CalendarToday,
+            label = "Tanggal Masuk",
+            dateText = dateFormat.format(orderDateObj),
+            timeText = timeFormat.format(orderDateObj)
+        )
+        TimelineCard(
+            modifier = Modifier.weight(1f),
+            icon = Icons.Rounded.Timer,
+            label = "Batas Waktu",
+            dateText = dueDateObj?.let { dateFormat.format(it) } ?: "-",
+            timeText = dueDateObj?.let { timeFormat.format(it) } ?: "Belum diatur"
+        )
+        TimelineCard(
+            modifier = Modifier.weight(1f),
+            icon = Icons.Rounded.TaskAlt,
+            label = "Waktu Selesai",
+            dateText = finishDateObj?.let { dateFormat.format(it) } ?: "Belum selesai",
+            timeText = finishDateObj?.let { timeFormat.format(it) } ?: "-"
+        )
+    }
+}
+
+@Composable
+private fun TimelineCard(
+    modifier: Modifier = Modifier,
+    icon: ImageVector,
+    label: String,
+    dateText: String,
+    timeText: String
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(14.dp),
+        color = PastelNeutralBg
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = GrayBlue,
+                    modifier = Modifier.size(14.dp)
+                )
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        color = Gray
+                    ),
+                    maxLines = 1
+                )
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                Text(
+                    text = dateText,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        color = MainFontBlack
+                    ),
+                    maxLines = 1
+                )
+                Text(
+                    text = timeText,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        color = PastelNeutralText
+                    ),
+                    maxLines = 1
+                )
             }
         }
     }
@@ -335,92 +576,124 @@ private fun RightDetailPanel(
     groupedItems: Map<Services, List<OrderItem>>,
     totalPrice: Double?
 ) {
-    // Panel kanan menggunakan Card sebagai dasar
+    val totalItemCount = remember(groupedItems) {
+        groupedItems.values.flatten().sumOf { it.itemQuantity ?: 0 }
+    }
+
     Card(
         modifier = modifier.fillMaxHeight(),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
-        Column (
-            modifier = Modifier.fillMaxWidth()
+        Column(
+            modifier = Modifier.fillMaxSize()
         ) {
-            Text(
-                text = "Service Items",
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = GrayBlue
-                ),
-                modifier = Modifier.padding(start = 24.dp, top = 24.dp, bottom = 16.dp)
-            )
+            // Header Rincian Layanan
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Rincian Layanan",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = GrayBlue,
+                        fontSize = 18.sp
+                    )
+                )
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = PastelNeutralBg
+                ) {
+                    Text(
+                        text = "${groupedItems.size} layanan • $totalItemCount item",
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            color = GrayBlue
+                        )
+                    )
+                }
+            }
 
             LazyColumn(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(horizontal = 24.dp)
+                    .padding(horizontal = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 groupedItems.forEach { (service, items) ->
                     item {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 20.dp)
-                                .background(
-                                    Color.LightGray.copy(alpha = 0.2f),
-                                    shape = RoundedCornerShape(16.dp)
-                                )
-                                .padding(16.dp)
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            color = PastelNeutralBg
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                            Column(
+                                modifier = Modifier.padding(16.dp)
                             ) {
-                                Text(
-                                    text = service.serviceName,
-                                    style = MaterialTheme.typography.titleSmall.copy(
-                                        color = GrayBlue,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                )
-                                Text(
-                                    text = "${items.sumOf { it.itemQuantity ?: 0 }} item",
-                                    style = MaterialTheme.typography.labelMedium.copy(
-                                        color = Color.Gray
-                                    )
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(12.dp))
-                            items.forEach { orderItem ->
                                 Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 4.dp),
+                                    modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = orderItem.itemName ?: "Unknown Item",
-                                            style = MaterialTheme.typography.bodyMedium.copy(
-                                                fontWeight = FontWeight.Medium,
-                                                color = MainFontBlack
-                                            )
-                                        )
-                                        Text(
-                                            text = "${CurrencyUtils.formatRupiah(orderItem.itemPrice)} x ${orderItem.itemQuantity}",
-                                            style = MaterialTheme.typography.labelSmall.copy(
-                                                color = Color.Gray
-                                            )
-                                        )
-                                    }
                                     Text(
-                                        text = CurrencyUtils.formatRupiahWithSymbol(orderItem.subtotal),
-                                        style = MaterialTheme.typography.bodyMedium.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            color = GrayBlue
+                                        text = service.serviceName,
+                                        style = MaterialTheme.typography.titleSmall.copy(
+                                            color = GrayBlue,
+                                            fontWeight = FontWeight.Bold
                                         )
                                     )
+                                    Text(
+                                        text = "${items.sumOf { it.itemQuantity ?: 0 }} item",
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            color = Gray,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    )
+                                }
+
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(vertical = 10.dp),
+                                    color = Color.White,
+                                    thickness = 1.dp
+                                )
+
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    items.forEach { orderItem ->
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = orderItem.itemName ?: "Unknown Item",
+                                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                                        fontWeight = FontWeight.Medium,
+                                                        color = MainFontBlack
+                                                    )
+                                                )
+                                                Text(
+                                                    text = "${CurrencyUtils.formatRupiah(orderItem.itemPrice)} × ${orderItem.itemQuantity}",
+                                                    style = MaterialTheme.typography.labelSmall.copy(
+                                                        color = Gray
+                                                    )
+                                                )
+                                            }
+                                            Text(
+                                                text = CurrencyUtils.formatRupiahWithSymbol(orderItem.subtotal),
+                                                style = MaterialTheme.typography.bodyMedium.copy(
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = GrayBlue
+                                                )
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -428,30 +701,40 @@ private fun RightDetailPanel(
                 }
             }
 
+            // Footer Total Harga Minimalis
             Surface(
                 modifier = Modifier
-                    .fillMaxWidth(),
-                color = GrayBlue,
-                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                color = PastelSlateBg,
+                shape = RoundedCornerShape(16.dp)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 28.dp),
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "Total Amount",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            color = Color.White,
-                            fontWeight = FontWeight.Medium
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(
+                            text = "Total Pembayaran",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = GrayBlue,
+                                fontWeight = FontWeight.SemiBold
+                            )
                         )
-                    )
+                        Text(
+                            text = "$totalItemCount total item",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = Gray
+                            )
+                        )
+                    }
                     Text(
                         text = CurrencyUtils.formatRupiahWithSymbol(totalPrice),
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            color = Color.White,
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            color = GrayBlue,
                             fontWeight = FontWeight.ExtraBold
                         )
                     )
@@ -462,67 +745,19 @@ private fun RightDetailPanel(
 }
 
 @Composable
-private fun InfoRow(icon: ImageVector, label: String, value: String) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = Color.LightGray.copy(alpha = 0.1f)
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Surface(
-                modifier = Modifier.size(40.dp),
-                shape = RoundedCornerShape(12.dp),
-                color = GrayBlue.copy(alpha = 0.1f)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = GrayBlue,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-
-            Column {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.Gray
-                )
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        color = MainFontBlack
-                    )
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun PaymentStatusRow(
-    isPaid: Boolean, 
+    isPaid: Boolean,
     paidDate: com.google.firebase.Timestamp?,
     onToggle: (Boolean) -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
-    val backgroundColor = if (isPaid) Color(0xFFE8EEF8) else Color(0xFFF8F0E2)
-    val contentColor = if (isPaid) Color(0xFF4B628E) else Color(0xFF9C7844)
-    
+    val backgroundColor = if (isPaid) PastelBlueBg else PastelAmberBg
+    val contentColor = if (isPaid) PastelBlue else PastelAmber
+
     val dateText = if (isPaid && paidDate != null) {
-        val format = SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault())
+        val format = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault())
         format.format(paidDate.toDate())
-    } else ""
-    
-    val statusText = if (isPaid) "Lunas\n$dateText" else "Belum Dibayar"
+    } else null
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -530,15 +765,14 @@ private fun PaymentStatusRow(
         color = backgroundColor
     ) {
         Row(
-            modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Surface(
                 modifier = Modifier.size(40.dp),
                 shape = RoundedCornerShape(12.dp),
-                color = contentColor.copy(alpha = 0.1f)
+                color = contentColor.copy(alpha = 0.12f)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
@@ -550,19 +784,35 @@ private fun PaymentStatusRow(
                 }
             }
 
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
                 Text(
                     text = "Status Pembayaran",
                     style = MaterialTheme.typography.labelSmall,
-                    color = contentColor.copy(alpha = 0.7f)
+                    color = contentColor.copy(alpha = 0.75f)
                 )
-                Text(
-                    text = statusText,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = contentColor
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = if (isPaid) "Lunas" else "Belum Dibayar",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = contentColor
+                        )
                     )
-                )
+                    if (dateText != null) {
+                        Text(
+                            text = "• $dateText",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = contentColor.copy(alpha = 0.8f)
+                            )
+                        )
+                    }
+                }
             }
 
             Switch(
@@ -573,9 +823,9 @@ private fun PaymentStatusRow(
                 },
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = Color.White,
-                    checkedTrackColor = Color(0xFF7A91BA),
+                    checkedTrackColor = PastelBlueTrack,
                     uncheckedThumbColor = Color.White,
-                    uncheckedTrackColor = Color(0xFFC5CDD8),
+                    uncheckedTrackColor = PastelSwitchOffTrack,
                     uncheckedBorderColor = Color.Transparent
                 )
             )
@@ -592,25 +842,24 @@ private fun PickupStatusRow(
 ) {
     val isDone = orderStatus.equals("Done", ignoreCase = true)
     val displayState = if (isDone) isPickedUp else false
-    
-    val bgColor = if (!isDone) Color(0xFFF1F5F9)
-                  else if (displayState) Color(0xFFE7F3EC)
-                  else Color(0xFFF8F0E2)
-    val contentColor = if (!isDone) Color(0xFF8896AA)
-                       else if (displayState) Color(0xFF4F7F63)
-                       else Color(0xFF9C7844)
+
+    val bgColor = if (!isDone) PastelNeutralBg
+    else if (displayState) PastelGreenBg
+    else PastelAmberBg
+    val contentColor = if (!isDone) PastelNeutralText
+    else if (displayState) PastelGreen
+    else PastelAmber
     val icon = if (displayState) Icons.Rounded.CheckCircle else Icons.Rounded.Storefront
-    
-    // Menambahkan tanggal jika sudah diambil
+
     val dateText = if (displayState && pickupDate != null) {
-        val format = SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault())
+        val format = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault())
         format.format(pickupDate.toDate())
-    } else ""
-    
-    val statusText = if (!isDone) "Belum bisa diambil"
-                     else if (displayState) "Sudah Diambil\n$dateText" 
-                     else "Belum Diambil"
-    
+    } else null
+
+    val statusTitle = if (!isDone) "Belum bisa diambil"
+    else if (displayState) "Sudah Diambil"
+    else "Belum Diambil"
+
     val haptic = LocalHapticFeedback.current
 
     Surface(
@@ -621,12 +870,12 @@ private fun PickupStatusRow(
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Box(
                 modifier = Modifier
                     .size(40.dp)
-                    .background(contentColor.copy(alpha = 0.1f), RoundedCornerShape(12.dp)),
+                    .background(contentColor.copy(alpha = 0.12f), RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -637,19 +886,35 @@ private fun PickupStatusRow(
                 )
             }
 
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
                 Text(
                     text = "Status Pengambilan",
                     style = MaterialTheme.typography.labelSmall,
-                    color = contentColor.copy(alpha = 0.7f)
+                    color = contentColor.copy(alpha = 0.75f)
                 )
-                Text(
-                    text = statusText,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = contentColor
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = statusTitle,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = contentColor
+                        )
                     )
-                )
+                    if (dateText != null) {
+                        Text(
+                            text = "• $dateText",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = contentColor.copy(alpha = 0.8f)
+                            )
+                        )
+                    }
+                }
             }
 
             Switch(
@@ -663,9 +928,9 @@ private fun PickupStatusRow(
                 enabled = isDone,
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = Color.White,
-                    checkedTrackColor = Color(0xFF7AA88C),
+                    checkedTrackColor = PastelGreenMedium,
                     uncheckedThumbColor = Color.White,
-                    uncheckedTrackColor = Color(0xFFC5CDD8),
+                    uncheckedTrackColor = PastelSwitchOffTrack,
                     uncheckedBorderColor = Color.Transparent,
                     disabledCheckedTrackColor = Color(0xFFE2E8F0),
                     disabledUncheckedTrackColor = Color(0xFFE2E8F0),
@@ -747,16 +1012,10 @@ fun LeftDetailPanelPreview() {
         name = "John Doe",
         contact = "08123456789"
     )
-    val sampleServices = listOf(
-        Services(serviceId = "serv1", serviceName = "Laundry"),
-        Services(serviceId = "serv2", serviceName = "Dry Cleaning")
-    )
-
     MaterialTheme {
         LeftDetailPanel(
             order = sampleOrder,
             customer = sampleCustomer,
-            services = sampleServices,
             onTogglePayment = { _, _ -> },
             onTogglePickup = { _, _ -> },
             onCancel = {},

@@ -40,6 +40,20 @@ import com.aprilarn.washflow.data.model.Orders
 import com.aprilarn.washflow.data.model.Services
 import com.aprilarn.washflow.ui.analytics.ReportSortColumn
 import com.aprilarn.washflow.ui.theme.GrayBlue
+import com.aprilarn.washflow.ui.theme.PastelAmber
+import com.aprilarn.washflow.ui.theme.PastelAmberBg
+import com.aprilarn.washflow.ui.theme.PastelBlue
+import com.aprilarn.washflow.ui.theme.PastelBlueBg
+import com.aprilarn.washflow.ui.theme.PastelBlueIconBg
+import com.aprilarn.washflow.ui.theme.PastelBlueSoftBg
+import com.aprilarn.washflow.ui.theme.PastelGreen
+import com.aprilarn.washflow.ui.theme.PastelGreenBg
+import com.aprilarn.washflow.ui.theme.PastelGreenDark
+import com.aprilarn.washflow.ui.theme.PastelGreenIconBg
+import com.aprilarn.washflow.ui.theme.PastelGreenSoftBg
+import com.aprilarn.washflow.ui.theme.PastelRoseBg
+import com.aprilarn.washflow.ui.theme.PastelRoseText
+import com.aprilarn.washflow.ui.theme.PastelSlateBg
 import com.aprilarn.washflow.utils.CurrencyUtils
 import com.google.firebase.Timestamp
 import kotlinx.coroutines.delay
@@ -202,7 +216,7 @@ fun OrderReportPanel(
             Card(
                 modifier = Modifier.weight(1.3f),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFEEF2FA))
+                colors = CardDefaults.cardColors(containerColor = PastelBlueSoftBg)
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -211,10 +225,10 @@ fun OrderReportPanel(
                     Box(
                         modifier = Modifier
                             .size(40.dp)
-                            .background(Color(0xFFE2E8F5), RoundedCornerShape(10.dp)),
+                            .background(PastelBlueIconBg, RoundedCornerShape(10.dp)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Rounded.Payments, contentDescription = null, tint = Color(0xFF4B628E))
+                        Icon(Icons.Rounded.Payments, contentDescription = null, tint = PastelBlue)
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
@@ -233,7 +247,7 @@ fun OrderReportPanel(
             Card(
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F7F3))
+                colors = CardDefaults.cardColors(containerColor = PastelGreenSoftBg)
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -242,10 +256,10 @@ fun OrderReportPanel(
                     Box(
                         modifier = Modifier
                             .size(40.dp)
-                            .background(Color(0xFFE3F0E8), RoundedCornerShape(10.dp)),
+                            .background(PastelGreenIconBg, RoundedCornerShape(10.dp)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = Color(0xFF4F7F63))
+                        Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = PastelGreen)
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
@@ -254,7 +268,7 @@ fun OrderReportPanel(
                             text = "$doneCount Selesai",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF446E55)
+                            color = PastelGreenDark
                         )
                     }
                 }
@@ -590,13 +604,13 @@ private fun OrderLedgerRow(
                         ) {
                             Surface(
                                 shape = RoundedCornerShape(6.dp),
-                                color = Color(0xFFEAF0F8)
+                                color = PastelSlateBg
                             ) {
                                 Text(
                                     text = serviceName,
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF4B6D8E),
+                                    color = PastelBlue,
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                 )
                             }
@@ -667,7 +681,7 @@ private fun OrderLedgerRow(
                 it.toDateString() + "\n" + it.toTimeString() 
             } ?: "-",
             fontSize = 11.sp,
-            color = if (order.orderFinishDate != null) Color(0xFF4F7F63) else Color.Gray,
+            color = if (order.orderFinishDate != null) PastelGreen else Color.Gray,
             lineHeight = 16.sp,
             modifier = Modifier
                 .weight(1.1f)
@@ -697,9 +711,9 @@ private fun OrderLedgerRow(
 @Composable
 internal fun StatusBadge(status: String) {
     val (bgColor, textColor, label) = when (status.lowercase()) {
-        "done", "completed" -> Triple(Color(0xFFE7F3EC), Color(0xFF4F7F63), "Done")
-        "on process", "in progress" -> Triple(Color(0xFFE8EEF8), Color(0xFF4B628E), "On Process")
-        else -> Triple(Color(0xFFF8F0E2), Color(0xFF9C7844), "On Queue")
+        "done", "completed" -> Triple(PastelGreenBg, PastelGreen, "Done")
+        "on process", "in progress" -> Triple(PastelBlueBg, PastelBlue, "On Process")
+        else -> Triple(PastelAmberBg, PastelAmber, "On Queue")
     }
 
     Surface(
@@ -718,8 +732,8 @@ internal fun StatusBadge(status: String) {
 
 @Composable
 internal fun PaymentBadge(alreadyPaid: Boolean) {
-    val bgColor = if (alreadyPaid) Color(0xFFE7F3EC) else Color(0xFFF7EAEA)
-    val textColor = if (alreadyPaid) Color(0xFF4F7F63) else Color(0xFFA65E5E)
+    val bgColor = if (alreadyPaid) PastelGreenBg else PastelRoseBg
+    val textColor = if (alreadyPaid) PastelGreen else PastelRoseText
     val label = if (alreadyPaid) "Lunas" else "Belum"
 
     Surface(

@@ -128,7 +128,10 @@ fun AnalyticsScreen(
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(14.dp))
-                                MonthlySummaryCard(summary = summary)
+                                MonthlySummaryCard(
+                                    summary = summary,
+                                    containerColor = ThemeBgGray
+                                )
                             }
 
                             Column(modifier = Modifier.weight(1f)) {

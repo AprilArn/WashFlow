@@ -61,6 +61,9 @@ import com.aprilarn.washflow.data.model.Orders
 import com.aprilarn.washflow.data.model.Services
 import com.aprilarn.washflow.ui.theme.Gray
 import com.aprilarn.washflow.ui.theme.GrayBlue
+import com.aprilarn.washflow.ui.theme.PastelBlueMedium
+import com.aprilarn.washflow.ui.theme.PastelGreenMedium
+import com.aprilarn.washflow.ui.theme.PastelRose
 import com.google.firebase.Timestamp
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -424,9 +427,8 @@ fun OrderCardContent(
     }
 
     // Lerp (Linear Interpolation) warna berdasarkan progress global (pastel dusty rose)
-    val deadlineUrgencyColor = Color(0xFFB06868)
-    val breathingColor = lerp(borderColor, deadlineUrgencyColor, globalAnimationProgress)
-    val textBreathingColor = lerp(Gray, deadlineUrgencyColor, globalAnimationProgress)
+    val breathingColor = lerp(borderColor, PastelRose, globalAnimationProgress)
+    val textBreathingColor = lerp(Gray, PastelRose, globalAnimationProgress)
 
     // Buat brush (gradient) horizontal dengan 3 area
     val urgencyBrush = Brush.horizontalGradient(
@@ -483,7 +485,7 @@ fun OrderCardContent(
                         // Gunakan this.alpha untuk menghindari bentrok dengan parameter alpha di luar scope
                         this.alpha = 0.05f + (0.1f * globalAnimationProgress)
                     },
-                tint = deadlineUrgencyColor
+                tint = PastelRose
             )
         }
 
@@ -547,7 +549,7 @@ fun OrderCardContent(
             if (order.alreadyPaid) {
                 Surface(
                     shape = RoundedCornerShape(bottomStart = 6.dp, bottomEnd = 6.dp), // Radius hanya di bawah
-                    color = Color(0xFF7FA3D1) // Periwinkle blue pastel medium
+                    color = PastelBlueMedium
                 ) {
                     Box(
                         modifier = Modifier.padding(start = 6.dp, end = 6.dp, top = 10.dp, bottom = 6.dp), // Padding diperbesar agar label memanjang ke bawah
@@ -567,7 +569,7 @@ fun OrderCardContent(
             if (order.alreadyPickedUp) {
                 Surface(
                     shape = RoundedCornerShape(bottomStart = 6.dp, bottomEnd = 6.dp), // Radius hanya di bawah
-                    color = Color(0xFF72B08B) // Sage green pastel medium
+                    color = PastelGreenMedium
                 ) {
                     Box(
                         modifier = Modifier.padding(start = 6.dp, end = 6.dp, top = 10.dp, bottom = 6.dp), // Padding diperbesar agar label memanjang ke bawah
