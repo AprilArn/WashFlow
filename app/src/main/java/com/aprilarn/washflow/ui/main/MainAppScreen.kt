@@ -414,6 +414,8 @@ fun MainAppScreen(
                         onStatusFilterChanged = { viewModel.onStatusFilterChanged(it) },
                         onSortColumnClicked = { viewModel.onSortColumnClicked(it) },
                         onLoadMoreMonths = { viewModel.loadMoreMonths() },
+                        onTogglePayment = { orderId, isPaid -> viewModel.toggleOrderPaymentStatus(orderId, isPaid) },
+                        onTogglePickup = { orderId, isPickedUp -> viewModel.toggleOrderPickupStatus(orderId, isPickedUp) },
                         onToastShown = { viewModel.onToastShown() }
                     )
                 }

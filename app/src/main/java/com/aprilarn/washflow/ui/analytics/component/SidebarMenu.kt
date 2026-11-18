@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Cloud
+import androidx.compose.material.icons.rounded.PendingActions
 import androidx.compose.material.icons.rounded.ShoppingCart
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -22,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -41,7 +43,8 @@ fun SidebarMenu(
     ) {
         val menuItems = listOf(
             "Order" to Icons.Rounded.ShoppingCart,
-            "Report" to Icons.Rounded.Cloud
+            "Report" to Icons.Rounded.Cloud,
+            "Tertunda" to Icons.Rounded.PendingActions
         )
 
         menuItems.forEach { (title, icon) ->
@@ -60,7 +63,7 @@ fun SidebarMenu(
             )
             // Animasi efek tab "masuk/tucked in" saat tidak dipilih (ukurannya mengecil dari arah luar)
             val animatedStartPadding by animateDpAsState(
-                targetValue = if (isSelected) 0.dp else 24.dp,
+                targetValue = if (isSelected) 0.dp else 16.dp,
                 animationSpec = tween(durationMillis = 300),
                 label = "startPadding"
             )
@@ -140,22 +143,24 @@ fun SidebarMenu(
                     .clip(shape)
                     .background(animatedBgColor)
                     .clickable { onTabClick(title) }
-                    .padding(horizontal = 16.dp, vertical = 18.dp), // Padding internal disesuaikan agar konten muat
+                    .padding(horizontal = 14.dp, vertical = 18.dp), // Padding internal disesuaikan agar konten muat
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     tint = animatedContentColor,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(22.dp)
                 )
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(10.dp))
                 Text(
                     text = title,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                     color = animatedContentColor,
-                    fontSize = 15.sp,
-                    letterSpacing = 0.5.sp
+                    fontSize = 14.sp,
+                    letterSpacing = 0.3.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }

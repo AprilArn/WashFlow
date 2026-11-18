@@ -1,13 +1,14 @@
 package com.aprilarn.washflow.ui.analytics.component
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.AnimationState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateTo
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,7 +30,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,6 +46,7 @@ import androidx.compose.ui.unit.sp
 import com.aprilarn.washflow.data.model.Orders
 import com.aprilarn.washflow.data.model.Services
 import com.aprilarn.washflow.ui.analytics.ReportSortColumn
+import com.aprilarn.washflow.ui.theme.Gray
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.PastelAmber
 import com.aprilarn.washflow.ui.theme.PastelAmberBg
@@ -48,9 +56,7 @@ import com.aprilarn.washflow.ui.theme.PastelBlueIconBg
 import com.aprilarn.washflow.ui.theme.PastelBlueSoftBg
 import com.aprilarn.washflow.ui.theme.PastelGreen
 import com.aprilarn.washflow.ui.theme.PastelGreenBg
-import com.aprilarn.washflow.ui.theme.PastelGreenDark
-import com.aprilarn.washflow.ui.theme.PastelGreenIconBg
-import com.aprilarn.washflow.ui.theme.PastelGreenSoftBg
+import com.aprilarn.washflow.ui.theme.PastelNeutralBg
 import com.aprilarn.washflow.ui.theme.PastelRoseBg
 import com.aprilarn.washflow.ui.theme.PastelRoseText
 import com.aprilarn.washflow.ui.theme.PastelSlateBg
@@ -59,7 +65,10 @@ import com.google.firebase.Timestamp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
 import java.util.Locale
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -128,16 +137,76 @@ fun OrderReportPanel(
         else monthFiltered.sortedWith(comparator.reversed())
     }
 
-    // Summary ringkasan
-    val totalRevenue = sortedOrders.sumOf { it.totalPrice ?: 0.0 }
-    val doneCount = sortedOrders.count { (it.status ?: "").lowercase() == "done" }
+    // Ringkasan perbandingan bulanan (Opsi 2: Semua Bulan -> bulan lalu vs 2 bulan lalu;
+    // bulan terpilih -> bulan tersebut vs 1 bulan sebelumnya), dihitung dari seluruh order bulan terkait.
+    val reportSummary = remember(orders, selectedMonth) {
+        buildReportMonthlyComparison(orders = orders, selectedMonth = selectedMonth)
+    }
 
     val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+
+    var summaryHeightPx by remember { mutableIntStateOf(0) }
+    var summaryOffsetPx by remember { mutableFloatStateOf(0f) }
+
+    val collapsibleScrollConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (summaryHeightPx <= 0) return Offset.Zero
+                val minOffset = -summaryHeightPx.toFloat()
+
+                // Scroll ke bawah -> sembunyikan summary bertahap
+                if (available.y < 0f && listState.canScrollForward && summaryOffsetPx > minOffset) {
+                    val prev = summaryOffsetPx
+                    summaryOffsetPx = (summaryOffsetPx + available.y).coerceIn(minOffset, 0f)
+                    return Offset(0f, summaryOffsetPx - prev)
+                }
+
+                // Scroll ke atas -> tampilkan summary kembali bertahap
+                if (available.y > 0f && summaryOffsetPx < 0f) {
+                    val prev = summaryOffsetPx
+                    summaryOffsetPx = (summaryOffsetPx + available.y).coerceIn(minOffset, 0f)
+                    return Offset(0f, summaryOffsetPx - prev)
+                }
+
+                return Offset.Zero
+            }
+        }
+    }
+
+    // Snap ke terbuka/tertutup penuh setelah scroll berhenti, atau buka kembali jika tabel tidak bisa discroll
+    LaunchedEffect(
+        listState.isScrollInProgress,
+        listState.canScrollForward,
+        listState.canScrollBackward,
+        sortedOrders.size
+    ) {
+        if (!listState.isScrollInProgress) {
+            val minOffset = -summaryHeightPx.toFloat()
+            val canScroll = listState.canScrollForward || listState.canScrollBackward
+            val targetOffset = when {
+                !canScroll -> 0f
+                summaryHeightPx > 0 && summaryOffsetPx < 0f && summaryOffsetPx > minOffset -> {
+                    if (summaryOffsetPx < minOffset / 2f) minOffset else 0f
+                }
+                else -> null
+            }
+            if (targetOffset != null && targetOffset != summaryOffsetPx) {
+                AnimationState(initialValue = summaryOffsetPx).animateTo(
+                    targetValue = targetOffset,
+                    animationSpec = tween(durationMillis = 180)
+                ) {
+                    summaryOffsetPx = value
+                }
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp)
+            .nestedScroll(collapsibleScrollConnection)
     ) {
         // --- Header Title & Controls ---
         Row(
@@ -173,103 +242,160 @@ fun OrderReportPanel(
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // --- Metric Summary Cards ---
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+        // --- Collapsible Metric Summary Cards (Pembukuan & Cakupan Data) ---
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clipToBounds()
+                .layout { measurable, constraints ->
+                    val placeable = measurable.measure(constraints)
+                    if (placeable.height > 0) {
+                        summaryHeightPx = placeable.height
+                    }
+                    val offsetInt = summaryOffsetPx.roundToInt()
+                    val visibleHeight = (placeable.height + offsetInt).coerceIn(0, placeable.height)
+                    val alpha = if (placeable.height > 0) {
+                        (visibleHeight.toFloat() / placeable.height.toFloat()).coerceIn(0f, 1f)
+                    } else 1f
+                    layout(placeable.width, visibleHeight) {
+                        placeable.placeRelativeWithLayer(0, offsetInt) {
+                            this.alpha = alpha
+                        }
+                    }
+                }
         ) {
-            // Summary Card 1: Total Transaksi
-            Card(
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                // Summary Card 1: Jumlah Order (Bulan Lalu / Bulan Terpilih vs Bulan Sebelumnya)
+                Card(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = PastelNeutralBg)
                 ) {
-                    Box(
+                    Row(
                         modifier = Modifier
-                            .size(40.dp)
-                            .background(Color(0xFFE2E8F0), RoundedCornerShape(10.dp)),
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Rounded.Receipt, contentDescription = null, tint = GrayBlue)
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(text = "Total Transaksi", fontSize = 11.sp, color = Color.Gray)
-                        Text(
-                            text = "${sortedOrders.size} Order",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = GrayBlue
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(PastelSlateBg, RoundedCornerShape(10.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Rounded.Receipt, contentDescription = null, tint = GrayBlue)
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Order ${reportSummary.targetShortLabel}",
+                                    fontSize = 11.sp,
+                                    color = Gray,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                GrowthChip(
+                                    growthPercent = reportSummary.orderTrendPercent,
+                                    showSign = true
+                                )
+                            }
+                            Text(
+                                text = "${reportSummary.targetOrderCount} Order",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = GrayBlue,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = if (reportSummary.compareOrderCount > 0) {
+                                    "vs ${reportSummary.compareShortLabel} (${reportSummary.compareOrderCount} order)"
+                                } else {
+                                    "Belum ada pembanding (${reportSummary.compareShortLabel})"
+                                },
+                                fontSize = 10.sp,
+                                color = Gray,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                 }
-            }
 
-            // Summary Card 2: Total Pendapatan
-            Card(
-                modifier = Modifier.weight(1.3f),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = PastelBlueSoftBg)
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                // Summary Card 2: Total Pendapatan (Semua Order Bulan Lalu / Bulan Terpilih vs Bulan Sebelumnya)
+                Card(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = PastelBlueSoftBg)
                 ) {
-                    Box(
+                    Row(
                         modifier = Modifier
-                            .size(40.dp)
-                            .background(PastelBlueIconBg, RoundedCornerShape(10.dp)),
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Rounded.Payments, contentDescription = null, tint = PastelBlue)
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(text = "Total Pendapatan", fontSize = 11.sp, color = Color.Gray)
-                        Text(
-                            text = CurrencyUtils.formatRupiahWithSymbol(totalRevenue),
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = GrayBlue
-                        )
-                    }
-                }
-            }
-
-            // Summary Card 3: Order Selesai
-            Card(
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = PastelGreenSoftBg)
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(PastelGreenIconBg, RoundedCornerShape(10.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = PastelGreen)
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(text = "Order Selesai", fontSize = 11.sp, color = Color.Gray)
-                        Text(
-                            text = "$doneCount Selesai",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = PastelGreenDark
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(PastelBlueIconBg, RoundedCornerShape(10.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Rounded.Payments, contentDescription = null, tint = PastelBlue)
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Pendapatan ${reportSummary.targetShortLabel}",
+                                    fontSize = 11.sp,
+                                    color = Gray,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                GrowthChip(
+                                    growthPercent = reportSummary.revenueTrendPercent,
+                                    showSign = true
+                                )
+                            }
+                            Text(
+                                text = CurrencyUtils.formatRupiahWithSymbol(reportSummary.targetRevenue),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = GrayBlue,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = if (reportSummary.compareRevenue > 0.0) {
+                                    "vs ${reportSummary.compareShortLabel} (${CurrencyUtils.formatRupiahWithSymbol(reportSummary.compareRevenue)})"
+                                } else {
+                                    "Belum ada pembanding (${reportSummary.compareShortLabel})"
+                                },
+                                fontSize = 10.sp,
+                                color = PastelBlue,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                 }
             }
@@ -487,6 +613,18 @@ fun OrderReportPanel(
             // FAB for Scroll to Top
             ScrollToTopFab(
                 listState = listState,
+                onScrollToTop = {
+                    coroutineScope.launch {
+                        if (summaryOffsetPx < 0f) {
+                            AnimationState(initialValue = summaryOffsetPx).animateTo(
+                                targetValue = 0f,
+                                animationSpec = tween(durationMillis = 220)
+                            ) {
+                                summaryOffsetPx = value
+                            }
+                        }
+                    }
+                },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(bottom = 24.dp, end = 24.dp)
@@ -762,14 +900,100 @@ private fun Timestamp.toTimeString(): String {
 }
 
 private fun Timestamp.toMonthYearString(): String {
-    val sdf = java.text.SimpleDateFormat("MMMM yyyy", java.util.Locale("id", "ID"))
+    val sdf = SimpleDateFormat("MMMM yyyy", Locale.forLanguageTag("id-ID"))
     return sdf.format(this.toDate())
+}
+
+private fun Timestamp.toYearMonthKey(): Pair<Int, Int> {
+    val cal = Calendar.getInstance().apply { time = toDate() }
+    return cal.get(Calendar.YEAR) to cal.get(Calendar.MONTH)
+}
+
+private data class ReportMonthlyComparison(
+    val targetShortLabel: String,
+    val compareShortLabel: String,
+    val targetOrderCount: Int,
+    val compareOrderCount: Int,
+    val targetRevenue: Double,
+    val compareRevenue: Double
+) {
+    val orderTrendPercent: Double?
+        get() = if (compareOrderCount > 0) {
+            ((targetOrderCount - compareOrderCount).toDouble() / compareOrderCount) * 100.0
+        } else null
+
+    val revenueTrendPercent: Double?
+        get() = if (compareRevenue > 0.0) {
+            ((targetRevenue - compareRevenue) / compareRevenue) * 100.0
+        } else null
+}
+
+private fun buildReportMonthlyComparison(
+    orders: List<Orders>,
+    selectedMonth: String,
+    now: Date = Date()
+): ReportMonthlyComparison {
+    val idLocale = Locale.forLanguageTag("id-ID")
+    val fullMonthFormat = SimpleDateFormat("MMMM yyyy", idLocale)
+    val shortMonthFormat = SimpleDateFormat("MMM yyyy", idLocale)
+
+    val targetCal = Calendar.getInstance().apply {
+        time = now
+        set(Calendar.DAY_OF_MONTH, 1)
+    }
+    if (selectedMonth == "Semua Bulan") {
+        targetCal.add(Calendar.MONTH, -1)
+    } else {
+        val parsed = runCatching { fullMonthFormat.parse(selectedMonth) }.getOrNull()
+        if (parsed != null) {
+            targetCal.time = parsed
+        } else {
+            targetCal.add(Calendar.MONTH, -1)
+        }
+    }
+
+    val compareCal = (targetCal.clone() as Calendar).apply {
+        add(Calendar.MONTH, -1)
+    }
+
+    val targetKey = targetCal.get(Calendar.YEAR) to targetCal.get(Calendar.MONTH)
+    val compareKey = compareCal.get(Calendar.YEAR) to compareCal.get(Calendar.MONTH)
+
+    var targetCount = 0
+    var compareCount = 0
+    var targetRev = 0.0
+    var compareRev = 0.0
+
+    orders.forEach { order ->
+        val key = order.orderDate.toYearMonthKey()
+        val price = order.totalPrice ?: 0.0
+        when (key) {
+            targetKey -> {
+                targetCount++
+                targetRev += price
+            }
+            compareKey -> {
+                compareCount++
+                compareRev += price
+            }
+        }
+    }
+
+    return ReportMonthlyComparison(
+        targetShortLabel = shortMonthFormat.format(targetCal.time),
+        compareShortLabel = shortMonthFormat.format(compareCal.time),
+        targetOrderCount = targetCount,
+        compareOrderCount = compareCount,
+        targetRevenue = targetRev,
+        compareRevenue = compareRev
+    )
 }
 
 @Composable
 fun ScrollToTopFab(
     listState: LazyListState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onScrollToTop: () -> Unit = {}
 ) {
     val coroutineScope = rememberCoroutineScope()
     
@@ -830,6 +1054,7 @@ fun ScrollToTopFab(
             )
             FloatingActionButton(
                 onClick = { 
+                    onScrollToTop()
                     coroutineScope.launch { 
                         listState.animateScrollToItem(0) 
                     } 
@@ -854,6 +1079,10 @@ fun OrderReportPanelPreview() {
         Services("s2", "Dry Clean"),
         Services("s3", "Setrika Saja")
     )
+
+    val nowCal = Calendar.getInstance()
+    val oneMonthAgo = (nowCal.clone() as Calendar).apply { add(Calendar.MONTH, -1) }.time
+    val twoMonthsAgo = (nowCal.clone() as Calendar).apply { add(Calendar.MONTH, -2) }.time
 
     val mockOrders = listOf(
         Orders(
@@ -887,7 +1116,7 @@ fun OrderReportPanelPreview() {
             orderId = "2",
             customerId = "c2",
             customerName = "Siti Aminah",
-            orderDate = Timestamp.now(),
+            orderDate = Timestamp(oneMonthAgo),
             status = "Done",
             alreadyPaid = true,
             totalPrice = 120000.0,
@@ -899,6 +1128,44 @@ fun OrderReportPanelPreview() {
                     itemQuantity = 1,
                     itemPrice = 120000.0,
                     subtotal = 120000.0
+                )
+            )
+        ),
+        Orders(
+            orderId = "3",
+            customerId = "c3",
+            customerName = "Andi Pratama",
+            orderDate = Timestamp(oneMonthAgo),
+            status = "Done",
+            alreadyPaid = true,
+            totalPrice = 80000.0,
+            orderItems = listOf(
+                com.aprilarn.washflow.data.model.OrderItem(
+                    itemId = "i4",
+                    itemName = "Bed Cover",
+                    serviceId = "s1",
+                    itemQuantity = 2,
+                    itemPrice = 40000.0,
+                    subtotal = 80000.0
+                )
+            )
+        ),
+        Orders(
+            orderId = "4",
+            customerId = "c4",
+            customerName = "Dewi Lestari",
+            orderDate = Timestamp(twoMonthsAgo),
+            status = "Done",
+            alreadyPaid = true,
+            totalPrice = 160000.0,
+            orderItems = listOf(
+                com.aprilarn.washflow.data.model.OrderItem(
+                    itemId = "i5",
+                    itemName = "Gaun Pesta",
+                    serviceId = "s2",
+                    itemQuantity = 2,
+                    itemPrice = 80000.0,
+                    subtotal = 160000.0
                 )
             )
         )

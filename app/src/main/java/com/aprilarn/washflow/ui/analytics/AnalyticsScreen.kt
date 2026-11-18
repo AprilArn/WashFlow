@@ -46,6 +46,8 @@ fun AnalyticsScreen(
     onStatusFilterChanged: (String) -> Unit = {},
     onSortColumnClicked: (ReportSortColumn) -> Unit = {},
     onLoadMoreMonths: () -> Unit = {},
+    onTogglePayment: (String, Boolean) -> Unit = { _, _ -> },
+    onTogglePickup: (String, Boolean) -> Unit = { _, _ -> },
     onToastShown: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -77,23 +79,34 @@ fun AnalyticsScreen(
             shape = RoundedCornerShape(24.dp),
             color = Color.White
         ) {
-            if (selectedTab == "Report") {
-                OrderReportPanel(
-                    orders = uiState.orders,
-                    services = uiState.services,
-                    isLoading = uiState.isLoading,
-                    selectedMonth = uiState.selectedMonth,
-                    searchQuery = uiState.searchQuery,
-                    selectedStatusFilter = uiState.selectedStatusFilter,
-                    sortColumn = uiState.sortColumn,
-                    isAscending = uiState.isAscending,
-                    onMonthSelected = onMonthSelected,
-                    onSearchQueryChanged = onSearchQueryChanged,
-                    onStatusFilterChanged = onStatusFilterChanged,
-                    onSortColumnClicked = onSortColumnClicked,
-                    onLoadMoreMonths = onLoadMoreMonths
-                )
-            } else {
+            when (selectedTab) {
+                "Report" -> {
+                    OrderReportPanel(
+                        orders = uiState.orders,
+                        services = uiState.services,
+                        isLoading = uiState.isLoading,
+                        selectedMonth = uiState.selectedMonth,
+                        searchQuery = uiState.searchQuery,
+                        selectedStatusFilter = uiState.selectedStatusFilter,
+                        sortColumn = uiState.sortColumn,
+                        isAscending = uiState.isAscending,
+                        onMonthSelected = onMonthSelected,
+                        onSearchQueryChanged = onSearchQueryChanged,
+                        onStatusFilterChanged = onStatusFilterChanged,
+                        onSortColumnClicked = onSortColumnClicked,
+                        onLoadMoreMonths = onLoadMoreMonths
+                    )
+                }
+                "Tertunda" -> {
+                    PendingOrdersPanel(
+                        activeOrders = uiState.activeOrders,
+                        customers = uiState.customers,
+                        isLoading = uiState.isLoading,
+                        onTogglePayment = onTogglePayment,
+                        onTogglePickup = onTogglePickup
+                    )
+                }
+                else -> {
                 Row(
                     modifier = Modifier
                         .fillMaxSize()
@@ -383,6 +396,7 @@ fun AnalyticsScreen(
             }
         }
     }
+}
 }
 
 @Preview(showBackground = true, widthDp = 960, heightDp = 600)

@@ -176,7 +176,10 @@ fun MonthlySummaryCard(
 }
 
 @Composable
-private fun GrowthChip(growthPercent: Double?) {
+internal fun GrowthChip(
+    growthPercent: Double?,
+    showSign: Boolean = false
+) {
     if (growthPercent == null) return
 
     val (icon, contentColor, bgColor) = when {
@@ -184,10 +187,17 @@ private fun GrowthChip(growthPercent: Double?) {
         growthPercent < 0 -> Triple(Icons.AutoMirrored.Rounded.TrendingDown, PastelRose, PastelRoseBg)
         else -> Triple(Icons.AutoMirrored.Rounded.TrendingFlat, Gray, PastelNeutralBg)
     }
-    val text = if (growthPercent % 1 == 0.0) {
+    val formattedNumber = if (growthPercent % 1 == 0.0) {
         "${abs(growthPercent).toInt()}%"
     } else {
         String.format(Locale.US, "%.1f%%", abs(growthPercent))
+    }
+    val text = if (!showSign) {
+        formattedNumber
+    } else when {
+        growthPercent > 0 -> "+$formattedNumber"
+        growthPercent < 0 -> "-$formattedNumber"
+        else -> "0%"
     }
 
     Surface(
