@@ -3,17 +3,17 @@ package com.aprilarn.washflow.ui.analytics.component
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.automirrored.rounded.TrendingDown
 import androidx.compose.material.icons.automirrored.rounded.TrendingFlat
 import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -24,6 +24,8 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aprilarn.washflow.data.model.Orders
@@ -34,6 +36,7 @@ import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.PastelGreen
 import com.aprilarn.washflow.ui.theme.PastelRose
 import com.aprilarn.washflow.utils.CurrencyUtils
+import com.google.firebase.Timestamp
 import kotlin.math.roundToInt
 
 enum class AnalyticsChartType {
@@ -51,6 +54,7 @@ fun SpendingChart(
 ) {
     // 1. Generate lists based on selectedPeriod
     val daysList = mutableListOf<String>()
+    val subLabelsList = mutableListOf<String>()
     val dateList = mutableListOf<String>() // Digunakan untuk mencocokkan format dengan Order
     val weekRanges = mutableListOf<Pair<Long, Long>>() // Khusus untuk Week: batas awal dan akhir milidetik
     
@@ -62,6 +66,7 @@ fun SpendingChart(
             val tempCal = Calendar.getInstance()
             tempCal.add(Calendar.DAY_OF_YEAR, -i)
             daysList.add(daysFormat.format(tempCal.time))
+            subLabelsList.add("")
             dateList.add(dateFormat.format(tempCal.time))
         }
     } else if (selectedPeriod == "Week") {
@@ -97,7 +102,8 @@ fun SpendingChart(
             
             val dateFormat = SimpleDateFormat("dd MMM", Locale.US)
             // Labelnya: "12 Oct", menunjukkan hari Senin di awal minggu tersebut
-            daysList.add(dateFormat.format(startCal.time)) 
+            daysList.add(dateFormat.format(startCal.time))
+            subLabelsList.add("")
             weekRanges.add(Pair(startCal.timeInMillis, endCal.timeInMillis))
         }
     } else { // "Month"
@@ -105,9 +111,13 @@ fun SpendingChart(
         val dateFormat = SimpleDateFormat("yyyy-MM", Locale.getDefault())
         // 7 Bulan terakhir
         for (i in 6 downTo 0) {
-            val tempCal = Calendar.getInstance()
-            tempCal.add(Calendar.MONTH, -i)
+            val tempCal = Calendar.getInstance().apply {
+                set(Calendar.DAY_OF_MONTH, 1)
+                add(Calendar.MONTH, -i)
+            }
+            val lastDayOfMonth = tempCal.getActualMaximum(Calendar.DAY_OF_MONTH)
             daysList.add(monthFormat.format(tempCal.time))
+            subLabelsList.add("1-$lastDayOfMonth")
             dateList.add(dateFormat.format(tempCal.time))
         }
     }
@@ -271,6 +281,9 @@ fun SpendingChart(
 
         Spacer(modifier = Modifier.height(32.dp))
 
+        val labelColumnWidth = 30.dp
+        val chartHorizontalPadding = labelColumnWidth / 2
+
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
@@ -281,8 +294,8 @@ fun SpendingChart(
                         onDragEnd = { onInteractionStateChange(false) },
                         onDragCancel = { onInteractionStateChange(false) }
                     ) { change, _ ->
-                        val x = change.position.x - 15.dp.toPx() 
-                        val stepXPx = (size.width - 30.dp.toPx()) / (points.size - 1)
+                        val x = change.position.x - chartHorizontalPadding.toPx()
+                        val stepXPx = (size.width - labelColumnWidth.toPx()) / (points.size - 1)
                         val index = (x / stepXPx).roundToInt().coerceIn(0, points.size - 1)
                         selectedIndex = index
                     }
@@ -295,8 +308,8 @@ fun SpendingChart(
                                 androidx.compose.ui.input.pointer.PointerEventType.Press -> {
                                     onInteractionStateChange(true)
                                     val position = event.changes.first().position
-                                    val x = position.x - 15.dp.toPx()
-                                    val stepXPx = (size.width - 30.dp.toPx()) / (points.size - 1)
+                                    val x = position.x - chartHorizontalPadding.toPx()
+                                    val stepXPx = (size.width - labelColumnWidth.toPx()) / (points.size - 1)
                                     val index = (x / stepXPx).roundToInt().coerceIn(0, points.size - 1)
                                     selectedIndex = index
                                 }
@@ -310,7 +323,7 @@ fun SpendingChart(
         ) {
             val topPadding = 40.dp
             val chartHeight = maxHeight - topPadding
-            val horizontalPadding = 15.dp
+            val horizontalPadding = chartHorizontalPadding
             val innerWidth = maxWidth - (horizontalPadding * 2)
             val stepX = innerWidth / (points.size - 1)
 
@@ -464,15 +477,92 @@ fun SpendingChart(
         ) {
             days.forEachIndexed { index, day ->
                 val isSelected = index == selectedIndex
-                Text(
-                    text = day,
-                    fontSize = 11.sp,
-                    color = if (isSelected) GrayBlue else Color.Gray,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    modifier = Modifier.width(30.dp),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
+                val subLabel = subLabelsList.getOrNull(index).orEmpty()
+                Column(
+                    modifier = Modifier.width(labelColumnWidth),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = day,
+                        fontSize = 11.sp,
+                        color = if (isSelected) GrayBlue else Color.Gray,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        textAlign = TextAlign.Center
+                    )
+                    if (subLabel.isNotEmpty()) {
+                        Text(
+                            text = subLabel,
+                            fontSize = 9.sp,
+                            lineHeight = 11.sp,
+                            color = if (isSelected) GrayBlue.copy(alpha = 0.85f) else Color.Gray.copy(alpha = 0.8f),
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                            maxLines = 1,
+                            softWrap = false,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
             }
+        }
+    }
+}
+
+@Preview(showBackground = true, widthDp = 320)
+@Composable
+fun SpendingChartMonthPreview() {
+    val nowCal = Calendar.getInstance()
+    fun monthsAgo(m: Int) = Timestamp(
+        (nowCal.clone() as Calendar).apply { add(Calendar.MONTH, -m) }.time
+    )
+
+    val sampleOrders = listOf(
+        Orders(orderId = "1", customerId = "c1", orderDate = monthsAgo(2), totalPrice = 120000.0),
+        Orders(orderId = "2", customerId = "c2", orderDate = monthsAgo(1), totalPrice = 240000.0),
+        Orders(orderId = "3", customerId = "c3", orderDate = monthsAgo(0), totalPrice = 185000.0)
+    )
+
+    MaterialTheme {
+        Box(
+            modifier = Modifier
+                .width(320.dp)
+                .background(Color(0xFFF3F4F6))
+                .padding(24.dp)
+        ) {
+            SpendingChart(
+                orders = sampleOrders,
+                selectedPeriod = "Month",
+                onPeriodChanged = {}
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true, widthDp = 320)
+@Composable
+fun SpendingChartWeekPreview() {
+    val nowCal = Calendar.getInstance()
+    fun daysAgo(d: Int) = Timestamp(
+        (nowCal.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, -d) }.time
+    )
+
+    val sampleOrders = listOf(
+        Orders(orderId = "1", customerId = "c1", orderDate = daysAgo(14), totalPrice = 120000.0),
+        Orders(orderId = "2", customerId = "c2", orderDate = daysAgo(7), totalPrice = 240000.0),
+        Orders(orderId = "3", customerId = "c3", orderDate = daysAgo(0), totalPrice = 185000.0)
+    )
+
+    MaterialTheme {
+        Box(
+            modifier = Modifier
+                .width(320.dp)
+                .background(Color(0xFFF3F4F6))
+                .padding(24.dp)
+        ) {
+            SpendingChart(
+                orders = sampleOrders,
+                selectedPeriod = "Week",
+                onPeriodChanged = {}
+            )
         }
     }
 }
