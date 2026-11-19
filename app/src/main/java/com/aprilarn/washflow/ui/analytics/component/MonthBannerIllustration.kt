@@ -511,15 +511,30 @@ private fun DrawScope.drawSeptemberEarlyAutumn() {
     drawRoundTree(w * 0.62f, h * 0.94f, h * 0.48f, Color(0xFFDFA35F), Color(0xFF7D6552))
     drawRoundTree(w * 0.75f, h * 0.96f, h * 0.38f, Color(0xFFB3BA80), Color(0xFF7D6552))
 
-    // Garis angin melengkung lembut + daun
-    val breeze = Path().apply {
-        moveTo(w * 0.48f, h * 0.44f)
-        cubicTo(w * 0.56f, h * 0.32f, w * 0.64f, h * 0.54f, w * 0.72f, h * 0.40f)
-    }
-    drawPath(breeze, color = Color(0xFFC7A87A).copy(alpha = 0.55f), style = Stroke(width = 2.2f, cap = StrokeCap.Round))
+    // Hembusan angin pendek dengan ujung melingkar halus + daun melayang
+    val windColor = Color(0xFFC2A274).copy(alpha = 0.58f)
+    val windStroke = (h * 0.028f).coerceIn(1.6f, 2.6f)
+    drawWindSwirl(
+        startX = w * 0.54f,
+        y = h * 0.34f,
+        length = h * 0.85f,
+        curlRadius = h * 0.095f,
+        curlUp = true,
+        color = windColor,
+        strokeWidth = windStroke
+    )
+    drawWindSwirl(
+        startX = w * 0.57f,
+        y = h * 0.44f,
+        length = h * 0.62f,
+        curlRadius = h * 0.075f,
+        curlUp = false,
+        color = windColor.copy(alpha = 0.45f),
+        strokeWidth = windStroke * 0.9f
+    )
 
-    listOf(0.53f to 0.38f, 0.66f to 0.46f, 0.71f to 0.34f).forEach { (lx, ly) ->
-        drawOval(Color(0xFFD99252), Offset(w * lx, h * ly), Size(h * 0.08f, h * 0.045f))
+    listOf(0.55f to 0.27f, 0.66f to 0.37f, 0.70f to 0.25f).forEach { (lx, ly) ->
+        drawOval(Color(0xFFD99252), Offset(w * lx, h * ly), Size(h * 0.075f, h * 0.042f))
     }
 }
 
@@ -901,6 +916,39 @@ private fun DrawScope.drawSparkleStar(
         close()
     }
     drawPath(star, color)
+}
+
+private fun DrawScope.drawWindSwirl(
+    startX: Float,
+    y: Float,
+    length: Float,
+    curlRadius: Float,
+    curlUp: Boolean,
+    color: Color,
+    strokeWidth: Float
+) {
+    val endX = startX + length
+    drawLine(
+        color = color,
+        start = Offset(startX, y),
+        end = Offset(endX, y),
+        strokeWidth = strokeWidth,
+        cap = StrokeCap.Round
+    )
+    val topLeft = if (curlUp) {
+        Offset(endX - curlRadius, y - curlRadius * 2f)
+    } else {
+        Offset(endX - curlRadius, y)
+    }
+    drawArc(
+        color = color,
+        startAngle = if (curlUp) 90f else 270f,
+        sweepAngle = if (curlUp) -245f else 235f,
+        useCenter = false,
+        topLeft = topLeft,
+        size = Size(curlRadius * 2f, curlRadius * 2f),
+        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+    )
 }
 
 private fun DrawScope.drawBirdV(
