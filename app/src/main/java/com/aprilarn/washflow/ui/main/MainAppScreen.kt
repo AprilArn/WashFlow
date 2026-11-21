@@ -279,6 +279,8 @@ fun MainAppScreen(
             com.aprilarn.washflow.ui.components.WeatherBackgroundIllustration(
                 weather = homeUiState.weather,
                 greeting = homeUiState.greeting,
+                weatherType = homeUiState.weatherType,
+                isDaytime = homeUiState.isDaytime,
                 modifier = Modifier.matchParentSize()
             )
 

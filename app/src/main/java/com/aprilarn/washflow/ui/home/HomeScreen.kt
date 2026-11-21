@@ -239,6 +239,8 @@ fun HomeScreenPreview() {
         com.aprilarn.washflow.ui.components.WeatherBackgroundIllustration(
             weather = previewState.weather,
             greeting = previewState.greeting,
+            weatherType = previewState.weatherType,
+            isDaytime = previewState.isDaytime,
             modifier = Modifier.matchParentSize()
         )
         Box(

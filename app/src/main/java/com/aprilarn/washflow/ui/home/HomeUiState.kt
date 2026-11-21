@@ -4,6 +4,8 @@ data class HomeUiState(
     val isLoading: Boolean = true,
     val greeting: String = "--!",
     val weather: String = "loading weather...",
+    val weatherType: String = "",
+    val isDaytime: Boolean? = null,
     val temperature: String = "--°C",
     val locationName: String = "Mencari lokasi...",
     val isGpsLocation: Boolean = true, // Penanda Icon
