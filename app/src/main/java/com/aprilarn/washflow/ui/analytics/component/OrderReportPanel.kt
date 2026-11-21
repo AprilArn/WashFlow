@@ -841,16 +841,8 @@ private fun OrderLedgerRow(
     val totalItemQty = remember(order.orderItems) {
         order.orderItems.sumOf { it.itemQuantity ?: 1 }
     }
-    val itemsPreview = remember(order.orderItems) {
-        if (order.orderItems.isEmpty()) "Tidak ada item"
-        else order.orderItems.joinToString(", ") { "${it.itemName ?: "Item"} (${it.itemQuantity ?: 1})" }
-    }
     val serviceSummaryLabel = remember(groupedItems) {
-        when (groupedItems.size) {
-            0 -> null
-            1 -> groupedItems.keys.first()
-            else -> "${groupedItems.size} Layanan"
-        }
+        if (groupedItems.isEmpty()) null else "${groupedItems.size} Layanan"
     }
 
     Surface(
@@ -948,30 +940,17 @@ private fun OrderLedgerRow(
                         }
                     }
 
-                    // Baris Ringkasan Layanan & Item
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        if (serviceSummaryLabel != null) {
-                            Surface(shape = RoundedCornerShape(6.dp), color = Color.White) {
-                                Text(
-                                    text = serviceSummaryLabel,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = PastelBlue,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
-                            }
+                    // Badge Ringkasan Layanan
+                    if (serviceSummaryLabel != null) {
+                        Surface(shape = RoundedCornerShape(6.dp), color = Color.White) {
+                            Text(
+                                text = serviceSummaryLabel,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = PastelBlue,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
                         }
-                        Text(
-                            text = itemsPreview,
-                            fontSize = 12.sp,
-                            color = Gray,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
-                        )
                     }
 
                     // Baris Status Order, Pembayaran & Pengambilan
@@ -1406,7 +1385,7 @@ fun OrderReportPanelPreview() {
                 com.aprilarn.washflow.data.model.OrderItem(
                     itemId = "i2",
                     itemName = "Celana Jeans",
-                    serviceId = "s1",
+                    serviceId = "s3",
                     itemQuantity = 1,
                     itemPrice = 10000.0,
                     subtotal = 10000.0
