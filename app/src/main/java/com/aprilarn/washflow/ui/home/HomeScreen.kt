@@ -1,5 +1,7 @@
 package com.aprilarn.washflow.ui.home
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -26,6 +28,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.aprilarn.washflow.ui.components.isDarkWeatherScene
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.example.app.ui.components.StatusCard
 
@@ -36,6 +39,19 @@ fun HomeScreen(
     onStatusCardClick: () -> Unit
 ) {
     val leftPanelShape = RoundedCornerShape(24.dp)
+    val isDarkBg = remember(state.weather, state.greeting, state.weatherType, state.isDaytime) {
+        isDarkWeatherScene(
+            weatherText = state.weather,
+            greetingText = state.greeting,
+            weatherType = state.weatherType,
+            isDaytime = state.isDaytime
+        )
+    }
+    val locationContentColor by animateColorAsState(
+        targetValue = if (isDarkBg) Color(0xFFDCE8FF) else Color(0xFF3E4B73),
+        animationSpec = tween(durationMillis = 700),
+        label = "homeLocationContentColor"
+    )
     val headlineShadow = remember {
         Shadow(
             color = Color(0xFF2B3F63).copy(alpha = 0.24f),
@@ -131,7 +147,7 @@ fun HomeScreen(
                 Text(
                     text = state.locationName,
                     style = MaterialTheme.typography.bodySmall.copy(
-                        color = GrayBlue,
+                        color = locationContentColor,
                         fontWeight = FontWeight.SemiBold,
                         fontStyle = FontStyle.Italic
                     ),
@@ -143,7 +159,7 @@ fun HomeScreen(
                 Icon(
                     imageVector = if (state.isGpsLocation) Icons.Rounded.LocationOn else Icons.Rounded.LocationOff,
                     contentDescription = "Location Type",
-                    tint = GrayBlue,
+                    tint = locationContentColor,
                     modifier = Modifier.size(14.dp)
                 )
             }

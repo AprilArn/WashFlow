@@ -344,6 +344,37 @@ fun resolveWeatherSceneKind(
 }
 
 /**
+ * Menentukan apakah latar langit bagian atas tergolong gelap (malam, badai, hujan deras)
+ * sehingga teks/aksen pada Header dan layar utama dapat menyesuaikan kecerahan warnanya secara dinamis.
+ */
+fun isDarkWeatherScene(
+    weatherText: String,
+    greetingText: String = "",
+    weatherType: String = "",
+    isDaytime: Boolean? = null
+): Boolean {
+    return when (resolveWeatherSceneKind(weatherText, greetingText, weatherType, isDaytime)) {
+        WeatherSceneKind.CLEAR_NIGHT,
+        WeatherSceneKind.PARTLY_CLOUDY_NIGHT,
+        WeatherSceneKind.CLOUDY_NIGHT,
+        WeatherSceneKind.WINDY_NIGHT,
+        WeatherSceneKind.SNOWY_NIGHT,
+        WeatherSceneKind.THUNDERSTORM,
+        WeatherSceneKind.RAINY,
+        WeatherSceneKind.WIND_AND_RAIN,
+        WeatherSceneKind.WINTRY_MIX -> true
+
+        WeatherSceneKind.SUNNY,
+        WeatherSceneKind.PARTLY_CLOUDY,
+        WeatherSceneKind.CLOUDY,
+        WeatherSceneKind.LIGHT_RAIN,
+        WeatherSceneKind.WINDY,
+        WeatherSceneKind.FOGGY,
+        WeatherSceneKind.SNOWY -> false
+    }
+}
+
+/**
  * Ilustrasi latar belakang layar penuh bergaya Google Calendar (Material Editorial)
  * yang menyesuaikan diri secara dinamis dengan kondisi cuaca dan waktu siang/malam lokasi.
  */

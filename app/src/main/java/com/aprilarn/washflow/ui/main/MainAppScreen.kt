@@ -210,6 +210,20 @@ fun MainAppScreen(
 
     var showExitDialog by remember { mutableStateOf(false) }
 
+    val isDarkWeatherBg = remember(
+        homeUiState.weather,
+        homeUiState.greeting,
+        homeUiState.weatherType,
+        homeUiState.isDaytime
+    ) {
+        com.aprilarn.washflow.ui.components.isDarkWeatherScene(
+            weatherText = homeUiState.weather,
+            greetingText = homeUiState.greeting,
+            weatherType = homeUiState.weatherType,
+            isDaytime = homeUiState.isDaytime
+        )
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -219,6 +233,7 @@ fun MainAppScreen(
                 workspaceName = mainUiState.workspaceName,
                 unreadCount = notificationsUiState.unreadCount,
                 isWorkspaceExpanded = mainUiState.showWorkspaceOptions,
+                isDarkBackground = isDarkWeatherBg,
                 notificationPreviews = notificationsUiState.notificationPreviews,
                 onWorkspaceClick = { mainViewModel.onWorkspaceNameClicked() },
                 onNotifClick = { notificationsViewModel.onNotificationIconClicked() },
