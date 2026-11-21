@@ -6,7 +6,6 @@ import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,8 +24,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -87,8 +84,6 @@ import com.aprilarn.washflow.ui.settings.SettingsScreen
 import com.aprilarn.washflow.ui.settings.SettingsViewModel
 import com.aprilarn.washflow.ui.tabledata.TableDataScreen
 import com.aprilarn.washflow.ui.tabledata.TableDataViewModel
-import com.aprilarn.washflow.ui.theme.MainBlue
-import com.aprilarn.washflow.ui.theme.MornYellow
 import com.aprilarn.washflow.ui.workspace.ActiveInviteDialog
 import com.aprilarn.washflow.ui.workspace.CreateInviteDialog
 import com.aprilarn.washflow.ui.workspace.DeleteWorkspaceDialog
@@ -211,6 +206,7 @@ fun MainAppScreen(
         }
     }
     val homeViewModel: HomeViewModel = viewModel(factory = homeViewModelFactory)
+    val homeUiState by homeViewModel.uiState.collectAsStateWithLifecycle()
 
     var showExitDialog by remember { mutableStateOf(false) }
 
@@ -278,20 +274,22 @@ fun MainAppScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(MainBlue, MornYellow),
-                        start = Offset(0f, Float.POSITIVE_INFINITY),
-                        end = Offset(Float.POSITIVE_INFINITY, 0f)
-                    )
-                )
-                .padding(innerPadding)
-                .padding(horizontal = 32.dp)
-                .navigationBarsPadding()
-                .padding(bottom = 34.dp)
+            modifier = Modifier.fillMaxSize()
         ) {
+            com.aprilarn.washflow.ui.components.WeatherBackgroundIllustration(
+                weather = homeUiState.weather,
+                greeting = homeUiState.greeting,
+                modifier = Modifier.matchParentSize()
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(horizontal = 32.dp)
+                    .navigationBarsPadding()
+                    .padding(bottom = 34.dp)
+            ) {
             // NavHost internal untuk mengatur layar yang diakses dari Bottom Navigation Bar
             NavHost(navController = bottomNavController, startDestination = AppNavigation.Home.route) {
 
@@ -589,6 +587,7 @@ fun MainAppScreen(
                 ExitConfirmationDialog(
                     onDismiss = { showExitDialog = false }
                 )
+            }
             }
         }
     }

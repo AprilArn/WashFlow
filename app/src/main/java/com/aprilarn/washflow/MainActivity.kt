@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -37,8 +36,6 @@ import com.aprilarn.washflow.ui.main.MainViewModel
 import com.aprilarn.washflow.ui.login.GoogleAuthUiClient
 import com.aprilarn.washflow.ui.login.LoginScreen
 import com.aprilarn.washflow.ui.login.LoginViewModel
-import com.aprilarn.washflow.ui.theme.MainBlue
-import com.aprilarn.washflow.ui.theme.MornYellow
 import com.aprilarn.washflow.ui.theme.WashFlowTheme
 import com.aprilarn.washflow.ui.workspace.WorkspaceEvent
 import com.aprilarn.washflow.ui.workspace.WorkspaceScreen
@@ -121,18 +118,20 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
 
-                            // Tampilkan background gradient untuk Login Screen
+                            // Tampilkan background ilustrasi cuaca untuk Login Screen
+                            val loginPrefs = remember {
+                                applicationContext.getSharedPreferences("WashFlowPrefs", MODE_PRIVATE)
+                            }
+                            val cachedLoginWeather = remember {
+                                loginPrefs.getString("WEATHER_DESC", "Sunny") ?: "Sunny"
+                            }
                             Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(
-                                        Brush.linearGradient(
-                                            colors = listOf(MainBlue, MornYellow),
-                                            start = Offset(0f, Float.POSITIVE_INFINITY),
-                                            end = Offset(Float.POSITIVE_INFINITY, 0f)
-                                        )
-                                    )
+                                modifier = Modifier.fillMaxSize()
                             ) {
+                                com.aprilarn.washflow.ui.components.WeatherBackgroundIllustration(
+                                    weather = cachedLoginWeather,
+                                    modifier = Modifier.matchParentSize()
+                                )
                                 LoginScreen(
                                     state = state,
                                     onGoogleSignInClick = {

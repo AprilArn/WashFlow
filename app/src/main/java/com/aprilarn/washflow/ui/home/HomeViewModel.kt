@@ -41,6 +41,20 @@ class HomeViewModel(
     private val gson = Gson()
 
     init {
+        val cachedWeather = sharedPreferences.getString("WEATHER_DESC", null)
+        if (!cachedWeather.isNullOrBlank()) {
+            _uiState.update {
+                it.copy(
+                    greeting = getGreetingMessage(),
+                    weather = cachedWeather
+                )
+            }
+        } else {
+            _uiState.update {
+                it.copy(greeting = getGreetingMessage())
+            }
+        }
+
         // Lakukan sinkronisasi penuh satu kali saat aplikasi/Home dibuka
         // Untuk memastikan data tidak out-of-sync akibat perubahan manual di database
         viewModelScope.launch {
