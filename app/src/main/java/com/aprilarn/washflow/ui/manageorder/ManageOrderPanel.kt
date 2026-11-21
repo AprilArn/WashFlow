@@ -1,19 +1,12 @@
 package com.aprilarn.washflow.ui.manageorder
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.keyframes
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,12 +16,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Payments
 import androidx.compose.material.icons.rounded.Storefront
 import androidx.compose.material.icons.rounded.Timer
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -41,15 +32,15 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntSize
@@ -59,6 +50,8 @@ import androidx.compose.ui.unit.toSize
 import com.aprilarn.washflow.data.model.OrderItem
 import com.aprilarn.washflow.data.model.Orders
 import com.aprilarn.washflow.data.model.Services
+import com.aprilarn.washflow.ui.components.StatusWorkflowBannerIllustration
+import com.aprilarn.washflow.ui.components.resolveStatusWorkflowTheme
 import com.aprilarn.washflow.ui.theme.Gray
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.PastelBlueMedium
@@ -145,6 +138,7 @@ fun OrderStatusColumn(
     val currentOnDrop by rememberUpdatedState(onDrop)
     val haptic = LocalHapticFeedback.current
     val density = LocalDensity.current
+    val theme = remember(title) { resolveStatusWorkflowTheme(title) }
 
     var centerX by remember { mutableStateOf(0f) }
 
@@ -173,13 +167,13 @@ fun OrderStatusColumn(
     )
 
     val backgroundColor by animateColorAsState(
-        targetValue = if (isHighlighted) GrayBlue.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.25f),
+        targetValue = if (isHighlighted) theme.highlightBg else Color.White,
         animationSpec = spring(stiffness = Spring.StiffnessLow),
         label = "columnHighlightColor"
     )
 
     val animatedBorderColor by animateColorAsState(
-        targetValue = if (isHighlighted) GrayBlue.copy(alpha = 0.8f) else borderColor.copy(alpha = 0.5f),
+        targetValue = if (isHighlighted) theme.accentColor.copy(alpha = 0.85f) else Color.White,
         animationSpec = spring(stiffness = Spring.StiffnessLow),
         label = "columnBorderColor"
     )
@@ -205,9 +199,8 @@ fun OrderStatusColumn(
 
     // Efek untuk mendaftarkan & menghapus diri sebagai target drop
     DisposableEffect(key1 = title) {
-        var dropTarget: DropTarget? = null
         onDispose {
-            dropTarget?.let { dragDropState.dropTargets.remove(it) }
+            dragDropState.dropTargets.removeAll { it.id == title }
         }
     }
 
@@ -218,8 +211,11 @@ fun OrderStatusColumn(
                 rotationY = animatedRotation
                 scaleX = columnScale
                 scaleY = columnScale
+                shadowElevation = 6.dp.toPx()
+                shape = borderRadius
                 cameraDistance = 12f * density.density
             }
+            .clip(borderRadius)
             .background(backgroundColor, shape = borderRadius)
             .border(
                 width = animatedBorderWidth,
@@ -239,58 +235,89 @@ fun OrderStatusColumn(
                     onDrop = { orderId -> currentOnDrop(orderId) }
                 )
                 dragDropState.dropTargets.add(newTarget)
-            },
-        //horizontalAlignment = Alignment.CenterHorizontally
+            }
     ) {
-        Column (
-            modifier = Modifier.padding(14.dp)
-        ) {
-            Row(
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Header kolom putih solid dengan ilustrasi alur kerja bergaya Google Calendar
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top=10.dp, bottom=4.dp, start=8.dp, end=8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                    .height(88.dp)
             ) {
-                Column(
+                StatusWorkflowBannerIllustration(
+                    theme = theme,
+                    modifier = Modifier.matchParentSize(),
+                    baseColor = backgroundColor
+                )
+
+                Row(
                     modifier = Modifier
-                        .weight(1f)
+                        .fillMaxSize()
+                        .padding(horizontal = 18.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .width(4.dp)
+                                .height(34.dp)
+                                .background(theme.accentColor, RoundedCornerShape(2.dp))
+                        )
+                        Column {
+                            Text(
+                                text = title,
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 20.sp,
+                                    color = theme.labelColor
+                                ),
+                                maxLines = 1
+                            )
+                            Text(
+                                text = subTitle,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.Medium,
+                                    color = theme.subtitleColor
+                                ),
+                                maxLines = 1
+                            )
+                        }
+                    }
+
                     Text(
-                        text = title,
+                        text = "${orders.size}",
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold,
-                            fontSize = 22.sp,
-                            color = GrayBlue
+                            fontSize = 26.sp,
+                            color = theme.countColor
                         )
                     )
-                    Text(
-                        text = subTitle,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = GrayBlue
-                    )
                 }
-                Text(
-                    text = "${orders.size}",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 28.sp,
-                        color = GrayBlue
-                    )
-                )
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            HorizontalDivider(
+                color = Color(0xFFEDF1F7),
+                thickness = 1.dp
+            )
 
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxSize()
+                contentPadding = PaddingValues(14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
             ) {
                 items(orders, key = { it.orderId }) { order ->
                     DraggableOrderCard(
                         modifier = Modifier.animateItem(),
                         order = order,
                         services = services,
+                        customerNameColor = theme.primaryTextColor,
                         onClick = { onOrderClick(order) }
                     )
                 }
@@ -304,6 +331,7 @@ fun DraggableOrderCard(
     modifier: Modifier = Modifier,
     order: Orders,
     services: List<Services>,
+    customerNameColor: Color = resolveStatusWorkflowTheme(order.status.orEmpty()).primaryTextColor,
     onClick: () -> Unit
 ) {
     val dragDropState = LocalDragDropState.current
@@ -362,7 +390,8 @@ fun DraggableOrderCard(
     ) {
         OrderCardContent(
             order = order,
-            services = services
+            services = services,
+            customerNameColor = customerNameColor
         )
     }
 }
@@ -373,7 +402,8 @@ fun DraggableOrderCard(
 fun OrderCardContent(
     order: Orders,
     services: List<Services>,
-    alpha: Float = 0.1f // Nilai alpha default untuk kartu yang tidak sedang di-drag
+    alpha: Float = 0.1f, // Nilai alpha default untuk kartu yang tidak sedang di-drag
+    customerNameColor: Color = resolveStatusWorkflowTheme(order.status.orEmpty()).primaryTextColor
 ) {
     val formattedOrderDate = remember(order.orderDate) {
         SimpleDateFormat("EEEE, dd MMMM yyyy, HH:mm", Locale.getDefault()).format(order.orderDate.toDate())
@@ -426,16 +456,18 @@ fun OrderCardContent(
         }
     }
 
+    val cardBorderColor = Color(0xFFE2E8F2)
+
     // Lerp (Linear Interpolation) warna berdasarkan progress global (pastel dusty rose)
-    val breathingColor = lerp(borderColor, PastelRose, globalAnimationProgress)
+    val breathingColor = lerp(cardBorderColor, PastelRose, globalAnimationProgress)
     val textBreathingColor = lerp(Gray, PastelRose, globalAnimationProgress)
 
     // Buat brush (gradient) horizontal dengan 3 area
     val urgencyBrush = Brush.horizontalGradient(
         colors = listOf(
-            breathingColor, // Kiri beranimasi
-            borderColor,    // Tengah warna default
-            borderColor     // Kanan warna default
+            breathingColor,  // Kiri beranimasi
+            cardBorderColor, // Tengah warna default
+            cardBorderColor  // Kanan warna default
         ),
         startX = 0f,
         endX = Float.POSITIVE_INFINITY
@@ -455,8 +487,8 @@ fun OrderCardContent(
                     )
                 } else {
                     Modifier.border(
-                        width = 2.dp,
-                        color = borderColor, // Gunakan warna solid default
+                        width = 1.5.dp,
+                        color = cardBorderColor, // Border lembut agar jelas di atas kolom putih solid
                         shape = borderRadius
                     )
                 }
@@ -509,7 +541,7 @@ fun OrderCardContent(
                 Text(
                     text = order.customerName ?: "N/A",
                     style = MaterialTheme.typography.bodyMedium.copy(
-                        color = GrayBlue,
+                        color = customerNameColor,
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp
                     )
@@ -623,38 +655,68 @@ fun OrderCardContentPreview() {
     }
 }
 
-// --- PRATINJAU UNTUK SATU KOLOM STATUS ---
-@Preview(showBackground = true, name = "Order Status Column Preview", widthDp = 360, heightDp = 700)
+// --- PRATINJAU UNTUK 3 KOLOM STATUS ---
+@Preview(showBackground = true, name = "Order Status Column Preview", widthDp = 1120, heightDp = 640)
 @Composable
 fun OrderStatusColumnPreview() {
-    // Siapkan data sampel
     val sampleServices = listOf(
-        Services(serviceId = "L-01", serviceName = "Laundry Satuan")
+        Services(serviceId = "L01", serviceName = "Laundry Satuan"),
+        Services(serviceId = "D01", serviceName = "Dry Clean")
     )
-    val sampleOrders = listOf(
-        Orders(orderId = "1", customerName = "Budi", status = "On Queue", orderItems = listOf(OrderItem(serviceId = "L-01", itemQuantity = 3))),
-        Orders(orderId = "2", customerName = "Citra", status = "On Queue", orderItems = listOf(OrderItem(serviceId = "L-01", itemQuantity = 1)))
+    val sampleQueue = listOf(
+        Orders(orderId = "1", customerName = "Urjel Arnold B", status = "On Queue", orderItems = listOf(OrderItem(serviceId = "L01", itemQuantity = 1))),
+        Orders(orderId = "2", customerName = "Troya", status = "On Queue", orderItems = listOf(OrderItem(serviceId = "L01", itemQuantity = 2)))
     )
-
-    
-
-    val isHighlighted = true // Force true for preview
+    val sampleProcess = listOf(
+        Orders(orderId = "3", customerName = "Raphtalia", status = "On Process", alreadyPaid = true, orderItems = listOf(OrderItem(serviceId = "D01", itemQuantity = 1)))
+    )
+    val sampleDone = listOf(
+        Orders(orderId = "4", customerName = "Pak Wira", status = "Done", alreadyPaid = true, alreadyPickedUp = true, orderItems = listOf(OrderItem(serviceId = "D01", itemQuantity = 2)))
+    )
 
     MaterialTheme {
-        // DragDropContainer dibutuhkan karena komponen di dalamnya menggunakan state dari sana
         DragDropContainer(
-            modifier = Modifier.padding(8.dp),
+            modifier = Modifier
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(Color(0xFFB9E9FF), Color(0xFFFFD6BF))
+                    )
+                )
+                .padding(16.dp),
             services = sampleServices
         ) {
-            OrderStatusColumn(
+            Row(
                 modifier = Modifier.fillMaxSize(),
-                title = "On Queue",
-                subTitle = "Order menunggu",
-                orders = sampleOrders,
-                services = sampleServices,
-                onDrop = { },
-                onOrderClick = { }
-            )
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                OrderStatusColumn(
+                    modifier = Modifier.weight(1f),
+                    title = "On Queue",
+                    subTitle = "Dalam antrian",
+                    orders = sampleQueue,
+                    services = sampleServices,
+                    onDrop = {},
+                    onOrderClick = {}
+                )
+                OrderStatusColumn(
+                    modifier = Modifier.weight(1f),
+                    title = "On Process",
+                    subTitle = "Sedang diproses",
+                    orders = sampleProcess,
+                    services = sampleServices,
+                    onDrop = {},
+                    onOrderClick = {}
+                )
+                OrderStatusColumn(
+                    modifier = Modifier.weight(1f),
+                    title = "Done",
+                    subTitle = "Selesai",
+                    orders = sampleDone,
+                    services = sampleServices,
+                    onDrop = {},
+                    onOrderClick = {}
+                )
+            }
         }
     }
 }

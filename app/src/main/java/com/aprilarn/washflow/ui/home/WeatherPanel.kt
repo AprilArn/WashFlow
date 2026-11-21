@@ -476,9 +476,9 @@ fun WeatherPanelLoadingPreview() {
         Text("Horizontal Weather Forecast Loading", color = Color.White)
         Spacer(modifier = Modifier.height(8.dp))
         HorizontalWeatherForecast(forecasts = emptyList(), isLoading = true)
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         Text("Weather Details Panel Loading", color = Color.White)
         Spacer(modifier = Modifier.height(8.dp))
         WeatherDetailsPanel(state = HomeUiState(isLoading = true))
