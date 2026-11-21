@@ -3,6 +3,7 @@ package com.aprilarn.washflow.ui.home
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,15 +17,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,12 +44,38 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.aprilarn.washflow.ui.components.shimmerModifier
-import androidx.compose.foundation.shape.CircleShape
 import coil.compose.AsyncImage
+import com.aprilarn.washflow.ui.components.shimmerModifier
+import com.aprilarn.washflow.ui.theme.GrayBlue
+import com.aprilarn.washflow.ui.theme.PastelBlue
+import com.aprilarn.washflow.ui.theme.PastelBlueBg
+import com.aprilarn.washflow.ui.theme.PastelBlueMedium
+import com.aprilarn.washflow.ui.theme.PastelBlueSoftBg
+import com.aprilarn.washflow.ui.theme.PastelNeutralText
+import java.util.Locale
 
 private fun parseTemperature(tempStr: String): Int {
     return tempStr.filter { it.isDigit() || it == '-' }.toIntOrNull() ?: 0
+}
+
+/**
+ * Merapikan format arah angin dari API (misal "SOUTH_SOUTHWEST (214°)")
+ * menjadi "South-Southwest (214°)" agar lebih rapi dan tidak memakan ruang berlebih.
+ */
+private fun formatWindDirection(raw: String): String {
+    if (raw.isBlank() || raw == "--") return raw
+    val cardinalPart = raw.substringBefore("(").trim()
+    val degreePart = if (raw.contains("(")) "(" + raw.substringAfter("(") else ""
+    if (!cardinalPart.contains("_") && cardinalPart.any { it.isLowerCase() }) {
+        return raw
+    }
+    val formattedCardinal = cardinalPart
+        .split("_")
+        .filter { it.isNotBlank() }
+        .joinToString("-") { word ->
+            word.lowercase(Locale.US).replaceFirstChar { it.titlecase(Locale.US) }
+        }
+    return if (degreePart.isNotEmpty()) "$formattedCardinal $degreePart" else formattedCardinal
 }
 
 @Composable
@@ -59,15 +90,19 @@ fun TemperatureChartSegment(
     isVisible: Boolean = true
 ) {
     if (!isVisible) {
-        Spacer(modifier = modifier
-            .fillMaxWidth()
-            .height(40.dp))
+        Spacer(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(38.dp)
+        )
         return
     }
 
-    Canvas(modifier = modifier
-        .fillMaxWidth()
-        .height(40.dp)) {
+    Canvas(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(38.dp)
+    ) {
         val range = (maxTemp - minTemp).toFloat().coerceAtLeast(1f)
 
         fun getY(temp: Float): Float {
@@ -83,7 +118,7 @@ fun TemperatureChartSegment(
         prevTemp?.let {
             val prevY = getY(it)
             drawLine(
-                color = Color.White.copy(alpha = 0.5f),
+                color = PastelBlueMedium.copy(alpha = 0.75f),
                 start = Offset(0f, (prevY + currentY) / 2),
                 end = Offset(centerX, currentY),
                 strokeWidth = 2.dp.toPx(),
@@ -95,7 +130,7 @@ fun TemperatureChartSegment(
         nextTemp?.let {
             val nextY = getY(it)
             drawLine(
-                color = Color.White.copy(alpha = 0.5f),
+                color = PastelBlueMedium.copy(alpha = 0.75f),
                 start = Offset(centerX, currentY),
                 end = Offset(size.width, (currentY + nextY) / 2),
                 strokeWidth = 2.dp.toPx(),
@@ -103,34 +138,68 @@ fun TemperatureChartSegment(
             )
         }
 
-        // Draw dot
-        drawCircle(
-            color = Color.White,
-            radius = (if (isEvent) 0.dp else 3.5.dp).toPx(),
-            center = Offset(centerX, currentY)
-        )
+        // Draw dot with subtle halo
+        if (!isEvent) {
+            drawCircle(
+                color = PastelBlueMedium.copy(alpha = 0.28f),
+                radius = 6.dp.toPx(),
+                center = Offset(centerX, currentY)
+            )
+            drawCircle(
+                color = PastelBlue,
+                radius = 3.5.dp.toPx(),
+                center = Offset(centerX, currentY)
+            )
+        }
     }
 }
 
 @Composable
 fun WeatherDetailsPanel(state: HomeUiState) {
+    val formattedWindDir = remember(state.windDirection) {
+        formatWindDirection(state.windDirection)
+    }
+
     Column(
         modifier = Modifier
-            .padding(20.dp)
-            .fillMaxHeight(),
-        verticalArrangement = Arrangement.SpaceBetween
+            .padding(horizontal = 20.dp, vertical = 18.dp)
+            .fillMaxHeight()
     ) {
-        Text(
-            text = "Current Details",
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold
-        )
+        // Header dengan aksen vertikal bergaya Material Editorial di atas kartu putih solid
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .height(18.dp)
+                    .background(PastelBlue, RoundedCornerShape(2.dp))
+            )
+            Text(
+                text = "Current Details",
+                color = GrayBlue,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Grid-like layout for details
-        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        HorizontalDivider(
+            color = PastelBlueBg,
+            thickness = 1.dp
+        )
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        // Daftar detail cuaca tersebar merata secara vertikal tanpa ruang kosong berlebih
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            verticalArrangement = Arrangement.SpaceEvenly
+        ) {
             WeatherDetailRow(
                 icon = Icons.Rounded.Thermostat,
                 label = "Feels Like",
@@ -164,7 +233,7 @@ fun WeatherDetailsPanel(state: HomeUiState) {
             WeatherDetailRow(
                 icon = Icons.Rounded.Explore,
                 label = "Wind Direction",
-                value = state.windDirection,
+                value = formattedWindDir,
                 isLoading = state.isLoading
             )
             WeatherDetailRow(
@@ -184,22 +253,33 @@ fun WeatherDetailRow(
     value: String,
     isLoading: Boolean = false
 ) {
+    val iconShape = RoundedCornerShape(10.dp)
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = Color.White,
-            modifier = Modifier.size(20.dp)
-        )
-        Column {
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .clip(iconShape)
+                .background(PastelBlueSoftBg)
+                .border(0.75.dp, PastelBlueBg, iconShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = PastelBlue,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = label,
-                color = Color.White.copy(alpha = 0.7f),
-                fontSize = 11.sp
+                color = PastelNeutralText,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium
             )
             Box(
                 modifier = Modifier.height(20.dp),
@@ -215,9 +295,11 @@ fun WeatherDetailRow(
                 } else {
                     Text(
                         text = value,
-                        color = Color.White,
+                        color = GrayBlue,
                         fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
@@ -231,93 +313,104 @@ fun HorizontalWeatherForecast(
     forecasts: List<HourlyForecastUiState>,
     isLoading: Boolean = false
 ) {
-    // Container transparan agar rapi
-    Box(
+    val containerShape = RoundedCornerShape(24.dp)
+    // Kartu putih solid dengan shadow seperti StatusCard
+    Surface(
         modifier = modifier
             .wrapContentWidth()
-            .wrapContentHeight() // Tinggi area forecast
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color.White.copy(alpha = 0.15f)) // Background tipis
-            .padding(vertical = 12.dp, horizontal = 8.dp),
-        contentAlignment = Alignment.Center
+            .wrapContentHeight(),
+        shape = containerShape,
+        color = Color.White,
+        shadowElevation = 8.dp
     ) {
-        if (isLoading) {
-            HorizontalWeatherForecastShimmer()
-        } else if (forecasts.isEmpty()) {
-            Text(
-                text = "Loading weather forecast...",
-                style = MaterialTheme.typography.bodySmall.copy(color = Color.White),
-                modifier = Modifier.padding(12.dp)
-            )
-        } else {
-            // Find valid temperatures for the chart line (skipping event items)
-            val weatherOnlyTemps = forecasts.filter { !it.isEvent }.map { parseTemperature(it.temperature) }
-            val minTemp = weatherOnlyTemps.minOrNull() ?: 0
-            val maxTemp = weatherOnlyTemps.maxOrNull() ?: 0
+        Box(
+            modifier = Modifier.padding(vertical = 12.dp, horizontal = 10.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            if (isLoading) {
+                HorizontalWeatherForecastShimmer()
+            } else if (forecasts.isEmpty()) {
+                Text(
+                    text = "Loading weather forecast...",
+                    style = MaterialTheme.typography.bodySmall.copy(color = GrayBlue),
+                    modifier = Modifier.padding(12.dp)
+                )
+            } else {
+                // Find valid temperatures for the chart line (skipping event items)
+                val weatherOnlyTemps = forecasts.filter { !it.isEvent }.map { parseTemperature(it.temperature) }
+                val minTemp = weatherOnlyTemps.minOrNull() ?: 0
+                val maxTemp = weatherOnlyTemps.maxOrNull() ?: 0
 
-            // Pre-calculate effective temperatures using INDEX-based linear interpolation for visual straightness
-            val effectiveTemps = FloatArray(forecasts.size)
+                // Pre-calculate effective temperatures using INDEX-based linear interpolation for visual straightness
+                val effectiveTemps = FloatArray(forecasts.size)
 
-            // Step 1: Set anchor points (Weather)
-            for (i in forecasts.indices) {
-                if (!forecasts[i].isEvent) {
-                    effectiveTemps[i] = parseTemperature(forecasts[i].temperature).toFloat()
-                }
-            }
-
-            // Step 2: Interpolate event points based on index position (visual median)
-            for (i in forecasts.indices) {
-                if (forecasts[i].isEvent) {
-                    var prevIdx = -1
-                    for (j in i - 1 downTo 0) {
-                        if (!forecasts[j].isEvent) { prevIdx = j; break }
-                    }
-
-                    var nextIdx = -1
-                    for (j in i + 1 until forecasts.size) {
-                        if (!forecasts[j].isEvent) { nextIdx = j; break }
-                    }
-
-                    if (prevIdx != -1 && nextIdx != -1) {
-                        // Calculate height based on index position to ensure a straight visual diagonal
-                        val dist = (nextIdx - prevIdx).toFloat()
-                        val pos = (i - prevIdx).toFloat()
-                        val y1 = effectiveTemps[prevIdx]
-                        val y2 = effectiveTemps[nextIdx]
-                        effectiveTemps[i] = y1 + (pos / dist) * (y2 - y1)
-                    } else if (prevIdx != -1) {
-                        effectiveTemps[i] = effectiveTemps[prevIdx]
-                    } else if (nextIdx != -1) {
-                        effectiveTemps[i] = effectiveTemps[nextIdx]
-                    } else {
-                        effectiveTemps[i] = 0f
+                // Step 1: Set anchor points (Weather)
+                for (i in forecasts.indices) {
+                    if (!forecasts[i].isEvent) {
+                        effectiveTemps[i] = parseTemperature(forecasts[i].temperature).toFloat()
                     }
                 }
-            }
 
-            // LazyRow untuk scroll ke samping (Horizontal)
-            LazyRow(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.wrapContentWidth()
-            ) {
-                itemsIndexed(forecasts) { index, forecast ->
-                    val currentTemp = effectiveTemps[index]
-                    val prevTemp = if (index > 0) effectiveTemps[index - 1] else null
-                    val nextTemp = if (index < forecasts.size - 1) effectiveTemps[index + 1] else null
+                // Step 2: Interpolate event points based on index position (visual median)
+                for (i in forecasts.indices) {
+                    if (forecasts[i].isEvent) {
+                        var prevIdx = -1
+                        for (j in i - 1 downTo 0) {
+                            if (!forecasts[j].isEvent) {
+                                prevIdx = j
+                                break
+                            }
+                        }
 
-                    val firstWeatherIdx = forecasts.indexOfFirst { !it.isEvent }
-                    val lastWeatherIdx = forecasts.indexOfLast { !it.isEvent }
-                    val showChart = firstWeatherIdx != -1 && index >= firstWeatherIdx && index <= lastWeatherIdx
+                        var nextIdx = -1
+                        for (j in i + 1 until forecasts.size) {
+                            if (!forecasts[j].isEvent) {
+                                nextIdx = j
+                                break
+                            }
+                        }
 
-                    HorizontalForecastItem(
-                        forecast = forecast,
-                        currentTemp = currentTemp,
-                        prevTemp = if (index > firstWeatherIdx) prevTemp else null,
-                        nextTemp = if (index < lastWeatherIdx) nextTemp else null,
-                        minTemp = minTemp,
-                        maxTemp = maxTemp,
-                        showChart = showChart
-                    )
+                        if (prevIdx != -1 && nextIdx != -1) {
+                            // Calculate height based on index position to ensure a straight visual diagonal
+                            val dist = (nextIdx - prevIdx).toFloat()
+                            val pos = (i - prevIdx).toFloat()
+                            val y1 = effectiveTemps[prevIdx]
+                            val y2 = effectiveTemps[nextIdx]
+                            effectiveTemps[i] = y1 + (pos / dist) * (y2 - y1)
+                        } else if (prevIdx != -1) {
+                            effectiveTemps[i] = effectiveTemps[prevIdx]
+                        } else if (nextIdx != -1) {
+                            effectiveTemps[i] = effectiveTemps[nextIdx]
+                        } else {
+                            effectiveTemps[i] = 0f
+                        }
+                    }
+                }
+
+                // LazyRow untuk scroll ke samping (Horizontal)
+                LazyRow(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.wrapContentWidth()
+                ) {
+                    itemsIndexed(forecasts) { index, forecast ->
+                        val currentTemp = effectiveTemps[index]
+                        val prevTemp = if (index > 0) effectiveTemps[index - 1] else null
+                        val nextTemp = if (index < forecasts.size - 1) effectiveTemps[index + 1] else null
+
+                        val firstWeatherIdx = forecasts.indexOfFirst { !it.isEvent }
+                        val lastWeatherIdx = forecasts.indexOfLast { !it.isEvent }
+                        val showChart = firstWeatherIdx != -1 && index >= firstWeatherIdx && index <= lastWeatherIdx
+
+                        HorizontalForecastItem(
+                            forecast = forecast,
+                            currentTemp = currentTemp,
+                            prevTemp = if (index > firstWeatherIdx) prevTemp else null,
+                            nextTemp = if (index < lastWeatherIdx) nextTemp else null,
+                            minTemp = minTemp,
+                            maxTemp = maxTemp,
+                            showChart = showChart
+                        )
+                    }
                 }
             }
         }
@@ -340,7 +433,7 @@ fun HorizontalWeatherForecastShimmer() {
 @Composable
 fun HorizontalForecastItemShimmer() {
     Column(
-        modifier = Modifier.width(64.dp),
+        modifier = Modifier.width(66.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -352,17 +445,17 @@ fun HorizontalForecastItemShimmer() {
                 .shimmerModifier()
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(6.dp))
 
         // 2. Ikon Shimmer
         Box(
             modifier = Modifier
-                .size(32.dp)
+                .size(36.dp)
                 .clip(CircleShape)
                 .shimmerModifier()
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(6.dp))
 
         // 3. Suhu Shimmer
         Box(
@@ -372,14 +465,14 @@ fun HorizontalForecastItemShimmer() {
                 .shimmerModifier()
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(6.dp))
 
         // 4. Diagram Suhu Shimmer (Long horizontal shimmer)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(40.dp)
-                .padding(vertical = 18.dp) // Adjust to match line height visually
+                .height(38.dp)
+                .padding(vertical = 17.dp)
                 .clip(RoundedCornerShape(2.dp))
                 .shimmerModifier()
         )
@@ -397,7 +490,7 @@ fun HorizontalForecastItem(
     showChart: Boolean = true
 ) {
     Column(
-        modifier = Modifier.width(64.dp),
+        modifier = Modifier.width(66.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -405,56 +498,68 @@ fun HorizontalForecastItem(
         Text(
             text = forecast.time,
             style = MaterialTheme.typography.bodySmall.copy(
-                color = Color.White,
-                fontWeight = FontWeight.Medium
+                color = PastelNeutralText,
+                fontWeight = FontWeight.SemiBold
             )
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(6.dp))
 
-        // 2. Ikon (Cuaca atau Event)
-        if (forecast.isEvent) {
-            val icon = when (forecast.iconUrl) {
-                "WS_OPEN" -> Icons.Rounded.Storefront
-                "WS_CLOSE" -> Icons.Rounded.DoorBack
-                "WS_DEADLINE" -> Icons.Rounded.Timer
-                "WS_SUNRISE" -> Icons.Rounded.WbSunny
-                "WS_SUNSET" -> Icons.Rounded.WbTwilight
-                else -> Icons.Rounded.Event
+        // 2. Ikon (Cuaca atau Event) di dalam badge biru pastel lembut agar ikon awan putih tetap kontras di atas kartu putih
+        val badgeShape = RoundedCornerShape(12.dp)
+        Box(
+            modifier = Modifier
+                .size(38.dp)
+                .clip(badgeShape)
+                .background(if (forecast.isEvent) PastelBlueSoftBg else Color(0xFFD6E4F7)),
+            contentAlignment = Alignment.Center
+        ) {
+            if (forecast.isEvent) {
+                val icon = when (forecast.iconUrl) {
+                    "WS_OPEN" -> Icons.Rounded.Storefront
+                    "WS_CLOSE" -> Icons.Rounded.DoorBack
+                    "WS_DEADLINE" -> Icons.Rounded.Timer
+                    "WS_SUNRISE" -> Icons.Rounded.WbSunny
+                    "WS_SUNSET" -> Icons.Rounded.WbTwilight
+                    else -> Icons.Rounded.Event
+                }
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = PastelBlue,
+                    modifier = Modifier.size(22.dp)
+                )
+            } else {
+                AsyncImage(
+                    model = forecast.iconUrl,
+                    contentDescription = "Icon",
+                    modifier = Modifier.size(28.dp)
+                )
             }
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(32.dp)
-            )
-        } else {
-            AsyncImage(
-                model = forecast.iconUrl,
-                contentDescription = "Icon",
-                modifier = Modifier.size(32.dp)
-            )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(6.dp))
 
         // 3. Suhu atau Label Event
         Text(
             text = forecast.eventLabel ?: forecast.temperature,
-            style = if (forecast.isEvent) MaterialTheme.typography.bodyLarge.copy(
-                color = Color.White,
-                fontWeight = FontWeight.Light
-            )
-            else MaterialTheme.typography.bodyLarge.copy(
-                color = Color.White,
-                fontWeight = FontWeight.Bold
-            ),
+            style = if (forecast.isEvent) {
+                MaterialTheme.typography.bodyMedium.copy(
+                    color = PastelBlue,
+                    fontWeight = FontWeight.Medium
+                )
+            } else {
+                MaterialTheme.typography.bodyLarge.copy(
+                    color = GrayBlue,
+                    fontWeight = FontWeight.Bold
+                )
+            },
             maxLines = 1,
             textAlign = TextAlign.Center,
             modifier = Modifier.basicMarquee()
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         // 4. Diagram Suhu
         TemperatureChartSegment(
@@ -476,9 +581,9 @@ fun WeatherPanelLoadingPreview() {
         Text("Horizontal Weather Forecast Loading", color = Color.White)
         Spacer(modifier = Modifier.height(8.dp))
         HorizontalWeatherForecast(forecasts = emptyList(), isLoading = true)
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         Text("Weather Details Panel Loading", color = Color.White)
         Spacer(modifier = Modifier.height(8.dp))
         WeatherDetailsPanel(state = HomeUiState(isLoading = true))
@@ -502,7 +607,7 @@ fun WeatherDetailsPanelPreview() {
                 uvIndex = "5",
                 precipitationProb = "20%",
                 windSpeed = "12 km/h",
-                windDirection = "North",
+                windDirection = "SOUTH_SOUTHWEST (214°)",
                 thunderstormProb = "5%"
             )
         )
@@ -545,4 +650,3 @@ fun HorizontalWeatherForecastScenariosPreview() {
         }
     }
 }
-

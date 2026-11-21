@@ -1,4 +1,4 @@
-package com.aprilarn.washflow.ui
+package com.aprilarn.washflow.ui.main
 
 import com.aprilarn.washflow.data.model.Invites
 

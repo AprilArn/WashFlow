@@ -21,6 +21,7 @@ data class OrdersUiState(
     // val selectedItems: Map<String, Items> = emptyMap(), // Map<ItemId, Item>
     val selectedItems: Map<String, OrderItem> = emptyMap(), // Sekarang menyimpan OrderItem
     val itemForQuantityInput: Items? = null, // Untuk mengontrol dialog kuantitas
+    val showNoDeadlineWarning: Boolean = false,
 
     // State umum
     val isCreatingOrder: Boolean = false,

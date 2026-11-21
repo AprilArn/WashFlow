@@ -87,7 +87,10 @@ fun NotificationPreviewItem(
             if (remainingTime > 0) {
                 progress.animateTo(
                     targetValue = 1f,
-                    animationSpec = tween(durationMillis = remainingTime, easing = LinearEasing)
+                    animationSpec = tween(
+                        durationMillis = remainingTime,
+                        easing = LinearOutSlowInEasing // Animasi dari cepat, lalu perlahan melambat
+                    )
                 )
             }
             

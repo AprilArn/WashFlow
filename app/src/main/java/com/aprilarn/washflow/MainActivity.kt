@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -31,14 +30,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.aprilarn.washflow.data.repository.InviteRepository
 import com.aprilarn.washflow.data.repository.WorkspaceRepository
-import com.aprilarn.washflow.ui.MainAppScreen
-import com.aprilarn.washflow.ui.MainNavigationEvent
-import com.aprilarn.washflow.ui.MainViewModel
+import com.aprilarn.washflow.ui.main.MainAppScreen
+import com.aprilarn.washflow.ui.main.MainNavigationEvent
+import com.aprilarn.washflow.ui.main.MainViewModel
 import com.aprilarn.washflow.ui.login.GoogleAuthUiClient
 import com.aprilarn.washflow.ui.login.LoginScreen
 import com.aprilarn.washflow.ui.login.LoginViewModel
-import com.aprilarn.washflow.ui.theme.MainBlue
-import com.aprilarn.washflow.ui.theme.MornYellow
 import com.aprilarn.washflow.ui.theme.WashFlowTheme
 import com.aprilarn.washflow.ui.workspace.WorkspaceEvent
 import com.aprilarn.washflow.ui.workspace.WorkspaceScreen
@@ -48,7 +45,7 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
-    private val GoogleAuthUiClient by lazy {
+    private val googleAuthUiClient by lazy {
         GoogleAuthUiClient(
             context = applicationContext,
             oneTapClient = Identity.getSignInClient(applicationContext)
@@ -78,7 +75,7 @@ class MainActivity : ComponentActivity() {
                             val state by viewModel.state.collectAsStateWithLifecycle()
 
                             LaunchedEffect(Unit) {
-                                val currentUser = GoogleAuthUiClient.getSignedUser()
+                                val currentUser = googleAuthUiClient.getSignedUser()
                                 if (currentUser != null) {
                                     // Jika user sudah pernah login, langsung jalankan pengecekan Workspace
                                     // Ini otomatis akan memutar loading (isCheckingWorkspace = true)
@@ -112,7 +109,7 @@ class MainActivity : ComponentActivity() {
                                 onResult = { result ->
                                     if (result.resultCode == RESULT_OK) {
                                         lifecycleScope.launch {
-                                            val signInResult = GoogleAuthUiClient.signInWithIntent(
+                                            val signInResult = googleAuthUiClient.signInWithIntent(
                                                 intent = result.data ?: return@launch
                                             )
                                             viewModel.onSignInResult(signInResult)
@@ -121,23 +118,25 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
 
-                            // Tampilkan background gradient untuk Login Screen
+                            // Tampilkan background ilustrasi cuaca untuk Login Screen
+                            val loginPrefs = remember {
+                                applicationContext.getSharedPreferences("WashFlowPrefs", MODE_PRIVATE)
+                            }
+                            val cachedLoginWeather = remember {
+                                loginPrefs.getString("WEATHER_DESC", "Sunny") ?: "Sunny"
+                            }
                             Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(
-                                        Brush.linearGradient(
-                                            colors = listOf(MainBlue, MornYellow),
-                                            start = Offset(0f, Float.POSITIVE_INFINITY),
-                                            end = Offset(Float.POSITIVE_INFINITY, 0f)
-                                        )
-                                    )
+                                modifier = Modifier.fillMaxSize()
                             ) {
+                                com.aprilarn.washflow.ui.components.WeatherBackgroundIllustration(
+                                    weather = cachedLoginWeather,
+                                    modifier = Modifier.matchParentSize()
+                                )
                                 LoginScreen(
                                     state = state,
                                     onGoogleSignInClick = {
                                         lifecycleScope.launch {
-                                            val signInIntentSender = GoogleAuthUiClient.signIn()
+                                            val signInIntentSender = googleAuthUiClient.signIn()
                                             launcher.launch(
                                                 IntentSenderRequest.Builder(
                                                     signInIntentSender ?: return@launch
@@ -211,7 +210,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                             val mainViewModel: MainViewModel = viewModel(factory = mainViewModelFactory)
-                            val userData = GoogleAuthUiClient.getSignedUser()
+                            val userData = googleAuthUiClient.getSignedUser()
 
 
                             // --- EFEK UNTUK NAVIGASI KELUAR ---
@@ -236,7 +235,7 @@ class MainActivity : ComponentActivity() {
                                     lifecycleScope.launch {
                                         // 1. TUNGGU proses Sign Out selesai sepenuhnya (Google & Firebase)
                                         try {
-                                            GoogleAuthUiClient.signOut()
+                                            googleAuthUiClient.signOut()
                                         } catch (e: Exception) {
                                             e.printStackTrace()
                                         }

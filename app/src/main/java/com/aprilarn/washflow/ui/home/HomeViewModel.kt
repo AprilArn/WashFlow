@@ -41,6 +41,40 @@ class HomeViewModel(
     private val gson = Gson()
 
     init {
+        val cachedWeather = sharedPreferences.getString("WEATHER_DESC", null)
+        val cachedWeatherType = sharedPreferences.getString("WEATHER_TYPE", "") ?: ""
+        val cachedIsDaytime = if (sharedPreferences.contains("IS_DAYTIME")) {
+            sharedPreferences.getBoolean("IS_DAYTIME", true)
+        } else {
+            null
+        }
+        if (!cachedWeather.isNullOrBlank()) {
+            _uiState.update {
+                it.copy(
+                    greeting = getGreetingMessage(),
+                    weather = cachedWeather,
+                    weatherType = cachedWeatherType,
+                    isDaytime = cachedIsDaytime
+                )
+            }
+        } else {
+            _uiState.update {
+                it.copy(
+                    greeting = getGreetingMessage(),
+                    isDaytime = cachedIsDaytime
+                )
+            }
+        }
+
+        // Lakukan sinkronisasi penuh satu kali saat aplikasi/Home dibuka
+        // Untuk memastikan data tidak out-of-sync akibat perubahan manual di database
+        viewModelScope.launch {
+            val workspaceId = workspaceRepository.getCurrentWorkspaceId()
+            if (workspaceId != null) {
+                workspaceRepository.syncMetadata(workspaceId)
+            }
+        }
+        
         listenForMetadataUpdates()
         listenForDeadlineUpdates()
         startPeriodicRefresh()
@@ -323,6 +357,12 @@ class HomeViewModel(
             Log.d("HomeViewModel", "Menggunakan data cuaca dari Cache Memori")
 
             val savedWeather = sharedPreferences.getString("WEATHER_DESC", "Unknown") ?: "Unknown"
+            val savedWeatherType = sharedPreferences.getString("WEATHER_TYPE", "") ?: ""
+            val savedIsDaytime = if (sharedPreferences.contains("IS_DAYTIME")) {
+                sharedPreferences.getBoolean("IS_DAYTIME", true)
+            } else {
+                null
+            }
             val savedTemp = sharedPreferences.getString("TEMP", "--°C") ?: "--°C"
             val savedIcon = sharedPreferences.getString("ICON_URL", "") ?: ""
             val savedLocName = sharedPreferences.getString("LOCATION_NAME", "Unknown Location") ?: "Unknown Location"
@@ -358,6 +398,8 @@ class HomeViewModel(
                     isLoading = false,
                     greeting = getGreetingMessage(),
                     weather = savedWeather,
+                    weatherType = savedWeatherType,
+                    isDaytime = savedIsDaytime,
                     temperature = savedTemp,
                     weatherIconUrl = savedIcon,
                     locationName = savedLocName,
@@ -401,28 +443,38 @@ class HomeViewModel(
 
                 val now = Calendar.getInstance()
                 val currentTimeMillis = now.timeInMillis
+                val locationTimeZone = try {
+                    java.util.TimeZone.getTimeZone(forecastResponse.timeZone.id)
+                } catch (e: Exception) {
+                    java.util.TimeZone.getDefault()
+                }
 
                 val hourlyForecasts = forecastResponse.forecastHours
                     .map { forecastItem ->
                         val time = String.format(Locale.US, "%02d:00", forecastItem.displayDateTime.hours)
                         val iconUrl = "${forecastItem.weatherCondition.iconBaseUri}.png"
 
-                        // Create a timestamp for reliable sorting
-                        val calendar = Calendar.getInstance().apply {
-                            set(Calendar.YEAR, forecastItem.displayDateTime.year)
-                            set(Calendar.MONTH, forecastItem.displayDateTime.month - 1)
-                            set(Calendar.DAY_OF_MONTH, forecastItem.displayDateTime.day)
-                            set(Calendar.HOUR_OF_DAY, forecastItem.displayDateTime.hours)
-                            set(Calendar.MINUTE, 0)
-                            set(Calendar.SECOND, 0)
-                            set(Calendar.MILLISECOND, 0)
+                        // Gunakan UTC timestamp dari interval.startTime agar akurat lintas zona waktu negara
+                        val parsedStartTs = parseIsoToTimestamp(forecastItem.interval.startTime)
+                        val itemTimestamp = if (parsedStartTs > 0L) {
+                            parsedStartTs
+                        } else {
+                            Calendar.getInstance(locationTimeZone).apply {
+                                set(Calendar.YEAR, forecastItem.displayDateTime.year)
+                                set(Calendar.MONTH, forecastItem.displayDateTime.month - 1)
+                                set(Calendar.DAY_OF_MONTH, forecastItem.displayDateTime.day)
+                                set(Calendar.HOUR_OF_DAY, forecastItem.displayDateTime.hours)
+                                set(Calendar.MINUTE, 0)
+                                set(Calendar.SECOND, 0)
+                                set(Calendar.MILLISECOND, 0)
+                            }.timeInMillis
                         }
 
                         HourlyForecastUiState(
                             time = time,
                             iconUrl = iconUrl,
                             temperature = "${forecastItem.temperature.degrees.roundToInt()}°",
-                            timestamp = calendar.timeInMillis
+                            timestamp = itemTimestamp
                         )
                     }
                     .filter { it.timestamp > currentTimeMillis }
@@ -450,6 +502,8 @@ class HomeViewModel(
                     putFloat("LAST_LAT", lat.toFloat())
                     putFloat("LAST_LON", lon.toFloat())
                     putString("WEATHER_DESC", weatherResponse.weatherCondition.description.text)
+                    putString("WEATHER_TYPE", weatherResponse.weatherCondition.type)
+                    putBoolean("IS_DAYTIME", weatherResponse.isDaytime)
                     putString("TEMP", "${weatherResponse.temperature.degrees.roundToInt()}°C")
                     putString("ICON_URL", "${weatherResponse.weatherCondition.iconBaseUri}.png")
                     putString("LOCATION_NAME", addressText)
@@ -475,6 +529,8 @@ class HomeViewModel(
                         isLoading = false,
                         greeting = getGreetingMessage(),
                         weather = weatherResponse.weatherCondition.description.text,
+                        weatherType = weatherResponse.weatherCondition.type,
+                        isDaytime = weatherResponse.isDaytime,
                         temperature = "${weatherResponse.temperature.degrees.roundToInt()}°C",
                         weatherIconUrl = "${weatherResponse.weatherCondition.iconBaseUri}.png",
                         locationName = addressText,

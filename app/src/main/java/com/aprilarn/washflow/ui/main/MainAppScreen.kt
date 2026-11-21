@@ -1,10 +1,11 @@
-package com.aprilarn.washflow.ui
+package com.aprilarn.washflow.ui.main
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,16 +18,17 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -36,22 +38,32 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.aprilarn.washflow.AppNavigation
+import com.aprilarn.washflow.data.model.Customers
+import com.aprilarn.washflow.data.model.Items
+import com.aprilarn.washflow.data.remote.weather.service.GeocodingApiService
 import com.aprilarn.washflow.data.repository.CustomerRepository
 import com.aprilarn.washflow.data.repository.ItemRepository
 import com.aprilarn.washflow.data.repository.NotificationsRepository
 import com.aprilarn.washflow.data.repository.OrderRepository
 import com.aprilarn.washflow.data.repository.ServiceRepository
 import com.aprilarn.washflow.data.repository.WorkspaceRepository
+import com.aprilarn.washflow.ui.aiagent.AiAgentAction
 import com.aprilarn.washflow.ui.components.Header
 import com.aprilarn.washflow.ui.components.KickedDialog
 import com.aprilarn.washflow.ui.components.LeaveWorkspaceDialog
+import com.aprilarn.washflow.ui.components.ExitConfirmationDialog
 import com.aprilarn.washflow.ui.aiagent.AiAgentPanel
 import com.aprilarn.washflow.ui.aiagent.component.VoiceAgentOverlay
 import com.aprilarn.washflow.ui.aiagent.AiAgentViewModel
+import com.aprilarn.washflow.ui.aiagent.AiModelStatus
+import com.aprilarn.washflow.ui.aiagent.VoiceAgentStatus
 import com.aprilarn.washflow.ui.notifications.NotificationPanel
 import com.aprilarn.washflow.ui.notifications.NotificationPreviewItem
 import com.aprilarn.washflow.ui.notifications.NotificationsViewModel
 import com.aprilarn.washflow.ui.analytics.AnalyticsScreen
+import com.aprilarn.washflow.ui.analytics.AnalyticsViewModel
+import com.aprilarn.washflow.ui.components.OfflineBanner
+import com.aprilarn.washflow.ui.components.rememberConnectivityState
 import com.aprilarn.washflow.ui.contributors.ContributorsScreen
 import com.aprilarn.washflow.ui.contributors.ContributorsViewModel
 import com.aprilarn.washflow.ui.customers.CustomersScreen
@@ -72,14 +84,14 @@ import com.aprilarn.washflow.ui.settings.SettingsScreen
 import com.aprilarn.washflow.ui.settings.SettingsViewModel
 import com.aprilarn.washflow.ui.tabledata.TableDataScreen
 import com.aprilarn.washflow.ui.tabledata.TableDataViewModel
-import com.aprilarn.washflow.ui.theme.MainBlue
-import com.aprilarn.washflow.ui.theme.MornYellow
 import com.aprilarn.washflow.ui.workspace.ActiveInviteDialog
 import com.aprilarn.washflow.ui.workspace.CreateInviteDialog
 import com.aprilarn.washflow.ui.workspace.DeleteWorkspaceDialog
 import com.aprilarn.washflow.ui.workspace.OperationalHoursDialog
 import com.aprilarn.washflow.ui.workspace.RenameWorkspaceDialog
 import com.aprilarn.washflow.ui.workspace.WorkspaceOptionsDropdown
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 
 @Composable
 fun MainAppScreen(
@@ -118,52 +130,52 @@ fun MainAppScreen(
         }
     )
 
-    val customersViewModel: com.aprilarn.washflow.ui.customers.CustomersViewModel = viewModel()
+    val customersViewModel: CustomersViewModel = viewModel()
     val itemsViewModel: ItemsViewModel = viewModel()
 
     // Handle AI Agent actions (navigation)
     LaunchedEffect(Unit) {
         aiAgentViewModel.actionEvents.collect { action ->
             when (action) {
-                is com.aprilarn.washflow.ui.aiagent.AiAgentAction.Navigate -> {
+                is AiAgentAction.Navigate -> {
                     bottomNavController.navigate(action.destination.route)
                 }
-                is com.aprilarn.washflow.ui.aiagent.AiAgentAction.AddCustomer -> {
+                is AiAgentAction.AddCustomer -> {
                     customersViewModel.addCustomer(action.name, action.phoneNumber)
-                    android.widget.Toast.makeText(context, "Customer '${action.name}' added successfully!", android.widget.Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Customer '${action.name}' added successfully!", Toast.LENGTH_SHORT).show()
                 }
-                is com.aprilarn.washflow.ui.aiagent.AiAgentAction.DeleteCustomer -> {
+                is AiAgentAction.DeleteCustomer -> {
                     if (action.customerId.isNotEmpty()) {
-                        val customerToDelete = com.aprilarn.washflow.data.model.Customers(
+                        val customerToDelete = Customers(
                             customerId = action.customerId,
                             name = action.name
                         )
                         customersViewModel.deleteCustomer(customerToDelete)
-                        android.widget.Toast.makeText(context, "Customer '${action.name}' deleted successfully!", android.widget.Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Customer '${action.name}' deleted successfully!", Toast.LENGTH_SHORT).show()
                     } else {
-                        android.widget.Toast.makeText(context, "Error: Customer ID not found.", android.widget.Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Error: Customer ID not found.", Toast.LENGTH_SHORT).show()
                     }
                 }
-                is com.aprilarn.washflow.ui.aiagent.AiAgentAction.AddItem -> {
+                is AiAgentAction.AddItem -> {
                     itemsViewModel.addItem(action.serviceId, action.itemName, action.itemPrice)
-                    android.widget.Toast.makeText(context, "Item '${action.itemName}' added successfully!", android.widget.Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Item '${action.itemName}' added successfully!", Toast.LENGTH_SHORT).show()
                 }
-                is com.aprilarn.washflow.ui.aiagent.AiAgentAction.DeleteItem -> {
+                is AiAgentAction.DeleteItem -> {
                     if (action.itemId.isNotEmpty()) {
-                        val itemToDelete = com.aprilarn.washflow.data.model.Items(
+                        val itemToDelete = Items(
                             itemId = action.itemId,
                             itemName = action.itemName
                         )
                         itemsViewModel.deleteItem(itemToDelete)
-                        android.widget.Toast.makeText(context, "Item '${action.itemName}' deleted successfully!", android.widget.Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Item '${action.itemName}' deleted successfully!", Toast.LENGTH_SHORT).show()
                     } else {
-                        android.widget.Toast.makeText(context, "Error: Item ID not found.", android.widget.Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Error: Item ID not found.", Toast.LENGTH_SHORT).show()
                     }
                 }
-                is com.aprilarn.washflow.ui.aiagent.AiAgentAction.Unknown -> {
+                is AiAgentAction.Unknown -> {
                     // Log or handle unknown action
                 }
-                com.aprilarn.washflow.ui.aiagent.AiAgentAction.None -> {
+                AiAgentAction.None -> {
                     // Do nothing
                 }
             }
@@ -179,12 +191,12 @@ fun MainAppScreen(
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             // 1. Buat Retrofit instance untuk Geocoding API
-            val retrofit = retrofit2.Retrofit.Builder()
+            val retrofit = Retrofit.Builder()
                 .baseUrl("https://maps.googleapis.com/")
-                .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
+                .addConverterFactory(GsonConverterFactory.create())
                 .build()
 
-            val geocodingService = retrofit.create(com.aprilarn.washflow.data.remote.weather.service.GeocodingApiService::class.java)
+            val geocodingService = retrofit.create(GeocodingApiService::class.java)
 
             // 2. Ambil SharedPreferences
             val sharedPrefs = context.getSharedPreferences("WashFlowPrefs", Context.MODE_PRIVATE)
@@ -194,6 +206,23 @@ fun MainAppScreen(
         }
     }
     val homeViewModel: HomeViewModel = viewModel(factory = homeViewModelFactory)
+    val homeUiState by homeViewModel.uiState.collectAsStateWithLifecycle()
+
+    var showExitDialog by remember { mutableStateOf(false) }
+
+    val isDarkWeatherBg = remember(
+        homeUiState.weather,
+        homeUiState.greeting,
+        homeUiState.weatherType,
+        homeUiState.isDaytime
+    ) {
+        com.aprilarn.washflow.ui.components.isDarkWeatherScene(
+            weatherText = homeUiState.weather,
+            greetingText = homeUiState.greeting,
+            weatherType = homeUiState.weatherType,
+            isDaytime = homeUiState.isDaytime
+        )
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -204,15 +233,16 @@ fun MainAppScreen(
                 workspaceName = mainUiState.workspaceName,
                 unreadCount = notificationsUiState.unreadCount,
                 isWorkspaceExpanded = mainUiState.showWorkspaceOptions,
+                isDarkBackground = isDarkWeatherBg,
                 notificationPreviews = notificationsUiState.notificationPreviews,
                 onWorkspaceClick = { mainViewModel.onWorkspaceNameClicked() },
                 onNotifClick = { notificationsViewModel.onNotificationIconClicked() },
                 onAiAgentClick = { aiAgentViewModel.onToggleAiAgent() },
                 onAiAgentLongClick = {
-                    val permission = android.Manifest.permission.RECORD_AUDIO
-                    val isGranted = androidx.core.content.ContextCompat.checkSelfPermission(
+                    val permission = Manifest.permission.RECORD_AUDIO
+                    val isGranted = ContextCompat.checkSelfPermission(
                         context, permission
-                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                    ) == PackageManager.PERMISSION_GRANTED
 
                     if (isGranted) {
                         aiAgentViewModel.onStartVoiceAgent(context)
@@ -220,10 +250,10 @@ fun MainAppScreen(
                         permissionLauncher.launch(permission)
                     }
                 },
-                isAiVoiceActive = aiAgentUiState.voiceAgentStatus != com.aprilarn.washflow.ui.aiagent.VoiceAgentStatus.IDLE ||
+                isAiVoiceActive = aiAgentUiState.voiceAgentStatus != VoiceAgentStatus.IDLE ||
                         aiAgentUiState.isAiThinking ||
                         aiAgentUiState.isTypewriterActive ||
-                        aiAgentUiState.modelStatus == com.aprilarn.washflow.ui.aiagent.AiModelStatus.COOLDOWN,
+                        aiAgentUiState.modelStatus == AiModelStatus.COOLDOWN,
                 onRemovePreview = { id, swiped -> notificationsViewModel.removeNotificationPreview(id, swiped) },
                 workspaceDropdown = { wsOffset ->
                     WorkspaceOptionsDropdown(
@@ -259,24 +289,32 @@ fun MainAppScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(MainBlue, MornYellow),
-                        start = Offset(0f, Float.POSITIVE_INFINITY),
-                        end = Offset(Float.POSITIVE_INFINITY, 0f)
-                    )
-                )
-                .padding(innerPadding)
-                .padding(horizontal = 32.dp)
-                .navigationBarsPadding()
-                .padding(bottom = 34.dp)
+            modifier = Modifier.fillMaxSize()
         ) {
+            com.aprilarn.washflow.ui.components.WeatherBackgroundIllustration(
+                weather = homeUiState.weather,
+                greeting = homeUiState.greeting,
+                weatherType = homeUiState.weatherType,
+                isDaytime = homeUiState.isDaytime,
+                modifier = Modifier.matchParentSize()
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(horizontal = 32.dp)
+                    .navigationBarsPadding()
+                    .padding(bottom = 34.dp)
+            ) {
             // NavHost internal untuk mengatur layar yang diakses dari Bottom Navigation Bar
             NavHost(navController = bottomNavController, startDestination = AppNavigation.Home.route) {
 
                 composable(AppNavigation.Home.route) {
+                    androidx.activity.compose.BackHandler(enabled = true) {
+                        showExitDialog = true
+                    }
+                    
                     LocationAwareHomePage(
                         homeViewModel = homeViewModel,
                         onNavigateToManageOrder = {
@@ -380,7 +418,7 @@ fun MainAppScreen(
                 }
 
                 composable(AppNavigation.Analytics.route) {
-                    val viewModel: com.aprilarn.washflow.ui.analytics.AnalyticsViewModel = viewModel()
+                    val viewModel: AnalyticsViewModel = viewModel()
                     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
                     AnalyticsScreen(
@@ -389,7 +427,11 @@ fun MainAppScreen(
                         onMonthSelected = { viewModel.onMonthSelected(it) },
                         onSearchQueryChanged = { viewModel.onSearchQueryChanged(it) },
                         onStatusFilterChanged = { viewModel.onStatusFilterChanged(it) },
-                        onSortColumnClicked = { viewModel.onSortColumnClicked(it) }
+                        onSortColumnClicked = { viewModel.onSortColumnClicked(it) },
+                        onLoadMoreMonths = { viewModel.loadMoreMonths() },
+                        onTogglePayment = { orderId, isPaid -> viewModel.toggleOrderPaymentStatus(orderId, isPaid) },
+                        onTogglePickup = { orderId, isPickedUp -> viewModel.toggleOrderPickupStatus(orderId, isPickedUp) },
+                        onToastShown = { viewModel.onToastShown() }
                     )
                 }
 
@@ -556,6 +598,13 @@ fun MainAppScreen(
                         onBackClick = { bottomNavController.popBackStack() }
                     )
                 }
+            }
+
+            if (showExitDialog) {
+                ExitConfirmationDialog(
+                    onDismiss = { showExitDialog = false }
+                )
+            }
             }
         }
     }
@@ -741,5 +790,16 @@ fun MainAppScreen(
             workspaceName = mainUiState.kickedFromWorkspaceName,
             onConfirm = { mainViewModel.onKickedDialogConfirm() }
         )
+    }
+
+    // --- BANNER OFFLINE (Paling Atas Z-Index) ---
+    val isOnline by rememberConnectivityState()
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .zIndex(200f),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        OfflineBanner(isOffline = !isOnline)
     }
 }

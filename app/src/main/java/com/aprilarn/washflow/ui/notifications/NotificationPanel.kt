@@ -122,22 +122,30 @@ fun NotificationPanel(
 
                         Row(
                             modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp) // Kurangi jarak antar tombol
                         ) {
-                            Text(
-                                text = "Unread",
-                                color = if (filter == NotificationFilter.UNREAD) MainFontBlack else Color.Gray,
-                                fontWeight = if (filter == NotificationFilter.UNREAD) FontWeight.Bold else FontWeight.Medium,
-                                fontSize = 14.sp,
-                                modifier = Modifier.clickable { onFilterChange(NotificationFilter.UNREAD) }
-                            )
-                            Text(
-                                text = "All",
-                                color = if (filter == NotificationFilter.ALL) MainFontBlack else Color.Gray,
-                                fontWeight = if (filter == NotificationFilter.ALL) FontWeight.Bold else FontWeight.Medium,
-                                fontSize = 14.sp,
-                                modifier = Modifier.clickable { onFilterChange(NotificationFilter.ALL) }
-                            )
+                            TextButton(
+                                onClick = { onFilterChange(NotificationFilter.UNREAD) },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "Unread",
+                                    color = if (filter == NotificationFilter.UNREAD) MainFontBlack else Color.Gray,
+                                    fontWeight = if (filter == NotificationFilter.UNREAD) FontWeight.Bold else FontWeight.Medium,
+                                    fontSize = 14.sp
+                                )
+                            }
+                            TextButton(
+                                onClick = { onFilterChange(NotificationFilter.ALL) },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "All",
+                                    color = if (filter == NotificationFilter.ALL) MainFontBlack else Color.Gray,
+                                    fontWeight = if (filter == NotificationFilter.ALL) FontWeight.Bold else FontWeight.Medium,
+                                    fontSize = 14.sp
+                                )
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(12.dp))

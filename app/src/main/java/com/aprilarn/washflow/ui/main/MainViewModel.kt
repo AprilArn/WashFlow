@@ -1,6 +1,7 @@
 // com/aprilarn/washflow/ui/MainViewModel.kt
-package com.aprilarn.washflow.ui
+package com.aprilarn.washflow.ui.main
 
+import android.content.SharedPreferences
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -28,7 +29,7 @@ sealed class MainNavigationEvent {
 class MainViewModel(
     private val workspaceRepository: WorkspaceRepository,
     private val inviteRepository: InviteRepository,
-    private val sharedPreferences: android.content.SharedPreferences
+    private val sharedPreferences: SharedPreferences
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MainUiState())
@@ -47,8 +48,7 @@ class MainViewModel(
     private fun listenForWorkspaceChanges() {
         viewModelScope.launch {
             workspaceRepository.getCurrentWorkspaceRealtime().collect { workspace ->
-                val currentUser = Firebase.auth.currentUser
-                if (currentUser == null) return@collect
+                val currentUser = Firebase.auth.currentUser ?: return@collect
 
                 val previousState = _uiState.value
                 val previouslyHadWorkspace = previousState.workspaceName != "Loading..." && previousState.workspaceName.isNotEmpty()
@@ -74,11 +74,7 @@ class MainViewModel(
                         }
                     }
                 } else {
-                    val isOwner = if (currentUser != null) {
-                        workspace.contributors?.get(currentUser.uid) == "owner"
-                    } else {
-                        false
-                    }
+                    val isOwner = workspace.contributors?.get(currentUser.uid) == "owner"
 
                     _uiState.update {
                         it.copy(

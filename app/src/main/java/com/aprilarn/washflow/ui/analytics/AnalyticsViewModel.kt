@@ -2,6 +2,7 @@ package com.aprilarn.washflow.ui.analytics
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aprilarn.washflow.data.repository.CustomerRepository
 import com.aprilarn.washflow.data.repository.OrderRepository
 import com.aprilarn.washflow.data.repository.ServiceRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,27 +14,38 @@ import kotlinx.coroutines.launch
 
 class AnalyticsViewModel(
     private val orderRepository: OrderRepository = OrderRepository(),
-    private val serviceRepository: ServiceRepository = ServiceRepository()
+    private val serviceRepository: ServiceRepository = ServiceRepository(),
+    private val customerRepository: CustomerRepository = CustomerRepository()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AnalyticsUiState())
     val uiState = _uiState.asStateFlow()
 
+    private var listenJob: kotlinx.coroutines.Job? = null
+    private var currentMonthsBack = 3
+
     init {
-        _uiState.update {
-            it.copy(
-                recentOrders = mockRecentOrders,
-                upcomingDeadlines = mockUpcomingDeadlines,
-                cards = mockCards
-            )
-        }
         listenForData()
+        listenForActiveAndReferenceData()
     }
 
     private fun listenForData() {
-        viewModelScope.launch {
+        listenJob?.cancel()
+        listenJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val ordersFlow = orderRepository.getOrdersRealtime()
+
+            // Mulai dari tanggal 1 bulan ke-N ke belakang agar bulan pembanding (M-2 dst.) selalu utuh
+            val calendar = java.util.Calendar.getInstance().apply {
+                add(java.util.Calendar.MONTH, -currentMonthsBack)
+                set(java.util.Calendar.DAY_OF_MONTH, 1)
+                set(java.util.Calendar.HOUR_OF_DAY, 0)
+                set(java.util.Calendar.MINUTE, 0)
+                set(java.util.Calendar.SECOND, 0)
+                set(java.util.Calendar.MILLISECOND, 0)
+            }
+            val startDate = com.google.firebase.Timestamp(calendar.time)
+
+            val ordersFlow = orderRepository.getOrdersRealtime(startDate = startDate)
             val servicesFlow = serviceRepository.getServicesRealtime()
 
             combine(ordersFlow, servicesFlow) { orders, services ->
@@ -41,6 +53,7 @@ class AnalyticsViewModel(
                     it.copy(
                         orders = orders,
                         services = services,
+                        loadedMonthsCount = currentMonthsBack,
                         isLoading = false
                     )
                 }
@@ -48,6 +61,81 @@ class AnalyticsViewModel(
                 _uiState.update { it.copy(isLoading = false) }
             }.collect {}
         }
+    }
+
+    private fun listenForActiveAndReferenceData() {
+        viewModelScope.launch {
+            val activeOrdersFlow = orderRepository.getOrdersRealtime(activeOnly = true)
+            val customersFlow = customerRepository.getCustomersRealtime()
+
+            combine(activeOrdersFlow, customersFlow) { activeOrders, customers ->
+                _uiState.update {
+                    it.copy(
+                        activeOrders = activeOrders,
+                        customers = customers
+                    )
+                }
+            }.catch {
+                // Abaikan error sekunder agar tidak memblokir data utama
+            }.collect {}
+        }
+    }
+
+    fun loadMoreMonths() {
+        viewModelScope.launch {
+            val calendar = java.util.Calendar.getInstance().apply {
+                add(java.util.Calendar.MONTH, -currentMonthsBack)
+                set(java.util.Calendar.DAY_OF_MONTH, 1)
+                set(java.util.Calendar.HOUR_OF_DAY, 0)
+                set(java.util.Calendar.MINUTE, 0)
+                set(java.util.Calendar.SECOND, 0)
+                set(java.util.Calendar.MILLISECOND, 0)
+            }
+            val currentStartDate = com.google.firebase.Timestamp(calendar.time)
+
+            val hasMore = orderRepository.hasOrdersBefore(currentStartDate)
+            if (hasMore) {
+                currentMonthsBack += 1
+                _uiState.update { it.copy(loadedMonthsCount = currentMonthsBack) }
+                listenForData()
+            } else {
+                _uiState.update { it.copy(toastMessage = "Tidak ada data order yang lebih lama") }
+            }
+        }
+    }
+
+    fun toggleOrderPaymentStatus(orderId: String, isPaid: Boolean) {
+        viewModelScope.launch {
+            val success = orderRepository.updateOrderPaymentStatus(orderId, isPaid)
+            _uiState.update {
+                it.copy(
+                    toastMessage = if (success) {
+                        if (isPaid) "Pembayaran ditandai lunas" else "Status pembayaran diubah ke belum lunas"
+                    } else {
+                        "Gagal memperbarui status pembayaran"
+                    }
+                )
+            }
+        }
+    }
+
+    fun toggleOrderPickupStatus(orderId: String, isPickedUp: Boolean) {
+        viewModelScope.launch {
+            val success = orderRepository.updateOrderPickupStatus(orderId, isPickedUp)
+            _uiState.update {
+                it.copy(
+                    toastMessage = if (success) {
+                        if (isPickedUp) "Order ditandai sudah diambil" else "Status pengambilan dibatalkan"
+                    } else {
+                        "Gagal memperbarui status pengambilan"
+                    }
+                )
+            }
+        }
+    }
+
+    fun onToastShown() {
+        _uiState.update { it.copy(toastMessage = null) }
     }
 
     fun onTabSelected(tab: String) {

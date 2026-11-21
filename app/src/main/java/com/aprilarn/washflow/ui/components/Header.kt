@@ -1,5 +1,7 @@
 package com.aprilarn.washflow.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
@@ -9,7 +11,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -37,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontStyle
@@ -49,8 +51,6 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.aprilarn.washflow.data.model.Notifications
-import com.aprilarn.washflow.ui.theme.GrayBlue
-import com.aprilarn.washflow.ui.theme.SoftBlue
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -67,6 +67,7 @@ fun Header(
     workspaceName: String,
     unreadCount: Int,
     isWorkspaceExpanded: Boolean = false,
+    isDarkBackground: Boolean = false,
     notificationPreviews: List<Notifications> = emptyList(),
     onWorkspaceClick: () -> Unit,
     onNotifClick: () -> Unit,
@@ -79,6 +80,27 @@ fun Header(
     var currentTime by remember { mutableStateOf(System.currentTimeMillis()) }
     val startTime = remember { System.currentTimeMillis() }
     var uptimeMillis by remember { mutableStateOf(0L) }
+
+    // Warna aksen teks & elemen sekunder di Header menyesuaikan gelap/terangnya langit secara dinamis:
+    // - Saat background gelap (malam/badai/hujan): menjadi biru-es pastel yang cerah agar kontras & tajam.
+    // - Saat background terang (siang cerah/berawan): menjadi slate-navy yang lebih gelap & tegas.
+    val brandAccentColor by animateColorAsState(
+        targetValue = if (isDarkBackground) Color(0xFFD8E6FF) else Color(0xFF3B4870),
+        animationSpec = tween(durationMillis = 700),
+        label = "headerBrandAccentColor"
+    )
+    val subTextColor by animateColorAsState(
+        targetValue = if (isDarkBackground) Color(0xFFD4E3FC) else Color(0xFF44527C),
+        animationSpec = tween(durationMillis = 700),
+        label = "headerSubTextColor"
+    )
+    val primaryTextShadow = remember(isDarkBackground) {
+        Shadow(
+            color = Color(0xFF2B3F63).copy(alpha = if (isDarkBackground) 0.14f else 0.22f),
+            offset = Offset(0f, 1.5f),
+            blurRadius = 4f
+        )
+    }
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -98,11 +120,20 @@ fun Header(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = "Wash",
-                style = MaterialTheme.typography.headlineMedium.copy(color = GrayBlue, fontSize = 22.sp)
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    color = brandAccentColor,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
             )
             Text(
                 text = "Flow",
-                style = MaterialTheme.typography.headlineSmall.copy(color = Color.White, fontSize = 22.sp, fontStyle = FontStyle.Italic)
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    color = Color.White,
+                    fontSize = 22.sp,
+                    fontStyle = FontStyle.Italic,
+                    shadow = primaryTextShadow
+                )
             )
         }
 
@@ -111,7 +142,7 @@ fun Header(
         // --- NAVIGATION BAR ---
         NavigationBar(navController = navController)
 
-        Spacer(modifier=Modifier.weight(1f))
+        Spacer(modifier = Modifier.weight(1f))
 
         // --- WORKSPACE DROPDOWN TRIGGER ---
         var wsTriggerSize by remember { mutableStateOf(IntSize.Zero) }
@@ -128,7 +159,8 @@ fun Header(
                     style = MaterialTheme.typography.bodyMedium.copy(
                         color = Color.White,
                         fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
+                        shadow = primaryTextShadow
                     )
                 )
                 Icon(
@@ -146,7 +178,10 @@ fun Header(
 
         // --- CLOCK & UPTIME ---
         Row(verticalAlignment = Alignment.CenterVertically) {
-            AnalogClockIcon(millis = currentTime)
+            AnalogClockIcon(
+                millis = currentTime,
+                secondHandColor = subTextColor
+            )
             Spacer(modifier = Modifier.width(8.dp))
             Column(horizontalAlignment = Alignment.End) {
                 Text(
@@ -154,15 +189,16 @@ fun Header(
                     style = MaterialTheme.typography.labelMedium.copy(
                         color = Color.White,
                         fontWeight = FontWeight.Light,
-                        fontSize = 14.sp
+                        fontSize = 14.sp,
+                        shadow = primaryTextShadow
                     )
                 )
                 Text(
                     text = "active ${formatDuration(uptimeMillis)}",
                     style = MaterialTheme.typography.labelSmall.copy(
-                        color = SoftBlue,
+                        color = subTextColor,
                         fontSize = 10.sp,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.SemiBold
                     )
                 )
             }
@@ -217,7 +253,11 @@ private fun formatDuration(millis: Long): String {
 }
 
 @Composable
-fun AnalogClockIcon(millis: Long, modifier: Modifier = Modifier) {
+fun AnalogClockIcon(
+    millis: Long,
+    modifier: Modifier = Modifier,
+    secondHandColor: Color = Color(0xFFD4E3FC)
+) {
     Canvas(modifier = modifier.size(28.dp)) {
         val calendar = Calendar.getInstance().apply { timeInMillis = millis }
         val hours = calendar.get(Calendar.HOUR)
@@ -258,16 +298,16 @@ fun AnalogClockIcon(millis: Long, modifier: Modifier = Modifier) {
             strokeWidth = 1.5.dp.toPx()
         )
 
-        // Draw Second Hand (Pinkish/Red)
+        // Draw Second Hand (dinamis mengikuti kontras background)
         val secondAngle = seconds * 6f - 90f
         drawLine(
-            color = SoftBlue,
+            color = secondHandColor,
             start = center,
             end = Offset(
                 center.x + (radius * 0.85f) * cos(Math.toRadians(secondAngle.toDouble())).toFloat(),
                 center.y + (radius * 0.85f) * sin(Math.toRadians(secondAngle.toDouble())).toFloat()
             ),
-            strokeWidth = 1.dp.toPx()
+            strokeWidth = 1.2.dp.toPx()
         )
     }
 }

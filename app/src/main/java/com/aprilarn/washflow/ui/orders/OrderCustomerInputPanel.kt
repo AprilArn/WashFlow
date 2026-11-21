@@ -1,5 +1,8 @@
 package com.aprilarn.washflow.ui.orders
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -173,40 +176,61 @@ fun OrderCustomerInputPanel(
                 shape = RoundedCornerShape(12.dp)
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-            ){
-                OutlinedTextField(
-                    value = uiState.dueDate?.toDate()?.let {
-                        SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault()).format(it)
-                    } ?: "",
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Batas Waktu") },
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    colors = textFieldColors,
-                    shape = RoundedCornerShape(12.dp),
-                )
-                // Kotak transparan di atasnya untuk menangkap klik (MASIH ADA KECACATAN UI)
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .clickable {
-                            if (uiState.dueDate == null) {
-                                // Jika belum ada tanggal, set default ke 1 hari setelah sekarang
-                                val defaultDate = Calendar.getInstance().apply {
-                                    add(Calendar.DAY_OF_YEAR, 1)
-                                }
-                                viewModel.onDueDateChanged(Timestamp(defaultDate.time))
-                            }
-                            showDatePicker = true
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Gunakan Batas Waktu", style = MaterialTheme.typography.bodyMedium, color = GrayBlue)
+                Switch(
+                    checked = uiState.dueDate != null,
+                    onCheckedChange = { isChecked ->
+                        if (isChecked) {
+                            val defaultDate = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }
+                            viewModel.onDueDateChanged(Timestamp(defaultDate.time))
+                        } else {
+                            viewModel.onDueDateChanged(null)
                         }
-                        .clip(RoundedCornerShape(12.dp))
+                    },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = GrayBlue
+                    )
                 )
+            }
+
+            AnimatedVisibility(visible = uiState.dueDate != null) {
+                Column {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Batas Waktu:",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = GrayBlue,
+                        modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+                    )
+
+                    OutlinedButton(
+                        onClick = {
+                            showDatePicker = true
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        shape = RoundedCornerShape(50),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = GrayBlue,
+                            containerColor = Color.Transparent
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, GrayBlue)
+                    ) {
+                        val dateText = uiState.dueDate?.toDate()?.let {
+                            SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault()).format(it)
+                        } ?: ""
+                        Text(text = dateText, fontWeight = FontWeight.SemiBold)
+                    }
+                }
             }
         }
     }
@@ -240,7 +264,7 @@ fun OrderCustomerInputPanel(
                 }
             },
             dismissButton = {
-                Button(onClick = { showDatePicker = false }) {
+                TextButton(onClick = { showDatePicker = false }) {
                     Text("Cancel")
                 }
             }

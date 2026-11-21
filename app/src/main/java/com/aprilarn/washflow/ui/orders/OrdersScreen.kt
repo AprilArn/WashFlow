@@ -1,5 +1,6 @@
 package com.aprilarn.washflow.ui.orders
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -36,7 +37,9 @@ fun OrdersScreen(
     ) {
         // --- PANEL KIRI ---
         Column(
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .animateContentSize(animationSpec = androidx.compose.animation.core.tween(durationMillis = 300)),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Customer Panel
@@ -57,6 +60,13 @@ fun OrdersScreen(
             item = item,
             onDismiss = { viewModel.onDismissQuantityDialog() },
             onConfirm = { quantity -> viewModel.onQuantityConfirmed(quantity) }
+        )
+    }
+
+    if (uiState.showNoDeadlineWarning) {
+        com.aprilarn.washflow.ui.components.NoDeadlineConfirmationDialog(
+            onConfirm = { viewModel.proceedCreateOrder() },
+            onDismiss = { viewModel.dismissNoDeadlineWarning() }
         )
     }
 }

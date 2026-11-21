@@ -26,12 +26,30 @@ class OrderRepository {
             val userDoc = db.collection("users").document(user.uid).get().await()
             userDoc.getString("workspaceId")
         } catch (e: Exception) {
+            e.printStackTrace()
             null
         }
     }
 
+    suspend fun hasOrdersBefore(date: Timestamp): Boolean {
+        val workspaceId = getWorkspaceId() ?: return false
+        return try {
+            val snapshot = db.collection("workspaces")
+                .document(workspaceId)
+                .collection("orders")
+                .whereLessThan("orderDate", date)
+                .limit(1)
+                .get()
+                .await()
+            !snapshot.isEmpty
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
     // Fungsi untuk mendapatkan semua order secara realtime
-    suspend fun getOrdersRealtime(activeOnly: Boolean = false): Flow<List<Orders>> {
+    fun getOrdersRealtime(activeOnly: Boolean = false, startDate: Timestamp? = null): Flow<List<Orders>> {
         return callbackFlow {
             val workspaceId = getWorkspaceId()
             if (workspaceId == null) {
@@ -49,9 +67,13 @@ class OrderRepository {
                 query = query.whereEqualTo("archived", false)
             }
 
+            if (startDate != null) {
+                query = query.whereGreaterThanOrEqualTo("orderDate", startDate)
+            }
+
             val listener = query.addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    if (error is FirebaseFirestoreException && error.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+                    if (error.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
                         close()
                         return@addSnapshotListener
                     }
@@ -78,15 +100,10 @@ class OrderRepository {
                             val isPaidAndPickedUp = order.alreadyPaid && order.alreadyPickedUp
                             
                             val pickupTime = order.orderPickupDate?.toDate()?.time ?: 0L
-                            val isPickedUpMoreThanOneDayAgo = if (pickupTime > 0) {
-                                (currentTime - pickupTime) > oneDayInMillis
-                            } else true
+                            val isPickedUpMoreThanOneDayAgo = pickupTime <= 0 || (currentTime - pickupTime) > oneDayInMillis
                             
                             val paidTime = order.orderPaidDate?.toDate()?.time ?: 0L
-                            val isPaidMoreThanOneDayAgo = if (paidTime > 0) {
-                                (currentTime - paidTime) > oneDayInMillis
-                            } else true
-                            
+                            val isPaidMoreThanOneDayAgo = paidTime <= 0 || (currentTime - paidTime) > oneDayInMillis
                             isDone && isPaidAndPickedUp && isPickedUpMoreThanOneDayAgo && isPaidMoreThanOneDayAgo
                         }
                         
@@ -129,7 +146,7 @@ class OrderRepository {
         }
     }
 
-    suspend fun getActiveOrdersWithDeadlinesRealtime(): Flow<List<Orders>> {
+    fun getActiveOrdersWithDeadlinesRealtime(): Flow<List<Orders>> {
         return callbackFlow {
             val workspaceId = getWorkspaceId()
             if (workspaceId == null) {
@@ -144,7 +161,7 @@ class OrderRepository {
                 .whereIn("status", listOf("On Queue", "On Process"))
                 .addSnapshotListener { snapshot, error ->
                     if (error != null) {
-                        if (error is FirebaseFirestoreException && error.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+                        if (error.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
                             close()
                             return@addSnapshotListener
                         }
@@ -264,6 +281,7 @@ class OrderRepository {
                 .await()
             doc.toObject(Orders::class.java)
         } catch (e: Exception) {
+            e.printStackTrace()
             null
         }
     }

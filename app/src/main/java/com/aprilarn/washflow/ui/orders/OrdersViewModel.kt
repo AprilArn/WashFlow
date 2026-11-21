@@ -69,7 +69,7 @@ class OrdersViewModel(
         }
     }
 
-    fun onDueDateChanged(timestamp: Timestamp) {
+    fun onDueDateChanged(timestamp: Timestamp?) {
         _uiState.update { it.copy(dueDate = timestamp) }
     }
 
@@ -163,16 +163,29 @@ class OrdersViewModel(
     }
 
     fun createOrder() {
+        val state = _uiState.value
+        if (state.selectedCustomer == null || state.selectedItems.isEmpty()) {
+            _uiState.update { it.copy(errorMessage = "Please complete the customer and item details.") }
+            return
+        }
+
+        if (state.dueDate == null) {
+            _uiState.update { it.copy(showNoDeadlineWarning = true) }
+            return
+        }
+
+        proceedCreateOrder()
+    }
+
+    fun dismissNoDeadlineWarning() {
+        _uiState.update { it.copy(showNoDeadlineWarning = false) }
+    }
+
+    fun proceedCreateOrder() {
         viewModelScope.launch {
+            _uiState.update { it.copy(showNoDeadlineWarning = false, isCreatingOrder = true) }
             val state = _uiState.value
-            if (state.selectedCustomer == null || state.selectedItems.isEmpty() || state.dueDate == null) {
-                _uiState.update { it.copy(errorMessage = "Please complete the order details.") }
-                return@launch
-            }
 
-            _uiState.update { it.copy(isCreatingOrder = true) }
-
-            // --- PERBAIKAN DI SINI ---
             // Langsung ambil daftar OrderItem dari state. Tidak perlu .map lagi.
             val orderItems = state.selectedItems.values.toList()
 
@@ -181,10 +194,14 @@ class OrdersViewModel(
 
             if (state.editingOrderId != null) {
                 // Update Order
-                val existingOrder = orderRepository.getOrderById(state.editingOrderId) ?: return@launch
+                val existingOrder = orderRepository.getOrderById(state.editingOrderId)
+                if (existingOrder == null) {
+                    _uiState.update { it.copy(isCreatingOrder = false, errorMessage = "Failed to load existing order.") }
+                    return@launch
+                }
                 
                 val updatedOrder = existingOrder.copy(
-                    customerId = state.selectedCustomer.customerId,
+                    customerId = state.selectedCustomer!!.customerId,
                     customerName = state.selectedCustomer.name,
                     orderDueDate = state.dueDate,
                     orderItems = orderItems,
@@ -215,7 +232,7 @@ class OrdersViewModel(
                 // Create New Order
                 val newOrder = Orders(
                     orderId = "", // Akan dibuat oleh repository
-                    customerId = state.selectedCustomer.customerId,
+                    customerId = state.selectedCustomer!!.customerId,
                     customerName = state.selectedCustomer.name,
                     orderDate = Timestamp.now(),
                     orderDueDate = state.dueDate,

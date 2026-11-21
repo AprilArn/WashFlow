@@ -1,13 +1,27 @@
 package com.aprilarn.washflow.ui.analytics.component
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.AnimationState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateTo
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
@@ -18,7 +32,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -28,11 +48,31 @@ import androidx.compose.ui.unit.sp
 import com.aprilarn.washflow.data.model.Orders
 import com.aprilarn.washflow.data.model.Services
 import com.aprilarn.washflow.ui.analytics.ReportSortColumn
+import com.aprilarn.washflow.ui.analytics.isDone
+import com.aprilarn.washflow.ui.theme.Gray
 import com.aprilarn.washflow.ui.theme.GrayBlue
+import com.aprilarn.washflow.ui.theme.MainFontBlack
+import com.aprilarn.washflow.ui.theme.PastelAmber
+import com.aprilarn.washflow.ui.theme.PastelAmberBg
+import com.aprilarn.washflow.ui.theme.PastelBlue
+import com.aprilarn.washflow.ui.theme.PastelBlueBg
+import com.aprilarn.washflow.ui.theme.PastelBlueIconBg
+import com.aprilarn.washflow.ui.theme.PastelBlueSoftBg
+import com.aprilarn.washflow.ui.theme.PastelGreen
+import com.aprilarn.washflow.ui.theme.PastelGreenBg
+import com.aprilarn.washflow.ui.theme.PastelNeutralBg
+import com.aprilarn.washflow.ui.theme.PastelRoseBg
+import com.aprilarn.washflow.ui.theme.PastelRoseText
+import com.aprilarn.washflow.ui.theme.PastelSlateBg
 import com.aprilarn.washflow.utils.CurrencyUtils
 import com.google.firebase.Timestamp
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
 import java.util.Locale
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -48,7 +88,8 @@ fun OrderReportPanel(
     onMonthSelected: (String) -> Unit,
     onSearchQueryChanged: (String) -> Unit,
     onStatusFilterChanged: (String) -> Unit,
-    onSortColumnClicked: (ReportSortColumn) -> Unit
+    onSortColumnClicked: (ReportSortColumn) -> Unit,
+    onLoadMoreMonths: () -> Unit
 ) {
     // 1. Ekstrak daftar bulan unik dari data order
     val monthList = remember(orders) {
@@ -100,14 +141,76 @@ fun OrderReportPanel(
         else monthFiltered.sortedWith(comparator.reversed())
     }
 
-    // Summary ringkasan
-    val totalRevenue = sortedOrders.sumOf { it.totalPrice ?: 0.0 }
-    val doneCount = sortedOrders.count { (it.status ?: "").lowercase() == "done" }
+    // Ringkasan perbandingan bulanan (Opsi 2: Semua Bulan -> bulan lalu vs 2 bulan lalu;
+    // bulan terpilih -> bulan tersebut vs 1 bulan sebelumnya), dihitung dari seluruh order bulan terkait.
+    val reportSummary = remember(orders, selectedMonth) {
+        buildReportMonthlyComparison(orders = orders, selectedMonth = selectedMonth)
+    }
+
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+
+    var summaryHeightPx by remember { mutableIntStateOf(0) }
+    var summaryOffsetPx by remember { mutableFloatStateOf(0f) }
+
+    val collapsibleScrollConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (summaryHeightPx <= 0) return Offset.Zero
+                val minOffset = -summaryHeightPx.toFloat()
+
+                // Scroll ke bawah -> sembunyikan summary bertahap
+                if (available.y < 0f && listState.canScrollForward && summaryOffsetPx > minOffset) {
+                    val prev = summaryOffsetPx
+                    summaryOffsetPx = (summaryOffsetPx + available.y).coerceIn(minOffset, 0f)
+                    return Offset(0f, summaryOffsetPx - prev)
+                }
+
+                // Scroll ke atas -> tampilkan summary kembali bertahap
+                if (available.y > 0f && summaryOffsetPx < 0f) {
+                    val prev = summaryOffsetPx
+                    summaryOffsetPx = (summaryOffsetPx + available.y).coerceIn(minOffset, 0f)
+                    return Offset(0f, summaryOffsetPx - prev)
+                }
+
+                return Offset.Zero
+            }
+        }
+    }
+
+    // Snap ke terbuka/tertutup penuh setelah scroll berhenti, atau buka kembali jika tabel tidak bisa discroll
+    LaunchedEffect(
+        listState.isScrollInProgress,
+        listState.canScrollForward,
+        listState.canScrollBackward,
+        sortedOrders.size
+    ) {
+        if (!listState.isScrollInProgress) {
+            val minOffset = -summaryHeightPx.toFloat()
+            val canScroll = listState.canScrollForward || listState.canScrollBackward
+            val targetOffset = when {
+                !canScroll -> 0f
+                summaryHeightPx > 0 && summaryOffsetPx < 0f && summaryOffsetPx > minOffset -> {
+                    if (summaryOffsetPx < minOffset / 2f) minOffset else 0f
+                }
+                else -> null
+            }
+            if (targetOffset != null && targetOffset != summaryOffsetPx) {
+                AnimationState(initialValue = summaryOffsetPx).animateTo(
+                    targetValue = targetOffset,
+                    animationSpec = tween(durationMillis = 180)
+                ) {
+                    summaryOffsetPx = value
+                }
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp)
+            .nestedScroll(collapsibleScrollConnection)
     ) {
         // --- Header Title & Controls ---
         Row(
@@ -143,103 +246,160 @@ fun OrderReportPanel(
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // --- Metric Summary Cards ---
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+        // --- Collapsible Metric Summary Cards (Pembukuan & Cakupan Data) ---
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clipToBounds()
+                .layout { measurable, constraints ->
+                    val placeable = measurable.measure(constraints)
+                    if (placeable.height > 0) {
+                        summaryHeightPx = placeable.height
+                    }
+                    val offsetInt = summaryOffsetPx.roundToInt()
+                    val visibleHeight = (placeable.height + offsetInt).coerceIn(0, placeable.height)
+                    val alpha = if (placeable.height > 0) {
+                        (visibleHeight.toFloat() / placeable.height.toFloat()).coerceIn(0f, 1f)
+                    } else 1f
+                    layout(placeable.width, visibleHeight) {
+                        placeable.placeRelativeWithLayer(0, offsetInt) {
+                            this.alpha = alpha
+                        }
+                    }
+                }
         ) {
-            // Summary Card 1: Total Transaksi
-            Card(
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                // Summary Card 1: Jumlah Order (Bulan Lalu / Bulan Terpilih vs Bulan Sebelumnya)
+                Card(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = PastelNeutralBg)
                 ) {
-                    Box(
+                    Row(
                         modifier = Modifier
-                            .size(40.dp)
-                            .background(Color(0xFFE2E8F0), RoundedCornerShape(10.dp)),
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Rounded.Receipt, contentDescription = null, tint = GrayBlue)
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(text = "Total Transaksi", fontSize = 11.sp, color = Color.Gray)
-                        Text(
-                            text = "${sortedOrders.size} Order",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = GrayBlue
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(PastelSlateBg, RoundedCornerShape(10.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Rounded.Receipt, contentDescription = null, tint = GrayBlue)
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Order ${reportSummary.targetShortLabel}",
+                                    fontSize = 11.sp,
+                                    color = Gray,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                GrowthChip(
+                                    growthPercent = reportSummary.orderTrendPercent,
+                                    showSign = true
+                                )
+                            }
+                            Text(
+                                text = "${reportSummary.targetOrderCount} Order",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = GrayBlue,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = if (reportSummary.compareOrderCount > 0) {
+                                    "vs ${reportSummary.compareShortLabel} (${reportSummary.compareOrderCount} order)"
+                                } else {
+                                    "Belum ada pembanding (${reportSummary.compareShortLabel})"
+                                },
+                                fontSize = 10.sp,
+                                color = Gray,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                 }
-            }
 
-            // Summary Card 2: Total Pendapatan
-            Card(
-                modifier = Modifier.weight(1.3f),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF6FF))
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                // Summary Card 2: Total Pendapatan (Semua Order Bulan Lalu / Bulan Terpilih vs Bulan Sebelumnya)
+                Card(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = PastelBlueSoftBg)
                 ) {
-                    Box(
+                    Row(
                         modifier = Modifier
-                            .size(40.dp)
-                            .background(Color(0xFFDBEAFE), RoundedCornerShape(10.dp)),
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Rounded.Payments, contentDescription = null, tint = Color(0xFF1D4ED8))
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(text = "Total Pendapatan", fontSize = 11.sp, color = Color.Gray)
-                        Text(
-                            text = CurrencyUtils.formatRupiahWithSymbol(totalRevenue),
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1E3A8A)
-                        )
-                    }
-                }
-            }
-
-            // Summary Card 3: Order Selesai
-            Card(
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF0FDF4))
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(Color(0xFFDCFCE7), RoundedCornerShape(10.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = Color(0xFF15803D))
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(text = "Order Selesai", fontSize = 11.sp, color = Color.Gray)
-                        Text(
-                            text = "$doneCount Selesai",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF166534)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(PastelBlueIconBg, RoundedCornerShape(10.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Rounded.Payments, contentDescription = null, tint = PastelBlue)
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Pendapatan ${reportSummary.targetShortLabel}",
+                                    fontSize = 11.sp,
+                                    color = Gray,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                GrowthChip(
+                                    growthPercent = reportSummary.revenueTrendPercent,
+                                    showSign = true
+                                )
+                            }
+                            Text(
+                                text = CurrencyUtils.formatRupiahWithSymbol(reportSummary.targetRevenue),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = GrayBlue,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = if (reportSummary.compareRevenue > 0.0) {
+                                    "vs ${reportSummary.compareShortLabel} (${CurrencyUtils.formatRupiahWithSymbol(reportSummary.compareRevenue)})"
+                                } else {
+                                    "Belum ada pembanding (${reportSummary.compareShortLabel})"
+                                },
+                                fontSize = 10.sp,
+                                color = PastelBlue,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                 }
             }
@@ -334,7 +494,7 @@ fun OrderReportPanel(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // --- Digital Logbook / Ledger Table Container ---
+        // --- Digital Logbook / Ledger List Container (Card-row style seragam dengan halaman Tertunda) ---
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -343,122 +503,198 @@ fun OrderReportPanel(
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                // Table Header Row with Column Sorting
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFFF8FAFC), RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TableHeaderCell("Tanggal Masuk", ReportSortColumn.DATE, sortColumn, isAscending, 1.3f, onSortColumnClicked)
-                    TableHeaderCell("Nama Pelanggan", ReportSortColumn.CUSTOMER_NAME, sortColumn, isAscending, 1.3f, onSortColumnClicked)
-                    TableHeaderCell("Order", ReportSortColumn.ORDER_ITEMS, sortColumn, isAscending, 2.7f, onSortColumnClicked)
-                    TableHeaderCell("Total", ReportSortColumn.TOTAL_PRICE, sortColumn, isAscending, 1.2f, onSortColumnClicked)
-                    TableHeaderCell("Tgl. Selesai", ReportSortColumn.FINISH_DATE, sortColumn, isAscending, 1.1f, onSortColumnClicked)
-                    TableHeaderCell("Status Order", ReportSortColumn.STATUS, sortColumn, isAscending, 1.1f, onSortColumnClicked)
-                    TableHeaderCell("Bayar", null, sortColumn, isAscending, 0.9f, onSortColumnClicked)
-                }
-
-                HorizontalDivider(color = Color(0xFFE2E8F0))
-
-                // Table Rows
-                if (isLoading) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = GrayBlue, strokeWidth = 3.dp)
-                    }
-                } else if (sortedOrders.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Rounded.Inbox, contentDescription = null, modifier = Modifier.size(48.dp), tint = Color.LightGray)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("Tidak ada data order ditemukan", color = Color.Gray, fontSize = 14.sp)
+            Box(modifier = Modifier.fillMaxSize()) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    // Compact Sort Toolbar
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFF8FAFC), RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = "Urutkan:",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Gray
+                            )
+                            ReportSortPill("Tanggal", ReportSortColumn.DATE, sortColumn, isAscending, onSortColumnClicked)
+                            ReportSortPill("Pelanggan", ReportSortColumn.CUSTOMER_NAME, sortColumn, isAscending, onSortColumnClicked)
+                            ReportSortPill("Total", ReportSortColumn.TOTAL_PRICE, sortColumn, isAscending, onSortColumnClicked)
+                            ReportSortPill("Tgl. Selesai", ReportSortColumn.FINISH_DATE, sortColumn, isAscending, onSortColumnClicked)
+                            ReportSortPill("Status", ReportSortColumn.STATUS, sortColumn, isAscending, onSortColumnClicked)
                         }
+
+                        Text(
+                            text = "${sortedOrders.size} order",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Gray
+                        )
                     }
-                } else {
-                    // Grouping berdasarkan bulan jika "Semua Bulan" dipilih
-                    if (selectedMonth == "Semua Bulan") {
-                        val groupedByMonth = sortedOrders.groupBy { it.orderDate.toMonthYearString() }
 
-                        LazyColumn(modifier = Modifier.fillMaxSize()) {
-                            groupedByMonth.forEach { (monthName, orderList) ->
-                                // Month Section Banner (Sticky Header)
-                                stickyHeader {
-                                    val monthTotal = orderList.sumOf { it.totalPrice ?: 0.0 }
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .background(Color(0xFFEDF2F7))
-                                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = monthName.uppercase(),
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.ExtraBold,
-                                            color = GrayBlue,
-                                            letterSpacing = 1.sp
-                                        )
-                                        Text(
-                                            text = "${orderList.size} Order  •  Subtotal: ${CurrencyUtils.formatRupiahWithSymbol(monthTotal)}",
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = GrayBlue.copy(alpha = 0.8f)
-                                        )
-                                    }
-                                    HorizontalDivider(color = Color(0xFFE2E8F0))
-                                }
+                    HorizontalDivider(color = Color(0xFFE2E8F0))
 
-                                items(orderList) { order ->
-                                    OrderLedgerRow(order = order, services = services)
-                                    HorizontalDivider(color = Color(0xFFF1F5F9))
+                    // List Content
+                    if (isLoading) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = GrayBlue, strokeWidth = 3.dp)
+                        }
+                    } else if (sortedOrders.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(56.dp)
+                                        .background(PastelSlateBg, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Inbox,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(28.dp),
+                                        tint = GrayBlue
+                                    )
                                 }
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    text = "Tidak ada data order ditemukan",
+                                    color = GrayBlue,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 14.sp
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "Coba ubah filter bulan, status, atau kata kunci pencarian.",
+                                    color = Color.Gray,
+                                    fontSize = 12.sp
+                                )
                             }
                         }
                     } else {
-                        // Jika memilih bulan spesifik, tampilkan baris langsung
-                        LazyColumn(modifier = Modifier.fillMaxSize()) {
-                            items(sortedOrders) { order ->
-                                OrderLedgerRow(order = order, services = services)
-                                HorizontalDivider(color = Color(0xFFF1F5F9))
+                        // Grouping berdasarkan bulan jika "Semua Bulan" dipilih
+                        if (selectedMonth == "Semua Bulan") {
+                            val groupedByMonth = sortedOrders.groupBy { it.orderDate.toMonthYearString() }
+                            val monthEntries = groupedByMonth.entries.toList()
+
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                state = listState,
+                                contentPadding = PaddingValues(bottom = 16.dp)
+                            ) {
+                                monthEntries.forEachIndexed { groupIndex, (monthName, orderList) ->
+                                    stickyHeader(key = "header_$monthName") {
+                                        val monthTotal = orderList.sumOf { it.totalPrice ?: 0.0 }
+                                        val monthIndex = orderList.firstOrNull()?.orderDate?.toYearMonthKey()?.second
+                                            ?: Calendar.JANUARY
+                                        ReportMonthHeader(
+                                            monthName = monthName,
+                                            monthIndex = monthIndex,
+                                            orderCount = orderList.size,
+                                            monthTotal = monthTotal,
+                                            showTopDivider = groupIndex > 0
+                                        )
+                                    }
+
+                                    itemsIndexed(orderList, key = { _, it -> it.orderId }) { itemIndex, order ->
+                                        val topPadding = if (itemIndex == 0) 12.dp else 10.dp
+                                        val bottomPadding = if (itemIndex == orderList.lastIndex) 14.dp else 0.dp
+                                        OrderLedgerRow(
+                                            order = order,
+                                            services = services,
+                                            modifier = Modifier.padding(
+                                                start = 16.dp,
+                                                end = 16.dp,
+                                                top = topPadding,
+                                                bottom = bottomPadding
+                                            )
+                                        )
+                                    }
+                                }
+                                item(key = "load_more") {
+                                    LoadMoreMonthsButton(onLoadMoreMonths = onLoadMoreMonths)
+                                }
+                            }
+                        } else {
+                            // Jika memilih bulan spesifik, tampilkan baris langsung
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                state = listState,
+                                contentPadding = PaddingValues(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                items(sortedOrders, key = { it.orderId }) { order ->
+                                    OrderLedgerRow(order = order, services = services)
+                                }
+                                item(key = "load_more") {
+                                    LoadMoreMonthsButton(onLoadMoreMonths = onLoadMoreMonths)
+                                }
                             }
                         }
                     }
-                }
-            }
-        }
-    }
-}
+                } // Close Column
+
+                // FAB for Scroll to Top
+                ScrollToTopFab(
+                    listState = listState,
+                    onScrollToTop = {
+                        coroutineScope.launch {
+                            if (summaryOffsetPx < 0f) {
+                                AnimationState(initialValue = summaryOffsetPx).animateTo(
+                                    targetValue = 0f,
+                                    animationSpec = tween(durationMillis = 220)
+                                ) {
+                                    summaryOffsetPx = value
+                                }
+                            }
+                        }
+                    },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(bottom = 24.dp, end = 24.dp)
+                )
+            } // Close Box
+        } // Close Card
+    } // Close outer Column
+} // Close OrderReportPanel function
 
 @Composable
-private fun RowScope.TableHeaderCell(
+private fun ReportSortPill(
     title: String,
-    column: ReportSortColumn?,
+    column: ReportSortColumn,
     activeSortColumn: ReportSortColumn,
     isAscending: Boolean,
-    weight: Float,
     onSortColumnClicked: (ReportSortColumn) -> Unit
 ) {
     val isCurrentSort = column == activeSortColumn
     Row(
         modifier = Modifier
-            .weight(weight)
-            .then(
-                if (column != null) Modifier.clickable { onSortColumnClicked(column) }
-                else Modifier
+            .background(
+                color = if (isCurrentSort) PastelSlateBg else Color.Transparent,
+                shape = RoundedCornerShape(8.dp)
+            )
+            .clickable { onSortColumnClicked(column) }
+            .padding(
+                start = 8.dp,
+                end = if (isCurrentSort) 4.dp else 8.dp,
+                top = 5.dp,
+                bottom = 5.dp
             ),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = title,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            color = if (isCurrentSort) GrayBlue else Color.Gray
+            fontSize = 11.sp,
+            fontWeight = if (isCurrentSort) FontWeight.Bold else FontWeight.Medium,
+            color = if (isCurrentSort) GrayBlue else Gray
         )
         if (isCurrentSort) {
-            Spacer(modifier = Modifier.width(2.dp))
             Icon(
                 imageVector = if (isAscending) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
                 contentDescription = null,
@@ -470,186 +706,432 @@ private fun RowScope.TableHeaderCell(
 }
 
 @Composable
-private fun OrderLedgerRow(
-    order: Orders,
-    services: List<Services>
+private fun ReportMonthHeader(
+    monthName: String,
+    monthIndex: Int,
+    orderCount: Int,
+    monthTotal: Double,
+    showTopDivider: Boolean = false
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.Top
-    ) {
-        // 1. Tanggal Masuk (Digabung dengan Waktu)
-        Text(
-            text = order.orderDate.toDateString() + "\n" + order.orderDate.toTimeString(),
-            fontSize = 12.sp,
-            color = GrayBlue,
-            lineHeight = 16.sp,
-            modifier = Modifier
-                .weight(1.3f)
-                .padding(top = 2.dp)
-        )
+    val theme = monthBannerTheme(monthIndex)
 
-        // 2. Nama Pelanggan
-        Text(
-            text = order.customerName ?: "Tanpa Nama",
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Bold,
-            color = GrayBlue,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
+    Column(modifier = Modifier.fillMaxWidth()) {
+        if (showTopDivider) {
+            HorizontalDivider(color = theme.dividerColor)
+        }
+        Box(
             modifier = Modifier
-                .weight(1.3f)
-                .padding(top = 2.dp)
-        )
-
-        // 3. Order (List Barang memanjang ke bawah per Kategori & New Line)
-        Column(
-            modifier = Modifier
-                .weight(2.7f)
-                .padding(end = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .fillMaxWidth()
+                .height(68.dp)
         ) {
-            if (order.orderItems.isEmpty()) {
-                Text("-", fontSize = 12.sp, color = Color.Gray)
-            } else {
-                val groupedItems = remember(order.orderItems, services) {
-                    order.orderItems.groupBy { item ->
-                        val matchedService = services.find { it.serviceId == item.serviceId }
-                        matchedService?.serviceName?.ifBlank { null }
-                            ?: item.serviceId?.ifBlank { null }
-                            ?: "Layanan Utama"
-                    }
+            MonthBannerIllustration(
+                monthIndex = monthIndex,
+                modifier = Modifier.matchParentSize()
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(3.dp)
+                            .height(16.dp)
+                            .background(theme.accentColor, RoundedCornerShape(2.dp))
+                    )
+                    Text(
+                        text = monthName.uppercase(),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = theme.titleColor,
+                        letterSpacing = 0.8.sp
+                    )
                 }
 
-                val entries = groupedItems.entries.toList()
-                entries.forEachIndexed { index, entry ->
-                    val (serviceName, items) = entry
-                    val categoryTotal = items.sumOf { it.subtotal ?: ((it.itemPrice ?: 0.0) * (it.itemQuantity ?: 1)) }
-                    
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color.White.copy(alpha = 0.90f),
+                        border = androidx.compose.foundation.BorderStroke(0.5.dp, theme.dividerColor)
                     ) {
-                        // Label Header Kategori dan Total Harga
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = Color(0xFFE0F2FE)
+                        Text(
+                            text = "$orderCount Order",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = theme.titleColor.copy(alpha = 0.85f),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color.White.copy(alpha = 0.92f),
+                        border = androidx.compose.foundation.BorderStroke(0.5.dp, theme.accentColor.copy(alpha = 0.35f))
+                    ) {
+                        Text(
+                            text = CurrencyUtils.formatRupiahWithSymbol(monthTotal),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = theme.totalPillText,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+            }
+        }
+        HorizontalDivider(color = theme.dividerColor)
+    }
+}
+
+@Composable
+private fun LoadMoreMonthsButton(onLoadMoreMonths: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        OutlinedButton(
+            onClick = onLoadMoreMonths,
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Text(
+                text = "Muat 1 bulan lebih lama",
+                color = GrayBlue,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 12.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun OrderLedgerRow(
+    order: Orders,
+    services: List<Services>,
+    modifier: Modifier = Modifier
+) {
+    var isExpanded by remember(order.orderId) { mutableStateOf(false) }
+
+    val customerName = order.customerName?.takeIf { it.isNotBlank() } ?: "Tanpa Nama"
+    val initial = customerName.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "?"
+    val orderDateText = remember(order.orderDate) {
+        "${order.orderDate.toDateString()} • ${order.orderDate.toTimeString()}"
+    }
+    val finishDateText = remember(order.orderFinishDate) {
+        order.orderFinishDate?.toDateString()
+    }
+
+    val groupedItems = remember(order.orderItems, services) {
+        order.orderItems.groupBy { item ->
+            val matchedService = services.find { it.serviceId == item.serviceId }
+            matchedService?.serviceName?.ifBlank { null }
+                ?: item.serviceId?.ifBlank { null }
+                ?: "Layanan Utama"
+        }
+    }
+    val totalItemQty = remember(order.orderItems) {
+        order.orderItems.sumOf { it.itemQuantity ?: 1 }
+    }
+    val serviceSummaryLabel = remember(groupedItems) {
+        if (groupedItems.isEmpty()) null else "${groupedItems.size} Layanan"
+    }
+
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = PastelNeutralBg
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(enabled = order.orderItems.isNotEmpty()) { isExpanded = !isExpanded }
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                // Avatar (identik dengan PendingOrderRow)
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .background(Color.White, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = initial,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = GrayBlue
+                    )
+                }
+
+                // Info Pelanggan, Tanggal, Ringkasan Item & Badge Status
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(5.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = customerName,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = MainFontBlack,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Surface(shape = RoundedCornerShape(6.dp), color = PastelSlateBg) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(3.dp)
                             ) {
-                                Text(
-                                    text = serviceName,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF0369A1),
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                Icon(
+                                    imageVector = Icons.Rounded.CalendarToday,
+                                    contentDescription = null,
+                                    tint = GrayBlue,
+                                    modifier = Modifier.size(10.dp)
                                 )
-                            }
-                            
-                            if (categoryTotal > 0) {
                                 Text(
-                                    text = CurrencyUtils.formatRupiahWithSymbol(categoryTotal),
+                                    text = orderDateText,
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = GrayBlue.copy(alpha = 0.8f)
+                                    color = GrayBlue,
+                                    maxLines = 1
                                 )
                             }
                         }
-
-                        // List Barang di Bawah Kategori
-                        items.forEach { item ->
-                            val qty = item.itemQuantity ?: 1
-                            val itemTotal = item.subtotal ?: ((item.itemPrice ?: 0.0) * qty)
-                            
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "• ${item.itemName ?: "Item"} ($qty)",
-                                    fontSize = 11.sp,
-                                    color = Color(0xFF334155),
-                                    fontWeight = FontWeight.Medium,
-                                    lineHeight = 15.sp
-                                )
-                                
-                                if (itemTotal > 0) {
+                        if (finishDateText != null) {
+                            Surface(shape = RoundedCornerShape(6.dp), color = PastelGreenBg) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.CheckCircleOutline,
+                                        contentDescription = null,
+                                        tint = PastelGreen,
+                                        modifier = Modifier.size(11.dp)
+                                    )
                                     Text(
-                                        text = CurrencyUtils.formatRupiahWithSymbol(itemTotal),
+                                        text = "Selesai $finishDateText",
                                         fontSize = 10.sp,
-                                        color = Color.Gray,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = PastelGreen,
+                                        maxLines = 1
                                     )
                                 }
                             }
                         }
                     }
 
-                    if (index < entries.size - 1) {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(top = 4.dp),
-                            color = Color(0xFFE2E8F0)
-                        )
+                    // Badge Ringkasan Layanan
+                    if (serviceSummaryLabel != null) {
+                        Surface(shape = RoundedCornerShape(6.dp), color = Color.White) {
+                            Text(
+                                text = serviceSummaryLabel,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = PastelBlue,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+
+                    // Baris Status Order, Pembayaran & Pengambilan
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        StatusBadge(status = order.status ?: "On Queue")
+                        PaymentBadge(alreadyPaid = order.alreadyPaid)
+                        if (order.isDone()) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (order.alreadyPickedUp) PastelGreenBg else PastelAmberBg
+                            ) {
+                                Text(
+                                    text = if (order.alreadyPickedUp) "Diambil" else "Belum Diambil",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (order.alreadyPickedUp) PastelGreen else PastelAmber,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Nominal + Tombol Rincian Item
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = CurrencyUtils.formatRupiahWithSymbol(order.totalPrice),
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 14.sp,
+                        color = GrayBlue
+                    )
+
+                    if (order.orderItems.isNotEmpty()) {
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = Color.White
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(3.dp)
+                            ) {
+                                Text(
+                                    text = if (isExpanded) "Tutup" else "$totalItemQty item",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = GrayBlue
+                                )
+                                Icon(
+                                    imageVector = if (isExpanded) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown,
+                                    contentDescription = if (isExpanded) "Tutup rincian" else "Lihat rincian",
+                                    tint = GrayBlue,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }
-        }
 
-        // 5. Total Price
-        Text(
-            text = CurrencyUtils.formatRupiahWithSymbol(order.totalPrice),
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            color = GrayBlue,
-            modifier = Modifier
-                .weight(1.2f)
-                .padding(top = 2.dp)
-        )
+            // Rincian Item per Layanan (Expandable saat kartu diklik)
+            AnimatedVisibility(
+                visible = isExpanded && groupedItems.isNotEmpty(),
+                enter = expandVertically(animationSpec = tween(180)) + fadeIn(animationSpec = tween(150)),
+                exit = shrinkVertically(animationSpec = tween(160)) + fadeOut(animationSpec = tween(120))
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 16.dp, bottom = 14.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color.White
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        val entries = groupedItems.entries.toList()
+                        entries.forEachIndexed { index, (serviceName, items) ->
+                            val categoryTotal = items.sumOf {
+                                it.subtotal ?: ((it.itemPrice ?: 0.0) * (it.itemQuantity ?: 1))
+                            }
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Surface(shape = RoundedCornerShape(6.dp), color = PastelSlateBg) {
+                                        Text(
+                                            text = serviceName,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = PastelBlue,
+                                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                    if (categoryTotal > 0) {
+                                        Text(
+                                            text = CurrencyUtils.formatRupiahWithSymbol(categoryTotal),
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = GrayBlue
+                                        )
+                                    }
+                                }
 
-        // 6. Tanggal Selesai
-        Text(
-            text = order.orderFinishDate?.let { 
-                it.toDateString() + "\n" + it.toTimeString() 
-            } ?: "-",
-            fontSize = 11.sp,
-            color = if (order.orderFinishDate != null) Color(0xFF059669) else Color.Gray,
-            lineHeight = 16.sp,
-            modifier = Modifier
-                .weight(1.1f)
-                .padding(top = 2.dp)
-        )
+                                items.forEach { item ->
+                                    val qty = item.itemQuantity ?: 1
+                                    val itemTotal = item.subtotal ?: ((item.itemPrice ?: 0.0) * qty)
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "• ${item.itemName ?: "Item"} ($qty)",
+                                            fontSize = 12.sp,
+                                            color = MainFontBlack,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        if (itemTotal > 0) {
+                                            Text(
+                                                text = CurrencyUtils.formatRupiahWithSymbol(itemTotal),
+                                                fontSize = 11.sp,
+                                                color = Gray
+                                            )
+                                        }
+                                    }
+                                }
+                            }
 
-        // 7. Status Order Badge
-        Box(
-            modifier = Modifier
-                .weight(1.1f)
-                .padding(top = 2.dp)
-        ) {
-            StatusBadge(status = order.status ?: "On Queue")
-        }
+                            if (index < entries.size - 1) {
+                                HorizontalDivider(color = Color(0xFFF1F5F9))
+                            }
+                        }
 
-        // 8. Status Pembayaran Badge
-        Box(
-            modifier = Modifier
-                .weight(0.9f)
-                .padding(top = 2.dp)
-        ) {
-            PaymentBadge(alreadyPaid = order.alreadyPaid)
+                        if (order.orderFinishDate != null) {
+                            HorizontalDivider(color = Color(0xFFF1F5F9))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Masuk: $orderDateText",
+                                    fontSize = 11.sp,
+                                    color = Gray
+                                )
+                                Text(
+                                    text = "Selesai: ${order.orderFinishDate.toDateString()} • ${order.orderFinishDate.toTimeString()}",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = PastelGreen
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun StatusBadge(status: String) {
+internal fun StatusBadge(status: String) {
     val (bgColor, textColor, label) = when (status.lowercase()) {
-        "done", "completed" -> Triple(Color(0xFFDCFCE7), Color(0xFF15803D), "Done")
-        "on process", "in progress" -> Triple(Color(0xFFDBEAFE), Color(0xFF1D4ED8), "On Process")
-        else -> Triple(Color(0xFFFEF3C7), Color(0xFFB45309), "On Queue")
+        "done", "completed" -> Triple(PastelGreenBg, PastelGreen, "Done")
+        "on process", "in progress" -> Triple(PastelBlueBg, PastelBlue, "On Process")
+        else -> Triple(PastelAmberBg, PastelAmber, "On Queue")
     }
 
     Surface(
@@ -667,9 +1149,9 @@ private fun StatusBadge(status: String) {
 }
 
 @Composable
-private fun PaymentBadge(alreadyPaid: Boolean) {
-    val bgColor = if (alreadyPaid) Color(0xFFDCFCE7) else Color(0xFFFEE2E2)
-    val textColor = if (alreadyPaid) Color(0xFF15803D) else Color(0xFFB91C1C)
+internal fun PaymentBadge(alreadyPaid: Boolean) {
+    val bgColor = if (alreadyPaid) PastelGreenBg else PastelRoseBg
+    val textColor = if (alreadyPaid) PastelGreen else PastelRoseText
     val label = if (alreadyPaid) "Lunas" else "Belum"
 
     Surface(
@@ -688,18 +1170,185 @@ private fun PaymentBadge(alreadyPaid: Boolean) {
 
 // Helper formatting extensions
 private fun Timestamp.toDateString(): String {
-    val sdf = SimpleDateFormat("dd MMM yyyy", Locale("id", "ID"))
+    val sdf = SimpleDateFormat("dd MMM yyyy", Locale.forLanguageTag("id-ID"))
     return sdf.format(this.toDate())
 }
 
 private fun Timestamp.toTimeString(): String {
-    val sdf = SimpleDateFormat("HH:mm", Locale("id", "ID"))
+    val sdf = SimpleDateFormat("HH:mm", Locale.forLanguageTag("id-ID"))
     return sdf.format(this.toDate())
 }
 
 private fun Timestamp.toMonthYearString(): String {
-    val sdf = SimpleDateFormat("MMMM yyyy", Locale("id", "ID"))
+    val sdf = SimpleDateFormat("MMMM yyyy", Locale.forLanguageTag("id-ID"))
     return sdf.format(this.toDate())
+}
+
+private fun Timestamp.toYearMonthKey(): Pair<Int, Int> {
+    val cal = Calendar.getInstance().apply { time = toDate() }
+    return cal.get(Calendar.YEAR) to cal.get(Calendar.MONTH)
+}
+
+private data class ReportMonthlyComparison(
+    val targetShortLabel: String,
+    val compareShortLabel: String,
+    val targetOrderCount: Int,
+    val compareOrderCount: Int,
+    val targetRevenue: Double,
+    val compareRevenue: Double
+) {
+    val orderTrendPercent: Double?
+        get() = if (compareOrderCount > 0) {
+            ((targetOrderCount - compareOrderCount).toDouble() / compareOrderCount) * 100.0
+        } else null
+
+    val revenueTrendPercent: Double?
+        get() = if (compareRevenue > 0.0) {
+            ((targetRevenue - compareRevenue) / compareRevenue) * 100.0
+        } else null
+}
+
+private fun buildReportMonthlyComparison(
+    orders: List<Orders>,
+    selectedMonth: String,
+    now: Date = Date()
+): ReportMonthlyComparison {
+    val idLocale = Locale.forLanguageTag("id-ID")
+    val fullMonthFormat = SimpleDateFormat("MMMM yyyy", idLocale)
+    val shortMonthFormat = SimpleDateFormat("MMM yyyy", idLocale)
+
+    val targetCal = Calendar.getInstance().apply {
+        time = now
+        set(Calendar.DAY_OF_MONTH, 1)
+    }
+    if (selectedMonth == "Semua Bulan") {
+        targetCal.add(Calendar.MONTH, -1)
+    } else {
+        val parsed = runCatching { fullMonthFormat.parse(selectedMonth) }.getOrNull()
+        if (parsed != null) {
+            targetCal.time = parsed
+        } else {
+            targetCal.add(Calendar.MONTH, -1)
+        }
+    }
+
+    val compareCal = (targetCal.clone() as Calendar).apply {
+        add(Calendar.MONTH, -1)
+    }
+
+    val targetKey = targetCal.get(Calendar.YEAR) to targetCal.get(Calendar.MONTH)
+    val compareKey = compareCal.get(Calendar.YEAR) to compareCal.get(Calendar.MONTH)
+
+    var targetCount = 0
+    var compareCount = 0
+    var targetRev = 0.0
+    var compareRev = 0.0
+
+    orders.forEach { order ->
+        val key = order.orderDate.toYearMonthKey()
+        val price = order.totalPrice ?: 0.0
+        when (key) {
+            targetKey -> {
+                targetCount++
+                targetRev += price
+            }
+            compareKey -> {
+                compareCount++
+                compareRev += price
+            }
+        }
+    }
+
+    return ReportMonthlyComparison(
+        targetShortLabel = shortMonthFormat.format(targetCal.time),
+        compareShortLabel = shortMonthFormat.format(compareCal.time),
+        targetOrderCount = targetCount,
+        compareOrderCount = compareCount,
+        targetRevenue = targetRev,
+        compareRevenue = compareRev
+    )
+}
+
+@Composable
+fun ScrollToTopFab(
+    listState: LazyListState,
+    modifier: Modifier = Modifier,
+    onScrollToTop: () -> Unit = {}
+) {
+    val coroutineScope = rememberCoroutineScope()
+    
+    val progress by remember {
+        derivedStateOf {
+            val layoutInfo = listState.layoutInfo
+            val totalItems = layoutInfo.totalItemsCount
+            val visibleItems = layoutInfo.visibleItemsInfo.size
+            val maxScrollable = maxOf(0, totalItems - visibleItems)
+            if (maxScrollable == 0) 0f
+            else {
+                val currentItem = listState.firstVisibleItemIndex
+                (currentItem.toFloat() / maxScrollable).coerceIn(0f, 1f)
+            }
+        }
+    }
+    
+    val isNotAtTop by remember {
+        derivedStateOf { listState.firstVisibleItemIndex > 0 }
+    }
+    
+    var isVisible by remember { mutableStateOf(false) }
+
+    LaunchedEffect(listState.isScrollInProgress, isNotAtTop) {
+        if (isNotAtTop) {
+            isVisible = true
+            if (!listState.isScrollInProgress) {
+                delay(2000)
+                isVisible = false
+            }
+        } else {
+            isVisible = false
+        }
+    }
+
+    val animatedProgress by animateFloatAsState(
+        targetValue = progress,
+        animationSpec = tween(durationMillis = 150),
+        label = "progressAnimation"
+    )
+
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = fadeIn() + scaleIn(),
+        exit = fadeOut() + scaleOut(),
+        modifier = modifier
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.size(56.dp)
+        ) {
+            CircularProgressIndicator(
+                progress = { animatedProgress },
+                modifier = Modifier.fillMaxSize(),
+                color = GrayBlue,
+                trackColor = Color.LightGray.copy(alpha = 0.5f),
+                strokeWidth = 3.dp
+            )
+            FloatingActionButton(
+                onClick = { 
+                    onScrollToTop()
+                    coroutineScope.launch { 
+                        listState.animateScrollToItem(0) 
+                    } 
+                },
+                modifier = Modifier.size(48.dp),
+                shape = CircleShape,
+                containerColor = Color(0xFFEDEEF4), // Warna GrayBlue yang sangat terang (mendekati putih)
+                contentColor = GrayBlue,
+                elevation = FloatingActionButtonDefaults.elevation(0.dp)
+            ) {
+                Icon(Icons.Rounded.KeyboardArrowUp, contentDescription = "Scroll to top")
+            }
+        }
+    }
 }
 
 @Preview(showBackground = true, widthDp = 1000, heightDp = 700)
@@ -710,6 +1359,10 @@ fun OrderReportPanelPreview() {
         Services("s2", "Dry Clean"),
         Services("s3", "Setrika Saja")
     )
+
+    val nowCal = Calendar.getInstance()
+    val oneMonthAgo = (nowCal.clone() as Calendar).apply { add(Calendar.MONTH, -1) }.time
+    val twoMonthsAgo = (nowCal.clone() as Calendar).apply { add(Calendar.MONTH, -2) }.time
 
     val mockOrders = listOf(
         Orders(
@@ -732,7 +1385,7 @@ fun OrderReportPanelPreview() {
                 com.aprilarn.washflow.data.model.OrderItem(
                     itemId = "i2",
                     itemName = "Celana Jeans",
-                    serviceId = "s1",
+                    serviceId = "s3",
                     itemQuantity = 1,
                     itemPrice = 10000.0,
                     subtotal = 10000.0
@@ -743,9 +1396,11 @@ fun OrderReportPanelPreview() {
             orderId = "2",
             customerId = "c2",
             customerName = "Siti Aminah",
-            orderDate = Timestamp.now(),
+            orderDate = Timestamp(oneMonthAgo),
+            orderFinishDate = Timestamp(Date(oneMonthAgo.time + 2L * 24 * 60 * 60 * 1000)),
             status = "Done",
             alreadyPaid = true,
+            alreadyPickedUp = true,
             totalPrice = 120000.0,
             orderItems = listOf(
                 com.aprilarn.washflow.data.model.OrderItem(
@@ -755,6 +1410,46 @@ fun OrderReportPanelPreview() {
                     itemQuantity = 1,
                     itemPrice = 120000.0,
                     subtotal = 120000.0
+                )
+            )
+        ),
+        Orders(
+            orderId = "3",
+            customerId = "c3",
+            customerName = "Andi Pratama",
+            orderDate = Timestamp(oneMonthAgo),
+            orderFinishDate = Timestamp(Date(oneMonthAgo.time + 1L * 24 * 60 * 60 * 1000)),
+            status = "Done",
+            alreadyPaid = true,
+            alreadyPickedUp = false,
+            totalPrice = 80000.0,
+            orderItems = listOf(
+                com.aprilarn.washflow.data.model.OrderItem(
+                    itemId = "i4",
+                    itemName = "Bed Cover",
+                    serviceId = "s1",
+                    itemQuantity = 2,
+                    itemPrice = 40000.0,
+                    subtotal = 80000.0
+                )
+            )
+        ),
+        Orders(
+            orderId = "4",
+            customerId = "c4",
+            customerName = "Dewi Lestari",
+            orderDate = Timestamp(twoMonthsAgo),
+            status = "Done",
+            alreadyPaid = true,
+            totalPrice = 160000.0,
+            orderItems = listOf(
+                com.aprilarn.washflow.data.model.OrderItem(
+                    itemId = "i5",
+                    itemName = "Gaun Pesta",
+                    serviceId = "s2",
+                    itemQuantity = 2,
+                    itemPrice = 80000.0,
+                    subtotal = 160000.0
                 )
             )
         )
@@ -774,7 +1469,8 @@ fun OrderReportPanelPreview() {
                 onMonthSelected = {},
                 onSearchQueryChanged = {},
                 onStatusFilterChanged = {},
-                onSortColumnClicked = {}
+                onSortColumnClicked = {},
+                onLoadMoreMonths = {}
             )
         }
     }
