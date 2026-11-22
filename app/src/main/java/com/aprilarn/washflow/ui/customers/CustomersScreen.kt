@@ -1,20 +1,34 @@
 package com.aprilarn.washflow.ui.customers
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.ui.components.AddNewDataInputField
@@ -24,6 +38,9 @@ import com.aprilarn.washflow.ui.components.DataTablePanel
 import com.aprilarn.washflow.ui.components.DeleteConfirmationDialog
 import com.aprilarn.washflow.ui.components.EditDataPanel
 import com.aprilarn.washflow.ui.theme.GrayBlue
+import com.aprilarn.washflow.ui.theme.PastelBlue
+import com.aprilarn.washflow.ui.theme.PastelBlueBg
+import com.aprilarn.washflow.ui.theme.PastelNeutralText
 
 @Composable
 fun CustomersScreen(
@@ -50,11 +67,9 @@ fun CustomersScreen(
         LaunchedEffect(customerToEdit) {
             showDeleteConfirmation = false
         }
-        // State untuk field di dalam dialog edit
         var editedName by remember { mutableStateOf(customerToEdit.name) }
         var editedContact by remember { mutableStateOf(customerToEdit.contact ?: "") }
 
-        // LaunchedEffect untuk mereset state jika customer yang dipilih berganti
         LaunchedEffect(customerToEdit) {
             editedName = customerToEdit.name
             editedContact = customerToEdit.contact ?: ""
@@ -69,7 +84,7 @@ fun CustomersScreen(
                     onDismissDialog()
                 },
                 onDismiss = {
-                    showDeleteConfirmation = false // Kembali ke mode edit
+                    showDeleteConfirmation = false
                 }
             )
         } else {
@@ -83,7 +98,8 @@ fun CustomersScreen(
                     AddNewDataInputField(
                         value = editedContact,
                         onValueChange = { editedContact = it },
-                        label = "Contact"
+                        label = "Contact",
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                     )
                 )
 
@@ -98,56 +114,83 @@ fun CustomersScreen(
                         onEditCustomerClick(updatedCustomer)
                     },
                     onDeleteClick = {
-                        // Ubah state untuk memicu dialog konfirmasi
                         showDeleteConfirmation = true
-                    }
+                    },
+                    accentHint = "Customer"
                 )
             }
         }
     }
 
-
     Row(
-        modifier = Modifier
-            .fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Left Panel: DataTablePanel
-        Box(modifier = Modifier.weight(2f)) {
+        Box(
+            modifier = Modifier
+                .weight(2f)
+                .fillMaxHeight()
+        ) {
             val customerColumns = listOf(
                 ColumnConfig<Customers>(
                     header = "Name",
-                    weight = 0.7f,
-                    content = { customer -> Text(customer.name, color = GrayBlue) }
+                    weight = 0.65f,
+                    content = { customer ->
+                        Text(
+                            text = customer.name,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = GrayBlue,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp
+                            )
+                        )
+                    }
                 ),
                 ColumnConfig<Customers>(
                     header = "Contact",
-                    weight = 0.4f,
-                    content = { customer -> customer.contact?.let { Text(it, color = GrayBlue) } }
+                    weight = 0.45f,
+                    content = { customer ->
+                        val contactText = customer.contact?.takeIf { it.isNotBlank() }
+                        Text(
+                            text = contactText ?: "-",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = if (contactText != null) PastelBlue else PastelNeutralText,
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 13.sp
+                            )
+                        )
+                    }
                 ),
                 ColumnConfig<Customers>(
-                    header = "Edit", // Ubah header menjadi "Actions"
-                    weight = 0.1f,
-                    content = { customer ->
-                        // Hapus tombol dari sini karena aksi sekarang via onRowClick
-                        // Bisa diganti dengan ikon atau indikator lain jika perlu
-                        Icon(
-                            imageVector = Icons.Rounded.Edit,
-                            contentDescription = "Edit Customer",
-                            tint = GrayBlue.copy(alpha = 0.7f)
-                        )
+                    header = "Edit",
+                    weight = 0.12f,
+                    content = {
+                        Box(
+                            modifier = Modifier
+                                .size(30.dp)
+                                .background(PastelBlueBg, RoundedCornerShape(9.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Edit,
+                                contentDescription = "Edit Customer",
+                                tint = PastelBlue,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
                 )
             )
 
             DataTablePanel(
-                title = "Customer",
+                title = "Customers",
                 itemCount = customerCount,
                 searchQuery = newCustomerName,
                 onSearchQueryChange = { newCustomerName = it },
-                searchPlaceholder = "Search by Name/Contact",
+                searchPlaceholder = "Cari nama atau nomor kontak pelanggan...",
                 columns = customerColumns,
-                data = filteredCustomers, // Gunakan data yang sudah difilter
+                data = filteredCustomers,
                 isLoading = uiState.isLoading,
                 onRowClick = { customer -> onCustomerSelected(customer) }
             )
@@ -182,7 +225,7 @@ fun CustomersScreen(
                     newCustomerName = ""
                     newCustomerPhone = ""
                 },
-                addButtonText = "Add Customer" // Teks lebih deskriptif
+                addButtonText = "Add Customer"
             )
         }
     }
@@ -203,7 +246,6 @@ fun CustomersScreenPreview() {
                 Customers("1", "Pelanggan Satu", "081234567890"),
                 Customers("2", "Pelanggan Dua", "089876543210")
             ),
-            // Contoh saat dialog edit muncul untuk pelanggan pertama
             selectedCustomer = Customers("1", "Pelanggan Satu", "081234567890")
         )
         CustomersScreen(

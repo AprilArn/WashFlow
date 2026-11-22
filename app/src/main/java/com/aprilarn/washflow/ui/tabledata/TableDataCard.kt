@@ -35,25 +35,33 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.PastelAmber
+import com.aprilarn.washflow.ui.theme.PastelAmberBg
 import com.aprilarn.washflow.ui.theme.PastelBlue
+import com.aprilarn.washflow.ui.theme.PastelBlueBg
+import com.aprilarn.washflow.ui.theme.PastelBlueSoftBg
 import com.aprilarn.washflow.ui.theme.PastelGreen
+import com.aprilarn.washflow.ui.theme.PastelGreenBg
 import com.aprilarn.washflow.ui.theme.PastelGreenDark
+import com.aprilarn.washflow.ui.theme.PastelGreenSoftBg
 
-private enum class TableDataKind {
+enum class TableDataKind {
     CUSTOMERS,
     SERVICES,
     ITEMS
 }
 
-private data class TableDataTheme(
+data class TableDataTheme(
     val kind: TableDataKind,
     val titleColor: Color,
     val subtitleColor: Color,
     val accentColor: Color,
-    val countColor: Color
+    val countColor: Color,
+    val softBgColor: Color,
+    val badgeBgColor: Color,
+    val defaultSubtitle: String
 )
 
-private fun resolveTableDataTheme(text: String): TableDataTheme {
+fun resolveTableDataTheme(text: String): TableDataTheme {
     val normalized = text.trim().lowercase()
     return when {
         normalized.contains("service") || normalized.contains("layanan") -> TableDataTheme(
@@ -61,21 +69,30 @@ private fun resolveTableDataTheme(text: String): TableDataTheme {
             titleColor = GrayBlue,
             subtitleColor = Color(0xFF6B8575),
             accentColor = PastelGreen,
-            countColor = PastelGreenDark
+            countColor = PastelGreenDark,
+            softBgColor = PastelGreenSoftBg,
+            badgeBgColor = PastelGreenBg,
+            defaultSubtitle = "Kategori layanan laundry"
         )
         normalized.contains("item") || normalized.contains("barang") -> TableDataTheme(
             kind = TableDataKind.ITEMS,
             titleColor = GrayBlue,
             subtitleColor = Color(0xFF947A59),
             accentColor = PastelAmber,
-            countColor = PastelAmber
+            countColor = PastelAmber,
+            softBgColor = Color(0xFFFCF7F0),
+            badgeBgColor = PastelAmberBg,
+            defaultSubtitle = "Katalog barang & harga layanan"
         )
         else -> TableDataTheme(
             kind = TableDataKind.CUSTOMERS,
             titleColor = GrayBlue,
             subtitleColor = Color(0xFF6B7B9C),
             accentColor = PastelBlue,
-            countColor = PastelBlue
+            countColor = PastelBlue,
+            softBgColor = PastelBlueSoftBg,
+            badgeBgColor = PastelBlueBg,
+            defaultSubtitle = "Direktori pelanggan terdaftar"
         )
     }
 }
@@ -161,7 +178,7 @@ fun TableDataCard(
 }
 
 @Composable
-private fun TableDataBannerIllustration(
+fun TableDataBannerIllustration(
     theme: TableDataTheme,
     modifier: Modifier = Modifier
 ) {

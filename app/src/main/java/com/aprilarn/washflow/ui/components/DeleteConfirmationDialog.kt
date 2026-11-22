@@ -2,19 +2,39 @@ package com.aprilarn.washflow.ui.components
 
 import android.content.Context
 import android.media.MediaPlayer
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.DeleteForever
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import com.aprilarn.washflow.R
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.aprilarn.washflow.R
+import com.aprilarn.washflow.ui.theme.GrayBlue
+import com.aprilarn.washflow.ui.theme.PastelNeutralBg
+import com.aprilarn.washflow.ui.theme.PastelNeutralText
+import com.aprilarn.washflow.ui.theme.PastelRose
+import com.aprilarn.washflow.ui.theme.PastelRoseBg
 
 @Composable
 fun DeleteConfirmationDialog(
@@ -41,9 +61,10 @@ fun DeleteConfirmationDialog(
         }
     }
     Dialog(onDismissRequest = onDismiss) {
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White)
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = Color.White,
+            shadowElevation = 8.dp
         ) {
             Column(
                 modifier = Modifier
@@ -51,21 +72,48 @@ fun DeleteConfirmationDialog(
                     .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .background(PastelRoseBg, RoundedCornerShape(16.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.DeleteForever,
+                        contentDescription = "Delete Confirmation",
+                        tint = PastelRose,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
                 Text(
                     text = "Delete Confirmation",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
+                        color = GrayBlue
+                    )
                 )
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Are you sure you want to delete '$itemName'?",
-                    style = MaterialTheme.typography.bodyMedium
+                    text = "Apakah Anda yakin ingin menghapus '$itemName'?",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = GrayBlue,
+                        fontWeight = FontWeight.Medium
+                    ),
+                    textAlign = TextAlign.Center
                 )
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "This action cannot be undone.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    text = "Tindakan ini tidak dapat dibatalkan.",
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = PastelNeutralText
+                    ),
+                    textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(22.dp))
 
                 // Tombol Delete Khusus (Long Press)
                 HoldToConfirmButton(
@@ -75,14 +123,24 @@ fun DeleteConfirmationDialog(
                     onConfirm = onConfirm
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 // Tombol Cancel
-                TextButton(
-                    onClick = onDismiss,
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = PastelNeutralBg,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Cancel", color = Color.Gray)
+                    TextButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "Cancel",
+                            color = GrayBlue,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
             }
         }

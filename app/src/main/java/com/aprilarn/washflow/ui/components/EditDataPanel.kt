@@ -1,20 +1,47 @@
 package com.aprilarn.washflow.ui.components
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aprilarn.washflow.ui.tabledata.resolveTableDataTheme
 import com.aprilarn.washflow.ui.theme.GrayBlue
+import com.aprilarn.washflow.ui.theme.PastelNeutralBg
+import com.aprilarn.washflow.ui.theme.PastelNeutralText
+import com.aprilarn.washflow.ui.theme.PastelRose
+import com.aprilarn.washflow.ui.theme.PastelRoseBg
+import com.aprilarn.washflow.ui.theme.PastelRoseLight
 
 /**
  * Panel generik untuk mengedit atau menghapus data yang sudah ada.
@@ -30,46 +57,87 @@ fun EditDataPanel(
     inputFields: List<AddNewDataInputField>,
     onDoneClick: () -> Unit,
     onDeleteClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    accentHint: String = title
 ) {
-    Card(
+    val theme = remember(accentHint) { resolveTableDataTheme(accentHint) }
+
+    Surface(
         modifier = modifier.wrapContentHeight(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White) // Latar belakang putih solid
+        shape = RoundedCornerShape(24.dp),
+        color = Color.White,
+        shadowElevation = 8.dp
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(24.dp)
         ) {
-            Text(title, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(16.dp))
-
-            inputFields.forEach { field ->
-                OutlinedTextField(
-                    value = field.value,
-                    onValueChange = field.onValueChange,
-                    label = { Text(field.label) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.Black,
-                        unfocusedTextColor = Color.Gray,
-                        focusedBorderColor = GrayBlue,
-                        focusedLabelColor = GrayBlue,
-                        cursorColor = GrayBlue
-                    )
+            // Editorial Header
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(4.dp)
+                        .height(30.dp)
+                        .background(theme.accentColor, RoundedCornerShape(2.dp))
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Column {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 19.sp,
+                            color = GrayBlue
+                        )
+                    )
+                    Text(
+                        text = "Perbarui informasi atau hapus data",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = PastelNeutralText,
+                            fontSize = 12.sp
+                        )
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(14.dp))
+            HorizontalDivider(color = PastelNeutralBg, thickness = 1.dp)
+            Spacer(modifier = Modifier.height(14.dp))
 
-            // Baris untuk tombol Done dan Delete
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                inputFields.forEach { field ->
+                    OutlinedTextField(
+                        value = field.value,
+                        onValueChange = field.onValueChange,
+                        label = { Text(field.label) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        keyboardOptions = field.keyboardOptions,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = GrayBlue,
+                            unfocusedTextColor = GrayBlue,
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = theme.softBgColor,
+                            focusedBorderColor = theme.accentColor,
+                            unfocusedBorderColor = theme.badgeBgColor,
+                            focusedLabelColor = theme.accentColor,
+                            unfocusedLabelColor = PastelNeutralText,
+                            cursorColor = theme.accentColor
+                        )
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(22.dp))
+
+            // Baris untuk tombol Delete dan Done
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // Tombol Delete
                 OutlinedButton(
@@ -77,15 +145,23 @@ fun EditDataPanel(
                     modifier = Modifier
                         .weight(1f)
                         .height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFF44336)),
-                    border = ButtonDefaults.outlinedButtonBorder.copy(
-                        brush = SolidColor(Color(0xFFF44336))
-                    )
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = PastelRoseBg,
+                        contentColor = PastelRose
+                    ),
+                    border = BorderStroke(1.dp, PastelRoseLight)
                 ) {
-                    Icon(Icons.Rounded.Delete, contentDescription = "Delete Icon")
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Delete")
+                    Icon(
+                        imageVector = Icons.Rounded.Delete,
+                        contentDescription = "Delete Icon",
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Delete",
+                        fontWeight = FontWeight.Bold
+                    )
                 }
                 // Tombol Done
                 Button(
@@ -93,12 +169,22 @@ fun EditDataPanel(
                     modifier = Modifier
                         .weight(1f)
                         .height(48.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = GrayBlue),
-                    shape = RoundedCornerShape(12.dp)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = theme.accentColor,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(14.dp)
                 ) {
-                    Icon(Icons.Rounded.Check, contentDescription = "Done Icon")
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Done")
+                    Icon(
+                        imageVector = Icons.Rounded.Check,
+                        contentDescription = "Done Icon",
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Done",
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }

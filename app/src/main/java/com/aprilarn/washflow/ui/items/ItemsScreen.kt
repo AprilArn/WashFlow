@@ -1,8 +1,20 @@
 package com.aprilarn.washflow.ui.items
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -10,13 +22,26 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -28,11 +53,17 @@ import com.aprilarn.washflow.ui.components.ColumnConfig
 import com.aprilarn.washflow.ui.components.DataTablePanel
 import com.aprilarn.washflow.ui.components.DeleteConfirmationDialog
 import com.aprilarn.washflow.ui.theme.GrayBlue
-import com.aprilarn.washflow.ui.theme.MainFontBlack
+import com.aprilarn.washflow.ui.theme.PastelAmber
+import com.aprilarn.washflow.ui.theme.PastelAmberBg
+import com.aprilarn.washflow.ui.theme.PastelNeutralBg
+import com.aprilarn.washflow.ui.theme.PastelNeutralText
+import com.aprilarn.washflow.ui.theme.PastelRose
+import com.aprilarn.washflow.ui.theme.PastelRoseBg
+import com.aprilarn.washflow.ui.theme.PastelRoseLight
 import com.aprilarn.washflow.utils.CurrencyUtils
 
 @Composable
-fun ItemsScreen (
+fun ItemsScreen(
     uiState: ItemsUiState,
     onAddItemClick: (String, String, Double) -> Unit,
     onEditItemClick: (Items) -> Unit,
@@ -54,16 +85,14 @@ fun ItemsScreen (
     }
 
     val borderRadius = RoundedCornerShape(24.dp)
-    val borderColor = Color.White
+    val itemSoftBg = Color(0xFFFCF7F0)
 
     // Dialog untuk Edit/Delete
     uiState.selectedItem?.let { itemToEdit ->
-        // State untuk field di dalam dialog edit
         var editedService by remember { mutableStateOf(itemToEdit.serviceId) }
         var editedName by remember { mutableStateOf(itemToEdit.itemName) }
         var editedPrice by remember { mutableStateOf(itemToEdit.itemPrice.toString().replace(".0", "")) }
 
-        // LaunchedEffect untuk mereset state jika item yang dipilih berganti
         LaunchedEffect(itemToEdit) {
             editedService = itemToEdit.serviceId
             editedName = itemToEdit.itemName
@@ -85,85 +114,129 @@ fun ItemsScreen (
             )
         } else {
             Dialog(onDismissRequest = onDismissDialog) {
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                Surface(
+                    shape = RoundedCornerShape(24.dp),
+                    color = Color.White,
+                    shadowElevation = 8.dp
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                            .padding(24.dp)
                     ) {
-                        Text("Edit ${itemToEdit.itemName}", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        ServiceDropdown(
-                            services = uiState.services,
-                            selectedServiceId = editedService,
-                            onServiceSelected = { editedService = it.serviceId },
-                            label = "Service",
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        OutlinedTextField(
-                            value = editedName,
-                            onValueChange = { editedName = it },
-                            label = { Text("Item Name") },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = Color.Black,
-                                unfocusedTextColor = Color.Gray,
-                                focusedBorderColor = GrayBlue,
-                                focusedLabelColor = GrayBlue,
-                                cursorColor = GrayBlue
+                        // Editorial Header
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .width(4.dp)
+                                    .height(30.dp)
+                                    .background(PastelAmber, RoundedCornerShape(2.dp))
                             )
-                        )
-                        OutlinedTextField(
-                            value = editedPrice,
-                            onValueChange = { newValue ->
-                                if (newValue.all { it.isDigit() }) {
-                                    editedPrice = newValue
-                                }
-                            },
-                            label = { Text("Item Price") },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = Color.Black,
-                                unfocusedTextColor = Color.Gray,
-                                focusedBorderColor = GrayBlue,
-                                focusedLabelColor = GrayBlue,
-                                cursorColor = GrayBlue
-                            )
-                        )
+                            Column {
+                                Text(
+                                    text = "Edit ${itemToEdit.itemName}",
+                                    style = MaterialTheme.typography.titleLarge.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 19.sp,
+                                        color = GrayBlue
+                                    )
+                                )
+                                Text(
+                                    text = "Perbarui layanan, nama, atau harga barang",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = PastelNeutralText,
+                                        fontSize = 12.sp
+                                    )
+                                )
+                            }
+                        }
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
+                        HorizontalDivider(color = PastelNeutralBg, thickness = 1.dp)
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            ServiceDropdown(
+                                services = uiState.services,
+                                selectedServiceId = editedService,
+                                onServiceSelected = { editedService = it.serviceId },
+                                label = "Service",
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            OutlinedTextField(
+                                value = editedName,
+                                onValueChange = { editedName = it },
+                                label = { Text("Item Name") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(14.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = GrayBlue,
+                                    unfocusedTextColor = GrayBlue,
+                                    focusedContainerColor = Color.White,
+                                    unfocusedContainerColor = itemSoftBg,
+                                    focusedBorderColor = PastelAmber,
+                                    unfocusedBorderColor = PastelAmberBg,
+                                    focusedLabelColor = PastelAmber,
+                                    unfocusedLabelColor = PastelNeutralText,
+                                    cursorColor = PastelAmber
+                                )
+                            )
+                            OutlinedTextField(
+                                value = editedPrice,
+                                onValueChange = { newValue ->
+                                    if (newValue.all { it.isDigit() }) {
+                                        editedPrice = newValue
+                                    }
+                                },
+                                label = { Text("Item Price") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(14.dp),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = GrayBlue,
+                                    unfocusedTextColor = GrayBlue,
+                                    focusedContainerColor = Color.White,
+                                    unfocusedContainerColor = itemSoftBg,
+                                    focusedBorderColor = PastelAmber,
+                                    unfocusedBorderColor = PastelAmberBg,
+                                    focusedLabelColor = PastelAmber,
+                                    unfocusedLabelColor = PastelNeutralText,
+                                    cursorColor = PastelAmber
+                                )
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(22.dp))
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            // Tombol Delete
                             OutlinedButton(
-                                onClick = {
-                                    // Pemicu konfirmasi delete
-                                    showDeleteConfirmation = true
-                                },
-                                modifier = Modifier.weight(1f).height(48.dp),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFF44336)),
-                                border = ButtonDefaults.outlinedButtonBorder.copy(
-                                    brush = SolidColor(Color(0xFFF44336))
-                                )
+                                onClick = { showDeleteConfirmation = true },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp),
+                                shape = RoundedCornerShape(14.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    containerColor = PastelRoseBg,
+                                    contentColor = PastelRose
+                                ),
+                                border = BorderStroke(1.dp, PastelRoseLight)
                             ) {
-                                Icon(Icons.Rounded.Delete, "Delete")
-                                Spacer(Modifier.width(4.dp))
-                                Text("Delete")
+                                Icon(
+                                    imageVector = Icons.Rounded.Delete,
+                                    contentDescription = "Delete",
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text("Delete", fontWeight = FontWeight.Bold)
                             }
-                            // Tombol Done
                             Button(
                                 onClick = {
                                     val updatedItem = itemToEdit.copy(
@@ -173,13 +246,22 @@ fun ItemsScreen (
                                     )
                                     onEditItemClick(updatedItem)
                                 },
-                                modifier = Modifier.weight(1f).height(48.dp),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = GrayBlue)
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp),
+                                shape = RoundedCornerShape(14.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = PastelAmber,
+                                    contentColor = Color.White
+                                )
                             ) {
-                                Icon(Icons.Rounded.Check, "Done")
-                                Spacer(Modifier.width(4.dp))
-                                Text("Done")
+                                Icon(
+                                    imageVector = Icons.Rounded.Check,
+                                    contentDescription = "Done",
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text("Done", fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -189,145 +271,235 @@ fun ItemsScreen (
     }
 
     Row(
-        modifier = Modifier
-            .fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Left Panel: DataTablePanel
-        Box(modifier = Modifier.weight(2f)) {
+        Box(
+            modifier = Modifier
+                .weight(2f)
+                .fillMaxHeight()
+        ) {
             val itemColumns = listOf(
                 ColumnConfig<Items>(
                     header = "Service ID",
-                    weight = 0.3f,
-                    content = { item -> Text(item.serviceId, color = GrayBlue) }
+                    weight = 0.28f,
+                    content = { item ->
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = PastelAmberBg
+                        ) {
+                            Text(
+                                text = item.serviceId,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    color = PastelAmber,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
+                                )
+                            )
+                        }
+                    }
                 ),
                 ColumnConfig<Items>(
                     header = "Item Name",
-                    weight = 0.5f,
-                    content = { item -> Text(item.itemName, color = GrayBlue) }
+                    weight = 0.50f,
+                    content = { item ->
+                        Text(
+                            text = item.itemName,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = GrayBlue,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp
+                            )
+                        )
+                    }
                 ),
                 ColumnConfig<Items>(
                     header = "Item Price",
-                    weight = 0.3f,
-                    content = { item -> Text(CurrencyUtils.formatRupiah(item.itemPrice), color = GrayBlue) }
+                    weight = 0.30f,
+                    content = { item ->
+                        Text(
+                            text = CurrencyUtils.formatRupiah(item.itemPrice),
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = PastelAmber,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            )
+                        )
+                    }
                 ),
                 ColumnConfig<Items>(
-                    header = "Edit", // Ubah header menjadi "Actions"
-                    weight = 0.1f,
-                    content = { item ->
-                        // Hapus tombol dari sini karena aksi sekarang via onRowClick
-                        // Bisa diganti dengan ikon atau indikator lain jika perlu
-                        Icon(
-                            imageVector = Icons.Rounded.Edit,
-                            contentDescription = "Edit Item",
-                            tint = GrayBlue.copy(alpha = 0.7f)
-                        )
+                    header = "Edit",
+                    weight = 0.12f,
+                    content = {
+                        Box(
+                            modifier = Modifier
+                                .size(30.dp)
+                                .background(PastelAmberBg, RoundedCornerShape(9.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Edit,
+                                contentDescription = "Edit Item",
+                                tint = PastelAmber,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
                 )
             )
 
             DataTablePanel(
-                title = "Item",
+                title = "Items",
                 itemCount = itemCount,
                 searchQuery = newItemName,
                 onSearchQueryChange = { newItemName = it },
-                searchPlaceholder = "Search by Service/Name/Price",
+                searchPlaceholder = "Cari kode layanan, nama barang, atau harga...",
                 columns = itemColumns,
-                data = filteredItems, // Gunakan data yang sudah difilter
+                data = filteredItems,
                 isLoading = uiState.isLoading,
                 onRowClick = { item -> onItemSelected(item) }
             )
         }
 
-        // --- PANEL KANAN: DIBUAT SECARA MANUAL ---
+        // Right Panel: Add New Item Surface
         Box(modifier = Modifier.weight(1f)) {
-            Card(
+            Surface(
                 modifier = Modifier
-                    .wrapContentHeight()
-                    .border(
-                        width = 2.dp,
-                        color = borderColor,
-                        shape = borderRadius
-                    ),
+                    .fillMaxWidth()
+                    .wrapContentHeight(),
                 shape = borderRadius,
-                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.25f))
+                color = Color.White,
+                shadowElevation = 6.dp
             ) {
                 Column(
-                    modifier = Modifier.padding(vertical=24.dp, horizontal=22.dp),
-                    verticalArrangement = Arrangement.spacedBy(0.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 22.dp, vertical = 20.dp)
                 ) {
-                    Text(
-                        text = "Add New Item",
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 22.sp,
-                            color = GrayBlue
+                    // Editorial Header
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .width(4.dp)
+                                .height(32.dp)
+                                .background(PastelAmber, RoundedCornerShape(2.dp))
                         )
-                    )
-                    Text(
-                        text = "Tambah item baru",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = GrayBlue
-                    )
+                        Column {
+                            Text(
+                                text = "Add New Item",
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 20.sp,
+                                    color = GrayBlue
+                                )
+                            )
+                            Text(
+                                text = "Tambah item baru",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = PastelNeutralText,
+                                    fontSize = 12.sp
+                                )
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                    HorizontalDivider(color = PastelNeutralBg, thickness = 1.dp)
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    ServiceDropdown(
-                        services = uiState.services,
-                        selectedServiceId = newItemService,
-                        onServiceSelected = { newItemService = it.serviceId },
-                        label = "Service",
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    OutlinedTextField(
-                        value = newItemName,
-                        onValueChange = { newItemName = it },
-                        label = { Text("Nama Barang") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = MainFontBlack,
-                            unfocusedTextColor = Color.Gray,
-                            focusedBorderColor = GrayBlue,
-                            focusedLabelColor = GrayBlue,
-                            cursorColor = GrayBlue
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        ServiceDropdown(
+                            services = uiState.services,
+                            selectedServiceId = newItemService,
+                            onServiceSelected = { newItemService = it.serviceId },
+                            label = "Service",
+                            modifier = Modifier.fillMaxWidth()
                         )
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    OutlinedTextField(
-                        value = newItemPrice,
-                        onValueChange = { newValue ->
-                            if (newValue.all { it.isDigit() }) {
-                                newItemPrice = newValue
-                            }
-                        },
-                        label = { Text("Harga Barang") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = MainFontBlack,
-                            unfocusedTextColor = Color.Gray,
-                            focusedBorderColor = GrayBlue,
-                            focusedLabelColor = GrayBlue,
-                            cursorColor = GrayBlue
+                        OutlinedTextField(
+                            value = newItemName,
+                            onValueChange = { newItemName = it },
+                            label = { Text("Nama Barang") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = GrayBlue,
+                                unfocusedTextColor = GrayBlue,
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = itemSoftBg,
+                                focusedBorderColor = PastelAmber,
+                                unfocusedBorderColor = PastelAmberBg,
+                                focusedLabelColor = PastelAmber,
+                                unfocusedLabelColor = PastelNeutralText,
+                                cursorColor = PastelAmber
+                            )
                         )
-                    )
-                    Spacer(modifier = Modifier.height(18.dp))
+                        OutlinedTextField(
+                            value = newItemPrice,
+                            onValueChange = { newValue ->
+                                if (newValue.all { it.isDigit() }) {
+                                    newItemPrice = newValue
+                                }
+                            },
+                            label = { Text("Harga Barang") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = GrayBlue,
+                                unfocusedTextColor = GrayBlue,
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = itemSoftBg,
+                                focusedBorderColor = PastelAmber,
+                                unfocusedBorderColor = PastelAmberBg,
+                                focusedLabelColor = PastelAmber,
+                                unfocusedLabelColor = PastelNeutralText,
+                                cursorColor = PastelAmber
+                            )
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
                     Button(
                         onClick = {
-                            onAddItemClick(newItemService, newItemName, newItemPrice.toDoubleOrNull() ?: 0.0)
+                            onAddItemClick(
+                                newItemService,
+                                newItemName,
+                                newItemPrice.toDoubleOrNull() ?: 0.0
+                            )
                             newItemService = ""
                             newItemName = ""
                             newItemPrice = ""
                         },
-                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = GrayBlue),
-                        shape = RoundedCornerShape(12.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = PastelAmber,
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(14.dp)
                     ) {
-                        Icon(Icons.Rounded.Add, contentDescription = "Add Icon")
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Add Item")
+                        Icon(
+                            imageVector = Icons.Rounded.Add,
+                            contentDescription = "Add Icon",
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Add Item",
+                            style = MaterialTheme.typography.labelLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                        )
                     }
                 }
             }
@@ -345,15 +517,12 @@ fun ItemsScreenPreview() {
             )
         )
     ) {
-        // --- PERBAIKI BAGIAN INI ---
         val previewState = ItemsUiState(
             items = listOf(
-                // Gunakan named arguments agar tidak salah urutan
                 Items(itemId = "item_1", serviceId = "L-01", itemName = "Dress", itemPrice = 15000.0),
                 Items(itemId = "item_2", serviceId = "L-02", itemName = "Baju", itemPrice = 12000.0),
                 Items(itemId = "item_3", serviceId = "D-01", itemName = "Jas", itemPrice = 25000.0)
             ),
-            // Perbaiki juga di sini
             selectedItem = Items(itemId = "item_1", serviceId = "L-01", itemName = "Dress", itemPrice = 15000.0)
         )
         ItemsScreen(
