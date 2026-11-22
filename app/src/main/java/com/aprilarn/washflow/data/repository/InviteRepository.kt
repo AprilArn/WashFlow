@@ -1,6 +1,7 @@
 package com.aprilarn.washflow.data.repository
 
 import com.aprilarn.washflow.data.model.Invites
+import com.aprilarn.washflow.domain.repository.InviteRepositoryContract
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.auth
@@ -13,7 +14,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import java.util.Date
 
-class InviteRepository {
+class InviteRepository : InviteRepositoryContract {
     private val db = Firebase.firestore
     private val usersCollection = db.collection("users")
     private val workspacesCollection = db.collection("workspaces")
@@ -28,7 +29,7 @@ class InviteRepository {
         }
     }
 
-    suspend fun createInvite(maxContributors: Int, expiresAt: Timestamp): Invites? {
+    override suspend fun createInvite(maxContributors: Int, expiresAt: Timestamp): Invites? {
         val workspaceId = getCurrentWorkspaceId() ?: return null
         return try {
             var inviteCode: String
@@ -60,7 +61,7 @@ class InviteRepository {
      * Mendengarkan dokumen pengguna, lalu mencari invite aktif
      * berdasarkan workspaceId yang didapat.
      */
-    fun getActiveInviteForCurrentWorkspace(): Flow<Invites?> {
+    override fun getActiveInviteForCurrentWorkspace(): Flow<Invites?> {
         return callbackFlow {
             val user = Firebase.auth.currentUser
             if (user == null) {
@@ -122,7 +123,7 @@ class InviteRepository {
      * Jika sudah kedaluwarsa (melewati due date), statusnya akan diubah ke 'expired'.
      * Ini dipanggil sebelum menampilkan dialog 'Add New Contributor'.
      */
-    suspend fun checkAndExpireActiveInvite() {
+    override suspend fun checkAndExpireActiveInvite() {
         val workspaceId = getCurrentWorkspaceId() ?: return
 
         try {
@@ -155,7 +156,7 @@ class InviteRepository {
         }
     }
 
-    suspend fun expireInvite(inviteId: String): Boolean {
+    override suspend fun expireInvite(inviteId: String): Boolean {
         return try {
             invitesCollection.document(inviteId).update("status", "expired").await()
             true
@@ -164,7 +165,7 @@ class InviteRepository {
         }
     }
 
-    suspend fun joinWorkspace(inviteCode: String): Pair<Boolean, String> {
+    override suspend fun joinWorkspace(inviteCode: String): Pair<Boolean, String> {
         val user = Firebase.auth.currentUser ?: return Pair(false, "User not logged in.")
         val inviteDocRef = invitesCollection.document(inviteCode)
 

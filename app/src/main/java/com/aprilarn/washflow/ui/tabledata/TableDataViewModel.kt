@@ -6,6 +6,10 @@ import com.aprilarn.washflow.data.repository.CustomerRepository
 import com.aprilarn.washflow.data.repository.ItemRepository
 import com.aprilarn.washflow.data.repository.ServiceRepository
 import com.aprilarn.washflow.data.repository.WorkspaceRepository
+import com.aprilarn.washflow.domain.repository.CustomerRepositoryContract
+import com.aprilarn.washflow.domain.repository.ItemRepositoryContract
+import com.aprilarn.washflow.domain.repository.ServiceRepositoryContract
+import com.aprilarn.washflow.domain.repository.WorkspaceRepositoryContract
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -13,10 +17,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class TableDataViewModel(
-    private val customerRepository: CustomerRepository,
-    private val serviceRepository: ServiceRepository,
-    private val itemRepository: ItemRepository,
-    private val workspaceRepository: WorkspaceRepository = WorkspaceRepository()
+    private val customerRepository: CustomerRepositoryContract = CustomerRepository(),
+    private val serviceRepository: ServiceRepositoryContract = ServiceRepository(),
+    private val itemRepository: ItemRepositoryContract = ItemRepository(),
+    private val workspaceRepository: WorkspaceRepositoryContract = WorkspaceRepository()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TableDataUiState())

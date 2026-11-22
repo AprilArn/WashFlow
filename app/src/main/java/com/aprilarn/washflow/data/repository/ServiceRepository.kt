@@ -1,6 +1,7 @@
 package com.aprilarn.washflow.data.repository
 
 import com.aprilarn.washflow.data.model.Services
+import com.aprilarn.washflow.domain.repository.ServiceRepositoryContract
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FieldValue
@@ -12,7 +13,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.channels.awaitClose
 
-class ServiceRepository {
+class ServiceRepository : ServiceRepositoryContract {
     private val db = Firebase.firestore
     private val currentUser = Firebase.auth.currentUser
 
@@ -26,7 +27,7 @@ class ServiceRepository {
         }
     }
 
-    suspend fun getServicesRealtime(): Flow<List<Services>> = callbackFlow {
+    override suspend fun getServicesRealtime(): Flow<List<Services>> = callbackFlow {
         val workspaceId = getWorkspaceId()
         if (workspaceId.isNullOrEmpty()) {
             // Kirim list kosong jika tidak ada workspace dan tutup flow
@@ -65,7 +66,7 @@ class ServiceRepository {
      * Menambahkan service baru dengan ID kustom yang ditentukan oleh pengguna.
      * @return Boolean true jika sukses.
      */
-    suspend fun addService(serviceId: String, serviceName: String): Boolean {
+    override suspend fun addService(serviceId: String, serviceName: String): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
 
         return try {
@@ -91,7 +92,7 @@ class ServiceRepository {
         }
     }
 
-    suspend fun updateService(serviceId: String, newName: String): Boolean {
+    override suspend fun updateService(serviceId: String, newName: String): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
 
         return try {
@@ -108,7 +109,7 @@ class ServiceRepository {
         }
     }
 
-    suspend fun deleteService(serviceId: String): Boolean {
+    override suspend fun deleteService(serviceId: String): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
         return try {
             // 1. Buat referensi ke koleksi-koleksi yang relevan

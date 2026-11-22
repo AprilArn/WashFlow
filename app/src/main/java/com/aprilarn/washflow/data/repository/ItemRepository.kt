@@ -1,6 +1,7 @@
 package com.aprilarn.washflow.data.repository
 
 import com.aprilarn.washflow.data.model.Items
+import com.aprilarn.washflow.domain.repository.ItemRepositoryContract
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FieldValue
@@ -12,7 +13,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.channels.awaitClose
 
-class ItemRepository {
+class ItemRepository : ItemRepositoryContract {
     private val db = Firebase.firestore
     private val currentUser = Firebase.auth.currentUser
 
@@ -26,7 +27,7 @@ class ItemRepository {
         }
     }
 
-    suspend fun getItemsRealtime(): Flow<List<Items>> = callbackFlow {
+    override suspend fun getItemsRealtime(): Flow<List<Items>> = callbackFlow {
         val workspaceId = getWorkspaceId()
         if (workspaceId.isNullOrEmpty()) {
             // Kirim list kosong jika tidak ada workspace dan tutup flow
@@ -62,7 +63,7 @@ class ItemRepository {
         }
     }
 
-    suspend fun addItem(serviceId: String, itemName: String, itemPrice: Double): Boolean {
+    override suspend fun addItem(serviceId: String, itemName: String, itemPrice: Double): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
 
         return try {
@@ -90,7 +91,7 @@ class ItemRepository {
         }
     }
 
-    suspend fun updateItem(itemId: String, newService: String, newName: String, newPrice: Double): Boolean {
+    override suspend fun updateItem(itemId: String, newService: String, newName: String, newPrice: Double): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
 
         return try {
@@ -113,7 +114,7 @@ class ItemRepository {
         }
     }
 
-    suspend fun deleteItems(itemId: String): Boolean {
+    override suspend fun deleteItems(itemId: String): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
         return try {
             val workspaceRef = db.collection("workspaces").document(workspaceId)

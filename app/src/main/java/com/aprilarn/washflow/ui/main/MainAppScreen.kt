@@ -65,30 +65,30 @@ import com.aprilarn.washflow.ui.aiagent.VoiceAgentStatus
 import com.aprilarn.washflow.ui.notifications.NotificationPanel
 import com.aprilarn.washflow.ui.notifications.NotificationPreviewItem
 import com.aprilarn.washflow.ui.notifications.NotificationsViewModel
-import com.aprilarn.washflow.ui.analytics.AnalyticsScreen
 import com.aprilarn.washflow.ui.analytics.AnalyticsViewModel
 import com.aprilarn.washflow.ui.components.OfflineBanner
 import com.aprilarn.washflow.ui.components.rememberConnectivityState
-import com.aprilarn.washflow.ui.contributors.ContributorsScreen
 import com.aprilarn.washflow.ui.contributors.ContributorsViewModel
-import com.aprilarn.washflow.ui.customers.CustomersScreen
 import com.aprilarn.washflow.ui.customers.CustomersViewModel
 import com.aprilarn.washflow.ui.home.HomeViewModel
-import com.aprilarn.washflow.ui.home.LocationAwareHomePage
-import com.aprilarn.washflow.ui.items.ItemsScreen
 import com.aprilarn.washflow.ui.items.ItemsViewModel
 import com.aprilarn.washflow.ui.login.UserData
-import com.aprilarn.washflow.ui.manage_order.ManageOrderScreen
 import com.aprilarn.washflow.ui.manage_order.ManageOrderViewModel
-import com.aprilarn.washflow.ui.orders.OrdersScreen
 import com.aprilarn.washflow.ui.orders.OrdersViewModel
-import com.aprilarn.washflow.ui.services.ServicesScreen
 import com.aprilarn.washflow.ui.services.ServicesViewModel
 import com.aprilarn.washflow.ui.settings.LocationSelectionPanel
-import com.aprilarn.washflow.ui.settings.SettingsScreen
 import com.aprilarn.washflow.ui.settings.SettingsViewModel
-import com.aprilarn.washflow.ui.tabledata.TableDataScreen
 import com.aprilarn.washflow.ui.tabledata.TableDataViewModel
+import com.aprilarn.washflow.ui.tablet.analytics.TabletAnalyticsScreen
+import com.aprilarn.washflow.ui.tablet.contributors.TabletContributorsScreen
+import com.aprilarn.washflow.ui.tablet.home.TabletLocationAwareHomeScreen
+import com.aprilarn.washflow.ui.tablet.manageorder.TabletManageOrderScreen
+import com.aprilarn.washflow.ui.tablet.masterdata.TabletCustomersScreen
+import com.aprilarn.washflow.ui.tablet.masterdata.TabletItemsScreen
+import com.aprilarn.washflow.ui.tablet.masterdata.TabletServicesScreen
+import com.aprilarn.washflow.ui.tablet.masterdata.TabletTableDataScreen
+import com.aprilarn.washflow.ui.tablet.orders.TabletOrdersScreen
+import com.aprilarn.washflow.ui.tablet.settings.TabletSettingsScreen
 import com.aprilarn.washflow.ui.workspace.ActiveInviteDialog
 import com.aprilarn.washflow.ui.workspace.CreateInviteDialog
 import com.aprilarn.washflow.ui.workspace.DeleteWorkspaceDialog
@@ -223,7 +223,7 @@ fun MainAppScreen(
     val homeViewModel: HomeViewModel = viewModel(factory = homeViewModelFactory)
     val homeUiState by homeViewModel.uiState.collectAsStateWithLifecycle()
 
-    var showExitDialog by remember { mutableStateOf(false) }
+    var showExitDialog by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
 
     val isDarkWeatherBg = remember(
         homeUiState.weather,
@@ -377,7 +377,7 @@ fun MainAppScreen(
                         showExitDialog = true
                     }
                     
-                    LocationAwareHomePage(
+                    TabletLocationAwareHomeScreen(
                         homeViewModel = homeViewModel,
                         onNavigateToManageOrder = {
                             bottomNavController.navigate(AppNavigation.ManageOrder.route)
@@ -405,7 +405,7 @@ fun MainAppScreen(
                     val viewModel: ContributorsViewModel = viewModel(factory = factory)
                     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-                    ContributorsScreen(
+                    TabletContributorsScreen(
                         uiState = uiState,
                         onSearchQueryChange = { viewModel.onSearchQueryChanged(it) },
                         // Aksi tombol "+ Add" di dalam layar Contributors
@@ -440,7 +440,7 @@ fun MainAppScreen(
                         }
                     }
 
-                    ManageOrderScreen(
+                    TabletManageOrderScreen(
                         uiState = uiState,
                         onDrop = { orderId, newStatus ->
                             viewModel.changeOrderStatus(orderId, newStatus)
@@ -477,7 +477,7 @@ fun MainAppScreen(
                     val viewModel: TableDataViewModel = viewModel(factory = factory)
                     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-                    TableDataScreen(
+                    TabletTableDataScreen(
                         uiState = uiState,
                         onNavigate = { route ->
                             bottomNavController.navigate(route)
@@ -501,7 +501,7 @@ fun MainAppScreen(
                     val viewModel: AnalyticsViewModel = viewModel(factory = factory)
                     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-                    AnalyticsScreen(
+                    TabletAnalyticsScreen(
                         uiState = uiState,
                         onTabClick = { viewModel.onTabSelected(it) },
                         onMonthSelected = { viewModel.onMonthSelected(it) },
@@ -529,7 +529,7 @@ fun MainAppScreen(
                         }
                     }
 
-                    CustomersScreen(
+                    TabletCustomersScreen(
                         uiState = uiState,
                         onAddCustomerClick = { name, contact -> customersViewModel.addCustomer(name, contact) },
                         onEditCustomerClick = { customer -> customersViewModel.updateCustomer(customer) },
@@ -554,7 +554,7 @@ fun MainAppScreen(
                         }
                     }
 
-                    ServicesScreen(
+                    TabletServicesScreen(
                         uiState = uiState,
                         onAddServiceClick = { id, name -> viewModel.addService(id, name) },
                         onEditServiceClick = { service -> viewModel.updateService(service) },
@@ -578,7 +578,7 @@ fun MainAppScreen(
                         }
                     }
 
-                    ItemsScreen(
+                    TabletItemsScreen(
                         uiState = uiState,
                         onAddItemClick = { serviceId, name, price -> itemsViewModel.addItem(serviceId, name, price) },
                         onEditItemClick = { item -> itemsViewModel.updateItem(item) },
@@ -630,11 +630,11 @@ fun MainAppScreen(
                         }
                     }
 
-                    OrdersScreen(uiState = uiState, viewModel = viewModel)
+                    TabletOrdersScreen(uiState = uiState, viewModel = viewModel)
                 }
 
                 composable(AppNavigation.Settings.route) {
-                    SettingsScreen(
+                    TabletSettingsScreen(
                         userData = userData ?: UserData(
                             userId = "", displayName = "Unknown", email = "No Email", profilePictureUrl = null
                         ),

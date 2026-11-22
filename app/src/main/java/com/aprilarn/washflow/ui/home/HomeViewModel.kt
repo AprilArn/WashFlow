@@ -8,8 +8,8 @@ import androidx.lifecycle.viewModelScope
 import com.aprilarn.washflow.BuildConfig
 import com.aprilarn.washflow.data.remote.weather.service.GeocodingApiService
 import com.aprilarn.washflow.data.remote.weather.service.WeatherApiService
-import com.aprilarn.washflow.data.repository.OrderRepository
-import com.aprilarn.washflow.data.repository.WorkspaceRepository
+import com.aprilarn.washflow.domain.repository.OrderRepositoryContract
+import com.aprilarn.washflow.domain.repository.WorkspaceRepositoryContract
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,8 +26,8 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 class HomeViewModel(
-    private val orderRepository: OrderRepository,
-    private val workspaceRepository: WorkspaceRepository,
+    private val orderRepository: OrderRepositoryContract,
+    private val workspaceRepository: WorkspaceRepositoryContract,
     private val geocodingApiService: GeocodingApiService,
     private val sharedPreferences: SharedPreferences
 ) : ViewModel() {

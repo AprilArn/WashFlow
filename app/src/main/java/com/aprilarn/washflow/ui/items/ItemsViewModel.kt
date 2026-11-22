@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.aprilarn.washflow.data.model.Items
 import com.aprilarn.washflow.data.repository.ItemRepository
 import com.aprilarn.washflow.data.repository.ServiceRepository
+import com.aprilarn.washflow.domain.repository.ItemRepositoryContract
+import com.aprilarn.washflow.domain.repository.ServiceRepositoryContract
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -13,12 +15,12 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class ItemsViewModel: ViewModel() {
+class ItemsViewModel(
+    private val itemRepository: ItemRepositoryContract = ItemRepository(),
+    private val serviceRepository: ServiceRepositoryContract = ServiceRepository()
+) : ViewModel() {
     private val _uiState = MutableStateFlow(ItemsUiState())
     val uiState = _uiState.asStateFlow()
-
-    private val itemRepository = ItemRepository()
-    private val serviceRepository = ServiceRepository() // <- REPOSITORY BARU
 
     init {
         listenForDataChanges()

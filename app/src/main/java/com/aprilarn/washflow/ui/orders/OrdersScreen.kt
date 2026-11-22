@@ -139,7 +139,7 @@ private fun QuantityInputDialogContent(
     onDismiss: () -> Unit,
     onConfirm: (Int) -> Unit
 ) {
-    var quantityText by remember { mutableStateOf("1") }
+    var quantityText by androidx.compose.runtime.saveable.rememberSaveable(item.itemId) { mutableStateOf("1") }
     val currentQty = quantityText.toIntOrNull()?.coerceAtLeast(1) ?: 1
     val subtotal = item.itemPrice * currentQty
 

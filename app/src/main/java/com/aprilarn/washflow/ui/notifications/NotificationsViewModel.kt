@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aprilarn.washflow.data.model.Notifications
 import com.aprilarn.washflow.data.repository.NotificationsRepository
+import com.aprilarn.washflow.domain.repository.NotificationsRepositoryContract
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.auth
@@ -15,7 +16,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class NotificationsViewModel(
-    private val notificationsRepository: NotificationsRepository
+    private val notificationsRepository: NotificationsRepositoryContract = NotificationsRepository()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(NotificationsUiState())

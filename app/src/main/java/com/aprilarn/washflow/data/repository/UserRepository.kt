@@ -3,12 +3,13 @@
 package com.aprilarn.washflow.data.repository
 
 import com.aprilarn.washflow.data.model.Users
+import com.aprilarn.washflow.domain.repository.UserRepositoryContract
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.tasks.await
 import java.util.concurrent.CancellationException // <-- Tambahkan import ini
 
-class UserRepository {
+class UserRepository : UserRepositoryContract {
 
     private val usersCollection = Firebase.firestore.collection("users")
     private val workspacesCollection = Firebase.firestore.collection("workspaces") // <-- Tambahkan ini
@@ -20,7 +21,7 @@ class UserRepository {
      * 3. Membersihkan workspaceId jika tidak valid.
      * @return workspaceId (String) yang valid, atau null jika tidak ada/sudah dihapus.
      */
-    suspend fun saveUserAndGetWorkspace(
+    override suspend fun saveUserAndGetWorkspace(
         uid: String,
         displayName: String?,
         email: String?,

@@ -8,6 +8,9 @@ import com.aprilarn.washflow.data.model.Orders
 import com.aprilarn.washflow.data.repository.CustomerRepository
 import com.aprilarn.washflow.data.repository.OrderRepository
 import com.aprilarn.washflow.data.repository.ServiceRepository
+import com.aprilarn.washflow.domain.repository.CustomerRepositoryContract
+import com.aprilarn.washflow.domain.repository.OrderRepositoryContract
+import com.aprilarn.washflow.domain.repository.ServiceRepositoryContract
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -16,9 +19,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ManageOrderViewModel(
-    private val orderRepository: OrderRepository,
-    private val customerRepository: CustomerRepository,
-    private val serviceRepository: ServiceRepository
+    private val orderRepository: OrderRepositoryContract = OrderRepository(),
+    private val customerRepository: CustomerRepositoryContract = CustomerRepository(),
+    private val serviceRepository: ServiceRepositoryContract = ServiceRepository()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ManageOrderUiState())

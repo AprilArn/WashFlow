@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,8 +29,8 @@ fun WorkspaceScreen(
     onCreateWorkspaceClick: () -> Unit,
     onSwitchAccountClick: () -> Unit
 ) {
-    // 1. State untuk menampung teks yang diinput oleh pengguna
-    var inviteCode by remember { mutableStateOf("") }
+    // 1. State untuk menampung teks yang diinput oleh pengguna (disimpan melewati rotasi layar)
+    var inviteCode by rememberSaveable { mutableStateOf("") }
 
     Column(
         modifier = Modifier.fillMaxSize(),

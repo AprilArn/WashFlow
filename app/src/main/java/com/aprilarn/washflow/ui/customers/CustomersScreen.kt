@@ -18,7 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,10 +51,10 @@ fun CustomersScreen(
     onCustomerSelected: (Customers) -> Unit,
     onDismissDialog: () -> Unit
 ) {
-    var newCustomerName by remember { mutableStateOf("") }
-    var newCustomerPhone by remember { mutableStateOf("") }
+    var newCustomerName by rememberSaveable { mutableStateOf("") }
+    var newCustomerPhone by rememberSaveable { mutableStateOf("") }
 
-    var showDeleteConfirmation by remember { mutableStateOf(false) }
+    var showDeleteConfirmation by rememberSaveable { mutableStateOf(false) }
 
     val customerCount = uiState.customers.size
     val filteredCustomers = uiState.customers.filter {
@@ -64,16 +64,8 @@ fun CustomersScreen(
 
     // Dialog untuk Edit/Delete
     uiState.selectedCustomer?.let { customerToEdit ->
-        LaunchedEffect(customerToEdit) {
-            showDeleteConfirmation = false
-        }
-        var editedName by remember { mutableStateOf(customerToEdit.name) }
-        var editedContact by remember { mutableStateOf(customerToEdit.contact ?: "") }
-
-        LaunchedEffect(customerToEdit) {
-            editedName = customerToEdit.name
-            editedContact = customerToEdit.contact ?: ""
-        }
+        var editedName by rememberSaveable(customerToEdit.customerId) { mutableStateOf(customerToEdit.name) }
+        var editedContact by rememberSaveable(customerToEdit.customerId) { mutableStateOf(customerToEdit.contact ?: "") }
 
         if (showDeleteConfirmation) {
             DeleteConfirmationDialog(

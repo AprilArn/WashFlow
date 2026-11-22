@@ -11,6 +11,10 @@ import com.aprilarn.washflow.data.repository.CustomerRepository
 import com.aprilarn.washflow.data.repository.ItemRepository
 import com.aprilarn.washflow.data.repository.OrderRepository
 import com.aprilarn.washflow.data.repository.ServiceRepository
+import com.aprilarn.washflow.domain.repository.CustomerRepositoryContract
+import com.aprilarn.washflow.domain.repository.ItemRepositoryContract
+import com.aprilarn.washflow.domain.repository.OrderRepositoryContract
+import com.aprilarn.washflow.domain.repository.ServiceRepositoryContract
 import com.google.firebase.Timestamp
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,10 +24,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class OrdersViewModel(
-    private val customerRepository: CustomerRepository,
-    private val serviceRepository: ServiceRepository,
-    private val itemRepository: ItemRepository,
-    private val orderRepository: OrderRepository
+    private val customerRepository: CustomerRepositoryContract = CustomerRepository(),
+    private val serviceRepository: ServiceRepositoryContract = ServiceRepository(),
+    private val itemRepository: ItemRepositoryContract = ItemRepository(),
+    private val orderRepository: OrderRepositoryContract = OrderRepository()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OrdersUiState())

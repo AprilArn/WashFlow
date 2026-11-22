@@ -7,6 +7,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aprilarn.washflow.data.repository.InviteRepository
 import com.aprilarn.washflow.data.repository.WorkspaceRepository
+import com.aprilarn.washflow.domain.repository.InviteRepositoryContract
+import com.aprilarn.washflow.domain.repository.WorkspaceRepositoryContract
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.auth
@@ -27,8 +29,8 @@ sealed class MainNavigationEvent {
 }
 
 class MainViewModel(
-    private val workspaceRepository: WorkspaceRepository,
-    private val inviteRepository: InviteRepository,
+    private val workspaceRepository: WorkspaceRepositoryContract = WorkspaceRepository(),
+    private val inviteRepository: InviteRepositoryContract = InviteRepository(),
     private val sharedPreferences: SharedPreferences
 ) : ViewModel() {
 

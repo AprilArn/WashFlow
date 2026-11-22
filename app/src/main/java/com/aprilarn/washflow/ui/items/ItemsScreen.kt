@@ -33,10 +33,9 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -71,11 +70,11 @@ fun ItemsScreen(
     onItemSelected: (Items) -> Unit,
     onDismissDialog: () -> Unit
 ) {
-    var newItemService by remember { mutableStateOf("") }
-    var newItemName by remember { mutableStateOf("") }
-    var newItemPrice by remember { mutableStateOf("") }
+    var newItemService by rememberSaveable { mutableStateOf("") }
+    var newItemName by rememberSaveable { mutableStateOf("") }
+    var newItemPrice by rememberSaveable { mutableStateOf("") }
 
-    var showDeleteConfirmation by remember { mutableStateOf(false) }
+    var showDeleteConfirmation by rememberSaveable { mutableStateOf(false) }
 
     val itemCount = uiState.items.size
     val filteredItems = uiState.items.filter {
@@ -89,16 +88,9 @@ fun ItemsScreen(
 
     // Dialog untuk Edit/Delete
     uiState.selectedItem?.let { itemToEdit ->
-        var editedService by remember { mutableStateOf(itemToEdit.serviceId) }
-        var editedName by remember { mutableStateOf(itemToEdit.itemName) }
-        var editedPrice by remember { mutableStateOf(itemToEdit.itemPrice.toString().replace(".0", "")) }
-
-        LaunchedEffect(itemToEdit) {
-            editedService = itemToEdit.serviceId
-            editedName = itemToEdit.itemName
-            editedPrice = itemToEdit.itemPrice.toString().replace(".0", "")
-            showDeleteConfirmation = false
-        }
+        var editedService by rememberSaveable(itemToEdit.itemId) { mutableStateOf(itemToEdit.serviceId) }
+        var editedName by rememberSaveable(itemToEdit.itemId) { mutableStateOf(itemToEdit.itemName) }
+        var editedPrice by rememberSaveable(itemToEdit.itemId) { mutableStateOf(itemToEdit.itemPrice.toString().replace(".0", "")) }
 
         if (showDeleteConfirmation) {
             DeleteConfirmationDialog(

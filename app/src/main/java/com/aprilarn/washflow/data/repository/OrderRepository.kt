@@ -2,6 +2,7 @@ package com.aprilarn.washflow.data.repository
 
 import com.aprilarn.washflow.data.model.Notifications
 import com.aprilarn.washflow.data.model.Orders
+import com.aprilarn.washflow.domain.repository.OrderRepositoryContract
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.auth
@@ -17,7 +18,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class OrderRepository {
+class OrderRepository : OrderRepositoryContract {
     private val db = Firebase.firestore
 
     private suspend fun getWorkspaceId(): String? {
@@ -31,7 +32,7 @@ class OrderRepository {
         }
     }
 
-    suspend fun hasOrdersBefore(date: Timestamp): Boolean {
+    override suspend fun hasOrdersBefore(date: Timestamp): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
         return try {
             val snapshot = db.collection("workspaces")
@@ -49,7 +50,7 @@ class OrderRepository {
     }
 
     // Fungsi untuk mendapatkan semua order secara realtime
-    fun getOrdersRealtime(activeOnly: Boolean = false, startDate: Timestamp? = null): Flow<List<Orders>> {
+    override fun getOrdersRealtime(activeOnly: Boolean, startDate: Timestamp?): Flow<List<Orders>> {
         return callbackFlow {
             val workspaceId = getWorkspaceId()
             if (workspaceId == null) {
@@ -146,7 +147,7 @@ class OrderRepository {
         }
     }
 
-    fun getActiveOrdersWithDeadlinesRealtime(): Flow<List<Orders>> {
+    override fun getActiveOrdersWithDeadlinesRealtime(): Flow<List<Orders>> {
         return callbackFlow {
             val workspaceId = getWorkspaceId()
             if (workspaceId == null) {
@@ -178,7 +179,7 @@ class OrderRepository {
         }
     }
 
-    suspend fun createOrder(order: Orders): Boolean {
+    override suspend fun createOrder(order: Orders): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
         val currentUser = Firebase.auth.currentUser ?: return false
 
@@ -227,7 +228,7 @@ class OrderRepository {
     }
 
     // Fungsi untuk update status order
-    suspend fun updateOrderStatus(orderId: String, oldStatus: String, newStatus: String): Boolean {
+    override suspend fun updateOrderStatus(orderId: String, oldStatus: String, newStatus: String): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
         return try {
             val workspaceRef = db.collection("workspaces").document(workspaceId)
@@ -270,7 +271,7 @@ class OrderRepository {
         }
     }
 
-    suspend fun getOrderById(orderId: String): Orders? {
+    override suspend fun getOrderById(orderId: String): Orders? {
         val workspaceId = getWorkspaceId() ?: return null
         return try {
             val doc = db.collection("workspaces")
@@ -286,7 +287,7 @@ class OrderRepository {
         }
     }
 
-    suspend fun updateOrder(order: Orders): Boolean {
+    override suspend fun updateOrder(order: Orders): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
         val currentUser = Firebase.auth.currentUser ?: return false
 
@@ -319,7 +320,7 @@ class OrderRepository {
         }
     }
 
-    suspend fun updateOrderPaymentStatus(orderId: String, isPaid: Boolean): Boolean {
+    override suspend fun updateOrderPaymentStatus(orderId: String, isPaid: Boolean): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
         return try {
             val paidDate = if (isPaid) Timestamp.now() else null
@@ -341,7 +342,7 @@ class OrderRepository {
         }
     }
 
-    suspend fun updateOrderPickupStatus(orderId: String, isPickedUp: Boolean): Boolean {
+    override suspend fun updateOrderPickupStatus(orderId: String, isPickedUp: Boolean): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
         return try {
             val pickupDate = if (isPickedUp) Timestamp.now() else null
@@ -364,7 +365,7 @@ class OrderRepository {
         }
     }
 
-    suspend fun deleteOrder(orderId: String, status: String?): Boolean {
+    override suspend fun deleteOrder(orderId: String, status: String?): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
         return try {
             val workspaceRef = db.collection("workspaces").document(workspaceId)

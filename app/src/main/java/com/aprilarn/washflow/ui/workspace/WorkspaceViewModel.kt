@@ -3,8 +3,10 @@ package com.aprilarn.washflow.ui.workspace
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aprilarn.washflow.data.repository.InviteRepository // <-- Import yang baru
+import com.aprilarn.washflow.data.repository.InviteRepository
 import com.aprilarn.washflow.data.repository.WorkspaceRepository
+import com.aprilarn.washflow.domain.repository.InviteRepositoryContract
+import com.aprilarn.washflow.domain.repository.WorkspaceRepositoryContract
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.flow.*
@@ -17,9 +19,10 @@ sealed class WorkspaceEvent {
     data class ShowError(val message: String) : WorkspaceEvent()
 }
 
-class WorkspaceViewModel : ViewModel() {
-    private val workspaceRepository = WorkspaceRepository()
-    private val inviteRepository = InviteRepository() // <-- 1. Tambahkan InviteRepository
+class WorkspaceViewModel(
+    private val workspaceRepository: WorkspaceRepositoryContract = WorkspaceRepository(),
+    private val inviteRepository: InviteRepositoryContract = InviteRepository()
+) : ViewModel() {
     private val auth = Firebase.auth
 
     private val _uiState = MutableStateFlow(WorkspaceUiState())

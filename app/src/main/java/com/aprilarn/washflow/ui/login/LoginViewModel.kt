@@ -5,6 +5,7 @@ package com.aprilarn.washflow.ui.login
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aprilarn.washflow.data.repository.UserRepository
+import com.aprilarn.washflow.domain.repository.UserRepositoryContract
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,11 +13,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 
-class LoginViewModel : ViewModel() {
+class LoginViewModel(
+    private val userRepository: UserRepositoryContract = UserRepository()
+) : ViewModel() {
 
     private val _state = MutableStateFlow(LoginUiState())
     val state = _state.asStateFlow()
-    private val userRepository = UserRepository()
 
     fun onSignInResult(result: SignInResult) {
         _state.update { it.copy(isSignInSuccessful = result.data != null, signInError = result.errorMessage) }

@@ -4,18 +4,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aprilarn.washflow.data.model.Services
 import com.aprilarn.washflow.data.repository.ServiceRepository
+import com.aprilarn.washflow.domain.repository.ServiceRepositoryContract
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class ServicesViewModel : ViewModel() {
+class ServicesViewModel(
+    private val serviceRepository: ServiceRepositoryContract = ServiceRepository()
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ServicesUiState())
     val uiState = _uiState.asStateFlow()
-
-    private val serviceRepository = ServiceRepository()
 
     init {
         listenForServiceChanges()

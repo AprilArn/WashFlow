@@ -30,15 +30,21 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.aprilarn.washflow.data.repository.InviteRepository
 import com.aprilarn.washflow.data.repository.WorkspaceRepository
-import com.aprilarn.washflow.ui.main.MainAppScreen
+import com.aprilarn.washflow.ui.adaptive.LocalWindowLayoutInfo
+import com.aprilarn.washflow.ui.adaptive.ProvideWindowLayoutInfo
+import com.aprilarn.washflow.ui.adaptive.isTabletDevice
+import com.aprilarn.washflow.ui.login.GoogleAuthUiClient
+import com.aprilarn.washflow.ui.login.LoginViewModel
 import com.aprilarn.washflow.ui.main.MainNavigationEvent
 import com.aprilarn.washflow.ui.main.MainViewModel
-import com.aprilarn.washflow.ui.login.GoogleAuthUiClient
-import com.aprilarn.washflow.ui.login.LoginScreen
-import com.aprilarn.washflow.ui.login.LoginViewModel
+import com.aprilarn.washflow.ui.phone.login.PhoneLoginScreen
+import com.aprilarn.washflow.ui.phone.main.PhoneMainScreen
+import com.aprilarn.washflow.ui.phone.workspace.PhoneWorkspaceScreen
+import com.aprilarn.washflow.ui.tablet.login.TabletLoginScreen
+import com.aprilarn.washflow.ui.tablet.main.TabletMainScreen
+import com.aprilarn.washflow.ui.tablet.workspace.TabletWorkspaceScreen
 import com.aprilarn.washflow.ui.theme.WashFlowTheme
 import com.aprilarn.washflow.ui.workspace.WorkspaceEvent
-import com.aprilarn.washflow.ui.workspace.WorkspaceScreen
 import com.aprilarn.washflow.ui.workspace.WorkspaceViewModel
 import com.google.android.gms.auth.api.identity.Identity
 import kotlinx.coroutines.launch
@@ -56,85 +62,82 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        hideSystemBars()
+        if (isTabletDevice()) {
+            hideSystemBars()
+        }
         setContent {
-            WashFlowTheme {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxSize(),
-                    color = Color.Transparent
-                ) {
-                    // 1. Navigasi utama aplikasi diatur di sini, dimulai dari "login"
-                    val navController = rememberNavController()
+            ProvideWindowLayoutInfo {
+                val windowLayoutInfo = LocalWindowLayoutInfo.current
+                WashFlowTheme {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        color = Color.Transparent
+                    ) {
+                        // 1. Navigasi utama aplikasi diatur di sini, dimulai dari "login"
+                        val navController = rememberNavController()
 
-                    NavHost(navController = navController, startDestination = "login") {
+                        NavHost(navController = navController, startDestination = "login") {
 
-                        // 2. Rute untuk Login Screen
-                        composable("login") {
-                            val viewModel = viewModel<LoginViewModel>()
-                            val state by viewModel.state.collectAsStateWithLifecycle()
+                            // 2. Rute untuk Login Screen (Adaptif: Tablet vs Phone)
+                            composable("login") {
+                                val viewModel = viewModel<LoginViewModel>()
+                                val state by viewModel.state.collectAsStateWithLifecycle()
 
-                            LaunchedEffect(Unit) {
-                                val currentUser = googleAuthUiClient.getSignedUser()
-                                if (currentUser != null) {
-                                    // Jika user sudah pernah login, langsung jalankan pengecekan Workspace
-                                    // Ini otomatis akan memutar loading (isCheckingWorkspace = true)
-                                    viewModel.checkAutoLogin(currentUser)
-                                }
-                            }
-
-                            // Efek ini akan memantau status workspace dan menavigasi
-                            LaunchedEffect(key1 = state.userHasWorkspace, key2 = state.showTimeoutDialog) {
-                                if (state.showTimeoutDialog) {
-                                    // Cegah navigasi jika terjadi timeout/error
-                                    return@LaunchedEffect
-                                }
-                                
-                                if (state.userHasWorkspace == true) { // Punya workspace
-                                    Toast.makeText(applicationContext, "Welcome back!", Toast.LENGTH_SHORT).show()
-                                    navController.navigate("main") {
-                                        popUpTo("login") { inclusive = true }
+                                LaunchedEffect(Unit) {
+                                    val currentUser = googleAuthUiClient.getSignedUser()
+                                    if (currentUser != null) {
+                                        viewModel.checkAutoLogin(currentUser)
                                     }
-                                    viewModel.onNavigationComplete()
-                                } else if (state.userHasWorkspace == false) { // Tidak punya
-                                    navController.navigate("workspace") {
-                                        popUpTo("login") { inclusive = true }
-                                    }
-                                    viewModel.onNavigationComplete()
                                 }
-                            }
 
-                            val launcher = rememberLauncherForActivityResult(
-                                contract = ActivityResultContracts.StartIntentSenderForResult(),
-                                onResult = { result ->
-                                    if (result.resultCode == RESULT_OK) {
-                                        lifecycleScope.launch {
-                                            val signInResult = googleAuthUiClient.signInWithIntent(
-                                                intent = result.data ?: return@launch
-                                            )
-                                            viewModel.onSignInResult(signInResult)
+                                LaunchedEffect(key1 = state.userHasWorkspace, key2 = state.showTimeoutDialog) {
+                                    if (state.showTimeoutDialog) {
+                                        return@LaunchedEffect
+                                    }
+
+                                    if (state.userHasWorkspace == true) {
+                                        Toast.makeText(applicationContext, "Welcome back!", Toast.LENGTH_SHORT).show()
+                                        navController.navigate("main") {
+                                            popUpTo("login") { inclusive = true }
+                                        }
+                                        viewModel.onNavigationComplete()
+                                    } else if (state.userHasWorkspace == false) {
+                                        navController.navigate("workspace") {
+                                            popUpTo("login") { inclusive = true }
+                                        }
+                                        viewModel.onNavigationComplete()
+                                    }
+                                }
+
+                                val launcher = rememberLauncherForActivityResult(
+                                    contract = ActivityResultContracts.StartIntentSenderForResult(),
+                                    onResult = { result ->
+                                        if (result.resultCode == RESULT_OK) {
+                                            lifecycleScope.launch {
+                                                val signInResult = googleAuthUiClient.signInWithIntent(
+                                                    intent = result.data ?: return@launch
+                                                )
+                                                viewModel.onSignInResult(signInResult)
+                                            }
                                         }
                                     }
-                                }
-                            )
-
-                            // Tampilkan background ilustrasi cuaca untuk Login Screen
-                            val loginPrefs = remember {
-                                applicationContext.getSharedPreferences("WashFlowPrefs", MODE_PRIVATE)
-                            }
-                            val cachedLoginWeather = remember {
-                                loginPrefs.getString("WEATHER_DESC", "Sunny") ?: "Sunny"
-                            }
-                            Box(
-                                modifier = Modifier.fillMaxSize()
-                            ) {
-                                com.aprilarn.washflow.ui.components.WeatherBackgroundIllustration(
-                                    weather = cachedLoginWeather,
-                                    modifier = Modifier.matchParentSize()
                                 )
-                                LoginScreen(
-                                    state = state,
-                                    onGoogleSignInClick = {
+
+                                val loginPrefs = remember {
+                                    applicationContext.getSharedPreferences("WashFlowPrefs", MODE_PRIVATE)
+                                }
+                                val cachedLoginWeather = remember {
+                                    loginPrefs.getString("WEATHER_DESC", "Sunny") ?: "Sunny"
+                                }
+                                Box(
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    com.aprilarn.washflow.ui.components.WeatherBackgroundIllustration(
+                                        weather = cachedLoginWeather,
+                                        modifier = Modifier.matchParentSize()
+                                    )
+                                    val onGoogleSignIn: () -> Unit = {
                                         lifecycleScope.launch {
                                             val signInIntentSender = googleAuthUiClient.signIn()
                                             launcher.launch(
@@ -143,111 +146,131 @@ class MainActivity : ComponentActivity() {
                                                 ).build()
                                             )
                                         }
-                                    },
-                                    onTimeoutDialogDismiss = {
-                                        viewModel.resetLoginState()
                                     }
-                                )
-                            }
-                        }
-
-                        // Rute baru untuk Workspace Screen
-                        composable("workspace") {
-                            val viewModel = viewModel<WorkspaceViewModel>()
-                            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-                            val context = LocalContext.current
-
-                            // Efek untuk menangani event dari WorkspaceViewModel
-                            LaunchedEffect(Unit) {
-                                viewModel.eventFlow.collect { event ->
-                                    when (event) {
-                                        is WorkspaceEvent.NavigateToDashboard -> {
-                                            navController.navigate("main") {
-                                                popUpTo("workspace") { inclusive = true }
-                                            }
-                                        }
-                                        is WorkspaceEvent.NavigateToLogin -> {
-                                            navController.navigate("login") {
-                                                popUpTo("workspace") { inclusive = true }
-                                            }
-                                            Toast.makeText(applicationContext, "Signed out", Toast.LENGTH_SHORT).show()
-                                        }
-                                        is WorkspaceEvent.ShowError -> {
-                                            Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
-                                        }
-                                    }
-                                }
-                            }
-
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(
-                                        Brush.linearGradient(
-                                            colors = listOf(Color(0xFF8EC5FC), Color(0xFFE0C3FC))
+                                    if (windowLayoutInfo.isTablet) {
+                                        TabletLoginScreen(
+                                            state = state,
+                                            onGoogleSignInClick = onGoogleSignIn,
+                                            onTimeoutDialogDismiss = { viewModel.resetLoginState() }
                                         )
-                                    )
-                            ) {
-                                WorkspaceScreen(
-                                    state = uiState,
-                                    onJoinClick = { code -> viewModel.joinWorkspace(code) },
-                                    onCreateWorkspaceClick = { viewModel.createWorkspace() },
-                                    onSwitchAccountClick = { viewModel.signOut() }
-                                )
-                            }
-                        }
-
-                        composable("main") {
-                            // --- MAINVIEWMODEL ---
-                            val mainViewModelFactory = object : ViewModelProvider.Factory {
-                                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                    @Suppress("UNCHECKED_CAST")
-                                    return MainViewModel(
-                                        WorkspaceRepository(),
-                                        InviteRepository(),
-                                        applicationContext.getSharedPreferences("WashFlowPrefs", MODE_PRIVATE)
-                                    ) as T
-                                }
-                            }
-                            val mainViewModel: MainViewModel = viewModel(factory = mainViewModelFactory)
-                            val userData = googleAuthUiClient.getSignedUser()
-
-
-                            // --- EFEK UNTUK NAVIGASI KELUAR ---
-                            LaunchedEffect(Unit) {
-                                mainViewModel.eventFlow.collect { event ->
-                                    when (event) {
-                                        is MainNavigationEvent.NavigateToWorkspace -> {
-                                            navController.navigate("workspace") {
-                                                popUpTo("main") { inclusive = true }
-                                            }
-                                        }
+                                    } else {
+                                        PhoneLoginScreen(
+                                            state = state,
+                                            onGoogleSignInClick = onGoogleSignIn,
+                                            onTimeoutDialogDismiss = { viewModel.resetLoginState() }
+                                        )
                                     }
                                 }
                             }
 
-                            // --- PASS VIEWMODEL KE MAINAPPSCREEN ---
-                            // MainAppScreen(mainViewModel)
-                            MainAppScreen(
-                                mainViewModel = mainViewModel,
-                                userData = userData,
-                                onSignOut = {
+                            // Rute untuk Workspace Screen (Adaptif: Tablet vs Phone)
+                            composable("workspace") {
+                                val viewModel = viewModel<WorkspaceViewModel>()
+                                val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+                                val context = LocalContext.current
+
+                                LaunchedEffect(Unit) {
+                                    viewModel.eventFlow.collect { event ->
+                                        when (event) {
+                                            is WorkspaceEvent.NavigateToDashboard -> {
+                                                navController.navigate("main") {
+                                                    popUpTo("workspace") { inclusive = true }
+                                                }
+                                            }
+                                            is WorkspaceEvent.NavigateToLogin -> {
+                                                navController.navigate("login") {
+                                                    popUpTo("workspace") { inclusive = true }
+                                                }
+                                                Toast.makeText(applicationContext, "Signed out", Toast.LENGTH_SHORT).show()
+                                            }
+                                            is WorkspaceEvent.ShowError -> {
+                                                Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            Brush.linearGradient(
+                                                colors = listOf(Color(0xFF8EC5FC), Color(0xFFE0C3FC))
+                                            )
+                                        )
+                                ) {
+                                    if (windowLayoutInfo.isTablet) {
+                                        TabletWorkspaceScreen(
+                                            state = uiState,
+                                            onJoinClick = { code -> viewModel.joinWorkspace(code) },
+                                            onCreateWorkspaceClick = { viewModel.createWorkspace() },
+                                            onSwitchAccountClick = { viewModel.signOut() }
+                                        )
+                                    } else {
+                                        PhoneWorkspaceScreen(
+                                            state = uiState,
+                                            onJoinClick = { code -> viewModel.joinWorkspace(code) },
+                                            onCreateWorkspaceClick = { viewModel.createWorkspace() },
+                                            onSwitchAccountClick = { viewModel.signOut() }
+                                        )
+                                    }
+                                }
+                            }
+
+                            composable("main") {
+                                val mainViewModelFactory = object : ViewModelProvider.Factory {
+                                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                        @Suppress("UNCHECKED_CAST")
+                                        return MainViewModel(
+                                            WorkspaceRepository(),
+                                            InviteRepository(),
+                                            applicationContext.getSharedPreferences("WashFlowPrefs", MODE_PRIVATE)
+                                        ) as T
+                                    }
+                                }
+                                val mainViewModel: MainViewModel = viewModel(factory = mainViewModelFactory)
+                                val userData = googleAuthUiClient.getSignedUser()
+
+                                LaunchedEffect(Unit) {
+                                    mainViewModel.eventFlow.collect { event ->
+                                        when (event) {
+                                            is MainNavigationEvent.NavigateToWorkspace -> {
+                                                navController.navigate("workspace") {
+                                                    popUpTo("main") { inclusive = true }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                val handleSignOut: () -> Unit = {
                                     lifecycleScope.launch {
-                                        // 1. TUNGGU proses Sign Out selesai sepenuhnya (Google & Firebase)
                                         try {
                                             googleAuthUiClient.signOut()
                                         } catch (e: Exception) {
                                             e.printStackTrace()
                                         }
-
-                                        // 2. SETELAH semua beres, baru bersihkan memori dan pindah ke Login
                                         navController.navigate("login") {
                                             popUpTo(navController.graph.id) { inclusive = true }
                                         }
                                         Toast.makeText(applicationContext, "Signed out", Toast.LENGTH_SHORT).show()
                                     }
                                 }
-                            )
+
+                                if (windowLayoutInfo.isTablet) {
+                                    TabletMainScreen(
+                                        mainViewModel = mainViewModel,
+                                        userData = userData,
+                                        onSignOut = handleSignOut
+                                    )
+                                } else {
+                                    PhoneMainScreen(
+                                        mainViewModel = mainViewModel,
+                                        userData = userData,
+                                        onSignOut = handleSignOut
+                                    )
+                                }
+                            }
                         }
                     }
                 }

@@ -6,6 +6,9 @@ import com.aprilarn.washflow.ai.Brain
 import com.aprilarn.washflow.data.repository.CustomerRepository
 import com.aprilarn.washflow.data.repository.ItemRepository
 import com.aprilarn.washflow.data.repository.ServiceRepository
+import com.aprilarn.washflow.domain.repository.CustomerRepositoryContract
+import com.aprilarn.washflow.domain.repository.ItemRepositoryContract
+import com.aprilarn.washflow.domain.repository.ServiceRepositoryContract
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -22,11 +25,12 @@ import androidx.compose.ui.text.input.TextFieldValue
 import android.content.Context
 import android.speech.SpeechRecognizer
 
-class AiAgentViewModel : ViewModel() {
+class AiAgentViewModel(
+    private val customerRepository: CustomerRepositoryContract = CustomerRepository(),
+    private val itemRepository: ItemRepositoryContract = ItemRepository(),
+    private val serviceRepository: ServiceRepositoryContract = ServiceRepository()
+) : ViewModel() {
     private val brain = Brain()
-    private val customerRepository = CustomerRepository()
-    private val itemRepository = ItemRepository()
-    private val serviceRepository = ServiceRepository()
     private val _uiState = MutableStateFlow(AiAgentUiState())
     val uiState = _uiState.asStateFlow()
 

@@ -5,6 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.aprilarn.washflow.data.repository.CustomerRepository
 import com.aprilarn.washflow.data.repository.OrderRepository
 import com.aprilarn.washflow.data.repository.ServiceRepository
+import com.aprilarn.washflow.domain.repository.CustomerRepositoryContract
+import com.aprilarn.washflow.domain.repository.OrderRepositoryContract
+import com.aprilarn.washflow.domain.repository.ServiceRepositoryContract
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -13,9 +16,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class AnalyticsViewModel(
-    private val orderRepository: OrderRepository = OrderRepository(),
-    private val serviceRepository: ServiceRepository = ServiceRepository(),
-    private val customerRepository: CustomerRepository = CustomerRepository()
+    private val orderRepository: OrderRepositoryContract = OrderRepository(),
+    private val serviceRepository: ServiceRepositoryContract = ServiceRepository(),
+    private val customerRepository: CustomerRepositoryContract = CustomerRepository()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AnalyticsUiState())

@@ -16,10 +16,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,10 +47,10 @@ fun ServicesScreen(
     onServiceSelected: (Services) -> Unit,
     onDismissDialog: () -> Unit
 ) {
-    var newServiceName by remember { mutableStateOf("") }
-    var newServiceId by remember { mutableStateOf("") }
+    var newServiceName by rememberSaveable { mutableStateOf("") }
+    var newServiceId by rememberSaveable { mutableStateOf("") }
 
-    var showDeleteConfirmation by remember { mutableStateOf(false) }
+    var showDeleteConfirmation by rememberSaveable { mutableStateOf(false) }
 
     val serviceCount = uiState.services.size
     val filteredServices = uiState.services.filter {
@@ -61,14 +60,7 @@ fun ServicesScreen(
 
     // Dialog untuk Edit/Delete
     uiState.selectedService?.let { serviceToEdit ->
-        LaunchedEffect(serviceToEdit) {
-            showDeleteConfirmation = false
-        }
-        var editedName by remember { mutableStateOf(serviceToEdit.serviceName) }
-
-        LaunchedEffect(serviceToEdit) {
-            editedName = serviceToEdit.serviceName
-        }
+        var editedName by rememberSaveable(serviceToEdit.serviceId) { mutableStateOf(serviceToEdit.serviceName) }
 
         if (showDeleteConfirmation) {
             DeleteConfirmationDialog(

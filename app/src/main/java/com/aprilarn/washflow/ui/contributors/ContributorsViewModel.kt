@@ -4,6 +4,7 @@ package com.aprilarn.washflow.ui.contributors
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aprilarn.washflow.data.repository.WorkspaceRepository
+import com.aprilarn.washflow.domain.repository.WorkspaceRepositoryContract
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
@@ -16,7 +17,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 class ContributorsViewModel(
-    private val workspaceRepository: WorkspaceRepository
+    private val workspaceRepository: WorkspaceRepositoryContract = WorkspaceRepository()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ContributorsUiState())
