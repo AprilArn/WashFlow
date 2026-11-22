@@ -37,6 +37,9 @@ class HomeViewModel(
     private var currentWeatherOnlyForecast: List<HourlyForecastUiState> = emptyList()
     private var todayDeadlines: List<HourlyForecastUiState> = emptyList()
 
+    var hasInitializedWeather: Boolean = false
+        private set
+
     private val weatherApiService = WeatherApiService()
     private val gson = Gson()
 
@@ -49,12 +52,47 @@ class HomeViewModel(
             null
         }
         if (!cachedWeather.isNullOrBlank()) {
+            val savedTemp = sharedPreferences.getString("TEMP", "--°C") ?: "--°C"
+            val savedIcon = sharedPreferences.getString("ICON_URL", "") ?: ""
+            val savedLocName = sharedPreferences.getString("LOCATION_NAME", "Mencari lokasi...") ?: "Mencari lokasi..."
+            val savedRec = sharedPreferences.getString("RECOMMENDATION", "Memuat rekomendasi...") ?: "Memuat rekomendasi..."
+            val savedHumidity = sharedPreferences.getString("HUMIDITY", "--%") ?: "--%"
+            val savedUV = sharedPreferences.getString("UV_INDEX", "--") ?: "--"
+            val savedPrecip = sharedPreferences.getString("PRECIP_PROB", "--%") ?: "--%"
+            val savedWind = sharedPreferences.getString("WIND_SPEED", "-- km/h") ?: "-- km/h"
+            val savedFeels = sharedPreferences.getString("FEELS_LIKE", "--°C") ?: "--°C"
+            val savedThunder = sharedPreferences.getString("THUNDER_PROB", "--%") ?: "--%"
+            val savedWindDir = sharedPreferences.getString("WIND_DIRECTION", "--") ?: "--"
+
+            val savedHourlyJson = sharedPreferences.getString("HOURLY_JSON", "[]")
+            val type = object : TypeToken<List<HourlyForecastUiState>>() {}.type
+            val savedHourly: List<HourlyForecastUiState> = try {
+                gson.fromJson(savedHourlyJson, type)
+            } catch (e: Exception) {
+                emptyList()
+            }
+            val nowMillis = System.currentTimeMillis()
+            val filteredHourly = savedHourly.filter { it.timestamp > nowMillis }.take(8)
+            currentWeatherOnlyForecast = filteredHourly
+
             _uiState.update {
                 it.copy(
                     greeting = getGreetingMessage(),
                     weather = cachedWeather,
                     weatherType = cachedWeatherType,
-                    isDaytime = cachedIsDaytime
+                    isDaytime = cachedIsDaytime,
+                    temperature = savedTemp,
+                    weatherIconUrl = savedIcon,
+                    locationName = savedLocName,
+                    recommendation = savedRec,
+                    hourlyForecasts = injectEvents(filteredHourly),
+                    humidity = savedHumidity,
+                    uvIndex = savedUV,
+                    precipitationProb = savedPrecip,
+                    windSpeed = savedWind,
+                    feelsLike = savedFeels,
+                    thunderstormProb = savedThunder,
+                    windDirection = savedWindDir
                 )
             }
         } else {
@@ -342,6 +380,7 @@ class HomeViewModel(
     }
 
     fun fetchWeatherData(lat: Double, lon: Double, isGps: Boolean = true, showLoader: Boolean = true) {
+        hasInitializedWeather = true
         val currentTime = System.currentTimeMillis()
         val lastFetchTime = sharedPreferences.getLong("LAST_FETCH_TIME", 0L)
         val lastLat = sharedPreferences.getFloat("LAST_LAT", 0f).toDouble()

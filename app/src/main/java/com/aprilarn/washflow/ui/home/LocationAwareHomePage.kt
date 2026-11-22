@@ -61,7 +61,7 @@ fun LocationAwareHomePage(
     LaunchedEffect(key1 = hasLocationPermission, key2 = isStaticMode) {
         if (isStaticMode) {
             // JIKA MODE STATIC: Langsung gunakan koordinat memori, tidak perlu menyalakan GPS
-            if (homeViewModel.uiState.value.weather == "loading weather...") {
+            if (!homeViewModel.hasInitializedWeather) {
                 homeViewModel.fetchWeatherData(savedLat, savedLon, isGps = false)
                 onLocationFetched(savedLat, savedLon)
             }
@@ -76,11 +76,18 @@ fun LocationAwareHomePage(
 
             if (fineLocationGranted || coarseLocationGranted) {
                 hasLocationPermission = true
-                if (homeViewModel.uiState.value.weather == "loading weather...") {
+                if (!homeViewModel.hasInitializedWeather) {
                     fusedLocationClient.lastLocation.addOnSuccessListener { location ->
                         if (location != null) {
                             homeViewModel.fetchWeatherData(location.latitude, location.longitude, isGps = true)
                             onLocationFetched(location.latitude, location.longitude)
+                        } else {
+                            val fallbackLat = sharedPreferences.getFloat("LAST_LAT", 0f).toDouble()
+                            val fallbackLon = sharedPreferences.getFloat("LAST_LON", 0f).toDouble()
+                            if (fallbackLat != 0.0 || fallbackLon != 0.0) {
+                                homeViewModel.fetchWeatherData(fallbackLat, fallbackLon, isGps = true)
+                                onLocationFetched(fallbackLat, fallbackLon)
+                            }
                         }
                     }
                 }
