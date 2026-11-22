@@ -6,6 +6,11 @@ import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -130,6 +135,13 @@ fun MainAppScreen(
         }
     )
 
+    // Shared repositories (ringan, tidak menyalakan listener Firestore sebelum dipanggil oleh ViewModel)
+    val orderRepository = remember { OrderRepository() }
+    val customerRepository = remember { CustomerRepository() }
+    val serviceRepository = remember { ServiceRepository() }
+    val itemRepository = remember { ItemRepository() }
+    val workspaceRepository = remember { WorkspaceRepository() }
+
     val customersViewModel: CustomersViewModel = viewModel()
     val itemsViewModel: ItemsViewModel = viewModel()
 
@@ -187,22 +199,25 @@ fun MainAppScreen(
     val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
 
     // Inisialisasi HomeViewModel di level MainAppScreen agar bisa dibagikan
-    val homeViewModelFactory = object : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            // 1. Buat Retrofit instance untuk Geocoding API
-            val retrofit = Retrofit.Builder()
-                .baseUrl("https://maps.googleapis.com/")
-                .addConverterFactory(GsonConverterFactory.create())
-                .build()
+    val appContext = remember(context) { context.applicationContext }
+    val homeViewModelFactory = remember(appContext) {
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                // 1. Buat Retrofit instance untuk Geocoding API
+                val retrofit = Retrofit.Builder()
+                    .baseUrl("https://maps.googleapis.com/")
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .build()
 
-            val geocodingService = retrofit.create(GeocodingApiService::class.java)
+                val geocodingService = retrofit.create(GeocodingApiService::class.java)
 
-            // 2. Ambil SharedPreferences
-            val sharedPrefs = context.getSharedPreferences("WashFlowPrefs", Context.MODE_PRIVATE)
+                // 2. Ambil SharedPreferences via applicationContext
+                val sharedPrefs = appContext.getSharedPreferences("WashFlowPrefs", Context.MODE_PRIVATE)
 
-            // 3. Masukkan ketiganya ke dalam HomeViewModel
-            return HomeViewModel(OrderRepository(), WorkspaceRepository(), geocodingService, sharedPrefs) as T
+                // 3. Masukkan ketiganya ke dalam HomeViewModel
+                return HomeViewModel(orderRepository, workspaceRepository, geocodingService, sharedPrefs) as T
+            }
         }
     }
     val homeViewModel: HomeViewModel = viewModel(factory = homeViewModelFactory)
@@ -307,8 +322,55 @@ fun MainAppScreen(
                     .navigationBarsPadding()
                     .padding(bottom = 34.dp)
             ) {
-            // NavHost internal untuk mengatur layar yang diakses dari Bottom Navigation Bar
-            NavHost(navController = bottomNavController, startDestination = AppNavigation.Home.route) {
+            // NavHost internal untuk mengatur layar yang diakses dari Top Navigation Bar
+            // Exit hanya menggunakan fade cepat (100ms) agar GPU tidak merender 2 slide penuh sekaligus
+            // saat layar tujuan pertama kali di-compose.
+            NavHost(
+                navController = bottomNavController,
+                startDestination = AppNavigation.Home.route,
+                enterTransition = {
+                    val fromIndex = navRouteOrderIndex(initialState.destination.route)
+                    val toIndex = navRouteOrderIndex(targetState.destination.route)
+                    val slideDirection = if (toIndex >= fromIndex) {
+                        AnimatedContentTransitionScope.SlideDirection.Left
+                    } else {
+                        AnimatedContentTransitionScope.SlideDirection.Right
+                    }
+                    fadeIn(
+                        animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing)
+                    ) + slideIntoContainer(
+                        towards = slideDirection,
+                        animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
+                        initialOffset = { fullSize -> fullSize / 36 }
+                    )
+                },
+                exitTransition = {
+                    fadeOut(
+                        animationSpec = tween(durationMillis = 100, easing = FastOutSlowInEasing)
+                    )
+                },
+                popEnterTransition = {
+                    val fromIndex = navRouteOrderIndex(initialState.destination.route)
+                    val toIndex = navRouteOrderIndex(targetState.destination.route)
+                    val slideDirection = if (toIndex <= fromIndex) {
+                        AnimatedContentTransitionScope.SlideDirection.Right
+                    } else {
+                        AnimatedContentTransitionScope.SlideDirection.Left
+                    }
+                    fadeIn(
+                        animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing)
+                    ) + slideIntoContainer(
+                        towards = slideDirection,
+                        animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
+                        initialOffset = { fullSize -> fullSize / 36 }
+                    )
+                },
+                popExitTransition = {
+                    fadeOut(
+                        animationSpec = tween(durationMillis = 100, easing = FastOutSlowInEasing)
+                    )
+                }
+            ) {
 
                 composable(AppNavigation.Home.route) {
                     androidx.activity.compose.BackHandler(enabled = true) {
@@ -330,12 +392,14 @@ fun MainAppScreen(
                 }
 
                 composable(AppNavigation.Contributors.route) {
-                    val factory = object : ViewModelProvider.Factory {
-                        @Suppress("UNCHECKED_CAST")
-                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                            return ContributorsViewModel(
-                                WorkspaceRepository()
-                            ) as T
+                    val factory = remember {
+                        object : ViewModelProvider.Factory {
+                            @Suppress("UNCHECKED_CAST")
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return ContributorsViewModel(
+                                    workspaceRepository
+                                ) as T
+                            }
                         }
                     }
                     val viewModel: ContributorsViewModel = viewModel(factory = factory)
@@ -354,19 +418,20 @@ fun MainAppScreen(
                 }
 
                 composable(AppNavigation.ManageOrder.route) {
-                    val factory = object : ViewModelProvider.Factory {
-                        @Suppress("UNCHECKED_CAST")
-                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                            return ManageOrderViewModel(
-                                OrderRepository(),
-                                CustomerRepository(),
-                                ServiceRepository()
-                            ) as T
+                    val factory = remember {
+                        object : ViewModelProvider.Factory {
+                            @Suppress("UNCHECKED_CAST")
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return ManageOrderViewModel(
+                                    orderRepository,
+                                    customerRepository,
+                                    serviceRepository
+                                ) as T
+                            }
                         }
                     }
                     val viewModel: ManageOrderViewModel = viewModel(factory = factory)
                     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-                    val context = LocalContext.current
 
                     LaunchedEffect(uiState.errorMessage) {
                         uiState.errorMessage?.let {
@@ -396,14 +461,17 @@ fun MainAppScreen(
                 }
 
                 composable(AppNavigation.TableData.route) {
-                    val factory = object : ViewModelProvider.Factory {
-                        @Suppress("UNCHECKED_CAST")
-                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                            return TableDataViewModel(
-                                CustomerRepository(),
-                                ServiceRepository(),
-                                ItemRepository()
-                            ) as T
+                    val factory = remember {
+                        object : ViewModelProvider.Factory {
+                            @Suppress("UNCHECKED_CAST")
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return TableDataViewModel(
+                                    customerRepository,
+                                    serviceRepository,
+                                    itemRepository,
+                                    workspaceRepository
+                                ) as T
+                            }
                         }
                     }
                     val viewModel: TableDataViewModel = viewModel(factory = factory)
@@ -418,7 +486,19 @@ fun MainAppScreen(
                 }
 
                 composable(AppNavigation.Analytics.route) {
-                    val viewModel: AnalyticsViewModel = viewModel()
+                    val factory = remember {
+                        object : ViewModelProvider.Factory {
+                            @Suppress("UNCHECKED_CAST")
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return AnalyticsViewModel(
+                                    orderRepository,
+                                    serviceRepository,
+                                    customerRepository
+                                ) as T
+                            }
+                        }
+                    }
+                    val viewModel: AnalyticsViewModel = viewModel(factory = factory)
                     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
                     AnalyticsScreen(
@@ -436,35 +516,32 @@ fun MainAppScreen(
                 }
 
                 composable(AppNavigation.Customers.route) {
-                    val viewModel: CustomersViewModel = viewModel()
-                    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-                    val context = LocalContext.current
+                    val uiState by customersViewModel.uiState.collectAsStateWithLifecycle()
 
                     LaunchedEffect(uiState.successMessage, uiState.errorMessage) {
                         uiState.successMessage?.let {
                             Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-                            viewModel.onMessageShown()
+                            customersViewModel.onMessageShown()
                         }
                         uiState.errorMessage?.let {
                             Toast.makeText(context, it, Toast.LENGTH_LONG).show()
-                            viewModel.onMessageShown()
+                            customersViewModel.onMessageShown()
                         }
                     }
 
                     CustomersScreen(
                         uiState = uiState,
-                        onAddCustomerClick = { name, contact -> viewModel.addCustomer(name, contact) },
-                        onEditCustomerClick = { customer -> viewModel.updateCustomer(customer) },
-                        onDeleteCustomerClick = { customer -> viewModel.deleteCustomer(customer) },
-                        onCustomerSelected = { customer -> viewModel.onCustomerSelected(customer) },
-                        onDismissDialog = { viewModel.onDismissEditDialog() }
+                        onAddCustomerClick = { name, contact -> customersViewModel.addCustomer(name, contact) },
+                        onEditCustomerClick = { customer -> customersViewModel.updateCustomer(customer) },
+                        onDeleteCustomerClick = { customer -> customersViewModel.deleteCustomer(customer) },
+                        onCustomerSelected = { customer -> customersViewModel.onCustomerSelected(customer) },
+                        onDismissDialog = { customersViewModel.onDismissEditDialog() }
                     )
                 }
 
                 composable(AppNavigation.Services.route) {
                     val viewModel: ServicesViewModel = viewModel()
                     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-                    val context = LocalContext.current
 
                     LaunchedEffect(uiState.successMessage, uiState.errorMessage) {
                         uiState.successMessage?.let {
@@ -488,28 +565,26 @@ fun MainAppScreen(
                 }
 
                 composable(AppNavigation.Items.route) {
-                    val viewModel: ItemsViewModel = viewModel()
-                    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-                    val context = LocalContext.current
+                    val uiState by itemsViewModel.uiState.collectAsStateWithLifecycle()
 
                     LaunchedEffect(uiState.successMessage, uiState.errorMessage) {
                         uiState.successMessage?.let {
                             Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-                            viewModel.onMessageShown()
+                            itemsViewModel.onMessageShown()
                         }
                         uiState.errorMessage?.let {
                             Toast.makeText(context, it, Toast.LENGTH_LONG).show()
-                            viewModel.onMessageShown()
+                            itemsViewModel.onMessageShown()
                         }
                     }
 
                     ItemsScreen(
                         uiState = uiState,
-                        onAddItemClick = { serviceId, name, price -> viewModel.addItem(serviceId, name, price) },
-                        onEditItemClick = { item -> viewModel.updateItem(item) },
-                        onDeleteItemClick = { item -> viewModel.deleteItem(item) },
-                        onItemSelected = { item -> viewModel.onItemSelected(item) },
-                        onDismissDialog = { viewModel.onDismissEditDialog() }
+                        onAddItemClick = { serviceId, name, price -> itemsViewModel.addItem(serviceId, name, price) },
+                        onEditItemClick = { item -> itemsViewModel.updateItem(item) },
+                        onDeleteItemClick = { item -> itemsViewModel.deleteItem(item) },
+                        onItemSelected = { item -> itemsViewModel.onItemSelected(item) },
+                        onDismissDialog = { itemsViewModel.onDismissEditDialog() }
                     )
                 }
 
@@ -521,16 +596,18 @@ fun MainAppScreen(
                     })
                 ) { backStackEntry ->
                     val orderId = backStackEntry.arguments?.getString("orderId")
-                    
-                    val factory = object : ViewModelProvider.Factory {
-                        @Suppress("UNCHECKED_CAST")
-                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                            return OrdersViewModel(
-                                CustomerRepository(),
-                                ServiceRepository(),
-                                ItemRepository(),
-                                OrderRepository()
-                            ) as T
+
+                    val factory = remember {
+                        object : ViewModelProvider.Factory {
+                            @Suppress("UNCHECKED_CAST")
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return OrdersViewModel(
+                                    customerRepository,
+                                    serviceRepository,
+                                    itemRepository,
+                                    orderRepository
+                                ) as T
+                            }
                         }
                     }
                     val viewModel: OrdersViewModel = viewModel(factory = factory)
@@ -541,7 +618,6 @@ fun MainAppScreen(
                     }
 
                     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-                    val context = LocalContext.current
 
                     LaunchedEffect(uiState.successMessage, uiState.errorMessage) {
                         uiState.successMessage?.let {
@@ -801,5 +877,22 @@ fun MainAppScreen(
         contentAlignment = Alignment.BottomCenter
     ) {
         OfflineBanner(isOffline = !isOnline)
+    }
+}
+
+private fun navRouteOrderIndex(route: String?): Int {
+    val cleanRoute = route?.substringBefore("?")
+    return when (cleanRoute) {
+        AppNavigation.Home.route -> 0
+        AppNavigation.ManageOrder.route -> 1
+        AppNavigation.Orders.route -> 2
+        AppNavigation.TableData.route -> 3
+        AppNavigation.Customers.route,
+        AppNavigation.Services.route,
+        AppNavigation.Items.route -> 4
+        AppNavigation.Analytics.route -> 5
+        AppNavigation.Settings.route -> 6
+        AppNavigation.Contributors.route -> 7
+        else -> 0
     }
 }

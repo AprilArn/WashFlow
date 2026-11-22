@@ -1,9 +1,14 @@
 package com.aprilarn.washflow.ui.components
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -18,7 +23,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowDropDown
-import androidx.compose.material.icons.rounded.ArrowDropUp
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material3.Badge
@@ -30,7 +34,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -40,12 +45,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -77,10 +82,6 @@ fun Header(
     onRemovePreview: (String, Boolean) -> Unit,
     workspaceDropdown: @Composable (IntOffset) -> Unit
 ) {
-    var currentTime by remember { mutableStateOf(System.currentTimeMillis()) }
-    val startTime = remember { System.currentTimeMillis() }
-    var uptimeMillis by remember { mutableStateOf(0L) }
-
     // Warna aksen teks & elemen sekunder di Header menyesuaikan gelap/terangnya langit secara dinamis:
     // - Saat background gelap (malam/badai/hujan): menjadi biru-es pastel yang cerah agar kontras & tajam.
     // - Saat background terang (siang cerah/berawan): menjadi slate-navy yang lebih gelap & tegas.
@@ -101,16 +102,6 @@ fun Header(
             blurRadius = 4f
         )
     }
-
-    LaunchedEffect(Unit) {
-        while (true) {
-            currentTime = System.currentTimeMillis()
-            uptimeMillis = currentTime - startTime
-            delay(1000)
-        }
-    }
-
-    val timeFormatter = remember { SimpleDateFormat("hh:mm:ss a", Locale.getDefault()) }
 
     Row(
         modifier = modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
@@ -140,21 +131,43 @@ fun Header(
         Spacer(modifier = Modifier.width(32.dp))
 
         // --- NAVIGATION BAR ---
-        NavigationBar(navController = navController)
+        NavigationBar(
+            navController = navController,
+            isDarkBackground = isDarkBackground
+        )
 
         Spacer(modifier = Modifier.weight(1f))
 
         // --- WORKSPACE DROPDOWN TRIGGER ---
-        var wsTriggerSize by remember { mutableStateOf(IntSize.Zero) }
-        Box(modifier = Modifier.onGloballyPositioned { wsTriggerSize = it.size }) {
+        var wsTriggerHeight by remember { mutableIntStateOf(0) }
+        val wsArrowRotationState = animateFloatAsState(
+            targetValue = if (isWorkspaceExpanded) 180f else 0f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessMediumLow
+            ),
+            label = "wsArrowRotation"
+        )
+        val wsBgAlpha by animateFloatAsState(
+            targetValue = if (isWorkspaceExpanded) 0.24f else 0.12f,
+            animationSpec = tween(durationMillis = 250),
+            label = "wsBgAlpha"
+        )
+        Box(modifier = Modifier.onSizeChanged { wsTriggerHeight = it.height }) {
             Row(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable(onClick = onWorkspaceClick),
+                    .clip(RoundedCornerShape(50))
+                    .background(Color.White.copy(alpha = wsBgAlpha))
+                    .border(
+                        width = 1.dp,
+                        color = Color.White.copy(alpha = if (isWorkspaceExpanded) 0.45f else 0.24f),
+                        shape = RoundedCornerShape(50)
+                    )
+                    .clickable(onClick = onWorkspaceClick)
+                    .padding(start = 12.dp, end = 6.dp, top = 5.dp, bottom = 5.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    modifier = Modifier.padding(start = 8.dp, top = 4.dp, bottom = 4.dp),
                     text = workspaceName,
                     style = MaterialTheme.typography.bodyMedium.copy(
                         color = Color.White,
@@ -164,45 +177,26 @@ fun Header(
                     )
                 )
                 Icon(
-                    imageVector = if (isWorkspaceExpanded) Icons.Rounded.ArrowDropUp else Icons.Rounded.ArrowDropDown,
+                    imageVector = Icons.Rounded.ArrowDropDown,
                     contentDescription = "Workspace Options",
-                    tint = Color.White
+                    tint = Color.White,
+                    modifier = Modifier.graphicsLayer {
+                        rotationZ = wsArrowRotationState.value
+                    }
                 )
             }
 
             // 2. MASUKKAN LAMBDA TEPAT DI DALAM BOX INI
-            workspaceDropdown(IntOffset(0, wsTriggerSize.height))
+            workspaceDropdown(IntOffset(0, wsTriggerHeight))
         }
 
         Spacer(modifier = Modifier.width(16.dp))
 
-        // --- CLOCK & UPTIME ---
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            AnalogClockIcon(
-                millis = currentTime,
-                secondHandColor = subTextColor
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = timeFormatter.format(Date(currentTime)),
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        color = Color.White,
-                        fontWeight = FontWeight.Light,
-                        fontSize = 14.sp,
-                        shadow = primaryTextShadow
-                    )
-                )
-                Text(
-                    text = "active ${formatDuration(uptimeMillis)}",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = subTextColor,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                )
-            }
-        }
+        // --- CLOCK & UPTIME (Diisolasi agar detak tiap detik tidak me-recompose Header/NavigationBar) ---
+        HeaderClockAndUptime(
+            subTextColor = subTextColor,
+            primaryTextShadow = primaryTextShadow
+        )
 
         Spacer(modifier = Modifier.width(8.dp))
 
@@ -226,21 +220,65 @@ fun Header(
         }
 
         // --- NOTIFICATION DROPDOWN TRIGGER ---
-        var notifTriggerSize by remember { mutableStateOf(IntSize.Zero) }
-        Box(modifier = Modifier.onGloballyPositioned { notifTriggerSize = it.size }) {
-            IconButton(onClick = onNotifClick) {
-                BadgedBox(
-                    badge = {
-                        if (unreadCount > 0) {
-                            Badge(containerColor = MaterialTheme.colorScheme.error) {
-                                Text("$unreadCount", color = Color.White, fontSize = 10.sp)
-                            }
+        IconButton(onClick = onNotifClick) {
+            BadgedBox(
+                badge = {
+                    if (unreadCount > 0) {
+                        Badge(containerColor = MaterialTheme.colorScheme.error) {
+                            Text("$unreadCount", color = Color.White, fontSize = 10.sp)
                         }
                     }
-                ) {
-                    Icon(Icons.Rounded.Notifications, contentDescription = "Notifikasi", tint = Color.White)
                 }
+            ) {
+                Icon(Icons.Rounded.Notifications, contentDescription = "Notifikasi", tint = Color.White)
             }
+        }
+    }
+}
+
+@Composable
+private fun HeaderClockAndUptime(
+    subTextColor: Color,
+    primaryTextShadow: Shadow
+) {
+    val startTime = remember { System.currentTimeMillis() }
+    var currentTime by remember { mutableLongStateOf(startTime) }
+    var uptimeMillis by remember { mutableLongStateOf(0L) }
+    val timeFormatter = remember { SimpleDateFormat("hh:mm:ss a", Locale.getDefault()) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            val now = System.currentTimeMillis()
+            currentTime = now
+            uptimeMillis = now - startTime
+            delay(1000L)
+        }
+    }
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        AnalogClockIcon(
+            millis = currentTime,
+            secondHandColor = subTextColor
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                text = timeFormatter.format(Date(currentTime)),
+                style = MaterialTheme.typography.labelMedium.copy(
+                    color = Color.White,
+                    fontWeight = FontWeight.Light,
+                    fontSize = 14.sp,
+                    shadow = primaryTextShadow
+                )
+            )
+            Text(
+                text = "active ${formatDuration(uptimeMillis)}",
+                style = MaterialTheme.typography.labelSmall.copy(
+                    color = subTextColor,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            )
         }
     }
 }
