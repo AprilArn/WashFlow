@@ -1,10 +1,12 @@
 package com.aprilarn.washflow.ui.orders
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,9 +15,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Payments
+import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -27,9 +34,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -37,13 +47,13 @@ import androidx.compose.ui.unit.sp
 import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.data.model.OrderItem
 import com.aprilarn.washflow.data.model.Services
-import com.aprilarn.washflow.ui.components.StatusWorkflowBannerIllustration
-import com.aprilarn.washflow.ui.components.resolveStatusWorkflowTheme
 import com.aprilarn.washflow.ui.theme.GrayBlue
-import com.aprilarn.washflow.ui.theme.PastelAmber
-import com.aprilarn.washflow.ui.theme.PastelAmberBg
-import com.aprilarn.washflow.ui.theme.PastelNeutralBg
+import com.aprilarn.washflow.ui.theme.PastelBlue
+import com.aprilarn.washflow.ui.theme.PastelBlueBg
+import com.aprilarn.washflow.ui.theme.PastelBlueSoftBg
 import com.aprilarn.washflow.ui.theme.PastelNeutralText
+import com.aprilarn.washflow.ui.theme.PastelRoseBg
+import com.aprilarn.washflow.ui.theme.PastelRoseText
 import com.aprilarn.washflow.utils.CurrencyUtils
 import com.google.firebase.Timestamp
 import java.text.SimpleDateFormat
@@ -53,27 +63,31 @@ import java.util.Locale
 @Composable
 fun OrderPreviewPanel(
     modifier: Modifier = Modifier,
-    uiState: OrdersUiState
+    uiState: OrdersUiState,
+    onRemoveItem: ((String) -> Unit)? = null
 ) {
     val borderRadius = RoundedCornerShape(24.dp)
-    val theme = remember { resolveStatusWorkflowTheme("On Queue") }
 
-    val selectedServices = remember(uiState.selectedItems, uiState.services) {
-        uiState.selectedItems.values
-            .mapNotNull { item -> uiState.services.find { it.serviceId == item.serviceId } }
-            .distinct()
-            .joinToString(" + ") { it.serviceName }
-            .ifEmpty { "Belum ada layanan dipilih" }
+    val selectedItemsList = remember(uiState.selectedItems) {
+        uiState.selectedItems.values.toList()
+    }
+
+    val groupedItemsByService = remember(selectedItemsList, uiState.services) {
+        groupOrderItemsByService(selectedItemsList, uiState.services)
     }
 
     val formattedDate = remember(uiState.dueDate) {
         uiState.dueDate?.toDate()?.let {
-            SimpleDateFormat("EEEE, dd MMMM yyyy, HH:mm", Locale.getDefault()).format(it)
+            SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(it)
         } ?: "Tanpa batas waktu"
     }
 
-    val totalAmount = remember(uiState.selectedItems) {
-        uiState.selectedItems.values.sumOf { it.subtotal ?: 0.0 }
+    val totalQty = remember(selectedItemsList) {
+        selectedItemsList.sumOf { it.itemQuantity ?: 0 }
+    }
+
+    val totalAmount = remember(selectedItemsList) {
+        selectedItemsList.sumOf { it.subtotal ?: 0.0 }
     }
 
     Surface(
@@ -82,142 +96,110 @@ fun OrderPreviewPanel(
         color = Color.White,
         shadowElevation = 6.dp
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Header panel dengan ilustrasi alur kerja "On Queue" senada dengan ManageOrderPanel
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(82.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 18.dp, vertical = 16.dp)
+        ) {
+            // 1. Header Nota Pesanan
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                StatusWorkflowBannerIllustration(
-                    theme = theme,
-                    modifier = Modifier.matchParentSize(),
-                    baseColor = Color.White
-                )
-
                 Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 18.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(4.dp)
+                            .height(32.dp)
+                            .background(PastelBlue, RoundedCornerShape(2.dp))
+                    )
+                    Column {
+                        Text(
+                            text = "Nota Pesanan",
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 19.sp,
+                                color = GrayBlue
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = "Rincian item yang dipilih",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontWeight = FontWeight.Medium,
+                                color = PastelNeutralText
+                            ),
+                            maxLines = 1
+                        )
+                    }
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = PastelBlueSoftBg
                 ) {
                     Row(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(5.dp)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .width(4.dp)
-                                .height(32.dp)
-                                .background(theme.accentColor, RoundedCornerShape(2.dp))
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Rounded.ReceiptLong,
+                            contentDescription = null,
+                            tint = PastelBlue,
+                            modifier = Modifier.size(15.dp)
                         )
-                        Column {
-                            Text(
-                                text = "On Queue",
-                                style = MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 20.sp,
-                                    color = theme.labelColor
-                                ),
-                                maxLines = 1
+                        Text(
+                            text = "${selectedItemsList.size} item",
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                color = PastelBlue,
+                                fontWeight = FontWeight.Bold
                             )
-                            Text(
-                                text = "Pratinjau kartu antrean",
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    fontWeight = FontWeight.Medium,
-                                    color = theme.subtitleColor
-                                ),
-                                maxLines = 1
-                            )
-                        }
+                        )
                     }
-
-                    Text(
-                        text = "1",
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 26.sp,
-                            color = theme.countColor
-                        )
-                    )
                 }
             }
 
-            HorizontalDivider(
-                color = Color(0xFFEDF1F7),
-                thickness = 1.dp
-            )
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // Area Kartu Pratinjau Order
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(14.dp),
-                contentAlignment = Alignment.TopCenter
+            // 2. Ringkasan Pelanggan & Batas Waktu di Header Nota
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                color = PastelBlueSoftBg.copy(alpha = 0.45f)
             ) {
-                val cardShape = RoundedCornerShape(18.dp)
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(cardShape)
-                        .background(PastelNeutralBg.copy(alpha = 0.65f))
-                        .border(1.5.dp, Color(0xFFE2E8F2), cardShape)
-                        .padding(16.dp)
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Top
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = selectedServices,
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    color = PastelNeutralText,
-                                    fontWeight = FontWeight.Medium
-                                ),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = uiState.selectedCustomer?.name ?: "Pilih Pelanggan",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    color = theme.primaryTextColor,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 18.sp
-                                ),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(10.dp))
-
-                        // Badge jumlah item terpilih
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(PastelAmberBg)
-                                .padding(horizontal = 12.dp, vertical = 6.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "${uiState.selectedItems.size}",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    color = PastelAmber,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 18.sp
-                                )
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Rounded.Person,
+                            contentDescription = null,
+                            tint = PastelBlue,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(
+                            text = uiState.selectedCustomer?.name ?: "Belum pilih pelanggan",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = if (uiState.selectedCustomer != null) GrayBlue else PastelNeutralText,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    // Info batas waktu & estimasi biaya
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -230,43 +212,353 @@ fun OrderPreviewPanel(
                         )
                         Text(
                             text = formattedDate,
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                color = GrayBlue,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = PastelNeutralText,
                                 fontWeight = FontWeight.Medium
                             ),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
+                }
+            }
 
-                    if (totalAmount > 0.0) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            Spacer(modifier = Modifier.height(10.dp))
+
+            ReceiptDashedDivider(color = PastelBlueBg)
+
+            // 3. Daftar Item Nota (Scrollable)
+            if (selectedItemsList.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(PastelBlueSoftBg),
+                            contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Rounded.Payments,
+                                imageVector = Icons.AutoMirrored.Rounded.ReceiptLong,
                                 contentDescription = null,
-                                tint = PastelAmber,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Text(
-                                text = CurrencyUtils.formatRupiahWithSymbol(totalAmount),
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    color = PastelAmber,
-                                    fontWeight = FontWeight.Bold
-                                )
+                                tint = PastelBlue.copy(alpha = 0.7f),
+                                modifier = Modifier.size(22.dp)
                             )
                         }
+                        Text(
+                            text = "Belum ada item di nota",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = GrayBlue,
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = "Pilih item dari daftar layanan untuk menambahkannya ke pesanan.",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = PastelNeutralText
+                            ),
+                            textAlign = TextAlign.Center
+                        )
                     }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentPadding = PaddingValues(vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(
+                        items = groupedItemsByService,
+                        key = { (serviceName, _) -> serviceName }
+                    ) { (serviceName, itemsInService) ->
+                        ReceiptServiceSection(
+                            serviceName = serviceName,
+                            items = itemsInService,
+                            onRemoveItem = onRemoveItem
+                        )
+                    }
+                }
+            }
+
+            ReceiptDashedDivider(color = PastelBlueBg)
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // 4. Footer Total Nota
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                color = PastelBlueSoftBg.copy(alpha = 0.7f)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Total Estimasi",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = PastelNeutralText,
+                                fontWeight = FontWeight.Medium
+                            )
+                        )
+                        Text(
+                            text = if (totalQty > 0) "$totalQty pcs" else "0 pcs",
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                color = GrayBlue,
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                    }
+                    Text(
+                        text = CurrencyUtils.formatRupiahWithSymbol(totalAmount),
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            color = PastelBlue,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 18.sp
+                        )
+                    )
                 }
             }
         }
     }
 }
 
-@Preview(showBackground = true, widthDp = 368, heightDp = 320)
+/**
+ * Mengelompokkan daftar OrderItem berdasarkan kategori layanan (Services).
+ */
+fun groupOrderItemsByService(
+    items: List<OrderItem>,
+    services: List<Services>
+): List<Pair<String, List<OrderItem>>> {
+    val serviceNameById = services.associate { it.serviceId to it.serviceName }
+    return items
+        .groupBy { item ->
+            serviceNameById[item.serviceId]?.takeIf { it.isNotBlank() } ?: "Layanan Lainnya"
+        }
+        .entries
+        .map { it.key to it.value }
+}
+
+/**
+ * Blok kategori layanan pada Nota Pesanan (header kategori + daftar item di bawahnya).
+ */
+@Composable
+fun ReceiptServiceSection(
+    serviceName: String,
+    items: List<OrderItem>,
+    onRemoveItem: ((String) -> Unit)? = null
+) {
+    val sectionQty = remember(items) {
+        items.sumOf { it.itemQuantity ?: 0 }
+    }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(10.dp),
+            color = PastelBlueSoftBg.copy(alpha = 0.75f)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(PastelBlue)
+                    )
+                    Text(
+                        text = serviceName,
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            color = PastelBlue,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Text(
+                    text = "$sectionQty pcs",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        color = PastelBlue.copy(alpha = 0.8f),
+                        fontWeight = FontWeight.SemiBold
+                    )
+                )
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            items.forEachIndexed { index, item ->
+                ReceiptItemRow(
+                    item = item,
+                    serviceName = null,
+                    onRemove = onRemoveItem?.let { remove -> { remove(item.itemId) } }
+                )
+                if (index < items.lastIndex) {
+                    HorizontalDivider(
+                        color = PastelBlueSoftBg,
+                        thickness = 1.dp,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ReceiptItemRow(
+    item: OrderItem,
+    serviceName: String?,
+    onRemove: (() -> Unit)? = null
+) {
+    val qty = item.itemQuantity ?: 1
+    val unitPrice = item.itemPrice ?: ((item.subtotal ?: 0.0) / qty.coerceAtLeast(1))
+    val subtotal = item.subtotal ?: (unitPrice * qty)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    text = item.itemName ?: "Item",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = GrayBlue,
+                        fontWeight = FontWeight.Bold
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                if (!serviceName.isNullOrBlank()) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(PastelBlueSoftBg)
+                            .padding(horizontal = 6.dp, vertical = 1.dp)
+                    ) {
+                        Text(
+                            text = serviceName,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = PastelBlue,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+            Text(
+                text = "$qty × ${CurrencyUtils.formatRupiahWithSymbol(unitPrice)}",
+                style = MaterialTheme.typography.labelSmall.copy(
+                    color = PastelNeutralText,
+                    fontWeight = FontWeight.Medium
+                )
+            )
+        }
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = CurrencyUtils.formatRupiahWithSymbol(subtotal),
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = GrayBlue,
+                    fontWeight = FontWeight.Bold
+                )
+            )
+            if (onRemove != null) {
+                Box(
+                    modifier = Modifier
+                        .size(22.dp)
+                        .clip(CircleShape)
+                        .background(PastelRoseBg)
+                        .clickable(onClick = onRemove),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = "Hapus item",
+                        tint = PastelRoseText,
+                        modifier = Modifier.size(13.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ReceiptDashedDivider(
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    val dashEffect = remember { PathEffect.dashPathEffect(floatArrayOf(10f, 8f), 0f) }
+    Canvas(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(1.dp)
+    ) {
+        drawLine(
+            color = color,
+            start = Offset(0f, 0f),
+            end = Offset(size.width, 0f),
+            strokeWidth = size.height,
+            pathEffect = dashEffect
+        )
+    }
+}
+
+@Preview(showBackground = true, widthDp = 368, heightDp = 380)
 @Composable
 fun OrderPreviewPanelPreview() {
     Box(
@@ -287,6 +579,7 @@ fun OrderPreviewPanelPreview() {
                 itemId = "item_3",
                 serviceId = "L-02",
                 itemName = "Pakaian Harian (kg)",
+                itemPrice = 8000.0,
                 itemQuantity = 3,
                 subtotal = 24000.0
             ),
@@ -294,6 +587,7 @@ fun OrderPreviewPanelPreview() {
                 itemId = "item_4",
                 serviceId = "D-01",
                 itemName = "Jas",
+                itemPrice = 50000.0,
                 itemQuantity = 1,
                 subtotal = 50000.0
             )
@@ -307,7 +601,10 @@ fun OrderPreviewPanelPreview() {
         )
 
         Box(modifier = Modifier.padding(16.dp)) {
-            OrderPreviewPanel(uiState = previewState)
+            OrderPreviewPanel(
+                uiState = previewState,
+                onRemoveItem = {}
+            )
         }
     }
 }

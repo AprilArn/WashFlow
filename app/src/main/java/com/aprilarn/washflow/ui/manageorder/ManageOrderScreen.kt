@@ -4,8 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -44,6 +46,8 @@ import com.aprilarn.washflow.data.model.Services
 import com.aprilarn.washflow.ui.components.DeleteConfirmationDialog
 import com.aprilarn.washflow.ui.manageorder.DragDropContainer
 import com.aprilarn.washflow.ui.manageorder.OrderStatusColumn
+import com.aprilarn.washflow.ui.orders.ReceiptDashedDivider
+import com.aprilarn.washflow.ui.orders.ReceiptServiceSection
 import com.aprilarn.washflow.ui.theme.Gray
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.MainFontBlack
@@ -250,8 +254,14 @@ private fun LeftDetailPanel(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
+                    Box(
+                        modifier = Modifier
+                            .width(4.dp)
+                            .height(30.dp)
+                            .background(PastelBlue, RoundedCornerShape(2.dp))
+                    )
                     Text(
                         text = "Detail Order",
                         style = MaterialTheme.typography.headlineSmall.copy(
@@ -576,7 +586,13 @@ private fun RightDetailPanel(
     groupedItems: Map<Services, List<OrderItem>>,
     totalPrice: Double?
 ) {
-    val totalItemCount = remember(groupedItems) {
+    val serviceSections = remember(groupedItems) {
+        groupedItems.entries.map { (service, items) -> service.serviceName to items }
+    }
+    val totalItemTypes = remember(groupedItems) {
+        groupedItems.values.sumOf { it.size }
+    }
+    val totalQty = remember(groupedItems) {
         groupedItems.values.flatten().sumOf { it.itemQuantity ?: 0 }
     }
 
@@ -587,155 +603,136 @@ private fun RightDetailPanel(
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp, vertical = 18.dp)
         ) {
-            // Header Rincian Layanan
+            // 1. Header Nota Pesanan (senada dengan OrderPreviewPanel di Create Order)
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 16.dp),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Rincian Layanan",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = GrayBlue,
-                        fontSize = 18.sp
-                    )
-                )
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = PastelNeutralBg
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Text(
-                        text = "${groupedItems.size} layanan • $totalItemCount item",
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.SemiBold,
-                            color = GrayBlue
-                        )
+                    Box(
+                        modifier = Modifier
+                            .width(4.dp)
+                            .height(32.dp)
+                            .background(PastelBlue, RoundedCornerShape(2.dp))
                     )
+                    Column {
+                        Text(
+                            text = "Nota Pesanan",
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 19.sp,
+                                color = GrayBlue
+                            ),
+                            maxLines = 1
+                        )
+                        Text(
+                            text = "Rincian item per layanan",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontWeight = FontWeight.Medium,
+                                color = PastelNeutralText
+                            ),
+                            maxLines = 1
+                        )
+                    }
                 }
-            }
 
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                groupedItems.forEach { (service, items) ->
-                    item {
-                        Surface(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
-                            color = PastelNeutralBg
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(16.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = service.serviceName,
-                                        style = MaterialTheme.typography.titleSmall.copy(
-                                            color = GrayBlue,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    )
-                                    Text(
-                                        text = "${items.sumOf { it.itemQuantity ?: 0 }} item",
-                                        style = MaterialTheme.typography.labelSmall.copy(
-                                            color = Gray,
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                    )
-                                }
-
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(vertical = 10.dp),
-                                    color = Color.White,
-                                    thickness = 1.dp
-                                )
-
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    items.forEach { orderItem ->
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Text(
-                                                    text = orderItem.itemName ?: "Unknown Item",
-                                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                                        fontWeight = FontWeight.Medium,
-                                                        color = MainFontBlack
-                                                    )
-                                                )
-                                                Text(
-                                                    text = "${CurrencyUtils.formatRupiah(orderItem.itemPrice)} × ${orderItem.itemQuantity}",
-                                                    style = MaterialTheme.typography.labelSmall.copy(
-                                                        color = Gray
-                                                    )
-                                                )
-                                            }
-                                            Text(
-                                                text = CurrencyUtils.formatRupiahWithSymbol(orderItem.subtotal),
-                                                style = MaterialTheme.typography.bodyMedium.copy(
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    color = GrayBlue
-                                                )
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = PastelBlueSoftBg
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Rounded.ReceiptLong,
+                            contentDescription = null,
+                            tint = PastelBlue,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Text(
+                            text = "$totalItemTypes item",
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                color = PastelBlue,
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
                     }
                 }
             }
 
-            // Footer Total Harga Minimalis
-            Surface(
+            Spacer(modifier = Modifier.height(12.dp))
+
+            ReceiptDashedDivider(color = PastelBlueBg)
+
+            // 2. Daftar Item Nota Dikelompokkan per Kategori Layanan
+            LazyColumn(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
-                color = PastelSlateBg,
-                shape = RoundedCornerShape(16.dp)
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentPadding = PaddingValues(vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(
+                    items = serviceSections,
+                    key = { (serviceName, _) -> serviceName }
+                ) { (serviceName, itemsInService) ->
+                    ReceiptServiceSection(
+                        serviceName = serviceName,
+                        items = itemsInService
+                    )
+                }
+            }
+
+            ReceiptDashedDivider(color = PastelBlueBg)
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // 3. Footer Total Nota
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                color = PastelBlueSoftBg.copy(alpha = 0.7f)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Column {
                         Text(
                             text = "Total Pembayaran",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                color = GrayBlue,
-                                fontWeight = FontWeight.SemiBold
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = PastelNeutralText,
+                                fontWeight = FontWeight.Medium
                             )
                         )
                         Text(
-                            text = "$totalItemCount total item",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                color = Gray
+                            text = if (totalQty > 0) "$totalQty pcs" else "0 pcs",
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                color = GrayBlue,
+                                fontWeight = FontWeight.Bold
                             )
                         )
                     }
                     Text(
                         text = CurrencyUtils.formatRupiahWithSymbol(totalPrice),
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            color = GrayBlue,
-                            fontWeight = FontWeight.ExtraBold
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            color = PastelBlue,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 18.sp
                         )
                     )
                 }

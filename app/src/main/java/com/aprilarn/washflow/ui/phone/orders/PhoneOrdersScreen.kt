@@ -169,7 +169,8 @@ fun PhoneOrdersScreen(
                 OrderPanel(
                     modifier = Modifier.fillMaxSize(),
                     uiState = uiState,
-                    viewModel = viewModel
+                    viewModel = viewModel,
+                    showFooter = false
                 )
             }
 
@@ -346,7 +347,8 @@ fun PhoneOrdersScreen(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth(),
-                    uiState = uiState
+                    uiState = uiState,
+                    onRemoveItem = { viewModel.removeSelectedItem(it) }
                 )
                 Button(
                     onClick = {

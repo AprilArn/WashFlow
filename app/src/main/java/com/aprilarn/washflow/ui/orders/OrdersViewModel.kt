@@ -156,13 +156,19 @@ class OrdersViewModel(
         val currentSelected = _uiState.value.selectedItems
         if (currentSelected.containsKey(item.itemId)) {
             // Jika sudah ada, hapus dari daftar
-            val updatedMap = currentSelected.toMutableMap()
-            updatedMap.remove(item.itemId)
-            _uiState.update { it.copy(selectedItems = updatedMap) }
+            removeSelectedItem(item.itemId)
         } else {
             // Jika belum ada, tampilkan dialog untuk input kuantitas
             _uiState.update { it.copy(itemForQuantityInput = item) }
         }
+    }
+
+    fun removeSelectedItem(itemId: String) {
+        val currentSelected = _uiState.value.selectedItems
+        if (!currentSelected.containsKey(itemId)) return
+        val updatedMap = currentSelected.toMutableMap()
+        updatedMap.remove(itemId)
+        _uiState.update { it.copy(selectedItems = updatedMap) }
     }
 
     fun onQuantityConfirmed(quantity: Int) {

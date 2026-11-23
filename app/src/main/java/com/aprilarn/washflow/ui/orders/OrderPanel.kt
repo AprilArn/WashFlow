@@ -52,8 +52,6 @@ import com.aprilarn.washflow.ui.theme.PastelBlue
 import com.aprilarn.washflow.ui.theme.PastelBlueBg
 import com.aprilarn.washflow.ui.theme.PastelBlueMedium
 import com.aprilarn.washflow.ui.theme.PastelBlueSoftBg
-import com.aprilarn.washflow.ui.theme.PastelGreen
-import com.aprilarn.washflow.ui.theme.PastelGreenBg
 import com.aprilarn.washflow.ui.theme.PastelNeutralBg
 import com.aprilarn.washflow.ui.theme.PastelNeutralText
 import com.aprilarn.washflow.utils.CurrencyUtils
@@ -62,15 +60,10 @@ import com.aprilarn.washflow.utils.CurrencyUtils
 fun OrderPanel(
     modifier: Modifier = Modifier,
     uiState: OrdersUiState,
-    viewModel: OrdersViewModel
+    viewModel: OrdersViewModel,
+    showFooter: Boolean = true
 ) {
     val borderRadius = RoundedCornerShape(24.dp)
-    val totalAmount = remember(uiState.selectedItems) {
-        uiState.selectedItems.values.sumOf { it.subtotal ?: 0.0 }
-    }
-    val totalQuantity = remember(uiState.selectedItems) {
-        uiState.selectedItems.values.sumOf { it.itemQuantity ?: 0 }
-    }
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -197,88 +190,50 @@ fun OrderPanel(
                 }
             }
 
-            HorizontalDivider(
-                color = PastelBlueBg,
-                thickness = 1.dp
-            )
+            if (showFooter) {
+                HorizontalDivider(
+                    color = PastelBlueBg,
+                    thickness = 1.dp
+                )
 
-            Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-            // --- FOOTER SUMMARY & ACTION BUTTON ---
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
+                // --- FOOTER ACTION BUTTON (Khusus Tablet; ringkasan total sudah ada di Nota Pesanan) ---
                 Row(
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.End
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(if (uiState.selectedItems.isNotEmpty()) PastelGreenBg else PastelNeutralBg)
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
-                    ) {
-                        Text(
-                            text = "${uiState.selectedItems.size} jenis ($totalQuantity pcs/kg)",
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                color = if (uiState.selectedItems.isNotEmpty()) PastelGreen else PastelNeutralText,
-                                fontWeight = FontWeight.Bold
-                            )
+                    Button(
+                        onClick = { viewModel.createOrder() },
+                        enabled = !uiState.isCreatingOrder,
+                        shape = RoundedCornerShape(14.dp),
+                        contentPadding = PaddingValues(horizontal = 22.dp, vertical = 12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = PastelBlue,
+                            contentColor = Color.White,
+                            disabledContainerColor = PastelBlueBg
                         )
-                    }
-
-                    if (totalAmount > 0.0) {
-                        Column {
-                            Text(
-                                text = "Estimasi Total",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    color = PastelNeutralText,
-                                    fontWeight = FontWeight.Medium
-                                )
+                    ) {
+                        if (uiState.isCreatingOrder) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
                             )
+                        } else {
+                            Icon(
+                                imageVector = if (uiState.editingOrderId != null) Icons.Rounded.CheckCircle else Icons.Rounded.AddShoppingCart,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = CurrencyUtils.formatRupiahWithSymbol(totalAmount),
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    color = GrayBlue,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp
-                                )
+                                text = if (uiState.editingOrderId != null) "Update Order" else "Create Order",
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
                             )
                         }
-                    }
-                }
-
-                Button(
-                    onClick = { viewModel.createOrder() },
-                    enabled = !uiState.isCreatingOrder,
-                    shape = RoundedCornerShape(14.dp),
-                    contentPadding = PaddingValues(horizontal = 22.dp, vertical = 12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = PastelBlue,
-                        contentColor = Color.White,
-                        disabledContainerColor = PastelBlueBg
-                    )
-                ) {
-                    if (uiState.isCreatingOrder) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = Color.White,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Icon(
-                            imageVector = if (uiState.editingOrderId != null) Icons.Rounded.CheckCircle else Icons.Rounded.AddShoppingCart,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = if (uiState.editingOrderId != null) "Update Order" else "Create Order",
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
                     }
                 }
             }

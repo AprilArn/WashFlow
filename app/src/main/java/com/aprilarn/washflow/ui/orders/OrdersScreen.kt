@@ -85,10 +85,11 @@ fun OrdersScreen(
         ) {
             // Customer Panel
             OrderCustomerInputPanel(uiState = uiState, viewModel = viewModel)
-            // Preview Panel (mengisi sisa tinggi secara sinkron dengan panel kanan)
+            // Preview Panel (Nota Pesanan yang mengisi sisa tinggi secara sinkron dengan panel kanan)
             OrderPreviewPanel(
                 modifier = Modifier.weight(1f),
-                uiState = uiState
+                uiState = uiState,
+                onRemoveItem = { viewModel.removeSelectedItem(it) }
             )
         }
 
