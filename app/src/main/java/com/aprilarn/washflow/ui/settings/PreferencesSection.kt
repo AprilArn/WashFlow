@@ -14,11 +14,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.aprilarn.washflow.ui.components.HapticSwitch
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.MainFontBlack
 
@@ -30,7 +29,6 @@ fun PreferencesSection(
     onSoundToggled: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val haptic = LocalHapticFeedback.current
     Column(modifier = modifier) {
         Text(
             text = "Preferences",
@@ -52,13 +50,10 @@ fun PreferencesSection(
                     icon = Icons.Rounded.NotificationsActive,
                     title = "Notifications and sounds",
                     trailingContent = {
-                        Switch(
+                        HapticSwitch(
                             modifier = Modifier.height(24.dp),
                             checked = isSoundEnabled,
-                            onCheckedChange = {
-                                haptic.performHapticFeedback(if (it) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff)
-                                onSoundToggled(it)
-                            },
+                            onCheckedChange = onSoundToggled,
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = Color.White,
                                 checkedTrackColor = GrayBlue

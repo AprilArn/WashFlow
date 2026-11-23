@@ -18,7 +18,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -29,8 +28,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -44,6 +41,7 @@ import com.aprilarn.washflow.data.model.OrderItem
 import com.aprilarn.washflow.data.model.Orders
 import com.aprilarn.washflow.data.model.Services
 import com.aprilarn.washflow.ui.components.DeleteConfirmationDialog
+import com.aprilarn.washflow.ui.components.HapticSwitch
 import com.aprilarn.washflow.ui.manageorder.DragDropContainer
 import com.aprilarn.washflow.ui.manageorder.OrderStatusColumn
 import com.aprilarn.washflow.ui.orders.ReceiptDashedDivider
@@ -747,7 +745,6 @@ private fun PaymentStatusRow(
     paidDate: com.google.firebase.Timestamp?,
     onToggle: (Boolean) -> Unit
 ) {
-    val haptic = LocalHapticFeedback.current
     val backgroundColor = if (isPaid) PastelBlueBg else PastelAmberBg
     val contentColor = if (isPaid) PastelBlue else PastelAmber
 
@@ -812,12 +809,9 @@ private fun PaymentStatusRow(
                 }
             }
 
-            Switch(
+            HapticSwitch(
                 checked = isPaid,
-                onCheckedChange = {
-                    haptic.performHapticFeedback(if (it) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff)
-                    onToggle(it)
-                },
+                onCheckedChange = onToggle,
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = Color.White,
                     checkedTrackColor = PastelBlueTrack,
@@ -856,8 +850,6 @@ private fun PickupStatusRow(
     val statusTitle = if (!isDone) "Belum bisa diambil"
     else if (displayState) "Sudah Diambil"
     else "Belum Diambil"
-
-    val haptic = LocalHapticFeedback.current
 
     Surface(
         shape = RoundedCornerShape(16.dp),
@@ -914,11 +906,10 @@ private fun PickupStatusRow(
                 }
             }
 
-            Switch(
+            HapticSwitch(
                 checked = displayState,
                 onCheckedChange = {
                     if (isDone) {
-                        haptic.performHapticFeedback(if (it) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff)
                         onToggle(it)
                     }
                 },

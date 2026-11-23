@@ -47,8 +47,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -58,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.aprilarn.washflow.data.model.Invites
+import com.aprilarn.washflow.ui.components.HapticSwitch
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.MainFontBlack
 import java.text.SimpleDateFormat
@@ -402,7 +401,6 @@ fun OperationalHoursDialog(
     onDismiss: () -> Unit,
     onApply: (String?, String?) -> Unit
 ) {
-    val haptic = LocalHapticFeedback.current
     var useOperationalHours by remember { mutableStateOf(openTime != null && closeTime != null) }
     var isEditingOpenTime by remember { mutableStateOf(false) }
     var isEditingCloseTime by remember { mutableStateOf(false) }
@@ -463,12 +461,9 @@ fun OperationalHoursDialog(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text("Gunakan jam operasional", style = MaterialTheme.typography.bodyMedium)
-                    androidx.compose.material3.Switch(
+                    HapticSwitch(
                         checked = useOperationalHours,
-                        onCheckedChange = {
-                            haptic.performHapticFeedback(if (it) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff)
-                            useOperationalHours = it
-                        },
+                        onCheckedChange = { useOperationalHours = it },
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = Color.White,
                             checkedTrackColor = GrayBlue

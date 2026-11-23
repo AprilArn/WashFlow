@@ -33,17 +33,19 @@ import com.aprilarn.washflow.ui.aiagent.AiModelStatus
 import com.aprilarn.washflow.ui.theme.Gray
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.MainFontBlack
+import com.aprilarn.washflow.ui.theme.PastelBlueSoftBg
 
 @Composable
 fun AiAgentPanelHeader(
-    onClearHistory: () -> Unit
+    onClearHistory: () -> Unit,
+    onDismiss: () -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 12.dp),
+            .padding(start = 24.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -55,47 +57,71 @@ fun AiAgentPanelHeader(
             ),
             color = MainFontBlack
         )
-        Box {
-            IconButton(onClick = { showMenu = true }) {
-                Icon(
-                    imageVector = Icons.Rounded.MoreVert,
-                    contentDescription = "More Options",
-                    tint = MainFontBlack
-                )
-            }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Box {
+                IconButton(onClick = { showMenu = true }) {
+                    Icon(
+                        imageVector = Icons.Rounded.MoreVert,
+                        contentDescription = "More Options",
+                        tint = MainFontBlack
+                    )
+                }
 
-            if (showMenu) {
-                Popup(
-                    alignment = Alignment.TopEnd,
-                    offset = IntOffset(x = 0, y = 120),
-                    onDismissRequest = { showMenu = false },
-                    properties = PopupProperties(focusable = true)
-                ) {
-                    Surface(
-                        modifier = Modifier
-                            .wrapContentWidth()
-                            .padding(end = 24.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        shadowElevation = 8.dp,
-                        color = Color.White
+                if (showMenu) {
+                    Popup(
+                        alignment = Alignment.TopEnd,
+                        offset = IntOffset(x = 0, y = 120),
+                        onDismissRequest = { showMenu = false },
+                        properties = PopupProperties(focusable = true)
                     ) {
-                        Column(modifier = Modifier.width(IntrinsicSize.Max)) {
-                            Text(
-                                text = "Delete History",
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        onClearHistory()
-                                        showMenu = false
-                                    }
-                                    .padding(horizontal = 20.dp, vertical = 12.dp),
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.Medium
-                                ),
-                                color = MaterialTheme.colorScheme.error
-                            )
+                        Surface(
+                            modifier = Modifier
+                                .wrapContentWidth()
+                                .padding(end = 24.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            shadowElevation = 8.dp,
+                            color = Color.White
+                        ) {
+                            Column(modifier = Modifier.width(IntrinsicSize.Max)) {
+                                Text(
+                                    text = "Delete History",
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            onClearHistory()
+                                            showMenu = false
+                                        }
+                                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = FontWeight.Medium
+                                    ),
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
                         }
                     }
+                }
+            }
+
+            Surface(
+                onClick = {
+                    showMenu = false
+                    onDismiss()
+                },
+                shape = CircleShape,
+                color = PastelBlueSoftBg,
+                modifier = Modifier.size(36.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = "Tutup Panel AI",
+                        tint = GrayBlue,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
         }

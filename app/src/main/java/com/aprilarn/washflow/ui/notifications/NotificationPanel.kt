@@ -1,5 +1,6 @@
 package com.aprilarn.washflow.ui.notifications
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -10,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.PersonAdd
@@ -31,6 +33,7 @@ import com.aprilarn.washflow.data.model.Notifications
 import com.aprilarn.washflow.ui.theme.Gray
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.MainFontBlack
+import com.aprilarn.washflow.ui.theme.PastelBlueSoftBg
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -55,6 +58,10 @@ fun NotificationPanel(
     onDismiss: () -> Unit,
     onNotificationClick: (Notifications) -> Unit
 ) {
+    BackHandler(enabled = expanded) {
+        onDismiss()
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         AnimatedVisibility(
             visible = expanded,
@@ -91,11 +98,16 @@ fun NotificationPanel(
                     color = Color.White,
                     shadowElevation = 24.dp
                 ) {
-                    Column(modifier = Modifier.fillMaxSize()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .statusBarsPadding()
+                            .navigationBarsPadding()
+                    ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 12.dp),
+                                .padding(start = 24.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -108,7 +120,10 @@ fun NotificationPanel(
                                 color = MainFontBlack
                             )
 
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
                                 TextButton(onClick = onMarkAllAsRead) {
                                     Text(
                                         text = "Mark all as read",
@@ -116,6 +131,21 @@ fun NotificationPanel(
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.Medium
                                     )
+                                }
+                                Surface(
+                                    onClick = onDismiss,
+                                    shape = CircleShape,
+                                    color = PastelBlueSoftBg,
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Close,
+                                            contentDescription = "Tutup Notifikasi",
+                                            tint = GrayBlue,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
                                 }
                             }
                         }

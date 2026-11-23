@@ -41,7 +41,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -65,6 +64,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
+import com.aprilarn.washflow.ui.components.HapticSwitch
 import com.aprilarn.washflow.ui.theme.GrayBlue
 import com.aprilarn.washflow.ui.theme.PastelBlue
 import com.aprilarn.washflow.ui.theme.PastelBlueBg
@@ -278,7 +278,7 @@ fun OrderCustomerInputPanel(
                         color = GrayBlue
                     )
                 )
-                Switch(
+                HapticSwitch(
                     checked = uiState.dueDate != null,
                     onCheckedChange = { isChecked ->
                         if (isChecked) {

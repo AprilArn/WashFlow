@@ -1,5 +1,6 @@
 package com.aprilarn.washflow.ui.aiagent
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -251,6 +252,10 @@ fun AiAgentPanel(
         }
     }
 
+    BackHandler(enabled = expanded) {
+        onDismiss()
+    }
+
     // --- UI Layout ---
     Box(modifier = Modifier.fillMaxSize()) {
         AnimatedVisibility(
@@ -400,9 +405,13 @@ fun AiAgentPanel(
                                 .onGloballyPositioned { headerHeightPx = it.size.height.toFloat() }
                                 .graphicsLayer { translationY = headerOffsetPx }
                                 .background(Color.White)
+                                .statusBarsPadding()
                                 .align(Alignment.TopCenter)
                         ) {
-                            AiAgentPanelHeader(onClearHistory = onClearHistory)
+                            AiAgentPanelHeader(
+                                onClearHistory = onClearHistory,
+                                onDismiss = onDismiss
+                            )
                         }
 
                         // Input Overlay
@@ -412,6 +421,8 @@ fun AiAgentPanel(
                                 .onGloballyPositioned { footerHeightPx = it.size.height.toFloat() }
                                 .graphicsLayer { translationY = footerOffsetPx }
                                 .background(Color.White)
+                                .navigationBarsPadding()
+                                .imePadding()
                                 .align(Alignment.BottomCenter)
                                 .padding(16.dp)
                         ) {

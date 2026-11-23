@@ -43,7 +43,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -70,6 +69,7 @@ import com.aprilarn.washflow.data.model.Orders
 import com.aprilarn.washflow.data.model.Services
 import com.aprilarn.washflow.domain.model.OrderQueueStatus
 import com.aprilarn.washflow.ui.components.DeleteConfirmationDialog
+import com.aprilarn.washflow.ui.components.HapticSwitch
 import com.aprilarn.washflow.ui.manage_order.ManageOrderUiState
 import com.aprilarn.washflow.ui.orders.ReceiptDashedDivider
 import com.aprilarn.washflow.ui.orders.ReceiptServiceSection
@@ -764,7 +764,7 @@ private fun PhoneOrderDetailBottomSheet(
                                 fontWeight = FontWeight.SemiBold
                             )
                         )
-                        Switch(
+                        HapticSwitch(
                             checked = order.alreadyPaid,
                             onCheckedChange = { onTogglePayment(order.orderId, it) },
                             colors = SwitchDefaults.colors(
@@ -791,7 +791,7 @@ private fun PhoneOrderDetailBottomSheet(
                                     fontWeight = FontWeight.SemiBold
                                 )
                             )
-                            Switch(
+                            HapticSwitch(
                                 checked = order.alreadyPickedUp,
                                 onCheckedChange = { onTogglePickup(order.orderId, it) },
                                 colors = SwitchDefaults.colors(

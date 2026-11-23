@@ -198,11 +198,11 @@ fun PhoneHomeScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 1. Hero Sapaan & Cuaca Saat Ini
+        // 1. Hero Sapaan & Cuaca Saat Ini (ruang vertikal lega agar ilustrasi cuaca & sapaan tampil luas)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 8.dp),
+                .padding(top = 56.dp, bottom = 56.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Row(
@@ -242,7 +242,7 @@ fun PhoneHomeScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
