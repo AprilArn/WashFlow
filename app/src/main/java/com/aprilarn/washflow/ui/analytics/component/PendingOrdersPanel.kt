@@ -3,8 +3,10 @@ package com.aprilarn.washflow.ui.analytics.component
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -27,6 +29,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -56,6 +59,7 @@ import com.aprilarn.washflow.ui.theme.PastelGreenDark
 import com.aprilarn.washflow.ui.theme.PastelGreenIconBg
 import com.aprilarn.washflow.ui.theme.PastelGreenSoftBg
 import com.aprilarn.washflow.ui.theme.PastelNeutralBg
+import com.aprilarn.washflow.ui.theme.PastelNeutralText
 import com.aprilarn.washflow.ui.theme.PastelRose
 import com.aprilarn.washflow.ui.theme.PastelRoseBg
 import com.aprilarn.washflow.ui.theme.PastelRoseText
@@ -140,18 +144,30 @@ fun PendingOrdersPanel(
             .padding(24.dp)
     ) {
         // Header
-        Column {
-            Text(
-                text = "Order Tertunda & Piutang",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                color = GrayBlue
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .height(38.dp)
+                    .background(PastelBlue, RoundedCornerShape(2.dp))
             )
-            Text(
-                text = "Pantau order selesai yang belum dibayar atau belum diambil lintas bulan",
-                fontSize = 13.sp,
-                color = Color.Gray
-            )
+            Column {
+                Text(
+                    text = "Order Tertunda & Piutang",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = GrayBlue
+                )
+                Text(
+                    text = "Pantau order selesai yang belum dibayar atau belum diambil lintas bulan",
+                    fontSize = 13.sp,
+                    color = PastelNeutralText,
+                    fontWeight = FontWeight.Medium
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -212,24 +228,23 @@ fun PendingOrdersPanel(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 PendingFilter.entries.forEach { filter ->
                     val isSelected = selectedFilter == filter
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { selectedFilter = filter },
-                        label = {
-                            Text(
-                                text = filter.label,
-                                fontSize = 12.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                            )
-                        },
-                        shape = RoundedCornerShape(20.dp),
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = GrayBlue,
-                            selectedLabelColor = Color.White,
-                            containerColor = PastelNeutralBg,
-                            labelColor = GrayBlue
+                    Surface(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50))
+                            .clickable { selectedFilter = filter },
+                        shape = RoundedCornerShape(50),
+                        color = if (isSelected) PastelBlue else PastelBlueSoftBg.copy(alpha = 0.55f),
+                        border = BorderStroke(1.dp, if (isSelected) PastelBlue else PastelBlueBg)
+                    ) {
+                        Text(
+                            text = filter.label,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
+                            fontSize = 12.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                            color = if (isSelected) Color.White else GrayBlue,
+                            maxLines = 1
                         )
-                    )
+                    }
                 }
             }
 
@@ -242,16 +257,17 @@ fun PendingOrdersPanel(
                     Row(
                         modifier = Modifier
                             .width(260.dp)
-                            .height(44.dp)
-                            .background(PastelNeutralBg, RoundedCornerShape(22.dp))
-                            .padding(horizontal = 16.dp),
+                            .height(42.dp)
+                            .background(PastelBlueSoftBg.copy(alpha = 0.4f), RoundedCornerShape(14.dp))
+                            .border(1.dp, PastelBlueBg, RoundedCornerShape(14.dp))
+                            .padding(horizontal = 14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             Icons.Rounded.Search,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp),
-                            tint = Color.Gray
+                            tint = PastelNeutralText
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Box(
@@ -259,7 +275,7 @@ fun PendingOrdersPanel(
                             contentAlignment = Alignment.CenterStart
                         ) {
                             if (searchQuery.isEmpty()) {
-                                Text("Cari nama/kontak/item...", fontSize = 13.sp, color = Color.Gray)
+                                Text("Cari nama/kontak/item...", fontSize = 13.sp, color = PastelNeutralText)
                             }
                             innerTextField()
                         }
@@ -272,7 +288,7 @@ fun PendingOrdersPanel(
                                     Icons.Rounded.Clear,
                                     contentDescription = "Clear",
                                     modifier = Modifier.size(16.dp),
-                                    tint = Color.Gray
+                                    tint = PastelNeutralText
                                 )
                             }
                         }
@@ -288,14 +304,14 @@ fun PendingOrdersPanel(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(20.dp)),
+                .border(1.dp, PastelBlueBg, RoundedCornerShape(20.dp)),
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
             when {
                 isLoading && allPendingOrders.isEmpty() -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = GrayBlue, strokeWidth = 3.dp)
+                        CircularProgressIndicator(color = PastelBlue, strokeWidth = 3.dp)
                     }
                 }
                 filteredOrders.isEmpty() -> {
@@ -326,7 +342,7 @@ fun PendingOrdersPanel(
                             Text(
                                 text = if (allPendingOrders.isEmpty()) "Tidak ada tagihan atau cucian tertunda saat ini."
                                 else "Coba pilih filter atau kata kunci pencarian lain.",
-                                color = Color.Gray,
+                                color = PastelNeutralText,
                                 fontSize = 12.sp
                             )
                         }

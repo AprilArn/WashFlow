@@ -1,6 +1,7 @@
 package com.aprilarn.washflow.ui.analytics
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -31,6 +32,10 @@ import com.aprilarn.washflow.data.model.Services
 import com.google.firebase.Timestamp
 import kotlinx.coroutines.launch
 import com.aprilarn.washflow.ui.theme.GrayBlue
+import com.aprilarn.washflow.ui.theme.PastelBlue
+import com.aprilarn.washflow.ui.theme.PastelBlueBg
+import com.aprilarn.washflow.ui.theme.PastelBlueSoftBg
+import com.aprilarn.washflow.ui.theme.PastelNeutralText
 
 // --- Konstanta Warna Tema ---
 val ThemeBgGray = Color(0xFFF3F4F6)
@@ -77,7 +82,8 @@ fun AnalyticsScreen(
                 .weight(1f)
                 .fillMaxHeight(),
             shape = RoundedCornerShape(24.dp),
-            color = Color.White
+            color = Color.White,
+            shadowElevation = 4.dp
         ) {
             when (selectedTab) {
                 "Report" -> {
@@ -128,10 +134,17 @@ fun AnalyticsScreen(
                             horizontalArrangement = Arrangement.spacedBy(20.dp)
                         ) {
                             Column(modifier = Modifier.weight(1.02f)) {
-                                Box(
+                                Row(
                                     modifier = Modifier.fillMaxWidth().height(26.dp),
-                                    contentAlignment = Alignment.CenterStart
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .width(3.dp)
+                                            .height(18.dp)
+                                            .background(PastelBlue, RoundedCornerShape(2.dp))
+                                    )
                                     Text(
                                         text = "Ringkasan",
                                         fontSize = 18.sp,
@@ -153,15 +166,26 @@ fun AnalyticsScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        text = "Deadline terdekat",
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = GrayBlue,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.weight(1f)
-                                    )
+                                    Row(
+                                        modifier = Modifier.weight(1f),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .width(3.dp)
+                                                .height(18.dp)
+                                                .background(PastelBlue, RoundedCornerShape(2.dp))
+                                        )
+                                        Text(
+                                            text = "Deadline Terdekat",
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = GrayBlue,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
                                     Spacer(modifier = Modifier.width(6.dp))
                                     DeadlineCountBadge(deadlines = summary.upcomingDeadlines)
                                 }
@@ -173,21 +197,38 @@ fun AnalyticsScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(40.dp))
+                        Spacer(modifier = Modifier.height(36.dp))
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(text = "Order terbaru", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = GrayBlue)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .width(3.dp)
+                                        .height(18.dp)
+                                        .background(PastelBlue, RoundedCornerShape(2.dp))
+                                )
+                                Text(
+                                    text = "Order Terbaru",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = GrayBlue
+                                )
+                            }
                             GeneralDropdown(
                                 selectedText = recentFilter.label,
                                 items = RecentOrderFilter.entries.map { it.label },
                                 onItemSelected = { recentFilter = RecentOrderFilter.fromLabel(it) },
                                 icon = Icons.Default.FilterList,
                                 dropdownWidth = 150.dp,
-                                backgroundColor = ThemeBgGray
+                                backgroundColor = PastelBlueSoftBg,
+                                shapeRadius = 14.dp
                             )
                         }
 
@@ -199,7 +240,7 @@ fun AnalyticsScreen(
                                     modifier = Modifier.fillMaxWidth().weight(1f),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    CircularProgressIndicator(color = GrayBlue)
+                                    CircularProgressIndicator(color = PastelBlue)
                                 }
                             }
                             recentOrders.isEmpty() -> {
@@ -211,7 +252,7 @@ fun AnalyticsScreen(
                                         text = if (recentFilter == RecentOrderFilter.ALL) "Belum ada order"
                                         else "Tidak ada order \"${recentFilter.label}\"",
                                         fontSize = 13.sp,
-                                        color = Color.Gray
+                                        color = PastelNeutralText
                                     )
                                 }
                             }
@@ -222,7 +263,7 @@ fun AnalyticsScreen(
                                 ) {
                                     items(recentOrders, key = { it.orderId }) { order ->
                                         RecentOrderItem(order)
-                                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.2f))
+                                        HorizontalDivider(color = PastelBlueBg.copy(alpha = 0.65f))
                                     }
                                 }
                             }
@@ -294,6 +335,45 @@ fun AnalyticsScreen(
                                 }
                             }
 
+                            // Switcher Pill Pendapatan / Pelanggan (selaras dengan tampilan HP)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color.White)
+                                    .padding(4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                val chartTabs = listOf("Pendapatan", "Pelanggan")
+                                chartTabs.forEachIndexed { index, label ->
+                                    val isSelected = pagerState.currentPage == index
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(9.dp))
+                                            .background(if (isSelected) PastelBlueSoftBg else Color.Transparent)
+                                            .clickable {
+                                                isInteractingWithChart = false
+                                                coroutineScope.launch {
+                                                    pagerState.animateScrollToPage(index)
+                                                }
+                                            }
+                                            .padding(vertical = 6.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = label,
+                                            style = MaterialTheme.typography.labelMedium.copy(
+                                                color = if (isSelected) PastelBlue else PastelNeutralText,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(14.dp))
+
                             HorizontalPager(state = pagerState, modifier = Modifier.fillMaxWidth()) { page ->
                                 if (page == 0) {
                                     SpendingChart(
@@ -344,7 +424,7 @@ fun AnalyticsScreen(
                                             .width(width)
                                             .height(8.dp)
                                             .clip(RoundedCornerShape(50)) // 50% radius memastikan bentuk selalu pil/bulat sempurna
-                                            .background(Color.LightGray.copy(alpha = 0.5f))
+                                            .background(PastelBlueBg)
                                     ) {
                                         if (isCurrentPage) {
                                             // Isi bar hanya untuk halaman yang sedang aktif (dengan ujung rounded)
@@ -353,14 +433,14 @@ fun AnalyticsScreen(
                                                     .fillMaxHeight()
                                                     .fillMaxWidth(slideProgress.value)
                                                     .clip(RoundedCornerShape(50))
-                                                    .background(GrayBlue)
+                                                    .background(PastelBlue)
                                             )
                                         }
                                     }
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(28.dp))
+                            Spacer(modifier = Modifier.height(24.dp))
 
                             val topServices = remember(uiState.orders, uiState.services, selectedChartPeriod) {
                                 buildTopServices(uiState.orders, uiState.services, period = selectedChartPeriod)
@@ -372,8 +452,24 @@ fun AnalyticsScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(text = "Layanan terlaris", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = GrayBlue)
-                                Text(text = topServicesPeriodText, color = Color.Gray, fontSize = 13.sp)
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .width(3.dp)
+                                            .height(18.dp)
+                                            .background(PastelBlue, RoundedCornerShape(2.dp))
+                                    )
+                                    Text(
+                                        text = "Layanan Terlaris",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = GrayBlue
+                                    )
+                                }
+                                Text(text = topServicesPeriodText, color = PastelNeutralText, fontSize = 13.sp)
                             }
 
                             Spacer(modifier = Modifier.height(16.dp))

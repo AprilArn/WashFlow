@@ -29,6 +29,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.compose.animation.core.animateFloatAsState
 import com.aprilarn.washflow.ui.theme.GrayBlue
+import com.aprilarn.washflow.ui.theme.PastelBlue
+import com.aprilarn.washflow.ui.theme.PastelBlueSoftBg
 
 @Composable
 fun SidebarMenu(
@@ -42,22 +44,27 @@ fun SidebarMenu(
         verticalArrangement = Arrangement.spacedBy(8.dp) // Jarak antar tab dirapatkan
     ) {
         val menuItems = listOf(
-            "Order" to Icons.Rounded.ShoppingCart,
-            "Report" to Icons.Rounded.Cloud,
-            "Tertunda" to Icons.Rounded.PendingActions
+            Triple("Order", "Ringkasan", Icons.Rounded.ShoppingCart),
+            Triple("Report", "Buku Besar", Icons.Rounded.Cloud),
+            Triple("Tertunda", "Tertunda", Icons.Rounded.PendingActions)
         )
 
-        menuItems.forEach { (title, icon) ->
-            val isSelected = selectedTab == title
+        menuItems.forEach { (tabKey, displayLabel, icon) ->
+            val isSelected = selectedTab == tabKey
 
             // Animasi Warna
-            val animatedContentColor by animateColorAsState(
-                targetValue = if (isSelected) GrayBlue else GrayBlue.copy(alpha = 0.6f),
+            val animatedIconColor by animateColorAsState(
+                targetValue = if (isSelected) PastelBlue else GrayBlue.copy(alpha = 0.65f),
                 animationSpec = tween(durationMillis = 300),
-                label = "contentColor"
+                label = "iconColor"
+            )
+            val animatedTextColor by animateColorAsState(
+                targetValue = if (isSelected) GrayBlue else GrayBlue.copy(alpha = 0.68f),
+                animationSpec = tween(durationMillis = 300),
+                label = "textColor"
             )
             val animatedBgColor by animateColorAsState(
-                targetValue = if (isSelected) Color.White else Color(0xFFD8DDE6), // Warna solid abu-abu yang mengesankan posisi di belakang/terkena bayangan
+                targetValue = if (isSelected) Color.White else PastelBlueSoftBg.copy(alpha = 0.85f),
                 animationSpec = tween(durationMillis = 300),
                 label = "bgColor"
             )
@@ -84,7 +91,7 @@ fun SidebarMenu(
 
             // Sudut kanan selalu siku-siku (0.dp) agar selalu menempel pada kontainer seperti label buku sungguhan
             val shape = RoundedCornerShape(
-                topStart = 8.dp,
+                topStart = 10.dp,
                 bottomStart = 18.dp,
                 topEnd = 0.dp,
                 bottomEnd = 0.dp
@@ -142,23 +149,32 @@ fun SidebarMenu(
                     }
                     .clip(shape)
                     .background(animatedBgColor)
-                    .clickable { onTabClick(title) }
+                    .clickable { onTabClick(tabKey) }
                     .padding(horizontal = 14.dp, vertical = 18.dp), // Padding internal disesuaikan agar konten muat
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                if (isSelected) {
+                    Box(
+                        modifier = Modifier
+                            .width(3.dp)
+                            .height(20.dp)
+                            .background(PastelBlue, RoundedCornerShape(2.dp))
+                    )
+                    Spacer(Modifier.width(8.dp))
+                }
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = animatedContentColor,
-                    modifier = Modifier.size(22.dp)
+                    tint = animatedIconColor,
+                    modifier = Modifier.size(20.dp)
                 )
-                Spacer(Modifier.width(10.dp))
+                Spacer(Modifier.width(9.dp))
                 Text(
-                    text = title,
+                    text = displayLabel,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    color = animatedContentColor,
+                    color = animatedTextColor,
                     fontSize = 14.sp,
-                    letterSpacing = 0.3.sp,
+                    letterSpacing = 0.2.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )

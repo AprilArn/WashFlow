@@ -11,6 +11,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,6 +33,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -61,6 +63,7 @@ import com.aprilarn.washflow.ui.theme.PastelBlueSoftBg
 import com.aprilarn.washflow.ui.theme.PastelGreen
 import com.aprilarn.washflow.ui.theme.PastelGreenBg
 import com.aprilarn.washflow.ui.theme.PastelNeutralBg
+import com.aprilarn.washflow.ui.theme.PastelNeutralText
 import com.aprilarn.washflow.ui.theme.PastelRoseBg
 import com.aprilarn.washflow.ui.theme.PastelRoseText
 import com.aprilarn.washflow.ui.theme.PastelSlateBg
@@ -218,18 +221,30 @@ fun OrderReportPanel(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Text(
-                    text = "Buku Besar / Log Laporan Order",
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = GrayBlue
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(4.dp)
+                        .height(38.dp)
+                        .background(PastelBlue, RoundedCornerShape(2.dp))
                 )
-                Text(
-                    text = "Catatan histori digital transaksi order laundry",
-                    fontSize = 13.sp,
-                    color = Color.Gray
-                )
+                Column {
+                    Text(
+                        text = "Buku Besar / Log Laporan Order",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = GrayBlue
+                    )
+                    Text(
+                        text = "Catatan histori digital transaksi order laundry",
+                        fontSize = 13.sp,
+                        color = PastelNeutralText,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
 
             // Dropdown Filter Bulan Menggunakan GeneralDropdown
@@ -237,12 +252,12 @@ fun OrderReportPanel(
                 selectedText = selectedMonth,
                 items = monthList,
                 onItemSelected = { onMonthSelected(it) },
-                icon = Icons.Rounded.CalendarToday, // Menambahkan icon custom jika diperlukan oleh GeneralDropdown
+                icon = Icons.Rounded.CalendarToday,
                 modifier = Modifier,
-                dropdownWidth = 160.dp, // Sedikit lebih lebar untuk nama bulan
-                backgroundColor = Color(0xFFF3F4F6),
-                shapeRadius = 20.dp,
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
+                dropdownWidth = 175.dp,
+                backgroundColor = PastelBlueSoftBg,
+                shapeRadius = 14.dp,
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
             )
         }
 
@@ -276,10 +291,11 @@ fun OrderReportPanel(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Summary Card 1: Jumlah Order (Bulan Lalu / Bulan Terpilih vs Bulan Sebelumnya)
-                Card(
+                Surface(
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = PastelNeutralBg)
+                    color = PastelBlueSoftBg.copy(alpha = 0.55f),
+                    border = BorderStroke(1.dp, PastelBlueBg)
                 ) {
                     Row(
                         modifier = Modifier
@@ -290,10 +306,10 @@ fun OrderReportPanel(
                         Box(
                             modifier = Modifier
                                 .size(40.dp)
-                                .background(PastelSlateBg, RoundedCornerShape(10.dp)),
+                                .background(PastelBlueIconBg, RoundedCornerShape(12.dp)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Rounded.Receipt, contentDescription = null, tint = GrayBlue)
+                            Icon(Icons.Rounded.Receipt, contentDescription = null, tint = PastelBlue)
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
@@ -305,7 +321,8 @@ fun OrderReportPanel(
                                 Text(
                                     text = "Order ${reportSummary.targetShortLabel}",
                                     fontSize = 11.sp,
-                                    color = Gray,
+                                    color = PastelNeutralText,
+                                    fontWeight = FontWeight.Medium,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.weight(1f)
@@ -331,7 +348,7 @@ fun OrderReportPanel(
                                     "Belum ada pembanding (${reportSummary.compareShortLabel})"
                                 },
                                 fontSize = 10.sp,
-                                color = Gray,
+                                color = PastelNeutralText,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -340,10 +357,11 @@ fun OrderReportPanel(
                 }
 
                 // Summary Card 2: Total Pendapatan (Semua Order Bulan Lalu / Bulan Terpilih vs Bulan Sebelumnya)
-                Card(
+                Surface(
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = PastelBlueSoftBg)
+                    color = PastelBlueSoftBg.copy(alpha = 0.55f),
+                    border = BorderStroke(1.dp, PastelBlueBg)
                 ) {
                     Row(
                         modifier = Modifier
@@ -354,7 +372,7 @@ fun OrderReportPanel(
                         Box(
                             modifier = Modifier
                                 .size(40.dp)
-                                .background(PastelBlueIconBg, RoundedCornerShape(10.dp)),
+                                .background(PastelBlueIconBg, RoundedCornerShape(12.dp)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(Icons.Rounded.Payments, contentDescription = null, tint = PastelBlue)
@@ -369,7 +387,8 @@ fun OrderReportPanel(
                                 Text(
                                     text = "Pendapatan ${reportSummary.targetShortLabel}",
                                     fontSize = 11.sp,
-                                    color = Gray,
+                                    color = PastelNeutralText,
+                                    fontWeight = FontWeight.Medium,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.weight(1f)
@@ -413,29 +432,28 @@ fun OrderReportPanel(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Status Filter Chips
+            // Status Filter Chips (selaras dengan gaya pil pastel pada tampilan HP)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val statusOptions = listOf("Semua", "On Queue", "On Process", "Done")
                 statusOptions.forEach { status ->
                     val isSelected = selectedStatusFilter == status
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { onStatusFilterChanged(status) },
-                        label = {
-                            Text(
-                                text = status,
-                                fontSize = 12.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                            )
-                        },
-                        shape = RoundedCornerShape(20.dp),
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = GrayBlue,
-                            selectedLabelColor = Color.White,
-                            containerColor = Color(0xFFF1F5F9),
-                            labelColor = GrayBlue
+                    Surface(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50))
+                            .clickable { onStatusFilterChanged(status) },
+                        shape = RoundedCornerShape(50),
+                        color = if (isSelected) PastelBlue else PastelBlueSoftBg.copy(alpha = 0.55f),
+                        border = BorderStroke(1.dp, if (isSelected) PastelBlue else PastelBlueBg)
+                    ) {
+                        Text(
+                            text = status,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
+                            fontSize = 12.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                            color = if (isSelected) Color.White else GrayBlue,
+                            maxLines = 1
                         )
-                    )
+                    }
                 }
             }
 
@@ -452,16 +470,17 @@ fun OrderReportPanel(
                     Row(
                         modifier = Modifier
                             .width(260.dp)
-                            .height(44.dp)
-                            .background(Color(0xFFF1F5F9), RoundedCornerShape(22.dp))
-                            .padding(horizontal = 16.dp),
+                            .height(42.dp)
+                            .background(PastelBlueSoftBg.copy(alpha = 0.4f), RoundedCornerShape(14.dp))
+                            .border(1.dp, PastelBlueBg, RoundedCornerShape(14.dp))
+                            .padding(horizontal = 14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             Icons.Rounded.Search,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp),
-                            tint = Color.Gray
+                            tint = PastelNeutralText
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Box(
@@ -469,7 +488,7 @@ fun OrderReportPanel(
                             contentAlignment = Alignment.CenterStart
                         ) {
                             if (searchQuery.isEmpty()) {
-                                Text("Cari nama/order...", fontSize = 13.sp, color = Color.Gray)
+                                Text("Cari nama/order...", fontSize = 13.sp, color = PastelNeutralText)
                             }
                             innerTextField()
                         }
@@ -483,7 +502,7 @@ fun OrderReportPanel(
                                     Icons.Rounded.Clear,
                                     contentDescription = "Clear",
                                     modifier = Modifier.size(16.dp),
-                                    tint = Color.Gray
+                                    tint = PastelNeutralText
                                 )
                             }
                         }
@@ -499,7 +518,7 @@ fun OrderReportPanel(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(20.dp)),
+                .border(1.dp, PastelBlueBg, RoundedCornerShape(20.dp)),
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
@@ -509,7 +528,7 @@ fun OrderReportPanel(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(Color(0xFFF8FAFC), RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
+                            .background(PastelBlueSoftBg.copy(alpha = 0.45f), RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
                             .padding(horizontal = 16.dp, vertical = 10.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
@@ -522,7 +541,7 @@ fun OrderReportPanel(
                                 text = "Urutkan:",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = Gray
+                                color = PastelNeutralText
                             )
                             ReportSortPill("Tanggal", ReportSortColumn.DATE, sortColumn, isAscending, onSortColumnClicked)
                             ReportSortPill("Pelanggan", ReportSortColumn.CUSTOMER_NAME, sortColumn, isAscending, onSortColumnClicked)
@@ -535,16 +554,16 @@ fun OrderReportPanel(
                             text = "${sortedOrders.size} order",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = Gray
+                            color = PastelNeutralText
                         )
                     }
 
-                    HorizontalDivider(color = Color(0xFFE2E8F0))
+                    HorizontalDivider(color = PastelBlueBg)
 
                     // List Content
                     if (isLoading) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = GrayBlue, strokeWidth = 3.dp)
+                            CircularProgressIndicator(color = PastelBlue, strokeWidth = 3.dp)
                         }
                     } else if (sortedOrders.isEmpty()) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -552,14 +571,14 @@ fun OrderReportPanel(
                                 Box(
                                     modifier = Modifier
                                         .size(56.dp)
-                                        .background(PastelSlateBg, CircleShape),
+                                        .background(PastelBlueSoftBg, CircleShape),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Rounded.Inbox,
                                         contentDescription = null,
                                         modifier = Modifier.size(28.dp),
-                                        tint = GrayBlue
+                                        tint = PastelBlue
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(12.dp))
@@ -572,7 +591,7 @@ fun OrderReportPanel(
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     text = "Coba ubah filter bulan, status, atau kata kunci pencarian.",
-                                    color = Color.Gray,
+                                    color = PastelNeutralText,
                                     fontSize = 12.sp
                                 )
                             }
@@ -675,8 +694,9 @@ private fun ReportSortPill(
     val isCurrentSort = column == activeSortColumn
     Row(
         modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
             .background(
-                color = if (isCurrentSort) PastelSlateBg else Color.Transparent,
+                color = if (isCurrentSort) PastelBlueBg else Color.Transparent,
                 shape = RoundedCornerShape(8.dp)
             )
             .clickable { onSortColumnClicked(column) }
@@ -692,14 +712,14 @@ private fun ReportSortPill(
             text = title,
             fontSize = 11.sp,
             fontWeight = if (isCurrentSort) FontWeight.Bold else FontWeight.Medium,
-            color = if (isCurrentSort) GrayBlue else Gray
+            color = if (isCurrentSort) PastelBlue else PastelNeutralText
         )
         if (isCurrentSort) {
             Icon(
                 imageVector = if (isAscending) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
                 contentDescription = null,
                 modifier = Modifier.size(16.dp),
-                tint = GrayBlue
+                tint = PastelBlue
             )
         }
     }
@@ -801,11 +821,12 @@ private fun LoadMoreMonthsButton(onLoadMoreMonths: () -> Unit) {
     ) {
         OutlinedButton(
             onClick = onLoadMoreMonths,
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(14.dp),
+            border = BorderStroke(1.dp, PastelBlueBg)
         ) {
             Text(
                 text = "Muat 1 bulan lebih lama",
-                color = GrayBlue,
+                color = PastelBlue,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 12.sp
             )
