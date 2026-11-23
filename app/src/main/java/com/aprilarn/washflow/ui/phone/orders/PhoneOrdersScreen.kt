@@ -170,7 +170,8 @@ fun PhoneOrdersScreen(
                     modifier = Modifier.fillMaxSize(),
                     uiState = uiState,
                     viewModel = viewModel,
-                    showFooter = false
+                    showFooter = false,
+                    isCompact = true
                 )
             }
 
