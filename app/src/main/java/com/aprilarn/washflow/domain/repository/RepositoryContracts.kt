@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface CustomerRepositoryContract {
     suspend fun getCustomersRealtime(): Flow<List<Customers>>
+    suspend fun getCustomersOnce(): List<Customers>
     suspend fun addCustomer(customerName: String, customerContact: String): Boolean
     suspend fun updateCustomer(customerId: String, newName: String, newContact: String): Boolean
     suspend fun deleteCustomer(customerId: String): Boolean

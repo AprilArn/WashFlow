@@ -28,6 +28,7 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.rounded.Storefront
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -392,22 +393,36 @@ private fun PhoneOrderKanbanCard(
                         )
                     }
                 } else {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    val pickupBgColor = if (order.alreadyPickedUp) PastelGreenBg else PastelAmberBg
+                    val pickupContentColor = if (order.alreadyPickedUp) PastelGreen else PastelAmber
+                    val pickupIcon = if (order.alreadyPickedUp) {
+                        Icons.Rounded.CheckCircle
+                    } else {
+                        Icons.Rounded.Storefront
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = pickupBgColor
                     ) {
-                        Icon(
-                            imageVector = Icons.Rounded.CheckCircle,
-                            contentDescription = null,
-                            tint = PastelGreen,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Text(
-                            text = if (order.alreadyPickedUp) "Sudah Diambil" else "Siap Diambil",
-                            fontSize = 11.sp,
-                            color = PastelGreen,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        ) {
+                            Icon(
+                                imageVector = pickupIcon,
+                                contentDescription = null,
+                                tint = pickupContentColor,
+                                modifier = Modifier.size(15.dp)
+                            )
+                            Text(
+                                text = if (order.alreadyPickedUp) "Sudah Diambil" else "Siap Diambil",
+                                fontSize = 11.sp,
+                                color = pickupContentColor,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }

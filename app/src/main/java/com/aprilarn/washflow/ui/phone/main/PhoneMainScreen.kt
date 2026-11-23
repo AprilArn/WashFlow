@@ -822,16 +822,16 @@ fun PhoneMainScreen(
 private fun phoneNavRouteOrderIndex(route: String?): Int {
     val cleanRoute = route?.substringBefore("?")
     return when (cleanRoute) {
-        AppNavigation.Home.route -> 0
-        AppNavigation.ManageOrder.route -> 1
-        AppNavigation.Orders.route -> 2
-        AppNavigation.TableData.route -> 3
+        AppNavigation.TableData.route -> 0
         AppNavigation.Customers.route,
         AppNavigation.Services.route,
-        AppNavigation.Items.route -> 4
+        AppNavigation.Items.route -> 1
+        AppNavigation.Orders.route -> 2
+        AppNavigation.Home.route -> 3
+        AppNavigation.ManageOrder.route -> 4
         AppNavigation.Analytics.route -> 5
         AppNavigation.Settings.route -> 6
         AppNavigation.Contributors.route -> 7
-        else -> 0
+        else -> 3
     }
 }

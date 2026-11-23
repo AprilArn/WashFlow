@@ -192,10 +192,8 @@ fun OrderCustomerInputPanel(
                     shape = RoundedCornerShape(14.dp)
                 )
 
-                if (isDropdownExpanded && uiState.customerSearchQuery.isNotEmpty()) {
-                    val filteredCustomers = uiState.customers.filter {
-                        it.name.contains(uiState.customerSearchQuery, ignoreCase = true)
-                    }
+                if (isDropdownExpanded && uiState.debouncedCustomerQuery.length >= OrdersViewModel.MIN_CUSTOMER_SEARCH_CHARS) {
+                    val filteredCustomers = uiState.filteredCustomers
 
                     if (filteredCustomers.isNotEmpty()) {
                         Popup(

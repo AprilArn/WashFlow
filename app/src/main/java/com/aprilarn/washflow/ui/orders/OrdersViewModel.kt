@@ -16,12 +16,15 @@ import com.aprilarn.washflow.domain.repository.ItemRepositoryContract
 import com.aprilarn.washflow.domain.repository.OrderRepositoryContract
 import com.aprilarn.washflow.domain.repository.ServiceRepositoryContract
 import com.google.firebase.Timestamp
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 class OrdersViewModel(
     private val customerRepository: CustomerRepositoryContract = CustomerRepository(),
@@ -30,8 +33,16 @@ class OrdersViewModel(
     private val orderRepository: OrderRepositoryContract = OrderRepository()
 ) : ViewModel() {
 
+    companion object {
+        const val MIN_CUSTOMER_SEARCH_CHARS = 2
+        private const val CUSTOMER_SEARCH_DEBOUNCE_MS = 1000L
+    }
+
     private val _uiState = MutableStateFlow(OrdersUiState())
     val uiState = _uiState.asStateFlow()
+
+    private var hasLoadedCustomers = false
+    private var customerSearchJob: Job? = null
 
     init {
         listenForDataChanges()
@@ -39,14 +50,12 @@ class OrdersViewModel(
 
     private fun listenForDataChanges() {
         viewModelScope.launch {
-            val customersFlow = customerRepository.getCustomersRealtime()
             val servicesFlow = serviceRepository.getServicesRealtime()
             val itemsFlow = itemRepository.getItemsRealtime()
 
-            combine(customersFlow, servicesFlow, itemsFlow) { customers, services, items ->
+            combine(servicesFlow, itemsFlow) { services, items ->
                 _uiState.update {
                     it.copy(
-                        customers = customers,
                         services = services,
                         items = items,
                         // Set tab aktif pertama kali jika belum ada
@@ -61,14 +70,76 @@ class OrdersViewModel(
     }
 
     fun onCustomerQueryChanged(query: String) {
-        _uiState.update { it.copy(customerSearchQuery = query) }
+        val trimmed = query.trim()
+        customerSearchJob?.cancel()
+
+        if (trimmed.length < MIN_CUSTOMER_SEARCH_CHARS) {
+            _uiState.update {
+                it.copy(
+                    customerSearchQuery = query,
+                    debouncedCustomerQuery = "",
+                    filteredCustomers = emptyList(),
+                    isSearchingCustomers = false
+                )
+            }
+            return
+        }
+
+        _uiState.update {
+            it.copy(
+                customerSearchQuery = query,
+                isSearchingCustomers = true
+            )
+        }
+
+        customerSearchJob = viewModelScope.launch {
+            delay(CUSTOMER_SEARCH_DEBOUNCE_MS.milliseconds)
+            val sourceCustomers = if (hasLoadedCustomers) {
+                _uiState.value.customers
+            } else {
+                val fetched = customerRepository.getCustomersOnce()
+                hasLoadedCustomers = true
+                _uiState.update { it.copy(customers = fetched) }
+                fetched
+            }
+
+            val matched = sourceCustomers.filter {
+                it.name.contains(trimmed, ignoreCase = true) ||
+                        (it.contact?.contains(trimmed, ignoreCase = true) == true)
+            }
+
+            _uiState.update {
+                it.copy(
+                    debouncedCustomerQuery = trimmed,
+                    filteredCustomers = matched,
+                    isSearchingCustomers = false
+                )
+            }
+        }
     }
 
     fun onCustomerSelected(customer: Customers) {
+        customerSearchJob?.cancel()
         _uiState.update {
             it.copy(
                 selectedCustomer = customer,
-                customerSearchQuery = customer.name // Update text field juga
+                customerSearchQuery = customer.name, // Update text field juga
+                debouncedCustomerQuery = "",
+                filteredCustomers = emptyList(),
+                isSearchingCustomers = false
+            )
+        }
+    }
+
+    fun onClearSelectedCustomer() {
+        customerSearchJob?.cancel()
+        _uiState.update {
+            it.copy(
+                selectedCustomer = null,
+                customerSearchQuery = "",
+                debouncedCustomerQuery = "",
+                filteredCustomers = emptyList(),
+                isSearchingCustomers = false
             )
         }
     }
@@ -127,6 +198,7 @@ class OrdersViewModel(
     }
 
     fun setEditingOrder(orderId: String?) {
+        customerSearchJob?.cancel()
         if (orderId == null) {
             // Mode Buat Baru
             _uiState.update {
@@ -134,6 +206,9 @@ class OrdersViewModel(
                     editingOrderId = null,
                     selectedCustomer = null,
                     customerSearchQuery = "",
+                    debouncedCustomerQuery = "",
+                    filteredCustomers = emptyList(),
+                    isSearchingCustomers = false,
                     dueDate = null,
                     selectedItems = emptyMap()
                 )
@@ -216,12 +291,16 @@ class OrdersViewModel(
 
                 val success = orderRepository.updateOrder(updatedOrder)
                 if (success) {
+                    customerSearchJob?.cancel()
                     _uiState.update {
                         it.copy(
                             isCreatingOrder = false,
                             successMessage = "Order updated successfully!",
                             editingOrderId = null,
                             customerSearchQuery = "",
+                            debouncedCustomerQuery = "",
+                            filteredCustomers = emptyList(),
+                            isSearchingCustomers = false,
                             selectedCustomer = null,
                             dueDate = null,
                             selectedItems = emptyMap()
@@ -249,11 +328,15 @@ class OrdersViewModel(
                 val success = orderRepository.createOrder(newOrder)
                 if (success) {
                     // Reset state setelah order berhasil
+                    customerSearchJob?.cancel()
                     _uiState.update {
                         it.copy(
                             isCreatingOrder = false,
                             successMessage = "Order created successfully!",
                             customerSearchQuery = "",
+                            debouncedCustomerQuery = "",
+                            filteredCustomers = emptyList(),
+                            isSearchingCustomers = false,
                             selectedCustomer = null,
                             dueDate = null,
                             selectedItems = emptyMap()

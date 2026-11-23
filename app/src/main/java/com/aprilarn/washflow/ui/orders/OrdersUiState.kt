@@ -15,6 +15,8 @@ data class OrdersUiState(
     // State untuk interaksi UI
     val editingOrderId: String? = null,
     val customerSearchQuery: String = "",
+    val debouncedCustomerQuery: String = "",
+    val filteredCustomers: List<Customers> = emptyList(),
     val selectedCustomer: Customers? = null,
     val dueDate: Timestamp? = null,
     val activeServiceTabId: String? = null,
@@ -24,6 +26,7 @@ data class OrdersUiState(
     val showNoDeadlineWarning: Boolean = false,
 
     // State umum
+    val isSearchingCustomers: Boolean = false,
     val isCreatingOrder: Boolean = false,
     val isLoading: Boolean = true,
     val successMessage: String? = null,

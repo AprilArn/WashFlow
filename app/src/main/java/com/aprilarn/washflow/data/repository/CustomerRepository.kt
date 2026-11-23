@@ -62,6 +62,22 @@ class CustomerRepository : CustomerRepositoryContract {
         }
     }
 
+    override suspend fun getCustomersOnce(): List<Customers> {
+        val workspaceId = getWorkspaceId()
+        if (workspaceId.isNullOrEmpty()) return emptyList()
+
+        return try {
+            val snapshot = db.collection("workspaces")
+                .document(workspaceId)
+                .collection("customers")
+                .get()
+                .await()
+            snapshot.toObjects<Customers>()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
     override suspend fun addCustomer(customerName: String, customerContact: String): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
 

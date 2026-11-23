@@ -1,6 +1,9 @@
 package com.aprilarn.washflow.ui.phone.navigation
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -9,16 +12,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -42,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -53,6 +53,8 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.aprilarn.washflow.AppNavigation
 import com.aprilarn.washflow.ui.theme.GrayBlue
+import com.aprilarn.washflow.ui.theme.PastelBlueBg
+import com.aprilarn.washflow.ui.theme.PastelBlueMedium
 
 /**
  * Top Bar ringkas untuk HP biasa (Batang).
@@ -234,9 +236,9 @@ fun PhoneBottomNavigationBar(
 
     val items = remember {
         listOf(
-            AppNavigation.Home,
-            AppNavigation.Orders,
             AppNavigation.TableData,
+            AppNavigation.Orders,
+            AppNavigation.Home,
             AppNavigation.Analytics,
             AppNavigation.Settings
         )
@@ -251,7 +253,7 @@ fun PhoneBottomNavigationBar(
             .fillMaxWidth()
             .navigationBarsPadding()
             .padding(horizontal = 12.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(26.dp),
+        shape = RoundedCornerShape(28.dp),
         color = Color.White.copy(alpha = 0.94f),
         shadowElevation = 10.dp
     ) {
@@ -263,58 +265,117 @@ fun PhoneBottomNavigationBar(
             verticalAlignment = Alignment.CenterVertically
         ) {
             items.forEach { screen ->
+                val isHome = screen == AppNavigation.Home
                 val isSelected = currentRoute == screen.route ||
                         (screen == AppNavigation.TableData && isDataSubRoute) ||
-                        (screen == AppNavigation.Home && currentRoute == AppNavigation.ManageOrder.route)
+                        (isHome && currentRoute == AppNavigation.ManageOrder.route)
 
-                val pillBgColor by animateColorAsState(
-                    targetValue = if (isSelected) GrayBlue.copy(alpha = 0.12f) else Color.Transparent,
-                    animationSpec = tween(200),
-                    label = "phoneBottomNavBg_${screen.route}"
-                )
-                val contentColor by animateColorAsState(
-                    targetValue = if (isSelected) GrayBlue else GrayBlue.copy(alpha = 0.55f),
-                    animationSpec = tween(200),
-                    label = "phoneBottomNavContent_${screen.route}"
-                )
-
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(pillBgColor)
-                        .clickable {
-                            if (currentRoute != screen.route) {
-                                val popped = navController.popBackStack(screen.route, inclusive = false)
-                                if (!popped) {
-                                    navController.navigate(screen.route) {
-                                        popUpTo(navController.graph.startDestinationId) {
-                                            saveState = false
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = false
-                                    }
+                val navigateToTab: () -> Unit = {
+                    if (currentRoute != screen.route) {
+                        val popped = navController.popBackStack(screen.route, inclusive = false)
+                        if (!popped) {
+                            navController.navigate(screen.route) {
+                                popUpTo(navController.graph.startDestinationId) {
+                                    saveState = false
                                 }
+                                launchSingleTop = true
+                                restoreState = false
                             }
                         }
-                        .padding(vertical = 6.dp, horizontal = 4.dp)
-                ) {
-                    Icon(
-                        imageVector = screen.icon,
-                        contentDescription = screen.label,
-                        tint = contentColor,
-                        modifier = Modifier.size(21.dp)
+                    }
+                }
+
+                if (isHome) {
+                    val homeScale by animateFloatAsState(
+                        targetValue = if (isSelected) 1.06f else 1f,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessMedium
+                        ),
+                        label = "phoneBottomNavHomeScale"
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = screen.label,
-                        color = contentColor,
-                        fontSize = 11.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        maxLines = 1
+                    val homeIconTint by animateColorAsState(
+                        targetValue = if (isSelected) Color.White else GrayBlue,
+                        animationSpec = tween(220),
+                        label = "phoneBottomNavHomeTint"
                     )
+                    val homeBrush = remember(isSelected) {
+                        if (isSelected) {
+                            Brush.linearGradient(
+                                colors = listOf(PastelBlueMedium, GrayBlue)
+                            )
+                        } else {
+                            Brush.linearGradient(
+                                colors = listOf(PastelBlueBg, Color(0xFFDCE6F7))
+                            )
+                        }
+                    }
+                    val homeBorderColor = if (isSelected) {
+                        Color.White.copy(alpha = 0.55f)
+                    } else {
+                        GrayBlue.copy(alpha = 0.25f)
+                    }
+
+                    Box(
+                        modifier = Modifier.weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .graphicsLayer {
+                                    scaleX = homeScale
+                                    scaleY = homeScale
+                                },
+                            shape = CircleShape,
+                            color = Color.Transparent,
+                            shadowElevation = if (isSelected) 6.dp else 2.dp
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .background(homeBrush)
+                                    .border(1.2.dp, homeBorderColor, CircleShape)
+                                    .clickable(onClick = navigateToTab)
+                            ) {
+                                Icon(
+                                    imageVector = screen.icon,
+                                    contentDescription = screen.label,
+                                    tint = homeIconTint,
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    val pillBgColor by animateColorAsState(
+                        targetValue = if (isSelected) GrayBlue.copy(alpha = 0.12f) else Color.Transparent,
+                        animationSpec = tween(200),
+                        label = "phoneBottomNavBg_${screen.route}"
+                    )
+                    val contentColor by animateColorAsState(
+                        targetValue = if (isSelected) GrayBlue else GrayBlue.copy(alpha = 0.55f),
+                        animationSpec = tween(200),
+                        label = "phoneBottomNavContent_${screen.route}"
+                    )
+
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(pillBgColor)
+                            .clickable(onClick = navigateToTab)
+                            .padding(vertical = 10.dp, horizontal = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = screen.icon,
+                            contentDescription = screen.label,
+                            tint = contentColor,
+                            modifier = Modifier.size(23.dp)
+                        )
+                    }
                 }
             }
         }
