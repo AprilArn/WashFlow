@@ -148,7 +148,7 @@ class Brain {
 
     suspend fun sendMessage(
         prompt: String,
-        onStatusUpdate: (name: String, status: com.aprilarn.washflow.ui.aiagent.AiModelStatus) -> Unit = { _, _ -> }
+        onStatusUpdate: (name: String, status: com.aprilarn.washflow.ui.feature.aiagent.AiModelStatus) -> Unit = { _, _ -> }
     ): String {
         val userContent = content("user") { text(prompt) }
         var lastFailureReason = ""
@@ -156,7 +156,7 @@ class Brain {
         for ((index, model) in models.withIndex()) {
             currentCoroutineContext().ensureActive() // Cek pembatalan segera sebelum update status
             val label = modelChain[index].label
-            onStatusUpdate(label, com.aprilarn.washflow.ui.aiagent.AiModelStatus.THINKING)
+            onStatusUpdate(label, com.aprilarn.washflow.ui.feature.aiagent.AiModelStatus.THINKING)
 
             try {
                 // Rebuild chat session from the shared history on every attempt.
@@ -171,9 +171,9 @@ class Brain {
                     // ---- Timeout: try the next model ----
                     response == null -> {
                         lastFailureReason = "⏱️ $label tidak merespons dalam 12 detik"
-                        onStatusUpdate(label, com.aprilarn.washflow.ui.aiagent.AiModelStatus.FAILURE)
+                        onStatusUpdate(label, com.aprilarn.washflow.ui.feature.aiagent.AiModelStatus.FAILURE)
                         if (index < models.size - 1) {
-                            onStatusUpdate("Switching...", com.aprilarn.washflow.ui.aiagent.AiModelStatus.SWITCHING)
+                            onStatusUpdate("Switching...", com.aprilarn.washflow.ui.feature.aiagent.AiModelStatus.SWITCHING)
                             currentCoroutineContext().ensureActive() // Cek pembatalan sebelum delay
                             kotlinx.coroutines.delay(500)
                         }
@@ -182,7 +182,7 @@ class Brain {
 
                     // ---- Safety / content filter: no point trying another model ----
                     response.text == null -> {
-                        onStatusUpdate(label, com.aprilarn.washflow.ui.aiagent.AiModelStatus.FAILURE)
+                        onStatusUpdate(label, com.aprilarn.washflow.ui.feature.aiagent.AiModelStatus.FAILURE)
                         return "Maaf, pesan Anda tidak dapat diproses karena melanggar " +
                                 "kebijakan keamanan atau filter AI."
                     }
@@ -192,7 +192,7 @@ class Brain {
                         val responseText = response.text!!
                         chatHistory.add(userContent)
                         chatHistory.add(content("model") { text(responseText) })
-                        onStatusUpdate(label, com.aprilarn.washflow.ui.aiagent.AiModelStatus.SUCCESS)
+                        onStatusUpdate(label, com.aprilarn.washflow.ui.feature.aiagent.AiModelStatus.SUCCESS)
                         return responseText
                     }
                 }
@@ -201,9 +201,9 @@ class Brain {
                 if (e is CancellationException) throw e
                 
                 lastFailureReason = buildExceptionReason(label, e)
-                onStatusUpdate(label, com.aprilarn.washflow.ui.aiagent.AiModelStatus.FAILURE)
+                onStatusUpdate(label, com.aprilarn.washflow.ui.feature.aiagent.AiModelStatus.FAILURE)
                 if (index < models.size - 1) {
-                    onStatusUpdate("Switching...", com.aprilarn.washflow.ui.aiagent.AiModelStatus.SWITCHING)
+                    onStatusUpdate("Switching...", com.aprilarn.washflow.ui.feature.aiagent.AiModelStatus.SWITCHING)
                     kotlinx.coroutines.delay(500)
                 }
                 // Continue to the next model in the chain

@@ -1,0 +1,27 @@
+package com.aprilarn.washflow.ui.feature.home
+
+data class HomeUiState(
+    val isLoading: Boolean = true,
+    val greeting: String = "--!",
+    val weather: String = "loading weather...",
+    val weatherType: String = "",
+    val isDaytime: Boolean? = null,
+    val temperature: String = "--°C",
+    val locationName: String = "Mencari lokasi...",
+    val isGpsLocation: Boolean = true, // Penanda Icon
+    val recommendation: String = "loading recommendation...",
+    val inQueue: Int = 0,
+    val onProcess: Int = 0,
+    val done: Int = 0,
+    val weatherIconUrl: String = "",
+    val hourlyForecasts: List<HourlyForecastUiState> = emptyList(),
+
+    // New Weather Details
+    val humidity: String = "--%",
+    val uvIndex: String = "--",
+    val precipitationProb: String = "--%",
+    val windSpeed: String = "-- km/h",
+    val feelsLike: String = "--°C",
+    val thunderstormProb: String = "--%",
+    val windDirection: String = "--"
+)

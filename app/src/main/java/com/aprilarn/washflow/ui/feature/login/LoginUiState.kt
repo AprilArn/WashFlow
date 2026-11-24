@@ -1,0 +1,9 @@
+package com.aprilarn.washflow.ui.feature.login
+
+data class LoginUiState(
+    val isSignInSuccessful: Boolean = false,
+    val signInError: String? = null,
+    val isCheckingWorkspace: Boolean = false,   // Untuk menampilkan loading
+    val userHasWorkspace: Boolean? = null,      // null: belum dicek, true: ada, false: tidak ada
+    val showTimeoutDialog: Boolean = false
+)

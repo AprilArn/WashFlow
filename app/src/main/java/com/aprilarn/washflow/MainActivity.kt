@@ -30,22 +30,23 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.aprilarn.washflow.data.repository.InviteRepository
 import com.aprilarn.washflow.data.repository.WorkspaceRepository
-import com.aprilarn.washflow.ui.adaptive.LocalWindowLayoutInfo
-import com.aprilarn.washflow.ui.adaptive.ProvideWindowLayoutInfo
-import com.aprilarn.washflow.ui.adaptive.isTabletDevice
-import com.aprilarn.washflow.ui.login.GoogleAuthUiClient
-import com.aprilarn.washflow.ui.login.LoginViewModel
-import com.aprilarn.washflow.ui.main.MainNavigationEvent
-import com.aprilarn.washflow.ui.main.MainViewModel
-import com.aprilarn.washflow.ui.phone.login.PhoneLoginScreen
-import com.aprilarn.washflow.ui.phone.main.PhoneMainScreen
-import com.aprilarn.washflow.ui.phone.workspace.PhoneWorkspaceScreen
-import com.aprilarn.washflow.ui.tablet.login.TabletLoginScreen
-import com.aprilarn.washflow.ui.tablet.main.TabletMainScreen
-import com.aprilarn.washflow.ui.tablet.workspace.TabletWorkspaceScreen
-import com.aprilarn.washflow.ui.theme.WashFlowTheme
-import com.aprilarn.washflow.ui.workspace.WorkspaceEvent
-import com.aprilarn.washflow.ui.workspace.WorkspaceViewModel
+import com.aprilarn.washflow.ui.core.adaptive.LocalWindowLayoutInfo
+import com.aprilarn.washflow.ui.core.adaptive.ProvideWindowLayoutInfo
+import com.aprilarn.washflow.ui.core.adaptive.isTabletDevice
+import com.aprilarn.washflow.ui.core.components.WeatherBackgroundIllustration
+import com.aprilarn.washflow.ui.core.theme.WashFlowTheme
+import com.aprilarn.washflow.ui.feature.login.GoogleAuthUiClient
+import com.aprilarn.washflow.ui.feature.login.LoginScreen
+import com.aprilarn.washflow.ui.feature.login.LoginViewModel
+import com.aprilarn.washflow.ui.feature.login.PhoneLoginScreen
+import com.aprilarn.washflow.ui.feature.main.MainAppScreen
+import com.aprilarn.washflow.ui.feature.main.MainNavigationEvent
+import com.aprilarn.washflow.ui.feature.main.MainViewModel
+import com.aprilarn.washflow.ui.feature.main.PhoneMainScreen
+import com.aprilarn.washflow.ui.feature.workspace.PhoneWorkspaceScreen
+import com.aprilarn.washflow.ui.feature.workspace.WorkspaceEvent
+import com.aprilarn.washflow.ui.feature.workspace.WorkspaceScreen
+import com.aprilarn.washflow.ui.feature.workspace.WorkspaceViewModel
 import com.google.android.gms.auth.api.identity.Identity
 import kotlinx.coroutines.launch
 
@@ -133,7 +134,7 @@ class MainActivity : ComponentActivity() {
                                 Box(
                                     modifier = Modifier.fillMaxSize()
                                 ) {
-                                    com.aprilarn.washflow.ui.components.WeatherBackgroundIllustration(
+                                    WeatherBackgroundIllustration(
                                         weather = cachedLoginWeather,
                                         modifier = Modifier.matchParentSize()
                                     )
@@ -148,7 +149,7 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                                     if (windowLayoutInfo.isTablet) {
-                                        TabletLoginScreen(
+                                        LoginScreen(
                                             state = state,
                                             onGoogleSignInClick = onGoogleSignIn,
                                             onTimeoutDialogDismiss = { viewModel.resetLoginState() }
@@ -200,7 +201,7 @@ class MainActivity : ComponentActivity() {
                                         )
                                 ) {
                                     if (windowLayoutInfo.isTablet) {
-                                        TabletWorkspaceScreen(
+                                        WorkspaceScreen(
                                             state = uiState,
                                             onJoinClick = { code -> viewModel.joinWorkspace(code) },
                                             onCreateWorkspaceClick = { viewModel.createWorkspace() },
@@ -258,7 +259,7 @@ class MainActivity : ComponentActivity() {
                                 }
 
                                 if (windowLayoutInfo.isTablet) {
-                                    TabletMainScreen(
+                                    MainAppScreen(
                                         mainViewModel = mainViewModel,
                                         userData = userData,
                                         onSignOut = handleSignOut
