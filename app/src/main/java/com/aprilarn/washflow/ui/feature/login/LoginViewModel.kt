@@ -2,8 +2,7 @@ package com.aprilarn.washflow.ui.feature.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aprilarn.washflow.data.repository.UserRepository
-import com.aprilarn.washflow.domain.repository.UserRepositoryContract
+import com.aprilarn.washflow.domain.usecase.ManageUserUseCase
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,7 +11,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 
 class LoginViewModel(
-    private val userRepository: UserRepositoryContract = UserRepository()
+    private val userUseCase: ManageUserUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(LoginUiState())
@@ -38,7 +37,7 @@ class LoginViewModel(
                 // Berikan timeout selama 20 detik
                 val workspaceId = withTimeout(20000L) {
                     // kotlinx.coroutines.delay(11000L)
-                    userRepository.saveUserAndGetWorkspace(
+                    userUseCase.saveUserAndGetWorkspace(
                         uid = userData.userId,
                         displayName = userData.displayName,
                         email = userData.email,

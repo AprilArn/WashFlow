@@ -3,10 +3,8 @@ package com.aprilarn.washflow.ui.feature.masterdata.items
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aprilarn.washflow.data.model.Items
-import com.aprilarn.washflow.data.repository.ItemRepository
-import com.aprilarn.washflow.data.repository.ServiceRepository
-import com.aprilarn.washflow.domain.repository.ItemRepositoryContract
-import com.aprilarn.washflow.domain.repository.ServiceRepositoryContract
+import com.aprilarn.washflow.domain.usecase.ManageItemUseCase
+import com.aprilarn.washflow.domain.usecase.ManageServiceUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -16,8 +14,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ItemsViewModel(
-    private val itemRepository: ItemRepositoryContract = ItemRepository(),
-    private val serviceRepository: ServiceRepositoryContract = ServiceRepository()
+    private val itemUseCase: ManageItemUseCase,
+    private val serviceUseCase: ManageServiceUseCase
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ItemsUiState())
     val uiState = _uiState.asStateFlow()
@@ -30,9 +28,9 @@ class ItemsViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
-            // Ambil flow dari kedua repository
-            val itemsFlow = itemRepository.getItemsRealtime()
-            val servicesFlow = serviceRepository.getServicesRealtime()
+            // Ambil flow dari kedua use case
+            val itemsFlow = itemUseCase.observeItems()
+            val servicesFlow = serviceUseCase.observeServices()
 
             // Gabungkan flow items dan services
             combine(itemsFlow, servicesFlow) { items, services ->
@@ -69,7 +67,7 @@ class ItemsViewModel(
         }
 
         viewModelScope.launch {
-            val success = itemRepository.addItem(service, name, price)
+            val success = itemUseCase.addItem(service, name, price)
             if (success) {
                 _uiState.update {
                     it.copy(
@@ -88,12 +86,7 @@ class ItemsViewModel(
 
     fun updateItem(item: Items) {
         viewModelScope.launch {
-            val success = itemRepository.updateItem(
-                item.itemId,
-                item.serviceId,
-                item.itemName,
-                item.itemPrice
-            )
+            val success = itemUseCase.updateItem(item)
             if (success) {
                 _uiState.update {
                     it.copy(
@@ -113,7 +106,7 @@ class ItemsViewModel(
 
     fun deleteItem(item: Items) {
         viewModelScope.launch {
-            val success = itemRepository.deleteItems(item.itemId)
+            val success = itemUseCase.deleteItem(item.itemId)
             if (success) {
                 _uiState.update {
                     it.copy(

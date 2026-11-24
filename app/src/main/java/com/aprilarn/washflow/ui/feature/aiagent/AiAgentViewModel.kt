@@ -3,12 +3,9 @@ package com.aprilarn.washflow.ui.feature.aiagent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aprilarn.washflow.ai.Brain
-import com.aprilarn.washflow.data.repository.CustomerRepository
-import com.aprilarn.washflow.data.repository.ItemRepository
-import com.aprilarn.washflow.data.repository.ServiceRepository
-import com.aprilarn.washflow.domain.repository.CustomerRepositoryContract
-import com.aprilarn.washflow.domain.repository.ItemRepositoryContract
-import com.aprilarn.washflow.domain.repository.ServiceRepositoryContract
+import com.aprilarn.washflow.domain.usecase.ManageCustomerUseCase
+import com.aprilarn.washflow.domain.usecase.ManageItemUseCase
+import com.aprilarn.washflow.domain.usecase.ManageServiceUseCase
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -26,9 +23,9 @@ import android.content.Context
 import android.speech.SpeechRecognizer
 
 class AiAgentViewModel(
-    private val customerRepository: CustomerRepositoryContract = CustomerRepository(),
-    private val itemRepository: ItemRepositoryContract = ItemRepository(),
-    private val serviceRepository: ServiceRepositoryContract = ServiceRepository()
+    private val customerUseCase: ManageCustomerUseCase,
+    private val itemUseCase: ManageItemUseCase,
+    private val serviceUseCase: ManageServiceUseCase
 ) : ViewModel() {
     private val brain = Brain()
     private val _uiState = MutableStateFlow(AiAgentUiState())
@@ -57,7 +54,7 @@ class AiAgentViewModel(
 
     private fun listenForCustomerChanges() {
         viewModelScope.launch {
-            customerRepository.getCustomersRealtime()
+            customerUseCase.observeCustomers()
                 .catch { /* Handle error if needed */ }
                 .collect { customers ->
                     _uiState.update { it.copy(customers = customers) }
@@ -67,7 +64,7 @@ class AiAgentViewModel(
 
     private fun listenForItemChanges() {
         viewModelScope.launch {
-            itemRepository.getItemsRealtime()
+            itemUseCase.observeItems()
                 .catch { /* Handle error */ }
                 .collect { items ->
                     _uiState.update { it.copy(items = items) }
@@ -77,7 +74,7 @@ class AiAgentViewModel(
 
     private fun listenForServiceChanges() {
         viewModelScope.launch {
-            serviceRepository.getServicesRealtime()
+            serviceUseCase.observeServices()
                 .catch { /* Handle error */ }
                 .collect { services ->
                     _uiState.update { it.copy(services = services) }

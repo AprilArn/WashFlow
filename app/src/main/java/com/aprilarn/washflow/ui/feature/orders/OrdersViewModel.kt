@@ -7,14 +7,10 @@ import com.aprilarn.washflow.data.model.Items
 import com.aprilarn.washflow.data.model.OrderItem
 import com.aprilarn.washflow.data.model.Orders
 import com.aprilarn.washflow.data.model.Services
-import com.aprilarn.washflow.data.repository.CustomerRepository
-import com.aprilarn.washflow.data.repository.ItemRepository
-import com.aprilarn.washflow.data.repository.OrderRepository
-import com.aprilarn.washflow.data.repository.ServiceRepository
-import com.aprilarn.washflow.domain.repository.CustomerRepositoryContract
-import com.aprilarn.washflow.domain.repository.ItemRepositoryContract
-import com.aprilarn.washflow.domain.repository.OrderRepositoryContract
-import com.aprilarn.washflow.domain.repository.ServiceRepositoryContract
+import com.aprilarn.washflow.domain.usecase.ManageCustomerUseCase
+import com.aprilarn.washflow.domain.usecase.ManageItemUseCase
+import com.aprilarn.washflow.domain.usecase.ManageOrderUseCase
+import com.aprilarn.washflow.domain.usecase.ManageServiceUseCase
 import com.google.firebase.Timestamp
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -27,10 +23,10 @@ import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
 class OrdersViewModel(
-    private val customerRepository: CustomerRepositoryContract = CustomerRepository(),
-    private val serviceRepository: ServiceRepositoryContract = ServiceRepository(),
-    private val itemRepository: ItemRepositoryContract = ItemRepository(),
-    private val orderRepository: OrderRepositoryContract = OrderRepository()
+    private val customerUseCase: ManageCustomerUseCase,
+    private val serviceUseCase: ManageServiceUseCase,
+    private val itemUseCase: ManageItemUseCase,
+    private val orderUseCase: ManageOrderUseCase
 ) : ViewModel() {
 
     companion object {
@@ -50,8 +46,8 @@ class OrdersViewModel(
 
     private fun listenForDataChanges() {
         viewModelScope.launch {
-            val servicesFlow = serviceRepository.getServicesRealtime()
-            val itemsFlow = itemRepository.getItemsRealtime()
+            val servicesFlow = serviceUseCase.observeServices()
+            val itemsFlow = itemUseCase.observeItems()
 
             combine(servicesFlow, itemsFlow) { services, items ->
                 _uiState.update {
@@ -97,7 +93,7 @@ class OrdersViewModel(
             val sourceCustomers = if (hasLoadedCustomers) {
                 _uiState.value.customers
             } else {
-                val fetched = customerRepository.getCustomersOnce()
+                val fetched = customerUseCase.getCustomersOnce()
                 hasLoadedCustomers = true
                 _uiState.update { it.copy(customers = fetched) }
                 fetched
@@ -224,7 +220,7 @@ class OrdersViewModel(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val order = orderRepository.getOrderById(orderId)
+            val order = orderUseCase.getOrderById(orderId)
             if (order != null) {
                 // Konversi list OrderItem ke map
                 val itemsMap = order.orderItems.associateBy { it.itemId }
@@ -279,7 +275,7 @@ class OrdersViewModel(
 
             if (state.editingOrderId != null) {
                 // Update Order
-                val existingOrder = orderRepository.getOrderById(state.editingOrderId)
+                val existingOrder = orderUseCase.getOrderById(state.editingOrderId)
                 if (existingOrder == null) {
                     _uiState.update { it.copy(isCreatingOrder = false, errorMessage = "Failed to load existing order.") }
                     return@launch
@@ -295,7 +291,7 @@ class OrdersViewModel(
                     orderFinishDate = if (existingOrder.status == "Done") Timestamp.now() else null
                 )
 
-                val success = orderRepository.updateOrder(updatedOrder)
+                val success = orderUseCase.updateOrder(updatedOrder)
                 if (success) {
                     customerSearchJob?.cancel()
                     _uiState.update {
@@ -331,7 +327,7 @@ class OrdersViewModel(
                     alreadyPaid = false
                 )
 
-                val success = orderRepository.createOrder(newOrder)
+                val success = orderUseCase.createOrder(newOrder)
                 if (success) {
                     // Reset state setelah order berhasil
                     customerSearchJob?.cancel()

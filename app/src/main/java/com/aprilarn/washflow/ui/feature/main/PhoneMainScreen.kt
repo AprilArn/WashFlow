@@ -54,6 +54,12 @@ import com.aprilarn.washflow.data.repository.NotificationsRepository
 import com.aprilarn.washflow.data.repository.OrderRepository
 import com.aprilarn.washflow.data.repository.ServiceRepository
 import com.aprilarn.washflow.data.repository.WorkspaceRepository
+import com.aprilarn.washflow.domain.usecase.ManageCustomerUseCase
+import com.aprilarn.washflow.domain.usecase.ManageItemUseCase
+import com.aprilarn.washflow.domain.usecase.ManageNotificationsUseCase
+import com.aprilarn.washflow.domain.usecase.ManageOrderUseCase
+import com.aprilarn.washflow.domain.usecase.ManageServiceUseCase
+import com.aprilarn.washflow.domain.usecase.ManageWorkspaceUseCase
 import com.aprilarn.washflow.ui.feature.aiagent.AiAgentAction
 import com.aprilarn.washflow.ui.feature.aiagent.AiAgentPanel
 import com.aprilarn.washflow.ui.feature.aiagent.AiAgentViewModel
@@ -117,18 +123,33 @@ fun PhoneMainScreen(
     val bottomNavController = rememberNavController()
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
 
+    val orderUseCase = remember { ManageOrderUseCase(OrderRepository()) }
+    val customerUseCase = remember { ManageCustomerUseCase(CustomerRepository()) }
+    val serviceUseCase = remember { ManageServiceUseCase(ServiceRepository()) }
+    val itemUseCase = remember { ManageItemUseCase(ItemRepository()) }
+    val workspaceUseCase = remember { ManageWorkspaceUseCase(WorkspaceRepository()) }
+    val notificationsUseCase = remember { ManageNotificationsUseCase(NotificationsRepository()) }
+
     val notificationsViewModelFactory = remember {
         object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return NotificationsViewModel(NotificationsRepository()) as T
+                return NotificationsViewModel(notificationsUseCase) as T
             }
         }
     }
     val notificationsViewModel: NotificationsViewModel = viewModel(factory = notificationsViewModelFactory)
     val notificationsUiState by notificationsViewModel.uiState.collectAsStateWithLifecycle()
 
-    val aiAgentViewModel: AiAgentViewModel = viewModel()
+    val aiAgentViewModelFactory = remember {
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return AiAgentViewModel(customerUseCase, itemUseCase, serviceUseCase) as T
+            }
+        }
+    }
+    val aiAgentViewModel: AiAgentViewModel = viewModel(factory = aiAgentViewModelFactory)
     val aiAgentUiState by aiAgentViewModel.uiState.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
@@ -144,14 +165,24 @@ fun PhoneMainScreen(
         }
     )
 
-    val orderRepository = remember { OrderRepository() }
-    val customerRepository = remember { CustomerRepository() }
-    val serviceRepository = remember { ServiceRepository() }
-    val itemRepository = remember { ItemRepository() }
-    val workspaceRepository = remember { WorkspaceRepository() }
-
-    val customersViewModel: CustomersViewModel = viewModel()
-    val itemsViewModel: ItemsViewModel = viewModel()
+    val customersViewModelFactory = remember {
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return CustomersViewModel(customerUseCase) as T
+            }
+        }
+    }
+    val itemsViewModelFactory = remember {
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return ItemsViewModel(itemUseCase, serviceUseCase) as T
+            }
+        }
+    }
+    val customersViewModel: CustomersViewModel = viewModel(factory = customersViewModelFactory)
+    val itemsViewModel: ItemsViewModel = viewModel(factory = itemsViewModelFactory)
 
     LaunchedEffect(Unit) {
         aiAgentViewModel.actionEvents.collect { action ->
@@ -211,7 +242,7 @@ fun PhoneMainScreen(
                     .build()
                 val geocodingService = retrofit.create(GeocodingApiService::class.java)
                 val sharedPrefs = appContext.getSharedPreferences("WashFlowPrefs", Context.MODE_PRIVATE)
-                return HomeViewModel(orderRepository, workspaceRepository, geocodingService, sharedPrefs) as T
+                return HomeViewModel(orderUseCase, workspaceUseCase, geocodingService, sharedPrefs) as T
             }
         }
     }
@@ -364,7 +395,7 @@ fun PhoneMainScreen(
                             object : ViewModelProvider.Factory {
                                 @Suppress("UNCHECKED_CAST")
                                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                    return ContributorsViewModel(workspaceRepository) as T
+                                    return ContributorsViewModel(workspaceUseCase) as T
                                 }
                             }
                         }
@@ -387,9 +418,9 @@ fun PhoneMainScreen(
                                 @Suppress("UNCHECKED_CAST")
                                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
                                     return ManageOrderViewModel(
-                                        orderRepository,
-                                        customerRepository,
-                                        serviceRepository
+                                        orderUseCase,
+                                        customerUseCase,
+                                        serviceUseCase
                                     ) as T
                                 }
                             }
@@ -430,10 +461,7 @@ fun PhoneMainScreen(
                                 @Suppress("UNCHECKED_CAST")
                                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
                                     return TableDataViewModel(
-                                        customerRepository,
-                                        serviceRepository,
-                                        itemRepository,
-                                        workspaceRepository
+                                        workspaceUseCase
                                     ) as T
                                 }
                             }
@@ -453,9 +481,9 @@ fun PhoneMainScreen(
                                 @Suppress("UNCHECKED_CAST")
                                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
                                     return AnalyticsViewModel(
-                                        orderRepository,
-                                        serviceRepository,
-                                        customerRepository
+                                        orderUseCase,
+                                        serviceUseCase,
+                                        customerUseCase
                                     ) as T
                                 }
                             }
@@ -502,7 +530,15 @@ fun PhoneMainScreen(
                     }
 
                     composable(AppNavigation.Services.route) {
-                        val viewModel: ServicesViewModel = viewModel()
+                        val factory = remember {
+                            object : ViewModelProvider.Factory {
+                                @Suppress("UNCHECKED_CAST")
+                                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                    return ServicesViewModel(serviceUseCase) as T
+                                }
+                            }
+                        }
+                        val viewModel: ServicesViewModel = viewModel(factory = factory)
                         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
                         LaunchedEffect(uiState.successMessage, uiState.errorMessage) {
@@ -563,10 +599,10 @@ fun PhoneMainScreen(
                                 @Suppress("UNCHECKED_CAST")
                                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
                                     return OrdersViewModel(
-                                        customerRepository,
-                                        serviceRepository,
-                                        itemRepository,
-                                        orderRepository
+                                        customerUseCase,
+                                        serviceUseCase,
+                                        itemUseCase,
+                                        orderUseCase
                                     ) as T
                                 }
                             }

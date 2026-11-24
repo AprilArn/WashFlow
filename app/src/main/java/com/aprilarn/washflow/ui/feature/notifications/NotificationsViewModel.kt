@@ -3,8 +3,7 @@ package com.aprilarn.washflow.ui.feature.notifications
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aprilarn.washflow.data.model.Notifications
-import com.aprilarn.washflow.data.repository.NotificationsRepository
-import com.aprilarn.washflow.domain.repository.NotificationsRepositoryContract
+import com.aprilarn.washflow.domain.usecase.ManageNotificationsUseCase
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.auth
@@ -16,7 +15,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class NotificationsViewModel(
-    private val notificationsRepository: NotificationsRepositoryContract = NotificationsRepository()
+    private val notificationsUseCase: ManageNotificationsUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(NotificationsUiState())
@@ -33,10 +32,10 @@ class NotificationsViewModel(
         viewModelScope.launch {
             // Jalankan pembersihan notifikasi lama (2 hari+) di background
             viewModelScope.launch(Dispatchers.IO) {
-                notificationsRepository.cleanupOldNotifications()
+                notificationsUseCase.cleanupOldNotifications()
             }
 
-            notificationsRepository.getNotificationsRealtime().collect { list ->
+            notificationsUseCase.observeNotifications().collect { list ->
                 val currentUid = Firebase.auth.currentUser?.uid ?: ""
 
                 // Cari notifikasi yang benar-benar baru masuk SAAT aplikasi sedang aktif
@@ -104,14 +103,14 @@ class NotificationsViewModel(
 
         if (unreadIds.isNotEmpty()) {
             viewModelScope.launch {
-                notificationsRepository.markAllAsRead(unreadIds)
+                notificationsUseCase.markAllAsRead(unreadIds)
             }
         }
     }
 
     fun markNotificationAsRead(notif: Notifications) {
         viewModelScope.launch {
-            notificationsRepository.markAsRead(notif.notificationId)
+            notificationsUseCase.markAsRead(notif.notificationId)
         }
     }
 }

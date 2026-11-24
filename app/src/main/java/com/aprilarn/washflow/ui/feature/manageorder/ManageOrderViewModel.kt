@@ -4,12 +4,9 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aprilarn.washflow.data.model.Orders
-import com.aprilarn.washflow.data.repository.CustomerRepository
-import com.aprilarn.washflow.data.repository.OrderRepository
-import com.aprilarn.washflow.data.repository.ServiceRepository
-import com.aprilarn.washflow.domain.repository.CustomerRepositoryContract
-import com.aprilarn.washflow.domain.repository.OrderRepositoryContract
-import com.aprilarn.washflow.domain.repository.ServiceRepositoryContract
+import com.aprilarn.washflow.domain.usecase.ManageCustomerUseCase
+import com.aprilarn.washflow.domain.usecase.ManageOrderUseCase
+import com.aprilarn.washflow.domain.usecase.ManageServiceUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -18,9 +15,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ManageOrderViewModel(
-    private val orderRepository: OrderRepositoryContract = OrderRepository(),
-    private val customerRepository: CustomerRepositoryContract = CustomerRepository(),
-    private val serviceRepository: ServiceRepositoryContract = ServiceRepository()
+    private val orderUseCase: ManageOrderUseCase,
+    private val customerUseCase: ManageCustomerUseCase,
+    private val serviceUseCase: ManageServiceUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ManageOrderUiState())
@@ -34,9 +31,9 @@ class ManageOrderViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
-            val ordersFlow = orderRepository.getOrdersRealtime(activeOnly = true)
-            val servicesFlow = serviceRepository.getServicesRealtime()
-            val customersFlow = customerRepository.getCustomersRealtime()
+            val ordersFlow = orderUseCase.observeOrders(activeOnly = true)
+            val servicesFlow = serviceUseCase.observeServices()
+            val customersFlow = customerUseCase.observeCustomers()
 
             // Gabungkan data orders dan services secara real-time
             combine(ordersFlow, customersFlow, servicesFlow) { orders, customers, services  ->
@@ -80,7 +77,7 @@ class ManageOrderViewModel(
             Log.d("ManageOrderVM", "Attempting to change order '$orderId' to status '$newStatus'.")
 
             // 3. Lakukan pembaruan status
-            val success = orderRepository.updateOrderStatus(orderId, orderToUpdate!!.status!!, newStatus)
+            val success = orderUseCase.changeStatus(orderId, orderToUpdate!!.status!!, newStatus)
 
             if (success) {
                 Log.d("ManageOrderVM", "Successfully requested status update for order '$orderId'. Waiting for listener to reflect changes.")
@@ -95,7 +92,7 @@ class ManageOrderViewModel(
 
     fun toggleOrderPaymentStatus(orderId: String, isPaid: Boolean) {
         viewModelScope.launch {
-            val success = orderRepository.updateOrderPaymentStatus(orderId, isPaid)
+            val success = orderUseCase.togglePayment(orderId, isPaid)
             if (!success) {
                 _uiState.update { it.copy(errorMessage = "Failed to update payment status.") }
             }
@@ -104,7 +101,7 @@ class ManageOrderViewModel(
 
     fun toggleOrderPickupStatus(orderId: String, isPickedUp: Boolean) {
         viewModelScope.launch {
-            val success = orderRepository.updateOrderPickupStatus(orderId, isPickedUp)
+            val success = orderUseCase.togglePickup(orderId, isPickedUp)
             if (!success) {
                 _uiState.update { it.copy(errorMessage = "Failed to update pickup status.") }
             }
@@ -125,7 +122,7 @@ class ManageOrderViewModel(
             val allOrders = currentState.ordersOnQueue + currentState.ordersOnProcess + currentState.ordersDone
             val orderToDelete = allOrders.find { it.orderId == orderId }
 
-            val success = orderRepository.deleteOrder(orderId, orderToDelete?.status)
+            val success = orderUseCase.deleteOrder(orderId, orderToDelete?.status)
             if (success) {
                 // Tutup dialog setelah berhasil dihapus
                 _uiState.update { it.copy(selectedOrderForDetail = null) }

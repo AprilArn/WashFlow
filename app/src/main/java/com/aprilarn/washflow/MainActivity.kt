@@ -29,7 +29,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.aprilarn.washflow.data.repository.InviteRepository
+import com.aprilarn.washflow.data.repository.UserRepository
 import com.aprilarn.washflow.data.repository.WorkspaceRepository
+import com.aprilarn.washflow.domain.usecase.ManageInviteUseCase
+import com.aprilarn.washflow.domain.usecase.ManageUserUseCase
+import com.aprilarn.washflow.domain.usecase.ManageWorkspaceUseCase
 import com.aprilarn.washflow.ui.core.adaptive.LocalWindowLayoutInfo
 import com.aprilarn.washflow.ui.core.adaptive.ProvideWindowLayoutInfo
 import com.aprilarn.washflow.ui.core.adaptive.isTabletDevice
@@ -82,7 +86,17 @@ class MainActivity : ComponentActivity() {
 
                             // 2. Rute untuk Login Screen (Adaptif: Tablet vs Phone)
                             composable("login") {
-                                val viewModel = viewModel<LoginViewModel>()
+                                val loginViewModelFactory = remember {
+                                    object : ViewModelProvider.Factory {
+                                        @Suppress("UNCHECKED_CAST")
+                                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                            return LoginViewModel(
+                                                ManageUserUseCase(UserRepository())
+                                            ) as T
+                                        }
+                                    }
+                                }
+                                val viewModel = viewModel<LoginViewModel>(factory = loginViewModelFactory)
                                 val state by viewModel.state.collectAsStateWithLifecycle()
 
                                 LaunchedEffect(Unit) {
@@ -166,7 +180,18 @@ class MainActivity : ComponentActivity() {
 
                             // Rute untuk Workspace Screen (Adaptif: Tablet vs Phone)
                             composable("workspace") {
-                                val viewModel = viewModel<WorkspaceViewModel>()
+                                val workspaceViewModelFactory = remember {
+                                    object : ViewModelProvider.Factory {
+                                        @Suppress("UNCHECKED_CAST")
+                                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                            return WorkspaceViewModel(
+                                                ManageWorkspaceUseCase(WorkspaceRepository()),
+                                                ManageInviteUseCase(InviteRepository())
+                                            ) as T
+                                        }
+                                    }
+                                }
+                                val viewModel = viewModel<WorkspaceViewModel>(factory = workspaceViewModelFactory)
                                 val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                                 val context = LocalContext.current
 
@@ -223,8 +248,8 @@ class MainActivity : ComponentActivity() {
                                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
                                         @Suppress("UNCHECKED_CAST")
                                         return MainViewModel(
-                                            WorkspaceRepository(),
-                                            InviteRepository(),
+                                            ManageWorkspaceUseCase(WorkspaceRepository()),
+                                            ManageInviteUseCase(InviteRepository()),
                                             applicationContext.getSharedPreferences("WashFlowPrefs", MODE_PRIVATE)
                                         ) as T
                                     }

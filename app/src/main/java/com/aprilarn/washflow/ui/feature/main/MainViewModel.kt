@@ -4,10 +4,8 @@ import android.content.SharedPreferences
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aprilarn.washflow.data.repository.InviteRepository
-import com.aprilarn.washflow.data.repository.WorkspaceRepository
-import com.aprilarn.washflow.domain.repository.InviteRepositoryContract
-import com.aprilarn.washflow.domain.repository.WorkspaceRepositoryContract
+import com.aprilarn.washflow.domain.usecase.ManageInviteUseCase
+import com.aprilarn.washflow.domain.usecase.ManageWorkspaceUseCase
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.auth
@@ -28,8 +26,8 @@ sealed class MainNavigationEvent {
 }
 
 class MainViewModel(
-    private val workspaceRepository: WorkspaceRepositoryContract = WorkspaceRepository(),
-    private val inviteRepository: InviteRepositoryContract = InviteRepository(),
+    private val workspaceUseCase: ManageWorkspaceUseCase,
+    private val inviteUseCase: ManageInviteUseCase,
     private val sharedPreferences: SharedPreferences
 ) : ViewModel() {
 
@@ -48,7 +46,7 @@ class MainViewModel(
 
     private fun listenForWorkspaceChanges() {
         viewModelScope.launch {
-            workspaceRepository.getCurrentWorkspaceRealtime().collect { workspace ->
+            workspaceUseCase.observeCurrentWorkspace().collect { workspace ->
                 val currentUser = Firebase.auth.currentUser ?: return@collect
 
                 val previousState = _uiState.value
@@ -100,7 +98,7 @@ class MainViewModel(
 
     private fun listenForActiveInvite() {
         viewModelScope.launch {
-            inviteRepository.getActiveInviteForCurrentWorkspace().collect { invite ->
+            inviteUseCase.observeActiveInvite().collect { invite ->
                 _uiState.update { it.copy(activeInvite = invite, isInviteLoading = false) }
             }
         }
@@ -109,7 +107,7 @@ class MainViewModel(
     fun createInvitation(maxContributors: Int, expiresAt: Date) {
         viewModelScope.launch {
             // Convert Date to Firebase Timestamp before sending to repository
-            inviteRepository.createInvite(maxContributors, Timestamp(expiresAt))
+            inviteUseCase.createInvite(maxContributors, Timestamp(expiresAt))
             // Hide the dialog after creation, the listener will pick up the new active code
         }
     }
@@ -118,7 +116,7 @@ class MainViewModel(
         // Get the active invite ID from the state
         val inviteId = _uiState.value.activeInvite?.inviteId ?: return
         viewModelScope.launch {
-            inviteRepository.expireInvite(inviteId)
+            inviteUseCase.expireInvite(inviteId)
             // The realtime listener will automatically update the UI to show no active invite
         }
     }
@@ -144,7 +142,7 @@ class MainViewModel(
     fun renameWorkspace(newName: String) {
         viewModelScope.launch {
             if (newName.isNotBlank()) {
-                workspaceRepository.updateWorkspaceName(newName)
+                workspaceUseCase.renameWorkspace(newName)
             }
             onDismissRenameDialog()
         }
@@ -155,7 +153,7 @@ class MainViewModel(
         viewModelScope.launch {
 
             // 1. Panggil fungsi baru untuk mengecek dan mengubah status jika perlu
-            inviteRepository.checkAndExpireActiveInvite()
+            inviteUseCase.checkAndExpireActiveInvite()
 
             // 2. (PENTING) Listener 'listenForActiveInvite' akan otomatis
             // mengambil perubahan status (jika ada) dan memperbarui _uiState.
@@ -238,7 +236,7 @@ class MainViewModel(
         viewModelScope.launch {
             isExpectingWorkspaceRemoval = true
             _uiState.update { it.copy(showLeaveWorkspaceDialog = false) }
-            val success = workspaceRepository.leaveWorkspace()
+            val success = workspaceUseCase.leaveWorkspace()
             if (success) {
                 // Kirim event untuk navigasi
                 _eventFlow.emit(MainNavigationEvent.NavigateToWorkspace)
@@ -264,7 +262,7 @@ class MainViewModel(
         viewModelScope.launch {
             isExpectingWorkspaceRemoval = true
             _uiState.update { it.copy(showDeleteWorkspaceDialog = false) }
-            val success = workspaceRepository.deleteCurrentWorkspace()
+            val success = workspaceUseCase.deleteCurrentWorkspace()
             if (success) {
                 // Kirim event untuk navigasi kembali ke WorkspaceScreen
                 _eventFlow.emit(MainNavigationEvent.NavigateToWorkspace)
@@ -291,7 +289,7 @@ class MainViewModel(
 
     fun updateOperationalHours(openTime: String?, closeTime: String?) {
         viewModelScope.launch {
-            workspaceRepository.updateOperationalHours(openTime ?: "", closeTime ?: "")
+            workspaceUseCase.updateOperationalHours(openTime ?: "", closeTime ?: "")
             onDismissOperationalHoursDialog()
         }
     }

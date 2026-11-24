@@ -52,6 +52,12 @@ import com.aprilarn.washflow.data.repository.NotificationsRepository
 import com.aprilarn.washflow.data.repository.OrderRepository
 import com.aprilarn.washflow.data.repository.ServiceRepository
 import com.aprilarn.washflow.data.repository.WorkspaceRepository
+import com.aprilarn.washflow.domain.usecase.ManageCustomerUseCase
+import com.aprilarn.washflow.domain.usecase.ManageItemUseCase
+import com.aprilarn.washflow.domain.usecase.ManageNotificationsUseCase
+import com.aprilarn.washflow.domain.usecase.ManageOrderUseCase
+import com.aprilarn.washflow.domain.usecase.ManageServiceUseCase
+import com.aprilarn.washflow.domain.usecase.ManageWorkspaceUseCase
 import com.aprilarn.washflow.ui.feature.aiagent.AiAgentAction
 import com.aprilarn.washflow.ui.core.components.Header
 import com.aprilarn.washflow.ui.core.components.KickedDialog
@@ -108,18 +114,36 @@ fun MainAppScreen(
     val bottomNavController = rememberNavController()
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
 
+    // Shared Domain UseCases (ringan, tidak menyalakan listener Firestore sebelum dipanggil oleh ViewModel)
+    val orderUseCase = remember { ManageOrderUseCase(OrderRepository()) }
+    val customerUseCase = remember { ManageCustomerUseCase(CustomerRepository()) }
+    val serviceUseCase = remember { ManageServiceUseCase(ServiceRepository()) }
+    val itemUseCase = remember { ManageItemUseCase(ItemRepository()) }
+    val workspaceUseCase = remember { ManageWorkspaceUseCase(WorkspaceRepository()) }
+    val notificationsUseCase = remember { ManageNotificationsUseCase(NotificationsRepository()) }
+
     // Inisialisasi NotificationsViewModel
-    val notificationsViewModelFactory = object : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return NotificationsViewModel(NotificationsRepository()) as T
+    val notificationsViewModelFactory = remember {
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return NotificationsViewModel(notificationsUseCase) as T
+            }
         }
     }
     val notificationsViewModel: NotificationsViewModel = viewModel(factory = notificationsViewModelFactory)
     val notificationsUiState by notificationsViewModel.uiState.collectAsStateWithLifecycle()
 
     // Inisialisasi AiAgentViewModel
-    val aiAgentViewModel: AiAgentViewModel = viewModel()
+    val aiAgentViewModelFactory = remember {
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return AiAgentViewModel(customerUseCase, itemUseCase, serviceUseCase) as T
+            }
+        }
+    }
+    val aiAgentViewModel: AiAgentViewModel = viewModel(factory = aiAgentViewModelFactory)
     val aiAgentUiState by aiAgentViewModel.uiState.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
@@ -135,15 +159,24 @@ fun MainAppScreen(
         }
     )
 
-    // Shared repositories (ringan, tidak menyalakan listener Firestore sebelum dipanggil oleh ViewModel)
-    val orderRepository = remember { OrderRepository() }
-    val customerRepository = remember { CustomerRepository() }
-    val serviceRepository = remember { ServiceRepository() }
-    val itemRepository = remember { ItemRepository() }
-    val workspaceRepository = remember { WorkspaceRepository() }
-
-    val customersViewModel: CustomersViewModel = viewModel()
-    val itemsViewModel: ItemsViewModel = viewModel()
+    val customersViewModelFactory = remember {
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return CustomersViewModel(customerUseCase) as T
+            }
+        }
+    }
+    val itemsViewModelFactory = remember {
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return ItemsViewModel(itemUseCase, serviceUseCase) as T
+            }
+        }
+    }
+    val customersViewModel: CustomersViewModel = viewModel(factory = customersViewModelFactory)
+    val itemsViewModel: ItemsViewModel = viewModel(factory = itemsViewModelFactory)
 
     // Handle AI Agent actions (navigation)
     LaunchedEffect(Unit) {
@@ -216,7 +249,7 @@ fun MainAppScreen(
                 val sharedPrefs = appContext.getSharedPreferences("WashFlowPrefs", Context.MODE_PRIVATE)
 
                 // 3. Masukkan ketiganya ke dalam HomeViewModel
-                return HomeViewModel(orderRepository, workspaceRepository, geocodingService, sharedPrefs) as T
+                return HomeViewModel(orderUseCase, workspaceUseCase, geocodingService, sharedPrefs) as T
             }
         }
     }
@@ -397,7 +430,7 @@ fun MainAppScreen(
                             @Suppress("UNCHECKED_CAST")
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                                 return ContributorsViewModel(
-                                    workspaceRepository
+                                    workspaceUseCase
                                 ) as T
                             }
                         }
@@ -423,9 +456,9 @@ fun MainAppScreen(
                             @Suppress("UNCHECKED_CAST")
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                                 return ManageOrderViewModel(
-                                    orderRepository,
-                                    customerRepository,
-                                    serviceRepository
+                                    orderUseCase,
+                                    customerUseCase,
+                                    serviceUseCase
                                 ) as T
                             }
                         }
@@ -466,10 +499,7 @@ fun MainAppScreen(
                             @Suppress("UNCHECKED_CAST")
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                                 return TableDataViewModel(
-                                    customerRepository,
-                                    serviceRepository,
-                                    itemRepository,
-                                    workspaceRepository
+                                    workspaceUseCase
                                 ) as T
                             }
                         }
@@ -491,9 +521,9 @@ fun MainAppScreen(
                             @Suppress("UNCHECKED_CAST")
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                                 return AnalyticsViewModel(
-                                    orderRepository,
-                                    serviceRepository,
-                                    customerRepository
+                                    orderUseCase,
+                                    serviceUseCase,
+                                    customerUseCase
                                 ) as T
                             }
                         }
@@ -540,7 +570,15 @@ fun MainAppScreen(
                 }
 
                 composable(AppNavigation.Services.route) {
-                    val viewModel: ServicesViewModel = viewModel()
+                    val factory = remember {
+                        object : ViewModelProvider.Factory {
+                            @Suppress("UNCHECKED_CAST")
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return ServicesViewModel(serviceUseCase) as T
+                            }
+                        }
+                    }
+                    val viewModel: ServicesViewModel = viewModel(factory = factory)
                     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
                     LaunchedEffect(uiState.successMessage, uiState.errorMessage) {
@@ -602,10 +640,10 @@ fun MainAppScreen(
                             @Suppress("UNCHECKED_CAST")
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                                 return OrdersViewModel(
-                                    customerRepository,
-                                    serviceRepository,
-                                    itemRepository,
-                                    orderRepository
+                                    customerUseCase,
+                                    serviceUseCase,
+                                    itemUseCase,
+                                    orderUseCase
                                 ) as T
                             }
                         }

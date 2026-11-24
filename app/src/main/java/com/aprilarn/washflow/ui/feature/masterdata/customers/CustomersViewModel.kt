@@ -3,8 +3,7 @@ package com.aprilarn.washflow.ui.feature.masterdata.customers
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aprilarn.washflow.data.model.Customers
-import com.aprilarn.washflow.data.repository.CustomerRepository
-import com.aprilarn.washflow.domain.repository.CustomerRepositoryContract
+import com.aprilarn.washflow.domain.usecase.ManageCustomerUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -12,7 +11,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class CustomersViewModel(
-    private val customerRepository: CustomerRepositoryContract = CustomerRepository()
+    private val customerUseCase: ManageCustomerUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CustomersUiState())
@@ -25,7 +24,7 @@ class CustomersViewModel(
     private fun listenForCustomerChanges() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            customerRepository.getCustomersRealtime()
+            customerUseCase.observeCustomers()
                 .catch { e ->
                     // Tangani error jika flow gagal
                     _uiState.update {
@@ -61,7 +60,7 @@ class CustomersViewModel(
         }
 
         viewModelScope.launch {
-            val success = customerRepository.addCustomer(name, contact)
+            val success = customerUseCase.addCustomer(name, contact)
             if (success) {
                 _uiState.update {
                     it.copy(
@@ -80,11 +79,7 @@ class CustomersViewModel(
 
     fun updateCustomer(customer: Customers) {
         viewModelScope.launch {
-            val success = customerRepository.updateCustomer(
-                customer.customerId,
-                customer.name,
-                customer.contact ?: ""
-            )
+            val success = customerUseCase.updateCustomer(customer)
             if (success) {
                 _uiState.update {
                     it.copy(
@@ -104,7 +99,7 @@ class CustomersViewModel(
 
     fun deleteCustomer(customer: Customers) {
         viewModelScope.launch {
-            val success = customerRepository.deleteCustomer(customer.customerId)
+            val success = customerUseCase.deleteCustomer(customer.customerId)
             if (success) {
                 _uiState.update {
                     it.copy(

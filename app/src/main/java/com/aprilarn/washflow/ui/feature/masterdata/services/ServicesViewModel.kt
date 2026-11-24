@@ -3,8 +3,7 @@ package com.aprilarn.washflow.ui.feature.masterdata.services
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aprilarn.washflow.data.model.Services
-import com.aprilarn.washflow.data.repository.ServiceRepository
-import com.aprilarn.washflow.domain.repository.ServiceRepositoryContract
+import com.aprilarn.washflow.domain.usecase.ManageServiceUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -12,7 +11,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ServicesViewModel(
-    private val serviceRepository: ServiceRepositoryContract = ServiceRepository()
+    private val serviceUseCase: ManageServiceUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ServicesUiState())
@@ -25,7 +24,7 @@ class ServicesViewModel(
     private fun listenForServiceChanges() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            serviceRepository.getServicesRealtime()
+            serviceUseCase.observeServices()
                 .catch { e ->
                     // Tangani error jika flow gagal
                     _uiState.update {
@@ -61,7 +60,7 @@ class ServicesViewModel(
         }
 
         viewModelScope.launch {
-            val success = serviceRepository.addService(id, name)
+            val success = serviceUseCase.addService(id, name)
             if (success) {
                 _uiState.update {
                     it.copy(
@@ -80,10 +79,7 @@ class ServicesViewModel(
 
     fun updateService(service: Services) {
         viewModelScope.launch {
-            val success = serviceRepository.updateService(
-                service.serviceId,
-                service.serviceName
-            )
+            val success = serviceUseCase.updateService(service)
             if (success) {
                 _uiState.update {
                     it.copy(
@@ -103,7 +99,7 @@ class ServicesViewModel(
 
     fun deleteService(service: Services) {
         viewModelScope.launch {
-            val success = serviceRepository.deleteService(service.serviceId)
+            val success = serviceUseCase.deleteService(service.serviceId)
             if (success) {
                 _uiState.update {
                     it.copy(

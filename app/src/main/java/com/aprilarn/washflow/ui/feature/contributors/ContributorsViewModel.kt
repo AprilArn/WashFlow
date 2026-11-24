@@ -2,8 +2,7 @@ package com.aprilarn.washflow.ui.feature.contributors
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aprilarn.washflow.data.repository.WorkspaceRepository
-import com.aprilarn.washflow.domain.repository.WorkspaceRepositoryContract
+import com.aprilarn.washflow.domain.usecase.ManageWorkspaceUseCase
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
@@ -16,7 +15,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 class ContributorsViewModel(
-    private val workspaceRepository: WorkspaceRepositoryContract = WorkspaceRepository()
+    private val workspaceUseCase: ManageWorkspaceUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ContributorsUiState())
@@ -32,7 +31,7 @@ class ContributorsViewModel(
             _uiState.update { it.copy(isLoading = true) }
 
             // Dengarkan perubahan workspace secara realtime
-            workspaceRepository.getCurrentWorkspaceRealtime().collect { workspace ->
+            workspaceUseCase.observeCurrentWorkspace().collect { workspace ->
                 if (workspace != null) {
                     val contributorMap = workspace.contributors ?: emptyMap()
                     val contributorList = mutableListOf<ContributorUiModel>()
@@ -94,7 +93,7 @@ class ContributorsViewModel(
 
     fun kickContributor(contributor: ContributorUiModel) {
         viewModelScope.launch {
-            val success = workspaceRepository.removeContributor(contributor.uid)
+            val success = workspaceUseCase.removeContributor(contributor.uid)
             if (success) {
                 // Tutup dialog. List akan otomatis update karena realtime listener di loadContributors
                 _uiState.update { it.copy(selectedContributor = null) }

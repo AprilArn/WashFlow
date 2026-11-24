@@ -2,10 +2,8 @@ package com.aprilarn.washflow.ui.feature.workspace
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aprilarn.washflow.data.repository.InviteRepository
-import com.aprilarn.washflow.data.repository.WorkspaceRepository
-import com.aprilarn.washflow.domain.repository.InviteRepositoryContract
-import com.aprilarn.washflow.domain.repository.WorkspaceRepositoryContract
+import com.aprilarn.washflow.domain.usecase.ManageInviteUseCase
+import com.aprilarn.washflow.domain.usecase.ManageWorkspaceUseCase
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.flow.*
@@ -19,8 +17,8 @@ sealed class WorkspaceEvent {
 }
 
 class WorkspaceViewModel(
-    private val workspaceRepository: WorkspaceRepositoryContract = WorkspaceRepository(),
-    private val inviteRepository: InviteRepositoryContract = InviteRepository()
+    private val workspaceUseCase: ManageWorkspaceUseCase,
+    private val inviteUseCase: ManageInviteUseCase
 ) : ViewModel() {
     private val auth = Firebase.auth
 
@@ -39,7 +37,7 @@ class WorkspaceViewModel(
     fun createWorkspace() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val success = workspaceRepository.createWorkspace()
+            val success = workspaceUseCase.createWorkspace()
             if (success) {
                 _eventFlow.emit(WorkspaceEvent.NavigateToDashboard)
             } else {
@@ -53,8 +51,8 @@ class WorkspaceViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
-            // 2. Panggil dari inviteRepository dan tangani return type baru (Pair)
-            val result = inviteRepository.joinWorkspace(inviteCode)
+            // 2. Panggil dari inviteUseCase dan tangani return type baru (Pair)
+            val result = inviteUseCase.joinWorkspace(inviteCode)
 
             if (result.first) { // 'first' berisi Boolean (sukses/gagal)
                 _eventFlow.emit(WorkspaceEvent.NavigateToDashboard)

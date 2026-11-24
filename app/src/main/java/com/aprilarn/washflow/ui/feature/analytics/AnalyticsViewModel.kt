@@ -2,12 +2,9 @@ package com.aprilarn.washflow.ui.feature.analytics
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aprilarn.washflow.data.repository.CustomerRepository
-import com.aprilarn.washflow.data.repository.OrderRepository
-import com.aprilarn.washflow.data.repository.ServiceRepository
-import com.aprilarn.washflow.domain.repository.CustomerRepositoryContract
-import com.aprilarn.washflow.domain.repository.OrderRepositoryContract
-import com.aprilarn.washflow.domain.repository.ServiceRepositoryContract
+import com.aprilarn.washflow.domain.usecase.ManageCustomerUseCase
+import com.aprilarn.washflow.domain.usecase.ManageOrderUseCase
+import com.aprilarn.washflow.domain.usecase.ManageServiceUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -16,9 +13,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class AnalyticsViewModel(
-    private val orderRepository: OrderRepositoryContract = OrderRepository(),
-    private val serviceRepository: ServiceRepositoryContract = ServiceRepository(),
-    private val customerRepository: CustomerRepositoryContract = CustomerRepository()
+    private val orderUseCase: ManageOrderUseCase,
+    private val serviceUseCase: ManageServiceUseCase,
+    private val customerUseCase: ManageCustomerUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AnalyticsUiState())
@@ -48,8 +45,8 @@ class AnalyticsViewModel(
             }
             val startDate = com.google.firebase.Timestamp(calendar.time)
 
-            val ordersFlow = orderRepository.getOrdersRealtime(startDate = startDate)
-            val servicesFlow = serviceRepository.getServicesRealtime()
+            val ordersFlow = orderUseCase.observeOrders(startDate = startDate)
+            val servicesFlow = serviceUseCase.observeServices()
 
             combine(ordersFlow, servicesFlow) { orders, services ->
                 _uiState.update {
@@ -68,8 +65,8 @@ class AnalyticsViewModel(
 
     private fun listenForActiveAndReferenceData() {
         viewModelScope.launch {
-            val activeOrdersFlow = orderRepository.getOrdersRealtime(activeOnly = true)
-            val customersFlow = customerRepository.getCustomersRealtime()
+            val activeOrdersFlow = orderUseCase.observeOrders(activeOnly = true)
+            val customersFlow = customerUseCase.observeCustomers()
 
             combine(activeOrdersFlow, customersFlow) { activeOrders, customers ->
                 _uiState.update {
@@ -96,7 +93,7 @@ class AnalyticsViewModel(
             }
             val currentStartDate = com.google.firebase.Timestamp(calendar.time)
 
-            val hasMore = orderRepository.hasOrdersBefore(currentStartDate)
+            val hasMore = orderUseCase.hasOrdersBefore(currentStartDate)
             if (hasMore) {
                 currentMonthsBack += 1
                 _uiState.update { it.copy(loadedMonthsCount = currentMonthsBack) }
@@ -109,7 +106,7 @@ class AnalyticsViewModel(
 
     fun toggleOrderPaymentStatus(orderId: String, isPaid: Boolean) {
         viewModelScope.launch {
-            val success = orderRepository.updateOrderPaymentStatus(orderId, isPaid)
+            val success = orderUseCase.togglePayment(orderId, isPaid)
             _uiState.update {
                 it.copy(
                     toastMessage = if (success) {
@@ -124,7 +121,7 @@ class AnalyticsViewModel(
 
     fun toggleOrderPickupStatus(orderId: String, isPickedUp: Boolean) {
         viewModelScope.launch {
-            val success = orderRepository.updateOrderPickupStatus(orderId, isPickedUp)
+            val success = orderUseCase.togglePickup(orderId, isPickedUp)
             _uiState.update {
                 it.copy(
                     toastMessage = if (success) {

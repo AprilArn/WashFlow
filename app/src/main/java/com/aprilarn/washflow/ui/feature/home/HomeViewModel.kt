@@ -7,8 +7,8 @@ import androidx.lifecycle.viewModelScope
 import com.aprilarn.washflow.BuildConfig
 import com.aprilarn.washflow.data.remote.weather.service.GeocodingApiService
 import com.aprilarn.washflow.data.remote.weather.service.WeatherApiService
-import com.aprilarn.washflow.domain.repository.OrderRepositoryContract
-import com.aprilarn.washflow.domain.repository.WorkspaceRepositoryContract
+import com.aprilarn.washflow.domain.usecase.ManageOrderUseCase
+import com.aprilarn.washflow.domain.usecase.ManageWorkspaceUseCase
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,8 +25,8 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 class HomeViewModel(
-    private val orderRepository: OrderRepositoryContract,
-    private val workspaceRepository: WorkspaceRepositoryContract,
+    private val orderUseCase: ManageOrderUseCase,
+    private val workspaceUseCase: ManageWorkspaceUseCase,
     private val geocodingApiService: GeocodingApiService,
     private val sharedPreferences: SharedPreferences
 ) : ViewModel() {
@@ -106,9 +106,9 @@ class HomeViewModel(
         // Lakukan sinkronisasi penuh satu kali saat aplikasi/Home dibuka
         // Untuk memastikan data tidak out-of-sync akibat perubahan manual di database
         viewModelScope.launch {
-            val workspaceId = workspaceRepository.getCurrentWorkspaceId()
+            val workspaceId = workspaceUseCase.getCurrentWorkspaceId()
             if (workspaceId != null) {
-                workspaceRepository.syncMetadata(workspaceId)
+                workspaceUseCase.syncMetadata(workspaceId)
             }
         }
         
@@ -119,7 +119,7 @@ class HomeViewModel(
 
     private fun listenForMetadataUpdates() {
         viewModelScope.launch {
-            workspaceRepository.getMetadataRealtime()
+            workspaceUseCase.observeMetadata()
                 .catch { e ->
                     Log.e("HomeViewModel", "Error listening for metadata updates", e)
                 }
@@ -127,14 +127,14 @@ class HomeViewModel(
                     // Jika total order > 0 tapi rincian status masih 0 semua, berarti perlu sync (migrasi data lama)
                     val totalStatusCount = metadata.orderOnQueueCount + metadata.orderOnProcessCount + metadata.orderDoneCount
                     
-                    val workspaceId = workspaceRepository.getCurrentWorkspaceId()
+                    val workspaceId = workspaceUseCase.getCurrentWorkspaceId()
                     if (workspaceId != null) {
                         // Sinkronisasi otomatis jika data tidak seimbang, minus, atau indikasi manipulasi console
                         val isMinus = metadata.orderCount < 0 || metadata.orderDoneCount < 0 || metadata.orderOnProcessCount < 0 || metadata.orderOnQueueCount < 0
                         val isUnbalanced = metadata.orderCount != totalStatusCount
                         
                         if (isMinus || isUnbalanced) {
-                            workspaceRepository.syncMetadata(workspaceId)
+                            workspaceUseCase.syncMetadata(workspaceId)
                         }
                     }
 
@@ -151,7 +151,7 @@ class HomeViewModel(
 
     private fun listenForDeadlineUpdates() {
         viewModelScope.launch {
-            orderRepository.getActiveOrdersWithDeadlinesRealtime()
+            orderUseCase.observeActiveOrdersWithDeadlines()
                 .catch { e ->
                     Log.e("HomeViewModel", "Error listening for deadline updates", e)
                 }
