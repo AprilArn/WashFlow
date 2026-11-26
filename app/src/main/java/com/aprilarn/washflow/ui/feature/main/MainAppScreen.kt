@@ -73,8 +73,6 @@ import com.aprilarn.washflow.ui.feature.notifications.NotificationPreviewItem
 import com.aprilarn.washflow.ui.feature.notifications.NotificationsViewModel
 import com.aprilarn.washflow.ui.feature.analytics.AnalyticsScreen
 import com.aprilarn.washflow.ui.feature.analytics.AnalyticsViewModel
-import com.aprilarn.washflow.ui.core.components.OfflineBanner
-import com.aprilarn.washflow.ui.core.components.rememberConnectivityState
 import com.aprilarn.washflow.ui.feature.contributors.ContributorsScreen
 import com.aprilarn.washflow.ui.feature.contributors.ContributorsViewModel
 import com.aprilarn.washflow.ui.feature.masterdata.customers.CustomersScreen
@@ -904,17 +902,6 @@ fun MainAppScreen(
             workspaceName = mainUiState.kickedFromWorkspaceName,
             onConfirm = { mainViewModel.onKickedDialogConfirm() }
         )
-    }
-
-    // --- BANNER OFFLINE (Paling Atas Z-Index) ---
-    val isOnline by rememberConnectivityState()
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .zIndex(200f),
-        contentAlignment = Alignment.BottomCenter
-    ) {
-        OfflineBanner(isOffline = !isOnline)
     }
 }
 

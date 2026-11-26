@@ -37,6 +37,7 @@ import com.aprilarn.washflow.domain.usecase.ManageWorkspaceUseCase
 import com.aprilarn.washflow.ui.core.adaptive.LocalWindowLayoutInfo
 import com.aprilarn.washflow.ui.core.adaptive.ProvideWindowLayoutInfo
 import com.aprilarn.washflow.ui.core.adaptive.isTabletDevice
+import com.aprilarn.washflow.ui.core.components.OfflineBanner
 import com.aprilarn.washflow.ui.core.components.WeatherBackgroundIllustration
 import com.aprilarn.washflow.ui.core.theme.WashFlowTheme
 import com.aprilarn.washflow.ui.feature.login.GoogleAuthUiClient
@@ -51,6 +52,8 @@ import com.aprilarn.washflow.ui.feature.workspace.PhoneWorkspaceScreen
 import com.aprilarn.washflow.ui.feature.workspace.WorkspaceEvent
 import com.aprilarn.washflow.ui.feature.workspace.WorkspaceScreen
 import com.aprilarn.washflow.ui.feature.workspace.WorkspaceViewModel
+import com.aprilarn.washflow.utils.NetworkMonitor
+import com.aprilarn.washflow.utils.NetworkStatus
 import com.google.android.gms.auth.api.identity.Identity
 import kotlinx.coroutines.launch
 
@@ -61,6 +64,10 @@ class MainActivity : ComponentActivity() {
             context = applicationContext,
             oneTapClient = Identity.getSignInClient(applicationContext)
         )
+    }
+
+    private val networkMonitor by lazy {
+        NetworkMonitor(applicationContext)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -79,10 +86,30 @@ class MainActivity : ComponentActivity() {
                             .fillMaxSize(),
                         color = Color.Transparent
                     ) {
-                        // 1. Navigasi utama aplikasi diatur di sini, dimulai dari "login"
-                        val navController = rememberNavController()
+                        val networkStatus by networkMonitor.networkStatus.collectAsStateWithLifecycle(
+                            initialValue = NetworkStatus.Connected
+                        )
+                        var isBannerOccupyingSpace by remember { mutableStateOf(false) }
 
-                        NavHost(navController = navController, startDestination = "login") {
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth()
+                                    .then(
+                                        if (isBannerOccupyingSpace) {
+                                            Modifier.consumeWindowInsets(
+                                                androidx.compose.foundation.layout.WindowInsets.navigationBars
+                                            )
+                                        } else {
+                                            Modifier
+                                        }
+                                    )
+                            ) {
+                                // 1. Navigasi utama aplikasi diatur di sini, dimulai dari "login"
+                                val navController = rememberNavController()
+
+                                NavHost(navController = navController, startDestination = "login") {
 
                             // 2. Rute untuk Login Screen (Adaptif: Tablet vs Phone)
                             composable("login") {
@@ -104,6 +131,10 @@ class MainActivity : ComponentActivity() {
                                     if (currentUser != null) {
                                         viewModel.checkAutoLogin(currentUser)
                                     }
+                                }
+
+                                LaunchedEffect(networkStatus) {
+                                    viewModel.onNetworkStatusChanged(networkStatus)
                                 }
 
                                 LaunchedEffect(key1 = state.userHasWorkspace, key2 = state.showTimeoutDialog) {
@@ -166,12 +197,14 @@ class MainActivity : ComponentActivity() {
                                         LoginScreen(
                                             state = state,
                                             onGoogleSignInClick = onGoogleSignIn,
+                                            onRetryClick = { viewModel.retryWorkspaceCheck() },
                                             onTimeoutDialogDismiss = { viewModel.resetLoginState() }
                                         )
                                     } else {
                                         PhoneLoginScreen(
                                             state = state,
                                             onGoogleSignInClick = onGoogleSignIn,
+                                            onRetryClick = { viewModel.retryWorkspaceCheck() },
                                             onTimeoutDialogDismiss = { viewModel.resetLoginState() }
                                         )
                                     }
@@ -297,6 +330,14 @@ class MainActivity : ComponentActivity() {
                                     )
                                 }
                             }
+                        }
+                            }
+
+                            // Banner status koneksi global di bawah layout (mendorong konten ke atas tanpa menutupi)
+                            OfflineBanner(
+                                networkStatus = networkStatus,
+                                onOccupyingSpaceChanged = { isBannerOccupyingSpace = it }
+                            )
                         }
                     }
                 }

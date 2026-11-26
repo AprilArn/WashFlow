@@ -47,6 +47,7 @@ import com.aprilarn.washflow.ui.core.theme.GrayBlue
 fun PhoneLoginScreen(
     state: LoginUiState = LoginUiState(),
     onGoogleSignInClick: () -> Unit,
+    onRetryClick: () -> Unit = {},
     onTimeoutDialogDismiss: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -148,29 +149,59 @@ fun PhoneLoginScreen(
                 )
                 Spacer(modifier = Modifier.height(20.dp))
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (state.isCheckingWorkspace) {
-                        CircularProgressIndicator(color = Color.White)
-                    } else {
-                        Button(
-                            onClick = onGoogleSignInClick,
-                            modifier = Modifier.fillMaxSize(),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.White,
-                                contentColor = GrayBlue
-                            ),
-                            shape = RoundedCornerShape(26.dp)
-                        ) {
-                            Text(
-                                text = "Sign in with Google",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                if (state.isWaitingForNetwork && !state.isCheckingWorkspace) {
+                    Text(
+                        text = state.networkErrorMessage
+                            ?: "Koneksi internet terganggu. Menunggu jaringan kembali normal...",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = Color.White,
+                            fontWeight = FontWeight.Medium
+                        ),
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Button(
+                        onClick = onRetryClick,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White,
+                            contentColor = GrayBlue
+                        ),
+                        shape = RoundedCornerShape(25.dp)
+                    ) {
+                        Text(
+                            text = "Coba Lagi",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (state.isCheckingWorkspace) {
+                            CircularProgressIndicator(color = Color.White)
+                        } else {
+                            Button(
+                                onClick = onGoogleSignInClick,
+                                modifier = Modifier.fillMaxSize(),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color.White,
+                                    contentColor = GrayBlue
+                                ),
+                                shape = RoundedCornerShape(26.dp)
+                            ) {
+                                Text(
+                                    text = "Sign in with Google",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }

@@ -12,6 +12,7 @@ val Gray = Color(0xFF767C81)
 val GrayBlue = Color(0xFF535F8C)
 val SoftRed = Color(0xFFA25A5A)
 val AlertRed = Color(0xFFC54C4C) // Merah cerah untuk peringatan
+val WarningAmber = Color(0xFFD9822B) // Amber kontras untuk peringatan sinyal lambat
 val SoftBlue = Color(0xFF8B98B2)
 val Pinkish = Color(0xFFF48FB1)
 val SuccessGreen = Color(0xFF4CAF50)

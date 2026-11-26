@@ -71,10 +71,8 @@ import com.aprilarn.washflow.ui.feature.analytics.PhoneAnalyticsScreen
 import com.aprilarn.washflow.ui.core.components.ExitConfirmationDialog
 import com.aprilarn.washflow.ui.core.components.KickedDialog
 import com.aprilarn.washflow.ui.core.components.LeaveWorkspaceDialog
-import com.aprilarn.washflow.ui.core.components.OfflineBanner
 import com.aprilarn.washflow.ui.core.components.WeatherBackgroundIllustration
 import com.aprilarn.washflow.ui.core.components.isDarkWeatherScene
-import com.aprilarn.washflow.ui.core.components.rememberConnectivityState
 import com.aprilarn.washflow.ui.core.navigation.PhoneBottomNavigationBar
 import com.aprilarn.washflow.ui.core.navigation.PhoneTopHeader
 import com.aprilarn.washflow.ui.feature.contributors.ContributorsViewModel
@@ -844,16 +842,6 @@ fun PhoneMainScreen(
             workspaceName = mainUiState.kickedFromWorkspaceName,
             onConfirm = { mainViewModel.onKickedDialogConfirm() }
         )
-    }
-
-    val isOnline by rememberConnectivityState()
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .zIndex(200f),
-        contentAlignment = Alignment.BottomCenter
-    ) {
-        OfflineBanner(isOffline = !isOnline)
     }
 }
 

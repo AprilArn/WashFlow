@@ -1,122 +1,114 @@
 package com.aprilarn.washflow.ui.core.components
 
-import android.content.Context
-import android.net.ConnectivityManager
-import android.net.Network
-import android.net.NetworkCapabilities
-import android.net.NetworkRequest
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CloudOff
+import androidx.compose.material.icons.rounded.NetworkCheck
+import androidx.compose.material.icons.rounded.Wifi
+import androidx.compose.material.icons.rounded.WifiOff
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
-import androidx.compose.runtime.produceState
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.delay
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.aprilarn.washflow.ui.core.theme.AlertRed
 import com.aprilarn.washflow.ui.core.theme.SuccessGreen
+import com.aprilarn.washflow.ui.core.theme.WarningAmber
 import com.aprilarn.washflow.ui.core.theme.WashFlowTheme
-
-@Composable
-fun rememberConnectivityState(): State<Boolean> {
-    val context = LocalContext.current
-    return produceState(initialValue = true) {
-        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        
-        val callback = object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) {
-                value = true
-            }
-            override fun onLost(network: Network) {
-                value = false
-            }
-        }
-
-        val request = NetworkRequest.Builder()
-            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            .build()
-
-        try {
-            connectivityManager.registerNetworkCallback(request, callback)
-            
-            // Check initial state
-            val activeNetwork = connectivityManager.activeNetwork
-            val caps = connectivityManager.getNetworkCapabilities(activeNetwork)
-            value = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
-        } catch (e: Exception) {
-            value = true
-        }
-
-        awaitDispose {
-            try {
-                connectivityManager.unregisterNetworkCallback(callback)
-            } catch (e: Exception) {}
-        }
-    }
-}
+import com.aprilarn.washflow.utils.NetworkStatus
+import kotlinx.coroutines.delay
 
 @Composable
 fun OfflineBanner(
-    isOffline: Boolean,
-    modifier: Modifier = Modifier
+    networkStatus: NetworkStatus,
+    modifier: Modifier = Modifier,
+    onOccupyingSpaceChanged: (Boolean) -> Unit = {}
 ) {
-    var isVisible by remember { mutableStateOf(isOffline) }
-    var isError by remember { mutableStateOf(isOffline) }
+    var isVisible by remember { mutableStateOf(networkStatus != NetworkStatus.Connected) }
+    var displayedStatus by remember { mutableStateOf(networkStatus) }
+    var hadConnectivityIssue by remember { mutableStateOf(networkStatus != NetworkStatus.Connected) }
 
-    LaunchedEffect(isOffline) {
-        if (isOffline) {
-            isError = true
+    LaunchedEffect(networkStatus) {
+        if (networkStatus != NetworkStatus.Connected) {
+            hadConnectivityIssue = true
+            displayedStatus = networkStatus
             isVisible = true
         } else {
-            if (isVisible && isError) {
-                // Sebelumnya offline, lalu online kembali
-                isError = false
-                delay(3000) // Tampilkan pesan hijau selama 3 detik
+            if (isVisible && hadConnectivityIssue) {
+                // Sebelumnya bermasalah, lalu koneksi kembali normal
+                displayedStatus = NetworkStatus.Connected
+                hadConnectivityIssue = false
+                delay(3000)
                 isVisible = false
             } else {
                 isVisible = false
-                isError = false
+                hadConnectivityIssue = false
             }
         }
     }
 
+    val targetColor = when (displayedStatus) {
+        NetworkStatus.Offline,
+        NetworkStatus.NoInternet -> AlertRed
+        NetworkStatus.PoorConnection -> WarningAmber
+        NetworkStatus.Connected -> SuccessGreen
+    }
+
     val backgroundColor by animateColorAsState(
-        targetValue = if (isError) AlertRed else SuccessGreen,
-        animationSpec = tween(500),
+        targetValue = targetColor,
+        animationSpec = tween(400),
         label = "BannerBackgroundColor"
     )
 
-    val displayText = if (isError) {
-        "No internet connection. Some features may be limited."
-    } else {
-        "Internet connection restored."
+    val (icon, displayText) = when (displayedStatus) {
+        NetworkStatus.Offline -> Icons.Rounded.WifiOff to
+            "Tidak ada koneksi internet. Beberapa fitur terbatas."
+        NetworkStatus.NoInternet -> Icons.Rounded.CloudOff to
+            "Terhubung ke jaringan, namun tidak ada akses internet."
+        NetworkStatus.PoorConnection -> Icons.Rounded.NetworkCheck to
+            "Koneksi internet lambat. Sinkronisasi mungkin tertunda."
+        NetworkStatus.Connected -> Icons.Rounded.Wifi to
+            "Koneksi internet kembali normal."
     }
 
     OfflineBannerContent(
         isVisible = isVisible,
         backgroundColor = backgroundColor,
+        icon = icon,
         displayText = displayText,
-        modifier = modifier
+        modifier = modifier,
+        onOccupyingSpaceChanged = onOccupyingSpaceChanged
     )
 }
 
@@ -124,29 +116,63 @@ fun OfflineBanner(
 fun OfflineBannerContent(
     isVisible: Boolean,
     backgroundColor: Color,
+    icon: ImageVector,
     displayText: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onOccupyingSpaceChanged: (Boolean) -> Unit = {}
 ) {
+    val density = LocalDensity.current
+    val navBarBottomPx = WindowInsets.navigationBars.getBottom(density)
+    val visibilityState = remember { MutableTransitionState(isVisible) }
+    visibilityState.targetState = isVisible
+
+    val isOccupyingSpace = visibilityState.currentState || visibilityState.targetState
+    LaunchedEffect(isOccupyingSpace) {
+        onOccupyingSpaceChanged(isOccupyingSpace)
+    }
+
     AnimatedVisibility(
-        visible = isVisible,
-        enter = slideInVertically(animationSpec = tween(400)) { it }, // Muncul dari bawah
-        exit = slideOutVertically(animationSpec = tween(400)) { it }, // Hilang ke bawah
+        visibleState = visibilityState,
+        enter = expandVertically(
+            animationSpec = tween(300),
+            expandFrom = Alignment.Top,
+            initialHeight = { fullHeight -> navBarBottomPx.coerceAtMost(fullHeight) }
+        ) + fadeIn(animationSpec = tween(220)),
+        exit = shrinkVertically(
+            animationSpec = tween(300),
+            shrinkTowards = Alignment.Top,
+            targetHeight = { fullHeight -> navBarBottomPx.coerceAtMost(fullHeight) }
+        ) + fadeOut(animationSpec = tween(220)),
         modifier = modifier
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(backgroundColor)
-                .padding(vertical = 4.dp),
+                .navigationBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 6.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = displayText,
-                color = Color.White,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = displayText,
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }
@@ -158,19 +184,47 @@ fun OfflineBannerPreview() {
         OfflineBannerContent(
             isVisible = true,
             backgroundColor = AlertRed,
-            displayText = "No internet connection. Some features may be limited."
+            icon = Icons.Rounded.WifiOff,
+            displayText = "Tidak ada koneksi internet. Beberapa fitur terbatas."
         )
     }
 }
 
-@Preview(showBackground = true, name = "2. Reconnected State")
+@Preview(showBackground = true, name = "2. No Internet State")
+@Composable
+fun OfflineBannerNoInternetPreview() {
+    WashFlowTheme {
+        OfflineBannerContent(
+            isVisible = true,
+            backgroundColor = AlertRed,
+            icon = Icons.Rounded.CloudOff,
+            displayText = "Terhubung ke jaringan, namun tidak ada akses internet."
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "3. Poor Connection State")
+@Composable
+fun OfflineBannerPoorConnectionPreview() {
+    WashFlowTheme {
+        OfflineBannerContent(
+            isVisible = true,
+            backgroundColor = WarningAmber,
+            icon = Icons.Rounded.NetworkCheck,
+            displayText = "Koneksi internet lambat. Sinkronisasi mungkin tertunda."
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "4. Reconnected State")
 @Composable
 fun OfflineBannerReconnectedPreview() {
     WashFlowTheme {
         OfflineBannerContent(
             isVisible = true,
             backgroundColor = SuccessGreen,
-            displayText = "Internet connection restored."
+            icon = Icons.Rounded.Wifi,
+            displayText = "Koneksi internet kembali normal."
         )
     }
 }

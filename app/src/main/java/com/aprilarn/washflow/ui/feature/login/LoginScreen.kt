@@ -22,6 +22,7 @@ import com.aprilarn.washflow.ui.core.theme.GrayBlue
 fun LoginScreen(
     state: LoginUiState = LoginUiState(),
     onGoogleSignInClick: () -> Unit,
+    onRetryClick: () -> Unit = {},
     onTimeoutDialogDismiss: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -82,29 +83,63 @@ fun LoginScreen(
         Spacer(modifier = Modifier.weight(1.5f))
 
         // Gunakan Box untuk menampung Tombol atau Loading Indicator di tempat yang sama.
-        Box(
-            modifier = Modifier
-                .width(240.dp)
-                .height(50.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            if (state.isCheckingWorkspace) {
-                CircularProgressIndicator(color = Color.White)
-            } else {
+        if (state.isWaitingForNetwork && !state.isCheckingWorkspace) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = state.networkErrorMessage
+                        ?: "Koneksi internet terganggu. Menunggu jaringan kembali normal...",
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier.widthIn(max = 360.dp)
+                )
                 Button(
-                    onClick = { onGoogleSignInClick() },
-                    modifier = Modifier.fillMaxSize(), // Tombol mengisi seluruh Box
+                    onClick = onRetryClick,
+                    modifier = Modifier
+                        .width(200.dp)
+                        .height(48.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.White,
-                        contentColor = Color.Black
+                        contentColor = GrayBlue
                     ),
-                    shape = RoundedCornerShape(25.dp)
+                    shape = RoundedCornerShape(24.dp)
                 ) {
                     Text(
-                        text = "Sign in with Google",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium
+                        text = "Coba Lagi",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold
                     )
+                }
+            }
+        } else {
+            Box(
+                modifier = Modifier
+                    .width(240.dp)
+                    .height(50.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (state.isCheckingWorkspace) {
+                    CircularProgressIndicator(color = Color.White)
+                } else {
+                    Button(
+                        onClick = { onGoogleSignInClick() },
+                        modifier = Modifier.fillMaxSize(), // Tombol mengisi seluruh Box
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White,
+                            contentColor = Color.Black
+                        ),
+                        shape = RoundedCornerShape(25.dp)
+                    ) {
+                        Text(
+                            text = "Sign in with Google",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
         }
