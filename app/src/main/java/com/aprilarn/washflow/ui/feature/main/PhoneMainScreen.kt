@@ -378,7 +378,8 @@ fun PhoneMainScreen(
                     }
                 ) {
                     composable(AppNavigation.Home.route) {
-                        BackHandler(enabled = true) {
+                        val isPanelOpen = notificationsUiState.showNotificationOptions || aiAgentUiState.expanded
+                        BackHandler(enabled = !isPanelOpen) {
                             showExitDialog = true
                         }
                         PhoneLocationAwareHomeScreen(

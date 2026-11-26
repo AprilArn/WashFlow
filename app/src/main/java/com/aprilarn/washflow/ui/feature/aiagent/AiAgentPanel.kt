@@ -256,8 +256,10 @@ fun AiAgentPanel(
         }
     }
 
-    BackHandler(enabled = expanded) {
-        onDismiss()
+    if (expanded) {
+        BackHandler {
+            onDismiss()
+        }
     }
 
     // --- UI Layout ---

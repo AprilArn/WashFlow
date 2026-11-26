@@ -410,7 +410,8 @@ fun MainAppScreen(
             ) {
 
                 composable(AppNavigation.Home.route) {
-                    androidx.activity.compose.BackHandler(enabled = true) {
+                    val isPanelOpen = notificationsUiState.showNotificationOptions || aiAgentUiState.expanded
+                    androidx.activity.compose.BackHandler(enabled = !isPanelOpen) {
                         showExitDialog = true
                     }
                     

@@ -73,8 +73,10 @@ fun NotificationPanel(
     onDismiss: () -> Unit,
     onNotificationClick: (Notifications) -> Unit
 ) {
-    BackHandler(enabled = expanded) {
-        onDismiss()
+    if (expanded) {
+        BackHandler {
+            onDismiss()
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
