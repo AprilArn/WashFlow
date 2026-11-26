@@ -1,8 +1,16 @@
 package com.aprilarn.washflow.ui.feature.aiagent
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.aprilarn.washflow.ui.feature.aiagent.component.*
 
 @Preview(showBackground = true)
@@ -100,4 +108,77 @@ fun AiAgentPanelIdlePreview() {
         onCancelAction = {},
         onDismiss = {}
     )
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFFB9E9FF, name = "Phone Voice Overlay - States")
+@Composable
+fun VoiceAgentOverlayPhoneStatesPreview() {
+    Column(
+        modifier = Modifier
+            .width(360.dp)
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        VoiceAgentOverlay(
+            status = VoiceAgentStatus.THINKING,
+            isCompact = true,
+            isVisibleInitial = true
+        )
+        VoiceAgentOverlay(
+            status = VoiceAgentStatus.LISTENING,
+            isCompact = true,
+            isVisibleInitial = true,
+            text = "Tambahkan pelanggan baru bernama Budi..."
+        )
+        VoiceAgentOverlay(
+            status = VoiceAgentStatus.ANSWERING,
+            isCompact = true,
+            isVisibleInitial = true,
+            text = "Berikut ringkasannya:\n* **Order aktif**: 5 pesanan\n* **Siap diambil**: 2 pesanan"
+        )
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFFB9E9FF, name = "Phone Voice Overlay - Confirmation")
+@Composable
+fun VoiceAgentOverlayPhoneConfirmationPreview() {
+    val action = AiAgentAction.AddCustomer(name = "Budi Santoso", phoneNumber = "081234567890")
+    Box(
+        modifier = Modifier
+            .width(360.dp)
+            .padding(16.dp),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        VoiceAgentOverlay(
+            status = VoiceAgentStatus.WAITING_FOR_CONFIRMATION,
+            isCompact = true,
+            isVisibleInitial = true,
+            isAlreadyAnimated = true,
+            text = "Saya siap menambahkan pelanggan baru ini. Mohon konfirmasi ya.",
+            lastMessage = ChatMessage(
+                text = "Saya siap menambahkan pelanggan baru ini.",
+                isUser = false,
+                action = action
+            )
+        )
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFFB9E9FF, name = "Tablet Voice Overlay - Answering")
+@Composable
+fun VoiceAgentOverlayTabletPreview() {
+    Column(
+        modifier = Modifier
+            .width(560.dp)
+            .padding(horizontal = 20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        VoiceAgentOverlay(
+            status = VoiceAgentStatus.ANSWERING,
+            isCompact = false,
+            isVisibleInitial = true,
+            text = "Total pendapatan minggu ini adalah **Rp 1.450.000** dari 11 pelanggan."
+        )
+    }
 }

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Scaffold
@@ -378,7 +379,9 @@ fun PhoneMainScreen(
                     }
                 ) {
                     composable(AppNavigation.Home.route) {
-                        val isPanelOpen = notificationsUiState.showNotificationOptions || aiAgentUiState.expanded
+                        val isPanelOpen = notificationsUiState.showNotificationOptions ||
+                            aiAgentUiState.expanded ||
+                            aiAgentUiState.voiceAgentStatus != VoiceAgentStatus.IDLE
                         BackHandler(enabled = !isPanelOpen) {
                             showExitDialog = true
                         }
@@ -700,11 +703,15 @@ fun PhoneMainScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .statusBarsPadding()
+            .imePadding()
+            .padding(top = 62.dp, start = 16.dp, end = 16.dp, bottom = 24.dp)
             .zIndex(99f),
         contentAlignment = Alignment.TopCenter
     ) {
         VoiceAgentOverlay(
             status = aiAgentUiState.voiceAgentStatus,
+            isCompact = true,
             text = aiAgentUiState.voiceAgentText,
             lastMessage = aiAgentUiState.messages.lastOrNull(),
             isAlreadyAnimated = aiAgentViewModel.wasMessageAnimated(aiAgentUiState.messages.lastOrNull()?.id ?: ""),

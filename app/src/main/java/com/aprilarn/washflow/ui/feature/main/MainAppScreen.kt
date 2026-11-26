@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
@@ -410,7 +411,9 @@ fun MainAppScreen(
             ) {
 
                 composable(AppNavigation.Home.route) {
-                    val isPanelOpen = notificationsUiState.showNotificationOptions || aiAgentUiState.expanded
+                    val isPanelOpen = notificationsUiState.showNotificationOptions ||
+                        aiAgentUiState.expanded ||
+                        aiAgentUiState.voiceAgentStatus != VoiceAgentStatus.IDLE
                     androidx.activity.compose.BackHandler(enabled = !isPanelOpen) {
                         showExitDialog = true
                     }
@@ -747,6 +750,7 @@ fun MainAppScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .imePadding()
             .zIndex(99f), // Tetap di depan elemen UI dasar, tapi di bawah AI Panel (100f)
         contentAlignment = Alignment.TopCenter
     ) {
