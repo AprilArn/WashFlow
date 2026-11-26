@@ -3,35 +3,41 @@
 package com.aprilarn.washflow.data.repository
 
 import com.aprilarn.washflow.data.model.Users
+import com.aprilarn.washflow.domain.repository.UserRepositoryContract
 import com.google.firebase.Firebase
+import com.google.firebase.firestore.FirebaseFirestoreException
+import com.google.firebase.firestore.Source
 import com.google.firebase.firestore.firestore
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.tasks.await
-import java.util.concurrent.CancellationException // <-- Tambahkan import ini
 
-class UserRepository {
+class UserRepository : UserRepositoryContract {
 
     private val usersCollection = Firebase.firestore.collection("users")
-    private val workspacesCollection = Firebase.firestore.collection("workspaces") // <-- Tambahkan ini
+    private val workspacesCollection = Firebase.firestore.collection("workspaces")
 
     /**
-     * --- FUNGSI YANG DIPERBARUI (DENGAN LAZY CLEANUP) ---
-     * 1. Menyimpan/Mengupdate profil pengguna dalam transaksi.
-     * 2. Memverifikasi workspaceId di luar transaksi.
-     * 3. Membersihkan workspaceId jika tidak valid.
-     * @return workspaceId (String) yang valid, atau null jika tidak ada/sudah dihapus.
+     * 1. Menyimpan/mengupdate profil pengguna dalam transaksi server dan membaca `workspaceId`.
+     * 2. Memverifikasi keberadaan `workspaceId` langsung ke server (`Source.SERVER`).
+     * 3. Membersihkan `workspaceId = null` HANYA jika server mengonfirmasi workspace sudah dihapus
+     *    atau akses ditolak (`PERMISSION_DENIED`).
+     *
+     * Error jaringan (misal `UNAVAILABLE`, `DEADLINE_EXCEEDED`) akan dilempar ulang agar
+     * pemanggil tidak salah menganggap user belum punya workspace dan tidak menghapus `workspaceId`.
+     *
+     * @return workspaceId (String) yang valid, atau `null` jika user memang tidak/belum punya workspace.
      */
-    suspend fun saveUserAndGetWorkspace(
+    override suspend fun saveUserAndGetWorkspace(
         uid: String,
         displayName: String?,
         email: String?,
         photoUrl: String?
     ): String? {
         val userDocRef = usersCollection.document(uid)
-        var existingWorkspaceId: String? = null
 
-        // --- Langkah 1: Transaksi untuk simpan profil & BACA workspaceId ---
-        try {
-            existingWorkspaceId = Firebase.firestore.runTransaction { transaction ->
+        // --- Langkah 1: Transaksi untuk simpan profil & baca workspaceId ---
+        val existingWorkspaceId: String? = try {
+            Firebase.firestore.runTransaction { transaction ->
                 val snapshot = transaction.get(userDocRef)
                 if (snapshot.exists()) {
                     // --- PENGGUNA LAMA ---
@@ -41,7 +47,7 @@ class UserRepository {
                         "photoUrl" to photoUrl
                     )
                     transaction.update(userDocRef, userUpdates)
-                    snapshot.getString("workspaceId") // Baca ID yang ada
+                    snapshot.getString("workspaceId")
                 } else {
                     // --- PENGGUNA BARU ---
                     val newUser = Users(
@@ -58,35 +64,52 @@ class UserRepository {
         } catch (e: Exception) {
             if (e is CancellationException) throw e
             e.printStackTrace()
-            return null // Gagal saat simpan profil
+            // Jangan return null saat gagal jaringan/server — lempar ulang agar tidak salah masuk WorkspaceScreen
+            throw e
         }
 
-        // --- Langkah 2: Verifikasi & Cleanup (DI LUAR TRANSAKSI) ---
+        // --- Langkah 2: Verifikasi & Cleanup (DI LUAR TRANSAKSI, LANGSUNG KE SERVER) ---
         if (existingWorkspaceId.isNullOrEmpty()) {
             return null // Pengguna baru atau memang tidak punya workspace
         }
 
-        // Coba verifikasi apakah workspaceId tsb masih ada dan valid
-        try {
+        return try {
             val workspaceDocRef = workspacesCollection.document(existingWorkspaceId)
-            val workspaceSnapshot = workspaceDocRef.get().await()
+            val workspaceSnapshot = workspaceDocRef.get(Source.SERVER).await()
 
             if (!workspaceSnapshot.exists()) {
-                // Workspace-nya tidak ada (dihapus owner)
-                // Lakukan cleanup
-                userDocRef.update("workspaceId", null).await()
-                return null // Kembalikan null (akan ke WorkspaceScreen)
+                // Server mengonfirmasi workspace sudah dihapus oleh owner
+                clearUserWorkspaceIdSafely(userDocRef)
+                null
             } else {
-                // Workspace ada dan valid
-                return existingWorkspaceId // Kembalikan ID (akan ke MainScreen)
+                existingWorkspaceId
             }
         } catch (e: Exception) {
-            // Ini kemungkinan besar PERMISSION_DENIED (dikeluarkan dari contributors)
             if (e is CancellationException) throw e
             e.printStackTrace()
-            // Lakukan cleanup
+
+            // Cleanup HANYA jika error secara spesifik adalah PERMISSION_DENIED (dikeluarkan dari workspace)
+            if (e is FirebaseFirestoreException &&
+                e.code == FirebaseFirestoreException.Code.PERMISSION_DENIED
+            ) {
+                clearUserWorkspaceIdSafely(userDocRef)
+                null
+            } else {
+                // Error jaringan (UNAVAILABLE, DEADLINE_EXCEEDED, dll.):
+                // JANGAN hapus workspaceId dan JANGAN return null!
+                throw e
+            }
+        }
+    }
+
+    private suspend fun clearUserWorkspaceIdSafely(
+        userDocRef: com.google.firebase.firestore.DocumentReference
+    ) {
+        try {
             userDocRef.update("workspaceId", null).await()
-            return null // Kembalikan null (akan ke WorkspaceScreen)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            e.printStackTrace()
         }
     }
 }

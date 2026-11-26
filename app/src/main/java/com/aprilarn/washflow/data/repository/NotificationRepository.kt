@@ -1,6 +1,7 @@
 package com.aprilarn.washflow.data.repository
 
 import com.aprilarn.washflow.data.model.Notifications
+import com.aprilarn.washflow.domain.repository.NotificationsRepositoryContract
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.auth
@@ -13,7 +14,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import java.util.Date
 
-class NotificationsRepository {
+class NotificationsRepository : NotificationsRepositoryContract {
     private val db = Firebase.firestore
 
     private suspend fun getWorkspaceId(): String? {
@@ -28,7 +29,7 @@ class NotificationsRepository {
 
     // Mengambil notifikasi secara realtime, diurutkan dari yang paling baru
     // Dibatasi hanya untuk 2 hari terakhir agar tidak memberatkan UI
-    suspend fun getNotificationsRealtime(): Flow<List<Notifications>> = callbackFlow {
+    override suspend fun getNotificationsRealtime(): Flow<List<Notifications>> = callbackFlow {
         val workspaceId = getWorkspaceId()
         if (workspaceId.isNullOrEmpty()) {
             trySend(emptyList())
@@ -59,7 +60,7 @@ class NotificationsRepository {
     }
 
     // Menandai notifikasi sebagai sudah dibaca untuk user saat ini
-    suspend fun markAsRead(notificationId: String): Boolean {
+    override suspend fun markAsRead(notificationId: String): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
         val currentUserUid = Firebase.auth.currentUser?.uid ?: return false
 
@@ -79,7 +80,7 @@ class NotificationsRepository {
     }
 
     // Menandai banyak notifikasi sekaligus sebagai sudah dibaca
-    suspend fun markAllAsRead(notificationIds: List<String>): Boolean {
+    override suspend fun markAllAsRead(notificationIds: List<String>): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
         val currentUserUid = Firebase.auth.currentUser?.uid ?: return false
 
@@ -103,7 +104,7 @@ class NotificationsRepository {
     /**
      * Menghapus notifikasi yang lebih tua dari 2 hari dari database workspace ini.
      */
-    suspend fun cleanupOldNotifications() {
+    override suspend fun cleanupOldNotifications() {
         val workspaceId = getWorkspaceId() ?: return
         try {
             // Hitung batas waktu 2 hari yang lalu

@@ -4,6 +4,7 @@ package com.aprilarn.washflow.data.repository
 
 import com.aprilarn.washflow.data.model.Workspaces
 import com.aprilarn.washflow.data.model.WorkspaceMetadata
+import com.aprilarn.washflow.domain.repository.WorkspaceRepositoryContract
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.auth
@@ -16,7 +17,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
-class WorkspaceRepository {
+class WorkspaceRepository : WorkspaceRepositoryContract {
     private val db = Firebase.firestore
     private val usersCollection = db.collection("users")
     private val workspacesCollection = db.collection("workspaces")
@@ -26,7 +27,7 @@ class WorkspaceRepository {
      * Hanya membaca dan melaporkan data workspace.
      * Tidak lagi melakukan cleanup (update workspaceId).
      */
-    suspend fun getCurrentWorkspaceRealtime(): Flow<Workspaces?> {
+    override suspend fun getCurrentWorkspaceRealtime(): Flow<Workspaces?> {
         return callbackFlow {
             val user = Firebase.auth.currentUser
             if (user == null) {
@@ -76,7 +77,7 @@ class WorkspaceRepository {
      * Membuat workspace baru dan mengaitkannya dengan pengguna.
      * @return Boolean true jika sukses.
      */
-    suspend fun createWorkspace(): Boolean {
+    override suspend fun createWorkspace(): Boolean {
         val user = Firebase.auth.currentUser ?: return false
         return try {
             // 1. Buat dokumen workspace baru
@@ -104,7 +105,7 @@ class WorkspaceRepository {
     /**
      * Mengambil HANYA ID workspace saat ini dari dokumen User.
      */
-    suspend fun getCurrentWorkspaceId(): String? {
+    override suspend fun getCurrentWorkspaceId(): String? {
         val user = Firebase.auth.currentUser ?: return null
         return try {
             // Kita ambil ID dari dokumen User saja, tidak perlu ke koleksi Workspaces
@@ -116,7 +117,7 @@ class WorkspaceRepository {
         }
     }
 
-    suspend fun updateWorkspaceName(newName: String): Boolean {
+    override suspend fun updateWorkspaceName(newName: String): Boolean {
         val user = Firebase.auth.currentUser ?: return false
         val workspaceId = usersCollection.document(user.uid).get().await().getString("workspaceId")
         if (workspaceId.isNullOrEmpty()) return false
@@ -130,7 +131,7 @@ class WorkspaceRepository {
         }
     }
 
-    suspend fun updateOperationalHours(openTime: String?, closeTime: String?): Boolean {
+    override suspend fun updateOperationalHours(openTime: String?, closeTime: String?): Boolean {
         val user = Firebase.auth.currentUser ?: return false
         val workspaceId = usersCollection.document(user.uid).get().await().getString("workspaceId")
         if (workspaceId.isNullOrEmpty()) return false
@@ -153,7 +154,7 @@ class WorkspaceRepository {
      * Menghapus pengguna dari workspace saat ini.
      * @return Boolean true jika sukses.
      */
-    suspend fun leaveWorkspace(): Boolean {
+    override suspend fun leaveWorkspace(): Boolean {
         val user = Firebase.auth.currentUser ?: return false
         val userDocRef = usersCollection.document(user.uid)
 
@@ -191,7 +192,7 @@ class WorkspaceRepository {
      * Kontributor lain akan dibersihkan saat mereka login berikutnya.
      * @return Boolean true jika sukses.
      */
-    suspend fun deleteCurrentWorkspace(): Boolean {
+    override suspend fun deleteCurrentWorkspace(): Boolean {
         val user = Firebase.auth.currentUser ?: return false
         val userDocRef = usersCollection.document(user.uid)
 
@@ -208,7 +209,7 @@ class WorkspaceRepository {
 
             val workspace = workspaceSnapshot.toObject(Workspaces::class.java)
             if (workspace?.ownerUid != user.uid) {
-                throw Exception("Hanya owner yang bisa menghapus workspace.")
+                throw Exception("Only the workspace owner can delete the workspace.")
             }
 
             // 3. Jalankan transaksi HANYA untuk owner
@@ -233,7 +234,7 @@ class WorkspaceRepository {
      * 1. Hapus entri UID dari map 'contributors' di dokumen Workspace.
      * 2. Set 'workspaceId' menjadi null di dokumen User yang bersangkutan.
      */
-    suspend fun removeContributor(contributorUid: String): Boolean {
+    override suspend fun removeContributor(contributorUid: String): Boolean {
         // Ambil ID workspace dari user yang sedang login (Owner)
         val currentUser = Firebase.auth.currentUser ?: return false
         val userDoc = usersCollection.document(currentUser.uid).get().await()
@@ -257,7 +258,7 @@ class WorkspaceRepository {
         }
     }
 
-    fun getMetadataRealtime(): Flow<WorkspaceMetadata> = callbackFlow {
+    override fun getMetadataRealtime(): Flow<WorkspaceMetadata> = callbackFlow {
         val user = Firebase.auth.currentUser
         if (user == null) {
             trySend(WorkspaceMetadata())
@@ -301,7 +302,7 @@ class WorkspaceRepository {
         }
     }
 
-    suspend fun syncMetadata(workspaceId: String): Boolean {
+    override suspend fun syncMetadata(workspaceId: String): Boolean {
         return try {
             val workspaceRef = workspacesCollection.document(workspaceId)
             

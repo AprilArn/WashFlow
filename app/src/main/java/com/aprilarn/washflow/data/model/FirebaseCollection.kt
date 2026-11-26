@@ -2,13 +2,18 @@
 package com.aprilarn.washflow.data.model
 
 import com.google.firebase.Timestamp
+import com.google.firebase.firestore.PropertyName
 
 data class Users (
     val uid: String = "",
     val displayName: String? = null,
     val email: String? = null,
     val photoUrl: String? = null,
-    var workspaceId: String? = null  // workspace aktif saat ini
+    var workspaceId: String? = null,  // workspace aktif saat ini
+    @get:PropertyName("isOnline")
+    val isOnline: Boolean = false,
+    val lastActiveAt: Timestamp? = null,
+    val activeSessions: Map<String, Timestamp>? = null
 )
 
 data class Workspaces (

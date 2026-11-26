@@ -1,0 +1,588 @@
+package com.aprilarn.washflow.ui.feature.analytics.component
+
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.TrendingDown
+import androidx.compose.material.icons.automirrored.rounded.TrendingFlat
+import androidx.compose.material.icons.automirrored.rounded.TrendingUp
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.aprilarn.washflow.R
+import com.aprilarn.washflow.data.model.Orders
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import com.aprilarn.washflow.ui.core.theme.GrayBlue
+import com.aprilarn.washflow.ui.core.theme.PastelGreen
+import com.aprilarn.washflow.ui.core.theme.PastelRose
+import com.aprilarn.washflow.utils.CurrencyUtils
+import com.google.firebase.Timestamp
+import kotlin.math.roundToInt
+
+enum class AnalyticsChartType {
+    INCOME, CUSTOMER
+}
+
+@Composable
+fun SpendingChart(
+    orders: List<Orders>,
+    selectedPeriod: String,
+    onPeriodChanged: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    chartType: AnalyticsChartType = AnalyticsChartType.INCOME,
+    onInteractionStateChange: (Boolean) -> Unit = {}
+) {
+    // 1. Generate lists based on selectedPeriod
+    val daysList = mutableListOf<String>()
+    val subLabelsList = mutableListOf<String>()
+    val dateList = mutableListOf<String>() // Digunakan untuk mencocokkan format dengan Order
+    val weekRanges = mutableListOf<Pair<Long, Long>>() // Khusus untuk Week: batas awal dan akhir milidetik
+    
+    val currentLocale = Locale.getDefault()
+
+    if (selectedPeriod == "Day") {
+        val daysFormat = SimpleDateFormat("EEE", currentLocale)
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        // 7 Hari terakhir
+        for (i in 6 downTo 0) {
+            val tempCal = Calendar.getInstance()
+            tempCal.add(Calendar.DAY_OF_YEAR, -i)
+            daysList.add(daysFormat.format(tempCal.time))
+            subLabelsList.add("")
+            dateList.add(dateFormat.format(tempCal.time))
+        }
+    } else if (selectedPeriod == "Week") {
+        // 7 Minggu terakhir (Berdasarkan kalender nyata: Senin hingga Minggu)
+        for (i in 6 downTo 0) {
+            val startCal = Calendar.getInstance()
+            // Mundur sebanyak 'i' minggu
+            startCal.add(Calendar.WEEK_OF_YEAR, -i)
+            
+            // Geser ke hari Senin pada minggu tersebut
+            // Calendar.SUNDAY = 1, MONDAY = 2, ..., SATURDAY = 7
+            // Rumus ini akan selalu menemukan hari Senin terdekat di minggu itu.
+            val dayOfWeek = startCal.get(Calendar.DAY_OF_WEEK)
+            val daysToShift = (dayOfWeek + 5) % 7
+            startCal.add(Calendar.DAY_OF_YEAR, -daysToShift)
+            
+            // Atur waktu agar presisi di jam 00:00:00 hari Senin
+            startCal.set(Calendar.HOUR_OF_DAY, 0)
+            startCal.set(Calendar.MINUTE, 0)
+            startCal.set(Calendar.SECOND, 0)
+            startCal.set(Calendar.MILLISECOND, 0)
+            
+            val endCal = Calendar.getInstance()
+            endCal.timeInMillis = startCal.timeInMillis
+            // Tambahkan 6 hari untuk mencapai hari Minggu
+            endCal.add(Calendar.DAY_OF_YEAR, 6) 
+            
+            // Atur waktu agar presisi di jam 23:59:59 hari Minggu
+            endCal.set(Calendar.HOUR_OF_DAY, 23)
+            endCal.set(Calendar.MINUTE, 59)
+            endCal.set(Calendar.SECOND, 59)
+            endCal.set(Calendar.MILLISECOND, 999)
+            
+            val dateFormat = SimpleDateFormat("dd MMM", currentLocale)
+            // Labelnya: "12 Oct", menunjukkan hari Senin di awal minggu tersebut
+            daysList.add(dateFormat.format(startCal.time))
+            subLabelsList.add("")
+            weekRanges.add(Pair(startCal.timeInMillis, endCal.timeInMillis))
+        }
+    } else { // "Month"
+        val monthFormat = SimpleDateFormat("MMM", currentLocale)
+        val dateFormat = SimpleDateFormat("yyyy-MM", Locale.US)
+        // 7 Bulan terakhir
+        for (i in 6 downTo 0) {
+            val tempCal = Calendar.getInstance().apply {
+                set(Calendar.DAY_OF_MONTH, 1)
+                add(Calendar.MONTH, -i)
+            }
+            val lastDayOfMonth = tempCal.getActualMaximum(Calendar.DAY_OF_MONTH)
+            daysList.add(monthFormat.format(tempCal.time))
+            subLabelsList.add("1-$lastDayOfMonth")
+            dateList.add(dateFormat.format(tempCal.time))
+        }
+    }
+
+    // 2. Calculate values
+    val values = DoubleArray(7) { 0.0 }
+    val uniqueCustomers = Array(7) { mutableSetOf<String>() }
+    
+    orders.forEach { order ->
+        val orderTime = order.orderDate.toDate().time
+        
+        if (selectedPeriod == "Week") {
+            // Logika pencarian untuk range mingguan
+            for (i in 0..6) {
+                val (start, end) = weekRanges[i]
+                if (orderTime in start..end) {
+                    if (chartType == AnalyticsChartType.INCOME) {
+                        if (order.totalPrice != null && order.totalPrice > 0) {
+                            values[i] += order.totalPrice
+                        }
+                    } else {
+                        if (order.customerId.isNotBlank()) {
+                            uniqueCustomers[i].add(order.customerId)
+                        }
+                    }
+                    break // Sudah ketemu tempatnya, lanjut order berikutnya
+                }
+            }
+        } else {
+            // Logika harian / bulanan (pencocokan string)
+            val formatStr = if (selectedPeriod == "Day") "yyyy-MM-dd" else "yyyy-MM"
+            val orderDateStr = SimpleDateFormat(formatStr, Locale.US).format(order.orderDate.toDate())
+            val index = dateList.indexOf(orderDateStr)
+            
+            if (index != -1) {
+                if (chartType == AnalyticsChartType.INCOME) {
+                    if (order.totalPrice != null && order.totalPrice > 0) {
+                        values[index] += order.totalPrice
+                    }
+                } else {
+                    if (order.customerId.isNotBlank()) {
+                        uniqueCustomers[index].add(order.customerId)
+                    }
+                }
+            }
+        }
+    }
+
+    if (chartType == AnalyticsChartType.CUSTOMER) {
+        for (i in 0..6) {
+            values[i] = uniqueCustomers[i].size.toDouble()
+        }
+    }
+
+    // Calculate chart points (0f to 1f based on max value)
+    val maxValue = values.maxOrNull() ?: 0.0
+    val points = if (maxValue > 0) {
+        values.map { (it / maxValue).toFloat() }
+    } else {
+        List(7) { 0f }
+    }
+    
+    val dayAmounts = values.map {
+        if (chartType == AnalyticsChartType.INCOME) CurrencyUtils.formatRupiahWithSymbol(it)
+        else stringResource(R.string.analytics_chart_customer_count, it.toInt())
+    }
+    val days = daysList
+
+    // Set default selected index to today/this month (index 6, the last item)
+    var selectedIndex by remember { mutableIntStateOf(6) }
+    // Update selectedIndex automatically if it exceeds list size (though it's fixed at 7)
+    if (selectedIndex >= days.size) selectedIndex = days.size - 1
+    
+    // Hitung tren (naik/turun/tetap) berdasarkan titik awal yang BUKAN NOL
+    val currentIncome = values[selectedIndex]
+
+    // Cari titik awal (base income) yang nilainya tidak nol dari kiri ke kanan.
+    // Jika semua nilai sebelumnya 0 (atau user sedang menekan titik pertama), kembalikan 0.0
+    var baseIncome = 0.0
+    for (i in 0 until selectedIndex) {
+        if (values[i] > 0) {
+            baseIncome = values[i]
+            break // Gunakan transaksi pertama yang pernah terjadi sebagai garis start historis
+        }
+    }
+
+    val trendIsUp = currentIncome > baseIncome && baseIncome > 0
+    val trendIsDown = currentIncome < baseIncome && baseIncome > 0
+    val trendIsFlat = currentIncome == baseIncome && baseIncome > 0 // Menambahkan kondisi trend flat (setara)
+    val trendColor = if (trendIsUp) PastelGreen else if (trendIsDown) PastelRose else Color.Gray
+    val trendIcon = if (trendIsUp) Icons.AutoMirrored.Rounded.TrendingUp else if (trendIsDown) Icons.AutoMirrored.Rounded.TrendingDown else Icons.AutoMirrored.Rounded.TrendingFlat
+    
+    // Kalkulasi persentase perbedaan dari nilai dasar (baseIncome)
+    val percentageDiff = if (baseIncome > 0) {
+        ((currentIncome - baseIncome) / baseIncome) * 100
+    } else {
+        0.0 // Jangan tampilkan persentase palsu (100%) jika tidak ada riwayat sebelumnya untuk dibandingkan
+    }
+    
+    val formattedPercentage = if (percentageDiff % 1 == 0.0) {
+        "${kotlin.math.abs(percentageDiff).toInt()}%"
+    } else {
+        String.format(Locale.US, "%.1f%%", kotlin.math.abs(percentageDiff))
+    }
+
+    Column(modifier = modifier) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top
+        ) {
+            Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val chartTitleRes = if (chartType == AnalyticsChartType.INCOME) {
+                        when (selectedPeriod) {
+                            "Day" -> R.string.analytics_chart_daily_income
+                            "Week" -> R.string.analytics_chart_weekly_income
+                            else -> R.string.analytics_chart_monthly_income
+                        }
+                    } else {
+                        when (selectedPeriod) {
+                            "Day" -> R.string.analytics_chart_daily_customers
+                            "Week" -> R.string.analytics_chart_weekly_customers
+                            else -> R.string.analytics_chart_monthly_customers
+                        }
+                    }
+
+                    Text(
+                        text = stringResource(chartTitleRes),
+                        fontSize = 12.sp, color = Color.Gray
+                    )
+                    
+                    // Sembunyikan persentase jika user sedang memilih titik awal (index 0) 
+                    // karena perbandingannya akan selalu 0% terhadap dirinya sendiri
+                    if (selectedIndex > 0 && (trendIsUp || trendIsDown || trendIsFlat)) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Icon(
+                            imageVector = trendIcon,
+                            contentDescription = null,
+                            tint = trendColor,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(2.dp))
+                        Text(
+                            text = formattedPercentage,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = trendColor
+                        )
+                    }
+                }
+                Text(text = dayAmounts[selectedIndex], fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = GrayBlue)
+            }
+
+            val periodOptions = listOf(
+                "Day" to stringResource(R.string.analytics_chart_period_day),
+                "Week" to stringResource(R.string.analytics_chart_period_week),
+                "Month" to stringResource(R.string.analytics_chart_period_month)
+            )
+            val selectedPeriodLabel = periodOptions.firstOrNull { it.first == selectedPeriod }?.second
+                ?: periodOptions.last().second
+
+            GeneralDropdown(
+                selectedText = selectedPeriodLabel,
+                items = periodOptions.map { it.second },
+                onItemSelected = { pickedLabel ->
+                    val pickedKey = periodOptions.firstOrNull { it.second == pickedLabel }?.first ?: "Day"
+                    onPeriodChanged(pickedKey)
+                    selectedIndex = 6 // Reset to right-most
+                },
+                backgroundColor = Color.Transparent, // Menghapus background putih
+                onExpandedChange = { expanded ->
+                    onInteractionStateChange(expanded)
+                }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        val labelColumnWidth = 30.dp
+        val chartHorizontalPadding = labelColumnWidth / 2
+
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(180.dp)
+                .pointerInput(Unit) {
+                    detectDragGestures(
+                        onDragStart = { onInteractionStateChange(true) },
+                        onDragEnd = { onInteractionStateChange(false) },
+                        onDragCancel = { onInteractionStateChange(false) }
+                    ) { change, _ ->
+                        val x = change.position.x - chartHorizontalPadding.toPx()
+                        val stepXPx = (size.width - labelColumnWidth.toPx()) / (points.size - 1)
+                        val index = (x / stepXPx).roundToInt().coerceIn(0, points.size - 1)
+                        selectedIndex = index
+                    }
+                }
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            when (event.type) {
+                                androidx.compose.ui.input.pointer.PointerEventType.Press -> {
+                                    onInteractionStateChange(true)
+                                    val position = event.changes.first().position
+                                    val x = position.x - chartHorizontalPadding.toPx()
+                                    val stepXPx = (size.width - labelColumnWidth.toPx()) / (points.size - 1)
+                                    val index = (x / stepXPx).roundToInt().coerceIn(0, points.size - 1)
+                                    selectedIndex = index
+                                }
+                                androidx.compose.ui.input.pointer.PointerEventType.Release -> {
+                                    onInteractionStateChange(false)
+                                }
+                            }
+                        }
+                    }
+                }
+        ) {
+            val topPadding = 40.dp
+            val chartHeight = maxHeight - topPadding
+            val horizontalPadding = chartHorizontalPadding
+            val innerWidth = maxWidth - (horizontalPadding * 2)
+            val stepX = innerWidth / (points.size - 1)
+
+            val animatedX by animateFloatAsState(
+                targetValue = (selectedIndex * stepX.value),
+                animationSpec = tween(durationMillis = 300),
+                label = "indicatorX"
+            )
+            
+            val animatedYFactor by animateFloatAsState(
+                targetValue = points[selectedIndex],
+                animationSpec = tween(durationMillis = 300),
+                label = "indicatorYFactor"
+            )
+
+            Canvas(modifier = Modifier.fillMaxSize().padding(horizontal = horizontalPadding)) {
+                val stepXCanvas = size.width / (points.size - 1)
+                val chartHeightCanvas = size.height - topPadding.toPx()
+
+                // Draw horizontal grid lines
+                val gridLines = 4
+                val stepY = chartHeightCanvas / gridLines
+                for (i in 0..gridLines) {
+                    val y = topPadding.toPx() + i * stepY
+                    drawLine(
+                        color = Color.LightGray.copy(alpha = 0.3f),
+                        start = Offset(0f, y),
+                        end = Offset(size.width, y),
+                        strokeWidth = 1.dp.toPx()
+                    )
+                }
+
+                val path = Path()
+                // Draw the line chart
+                points.forEachIndexed { index, y ->
+                    val xPos = index * stepXCanvas
+                    val yPos = topPadding.toPx() + chartHeightCanvas * (1 - y)
+
+                    if (index == 0) path.moveTo(xPos, yPos)
+                    else {
+                        val prevX = (index - 1) * stepXCanvas
+                        val prevY = topPadding.toPx() + chartHeightCanvas * (1 - points[index - 1])
+                        val controlX1 = prevX + (xPos - prevX) / 2
+                        val controlX2 = prevX + (xPos - prevX) / 2
+                        path.cubicTo(controlX1, prevY, controlX2, yPos, xPos, yPos)
+                    }
+                }
+
+                drawPath(
+                    path = path,
+                    color = GrayBlue,
+                    style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
+                )
+
+                // Draw Indicator
+                val indicatorX = animatedX.dp.toPx()
+                val indicatorY = topPadding.toPx() + chartHeightCanvas * (1 - animatedYFactor)
+
+                // Shadow/Gradient line under dot
+                drawLine(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(GrayBlue.copy(alpha = 0.5f), Color.Transparent),
+                        startY = indicatorY,
+                        endY = size.height
+                    ),
+                    start = Offset(indicatorX, indicatorY),
+                    end = Offset(indicatorX, size.height),
+                    strokeWidth = 16.dp.toPx(),
+                    cap = StrokeCap.Round
+                )
+
+                // Connector Line to Label
+                val lineDistancePx = 20.dp.toPx()
+                drawLine(
+                    color = GrayBlue,
+                    start = Offset(indicatorX, indicatorY),
+                    end = Offset(indicatorX, indicatorY - lineDistancePx),
+                    strokeWidth = 1.dp.toPx()
+                )
+
+                // Active Dot
+                drawCircle(
+                    color = GrayBlue,
+                    radius = 5.dp.toPx(),
+                    center = Offset(indicatorX, indicatorY)
+                )
+                drawCircle(
+                    color = Color.White,
+                    radius = 2.dp.toPx(),
+                    center = Offset(indicatorX, indicatorY)
+                )
+            }
+
+            // Pop-up label for the active dot
+            val indicatorY = topPadding + chartHeight * (1 - animatedYFactor)
+            val labelGap = 20.dp
+            
+            // Flip label to the left if it's near the right edge
+            val isFarRight = selectedIndex >= days.size - 2
+            val targetTranslationXFactor = if (isFarRight) -1f else 0f
+            val animatedTranslationXFactor by animateFloatAsState(
+                targetValue = targetTranslationXFactor,
+                animationSpec = tween(durationMillis = 300),
+                label = "labelTranslationX"
+            )
+
+            val bottomStartRadius by animateDpAsState(
+                targetValue = if (isFarRight) 8.dp else 0.dp,
+                animationSpec = tween(durationMillis = 300),
+                label = "bottomStartRadius"
+            )
+            val bottomEndRadius by animateDpAsState(
+                targetValue = if (isFarRight) 0.dp else 8.dp,
+                animationSpec = tween(durationMillis = 300),
+                label = "bottomEndRadius"
+            )
+
+            Surface(
+                modifier = Modifier
+                    .offset(
+                        // Karena label digambar SEBELUM padding canvas, kita tambahkan manual padding-nya ke offset pop-up ini
+                        x = animatedX.dp + horizontalPadding + if (isFarRight) 0.5.dp else (-0.5).dp, 
+                        y = indicatorY - labelGap
+                    )
+                    .graphicsLayer {
+                        translationX = size.width * animatedTranslationXFactor
+                        translationY = -size.height
+                        transformOrigin = TransformOrigin(if (isFarRight) 1f else 0f, 1f)
+                    },
+                shape = RoundedCornerShape(
+                    topStart = 8.dp, 
+                    topEnd = 8.dp, 
+                    bottomStart = bottomStartRadius, 
+                    bottomEnd = bottomEndRadius
+                ),
+                color = GrayBlue
+            ) {
+                Text(
+                    text = dayAmounts[selectedIndex],
+                    color = Color.White,
+                    fontSize = 10.sp,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            days.forEachIndexed { index, day ->
+                val isSelected = index == selectedIndex
+                val subLabel = subLabelsList.getOrNull(index).orEmpty()
+                Column(
+                    modifier = Modifier.width(labelColumnWidth),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = day,
+                        fontSize = 11.sp,
+                        color = if (isSelected) GrayBlue else Color.Gray,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        textAlign = TextAlign.Center
+                    )
+                    if (subLabel.isNotEmpty()) {
+                        Text(
+                            text = subLabel,
+                            fontSize = 9.sp,
+                            lineHeight = 11.sp,
+                            color = if (isSelected) GrayBlue.copy(alpha = 0.85f) else Color.Gray.copy(alpha = 0.8f),
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                            maxLines = 1,
+                            softWrap = false,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true, widthDp = 320)
+@Composable
+fun SpendingChartMonthPreview() {
+    val nowCal = Calendar.getInstance()
+    fun monthsAgo(m: Int) = Timestamp(
+        (nowCal.clone() as Calendar).apply { add(Calendar.MONTH, -m) }.time
+    )
+
+    val sampleOrders = listOf(
+        Orders(orderId = "1", customerId = "c1", orderDate = monthsAgo(2), totalPrice = 120000.0),
+        Orders(orderId = "2", customerId = "c2", orderDate = monthsAgo(1), totalPrice = 240000.0),
+        Orders(orderId = "3", customerId = "c3", orderDate = monthsAgo(0), totalPrice = 185000.0)
+    )
+
+    MaterialTheme {
+        Box(
+            modifier = Modifier
+                .width(320.dp)
+                .background(Color(0xFFF3F4F6))
+                .padding(24.dp)
+        ) {
+            SpendingChart(
+                orders = sampleOrders,
+                selectedPeriod = "Month",
+                onPeriodChanged = {}
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true, widthDp = 320)
+@Composable
+fun SpendingChartWeekPreview() {
+    val nowCal = Calendar.getInstance()
+    fun daysAgo(d: Int) = Timestamp(
+        (nowCal.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, -d) }.time
+    )
+
+    val sampleOrders = listOf(
+        Orders(orderId = "1", customerId = "c1", orderDate = daysAgo(14), totalPrice = 120000.0),
+        Orders(orderId = "2", customerId = "c2", orderDate = daysAgo(7), totalPrice = 240000.0),
+        Orders(orderId = "3", customerId = "c3", orderDate = daysAgo(0), totalPrice = 185000.0)
+    )
+
+    MaterialTheme {
+        Box(
+            modifier = Modifier
+                .width(320.dp)
+                .background(Color(0xFFF3F4F6))
+                .padding(24.dp)
+        ) {
+            SpendingChart(
+                orders = sampleOrders,
+                selectedPeriod = "Week",
+                onPeriodChanged = {}
+            )
+        }
+    }
+}

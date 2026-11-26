@@ -1,6 +1,7 @@
 package com.aprilarn.washflow.data.repository
 
 import com.aprilarn.washflow.data.model.Invites
+import com.aprilarn.washflow.domain.repository.InviteRepositoryContract
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.auth
@@ -13,7 +14,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import java.util.Date
 
-class InviteRepository {
+class InviteRepository : InviteRepositoryContract {
     private val db = Firebase.firestore
     private val usersCollection = db.collection("users")
     private val workspacesCollection = db.collection("workspaces")
@@ -28,7 +29,7 @@ class InviteRepository {
         }
     }
 
-    suspend fun createInvite(maxContributors: Int, expiresAt: Timestamp): Invites? {
+    override suspend fun createInvite(maxContributors: Int, expiresAt: Timestamp): Invites? {
         val workspaceId = getCurrentWorkspaceId() ?: return null
         return try {
             var inviteCode: String
@@ -60,7 +61,7 @@ class InviteRepository {
      * Mendengarkan dokumen pengguna, lalu mencari invite aktif
      * berdasarkan workspaceId yang didapat.
      */
-    fun getActiveInviteForCurrentWorkspace(): Flow<Invites?> {
+    override fun getActiveInviteForCurrentWorkspace(): Flow<Invites?> {
         return callbackFlow {
             val user = Firebase.auth.currentUser
             if (user == null) {
@@ -122,7 +123,7 @@ class InviteRepository {
      * Jika sudah kedaluwarsa (melewati due date), statusnya akan diubah ke 'expired'.
      * Ini dipanggil sebelum menampilkan dialog 'Add New Contributor'.
      */
-    suspend fun checkAndExpireActiveInvite() {
+    override suspend fun checkAndExpireActiveInvite() {
         val workspaceId = getCurrentWorkspaceId() ?: return
 
         try {
@@ -155,7 +156,7 @@ class InviteRepository {
         }
     }
 
-    suspend fun expireInvite(inviteId: String): Boolean {
+    override suspend fun expireInvite(inviteId: String): Boolean {
         return try {
             invitesCollection.document(inviteId).update("status", "expired").await()
             true
@@ -164,7 +165,7 @@ class InviteRepository {
         }
     }
 
-    suspend fun joinWorkspace(inviteCode: String): Pair<Boolean, String> {
+    override suspend fun joinWorkspace(inviteCode: String): Pair<Boolean, String> {
         val user = Firebase.auth.currentUser ?: return Pair(false, "User not logged in.")
         val inviteDocRef = invitesCollection.document(inviteCode)
 
@@ -174,11 +175,11 @@ class InviteRepository {
             val inviteSnapshot = inviteDocRef.get().await()
 
             if (!inviteSnapshot.exists()) {
-                return Pair(false, "Kode tidak valid")
+                return Pair(false, "Invalid invitation code.")
             }
 
             val inviteData = inviteSnapshot.toObject(Invites::class.java)
-                ?: return Pair(false, "Gagal memuat data undangan.")
+                ?: return Pair(false, "Failed to load invitation data.")
 
             // 1. Validasi Tanggal Kedaluwarsa (Prioritas 1)
             val expiresAt = inviteData.expiresAt
@@ -188,14 +189,14 @@ class InviteRepository {
                     inviteDocRef.update("status", "expired").await() // Update terpisah
                 }
                 // Kembalikan error
-                return Pair(false, "Kode undangan sudah kedaluwarsa")
+                return Pair(false, "Invitation code has expired.")
             }
 
             // 2. Validasi Status (Prioritas 2)
             if (inviteData.status != "active") {
-                if (inviteData.status == "used") return Pair(false, "Kode undangan sudah penuh")
+                if (inviteData.status == "used") return Pair(false, "Invitation code has reached its limit.")
                 // Menangkap status 'expired' manual atau status tidak valid lainnya
-                return Pair(false, "Kode undangan sudah tidak berlaku")
+                return Pair(false, "Invitation code is no longer valid.")
             }
 
             // 3. Validasi Kuota (Prioritas 3)
@@ -205,7 +206,7 @@ class InviteRepository {
                 inviteDocRef.update("status", "used").await() // Update terpisah
                 
                 // Kembalikan error
-                return Pair(false, "Kode undangan sudah penuh")
+                return Pair(false, "Invitation code has reached its limit.")
             }
 
             // --- BAGIAN 2: EKSEKUSI JOIN (DI DALAM TRANSAKSI) ---
@@ -216,7 +217,7 @@ class InviteRepository {
                 // Kita tidak perlu 'get' lagi karena sudah punya 'inviteData'
 
                 val workspaceId = inviteData.workspaceId
-                    ?: throw Exception("Workspace ID tidak ditemukan dalam undangan.")
+                    ?: throw Exception("Workspace ID not found in invitation.")
                 finalWorkspaceId = workspaceId
 
                 val workspaceDocRef = workspacesCollection.document(workspaceId)
@@ -239,7 +240,7 @@ class InviteRepository {
 
         } catch (e: Exception) {
             // Catch block ini sekarang hanya menangani kegagalan pada Transaksi (Bagian 2)
-            return Pair(false, e.message ?: "Gagal bergabung ke workspace.")
+            return Pair(false, e.message ?: "Failed to join workspace.")
         }
     }
 }

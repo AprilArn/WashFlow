@@ -1,6 +1,6 @@
 [versions]
 # Build Tools & Core
-agp = "9.5.2"
+agp = "9.5.3"
 kotlin = "2.2.10"
 coreKtx = "1.16.0"
 googleGmsGoogleServices = "4.4.3"

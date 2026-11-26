@@ -1,0 +1,154 @@
+package com.aprilarn.washflow.ui.feature.manageorder
+
+import android.util.Log
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.aprilarn.washflow.R
+import com.aprilarn.washflow.data.model.Orders
+import com.aprilarn.washflow.domain.usecase.ManageCustomerUseCase
+import com.aprilarn.washflow.domain.usecase.ManageOrderUseCase
+import com.aprilarn.washflow.domain.usecase.ManageServiceUseCase
+import com.aprilarn.washflow.ui.core.utils.UiText
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+class ManageOrderViewModel(
+    private val orderUseCase: ManageOrderUseCase,
+    private val customerUseCase: ManageCustomerUseCase,
+    private val serviceUseCase: ManageServiceUseCase
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(ManageOrderUiState())
+    val uiState = _uiState.asStateFlow()
+
+    init {
+        listenForDataChanges()
+    }
+
+    private fun listenForDataChanges() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+
+            val ordersFlow = orderUseCase.observeOrders(activeOnly = true)
+            val servicesFlow = serviceUseCase.observeServices()
+            val customersFlow = customerUseCase.observeCustomers()
+
+            // Gabungkan data orders dan services secara real-time
+            combine(ordersFlow, customersFlow, servicesFlow) { orders, customers, services  ->
+                val groupedOrders = orders.groupBy { it.status }
+                _uiState.update { currentState ->
+                    // Sinkronkan selectedOrderForDetail dengan data terbaru dari Firestore
+                    // Tetap cari di list original (orders) supaya kalau sedang dibuka tidak crash/hilang
+                    val updatedSelectedOrder = currentState.selectedOrderForDetail?.let { current ->
+                        orders.find { it.orderId == current.orderId }
+                    }
+
+                    currentState.copy(
+                        isLoading = false,
+                        ordersOnQueue = groupedOrders["On Queue"] ?: emptyList(),
+                        ordersOnProcess = groupedOrders["On Process"] ?: emptyList(),
+                        ordersDone = groupedOrders["Done"] ?: emptyList(),
+                        customers = customers,
+                        services = services,
+                        selectedOrderForDetail = updatedSelectedOrder ?: currentState.selectedOrderForDetail
+                    )
+                }
+            }.catch { e ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = e.message?.let { msg -> UiText.DynamicString(msg) }
+                            ?: UiText.StringResource(R.string.orders_msg_load_data_failed)
+                    )
+                }
+            }.collect {}
+        }
+    }
+
+    fun changeOrderStatus(orderId: String, newStatus: String) {
+        viewModelScope.launch {
+            // 1. Dapatkan status saat ini untuk mencegah pembaruan yang tidak perlu
+            val currentState = _uiState.value
+            val allOrders = currentState.ordersOnQueue + currentState.ordersOnProcess + currentState.ordersDone
+            val orderToUpdate = allOrders.find { it.orderId == orderId }
+
+            // 2. Jangan lakukan apa-apa jika status tidak berubah
+            if (orderToUpdate?.status == newStatus) {
+                Log.d("ManageOrderVM", "Order status is already '$newStatus'. No update needed.")
+                return@launch
+            }
+
+            Log.d("ManageOrderVM", "Attempting to change order '$orderId' to status '$newStatus'.")
+
+            // 3. Lakukan pembaruan status
+            val success = orderUseCase.changeStatus(orderId, orderToUpdate!!.status!!, newStatus)
+
+            if (success) {
+                Log.d("ManageOrderVM", "Successfully requested status update for order '$orderId'. Waiting for listener to reflect changes.")
+            } else {
+                Log.e("ManageOrderVM", "Failed to update status for order '$orderId'.")
+                // Tampilkan pesan error. UI akan otomatis sinkron kembali dengan
+                // data server yang lama pada pembaruan listener berikutnya.
+                _uiState.update {
+                    it.copy(errorMessage = UiText.StringResource(R.string.manage_order_msg_status_failed))
+                }
+            }
+        }
+    }
+
+    fun toggleOrderPaymentStatus(orderId: String, isPaid: Boolean) {
+        viewModelScope.launch {
+            val success = orderUseCase.togglePayment(orderId, isPaid)
+            if (!success) {
+                _uiState.update {
+                    it.copy(errorMessage = UiText.StringResource(R.string.manage_order_msg_payment_failed))
+                }
+            }
+        }
+    }
+
+    fun toggleOrderPickupStatus(orderId: String, isPickedUp: Boolean) {
+        viewModelScope.launch {
+            val success = orderUseCase.togglePickup(orderId, isPickedUp)
+            if (!success) {
+                _uiState.update {
+                    it.copy(errorMessage = UiText.StringResource(R.string.manage_order_msg_pickup_failed))
+                }
+            }
+        }
+    }
+
+    fun onOrderCardClicked(order: Orders) {
+        _uiState.update { it.copy(selectedOrderForDetail = order) }
+    }
+
+    fun onDismissOrderDetailDialog() {
+        _uiState.update { it.copy(selectedOrderForDetail = null) }
+    }
+
+    fun deleteOrder(orderId: String) {
+        viewModelScope.launch {
+            val currentState = _uiState.value
+            val allOrders = currentState.ordersOnQueue + currentState.ordersOnProcess + currentState.ordersDone
+            val orderToDelete = allOrders.find { it.orderId == orderId }
+
+            val success = orderUseCase.deleteOrder(orderId, orderToDelete?.status)
+            if (success) {
+                // Tutup dialog setelah berhasil dihapus
+                _uiState.update { it.copy(selectedOrderForDetail = null) }
+            } else {
+                _uiState.update {
+                    it.copy(errorMessage = UiText.StringResource(R.string.manage_order_msg_delete_failed))
+                }
+            }
+        }
+    }
+
+    fun onErrorMessageShown() {
+        _uiState.update { it.copy(errorMessage = null) }
+    }
+}

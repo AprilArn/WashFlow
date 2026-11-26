@@ -1,6 +1,7 @@
 package com.aprilarn.washflow.data.repository
 
 import com.aprilarn.washflow.data.model.Customers
+import com.aprilarn.washflow.domain.repository.CustomerRepositoryContract
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FieldValue
@@ -12,7 +13,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.channels.awaitClose
 
-class CustomerRepository {
+class CustomerRepository : CustomerRepositoryContract {
     private val db = Firebase.firestore
     private val currentUser = Firebase.auth.currentUser
 
@@ -26,7 +27,7 @@ class CustomerRepository {
         }
     }
 
-    suspend fun getCustomersRealtime(): Flow<List<Customers>> = callbackFlow {
+    override suspend fun getCustomersRealtime(): Flow<List<Customers>> = callbackFlow {
         val workspaceId = getWorkspaceId()
         if (workspaceId.isNullOrEmpty()) {
             // Kirim list kosong jika tidak ada workspace dan tutup flow
@@ -61,7 +62,23 @@ class CustomerRepository {
         }
     }
 
-    suspend fun addCustomer(customerName: String, customerContact: String): Boolean {
+    override suspend fun getCustomersOnce(): List<Customers> {
+        val workspaceId = getWorkspaceId()
+        if (workspaceId.isNullOrEmpty()) return emptyList()
+
+        return try {
+            val snapshot = db.collection("workspaces")
+                .document(workspaceId)
+                .collection("customers")
+                .get()
+                .await()
+            snapshot.toObjects<Customers>()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    override suspend fun addCustomer(customerName: String, customerContact: String): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
 
         return try {
@@ -88,7 +105,7 @@ class CustomerRepository {
         }
     }
 
-    suspend fun updateCustomer(customerId: String, newName: String, newContact: String): Boolean {
+    override suspend fun updateCustomer(customerId: String, newName: String, newContact: String): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
 
         return try {
@@ -110,7 +127,7 @@ class CustomerRepository {
         }
     }
 
-    suspend fun deleteCustomer(customerId: String): Boolean {
+    override suspend fun deleteCustomer(customerId: String): Boolean {
         val workspaceId = getWorkspaceId() ?: return false
         return try {
             val workspaceRef = db.collection("workspaces").document(workspaceId)
