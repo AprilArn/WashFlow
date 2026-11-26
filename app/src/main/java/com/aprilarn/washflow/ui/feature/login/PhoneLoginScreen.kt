@@ -31,6 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -38,6 +39,7 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
 
 /**
@@ -60,11 +62,11 @@ fun PhoneLoginScreen(
     if (state.showTimeoutDialog) {
         AlertDialog(
             onDismissRequest = {},
-            title = { Text("Error") },
-            text = { Text("Stuck in loading, try again later") },
+            title = { Text(stringResource(R.string.common_error)) },
+            text = { Text(stringResource(R.string.login_timeout_message)) },
             confirmButton = {
                 TextButton(onClick = onTimeoutDialogDismiss) {
-                    Text("OK")
+                    Text(stringResource(R.string.common_ok))
                 }
             }
         )
@@ -104,7 +106,7 @@ fun PhoneLoginScreen(
             }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Smart Laundry & Weather-Aware POS",
+                text = stringResource(R.string.login_tagline),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = Color.White.copy(alpha = 0.9f),
                     fontWeight = FontWeight.Medium
@@ -133,7 +135,7 @@ fun PhoneLoginScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Selamat Datang",
+                    text = stringResource(R.string.login_welcome),
                     style = MaterialTheme.typography.titleMedium.copy(
                         color = Color.White,
                         fontWeight = FontWeight.Bold
@@ -141,7 +143,7 @@ fun PhoneLoginScreen(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Masuk untuk mengelola antrian cucian & kasir",
+                    text = stringResource(R.string.login_subtitle),
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = Color.White.copy(alpha = 0.85f)
                     ),
@@ -151,8 +153,8 @@ fun PhoneLoginScreen(
 
                 if (state.isWaitingForNetwork && !state.isCheckingWorkspace) {
                     Text(
-                        text = state.networkErrorMessage
-                            ?: "Koneksi internet terganggu. Menunggu jaringan kembali normal...",
+                        text = state.networkErrorMessage?.asString()
+                            ?: stringResource(R.string.login_network_waiting_default),
                         style = MaterialTheme.typography.bodySmall.copy(
                             color = Color.White,
                             fontWeight = FontWeight.Medium
@@ -172,7 +174,7 @@ fun PhoneLoginScreen(
                         shape = RoundedCornerShape(25.dp)
                     ) {
                         Text(
-                            text = "Coba Lagi",
+                            text = stringResource(R.string.common_retry),
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -197,7 +199,7 @@ fun PhoneLoginScreen(
                                 shape = RoundedCornerShape(26.dp)
                             ) {
                                 Text(
-                                    text = "Sign in with Google",
+                                    text = stringResource(R.string.login_sign_in_google),
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Bold
                                 )

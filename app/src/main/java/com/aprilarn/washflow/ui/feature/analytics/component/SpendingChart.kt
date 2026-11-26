@@ -23,11 +23,13 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Orders
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -58,9 +60,11 @@ fun SpendingChart(
     val dateList = mutableListOf<String>() // Digunakan untuk mencocokkan format dengan Order
     val weekRanges = mutableListOf<Pair<Long, Long>>() // Khusus untuk Week: batas awal dan akhir milidetik
     
+    val currentLocale = Locale.getDefault()
+
     if (selectedPeriod == "Day") {
-        val daysFormat = SimpleDateFormat("EEE", Locale.US)
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val daysFormat = SimpleDateFormat("EEE", currentLocale)
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
         // 7 Hari terakhir
         for (i in 6 downTo 0) {
             val tempCal = Calendar.getInstance()
@@ -100,15 +104,15 @@ fun SpendingChart(
             endCal.set(Calendar.SECOND, 59)
             endCal.set(Calendar.MILLISECOND, 999)
             
-            val dateFormat = SimpleDateFormat("dd MMM", Locale.US)
+            val dateFormat = SimpleDateFormat("dd MMM", currentLocale)
             // Labelnya: "12 Oct", menunjukkan hari Senin di awal minggu tersebut
             daysList.add(dateFormat.format(startCal.time))
             subLabelsList.add("")
             weekRanges.add(Pair(startCal.timeInMillis, endCal.timeInMillis))
         }
     } else { // "Month"
-        val monthFormat = SimpleDateFormat("MMM", Locale.US)
-        val dateFormat = SimpleDateFormat("yyyy-MM", Locale.getDefault())
+        val monthFormat = SimpleDateFormat("MMM", currentLocale)
+        val dateFormat = SimpleDateFormat("yyyy-MM", Locale.US)
         // 7 Bulan terakhir
         for (i in 6 downTo 0) {
             val tempCal = Calendar.getInstance().apply {
@@ -149,7 +153,7 @@ fun SpendingChart(
         } else {
             // Logika harian / bulanan (pencocokan string)
             val formatStr = if (selectedPeriod == "Day") "yyyy-MM-dd" else "yyyy-MM"
-            val orderDateStr = SimpleDateFormat(formatStr, Locale.getDefault()).format(order.orderDate.toDate())
+            val orderDateStr = SimpleDateFormat(formatStr, Locale.US).format(order.orderDate.toDate())
             val index = dateList.indexOf(orderDateStr)
             
             if (index != -1) {
@@ -180,9 +184,9 @@ fun SpendingChart(
         List(7) { 0f }
     }
     
-    val dayAmounts = values.map { 
-        if (chartType == AnalyticsChartType.INCOME) CurrencyUtils.formatRupiahWithSymbol(it) 
-        else "${it.toInt()} User"
+    val dayAmounts = values.map {
+        if (chartType == AnalyticsChartType.INCOME) CurrencyUtils.formatRupiahWithSymbol(it)
+        else stringResource(R.string.analytics_chart_customer_count, it.toInt())
     }
     val days = daysList
 
@@ -231,15 +235,22 @@ fun SpendingChart(
         ) {
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    val titlePrefix = when (selectedPeriod) {
-                        "Day" -> "Daily"
-                        "Week" -> "Weekly"
-                        else -> "Monthly"
+                    val chartTitleRes = if (chartType == AnalyticsChartType.INCOME) {
+                        when (selectedPeriod) {
+                            "Day" -> R.string.analytics_chart_daily_income
+                            "Week" -> R.string.analytics_chart_weekly_income
+                            else -> R.string.analytics_chart_monthly_income
+                        }
+                    } else {
+                        when (selectedPeriod) {
+                            "Day" -> R.string.analytics_chart_daily_customers
+                            "Week" -> R.string.analytics_chart_weekly_customers
+                            else -> R.string.analytics_chart_monthly_customers
+                        }
                     }
-                    val titleSuffix = if (chartType == AnalyticsChartType.INCOME) "income" else "customers"
-                    
+
                     Text(
-                        text = "$titlePrefix $titleSuffix", 
+                        text = stringResource(chartTitleRes),
                         fontSize = 12.sp, color = Color.Gray
                     )
                     
@@ -265,11 +276,20 @@ fun SpendingChart(
                 Text(text = dayAmounts[selectedIndex], fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = GrayBlue)
             }
 
+            val periodOptions = listOf(
+                "Day" to stringResource(R.string.analytics_chart_period_day),
+                "Week" to stringResource(R.string.analytics_chart_period_week),
+                "Month" to stringResource(R.string.analytics_chart_period_month)
+            )
+            val selectedPeriodLabel = periodOptions.firstOrNull { it.first == selectedPeriod }?.second
+                ?: periodOptions.last().second
+
             GeneralDropdown(
-                selectedText = selectedPeriod,
-                items = listOf("Day", "Week", "Month"),
-                onItemSelected = { 
-                    onPeriodChanged(it)
+                selectedText = selectedPeriodLabel,
+                items = periodOptions.map { it.second },
+                onItemSelected = { pickedLabel ->
+                    val pickedKey = periodOptions.firstOrNull { it.second == pickedLabel }?.first ?: "Day"
+                    onPeriodChanged(pickedKey)
                     selectedIndex = 6 // Reset to right-most
                 },
                 backgroundColor = Color.Transparent, // Menghapus background putih

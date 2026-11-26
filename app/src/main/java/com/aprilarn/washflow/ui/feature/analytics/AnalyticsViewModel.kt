@@ -2,9 +2,11 @@ package com.aprilarn.washflow.ui.feature.analytics
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.domain.usecase.ManageCustomerUseCase
 import com.aprilarn.washflow.domain.usecase.ManageOrderUseCase
 import com.aprilarn.washflow.domain.usecase.ManageServiceUseCase
+import com.aprilarn.washflow.ui.core.utils.UiText
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -99,7 +101,9 @@ class AnalyticsViewModel(
                 _uiState.update { it.copy(loadedMonthsCount = currentMonthsBack) }
                 listenForData()
             } else {
-                _uiState.update { it.copy(toastMessage = "Tidak ada data order yang lebih lama") }
+                _uiState.update {
+                    it.copy(toastMessage = UiText.StringResource(R.string.analytics_msg_no_older_orders))
+                }
             }
         }
     }
@@ -109,11 +113,14 @@ class AnalyticsViewModel(
             val success = orderUseCase.togglePayment(orderId, isPaid)
             _uiState.update {
                 it.copy(
-                    toastMessage = if (success) {
-                        if (isPaid) "Pembayaran ditandai lunas" else "Status pembayaran diubah ke belum lunas"
-                    } else {
-                        "Gagal memperbarui status pembayaran"
-                    }
+                    toastMessage = UiText.StringResource(
+                        if (success) {
+                            if (isPaid) R.string.analytics_msg_paid_marked
+                            else R.string.analytics_msg_unpaid_marked
+                        } else {
+                            R.string.analytics_msg_payment_update_failed
+                        }
+                    )
                 )
             }
         }
@@ -124,11 +131,14 @@ class AnalyticsViewModel(
             val success = orderUseCase.togglePickup(orderId, isPickedUp)
             _uiState.update {
                 it.copy(
-                    toastMessage = if (success) {
-                        if (isPickedUp) "Order ditandai sudah diambil" else "Status pengambilan dibatalkan"
-                    } else {
-                        "Gagal memperbarui status pengambilan"
-                    }
+                    toastMessage = UiText.StringResource(
+                        if (success) {
+                            if (isPickedUp) R.string.analytics_msg_picked_up_marked
+                            else R.string.analytics_msg_pickup_reverted
+                        } else {
+                            R.string.analytics_msg_pickup_update_failed
+                        }
+                    )
                 )
             }
         }

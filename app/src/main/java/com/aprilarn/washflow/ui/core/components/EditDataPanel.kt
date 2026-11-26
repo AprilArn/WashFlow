@@ -32,9 +32,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.feature.masterdata.tabledata.resolveTableDataTheme
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
 import com.aprilarn.washflow.ui.core.theme.PastelNeutralBg
@@ -94,7 +96,7 @@ fun EditDataPanel(
                         )
                     )
                     Text(
-                        text = "Perbarui informasi atau hapus data",
+                        text = stringResource(R.string.panel_edit_subtitle),
                         style = MaterialTheme.typography.bodySmall.copy(
                             color = PastelNeutralText,
                             fontSize = 12.sp
@@ -154,12 +156,12 @@ fun EditDataPanel(
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Delete,
-                        contentDescription = "Delete Icon",
+                        contentDescription = stringResource(R.string.common_delete),
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Delete",
+                        text = stringResource(R.string.common_delete),
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -177,12 +179,12 @@ fun EditDataPanel(
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Check,
-                        contentDescription = "Done Icon",
+                        contentDescription = stringResource(R.string.common_done),
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Done",
+                        text = stringResource(R.string.common_done),
                         fontWeight = FontWeight.Bold
                     )
                 }

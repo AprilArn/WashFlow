@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aprilarn.washflow.BuildConfig
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.remote.weather.service.GeocodingApiService
 import com.aprilarn.washflow.data.remote.weather.service.WeatherApiService
 import com.aprilarn.washflow.domain.usecase.ManageOrderUseCase
@@ -53,8 +54,14 @@ class HomeViewModel(
         if (!cachedWeather.isNullOrBlank()) {
             val savedTemp = sharedPreferences.getString("TEMP", "--°C") ?: "--°C"
             val savedIcon = sharedPreferences.getString("ICON_URL", "") ?: ""
-            val savedLocName = sharedPreferences.getString("LOCATION_NAME", "Mencari lokasi...") ?: "Mencari lokasi..."
-            val savedRec = sharedPreferences.getString("RECOMMENDATION", "Memuat rekomendasi...") ?: "Memuat rekomendasi..."
+            val rawLocName = sharedPreferences.getString("LOCATION_NAME", null)
+            val validLocName = rawLocName?.takeIf {
+                it.isNotBlank() &&
+                    !it.equals("Mencari lokasi...", ignoreCase = true) &&
+                    !it.equals("Lokasi tidak diketahui", ignoreCase = true) &&
+                    !it.equals("Gagal memuat alamat", ignoreCase = true) &&
+                    !it.equals("Unknown Location", ignoreCase = true)
+            }
             val savedHumidity = sharedPreferences.getString("HUMIDITY", "--%") ?: "--%"
             val savedUV = sharedPreferences.getString("UV_INDEX", "--") ?: "--"
             val savedPrecip = sharedPreferences.getString("PRECIP_PROB", "--%") ?: "--%"
@@ -77,13 +84,17 @@ class HomeViewModel(
             _uiState.update {
                 it.copy(
                     greeting = getGreetingMessage(),
+                    greetingResId = getGreetingResId(),
                     weather = cachedWeather,
+                    weatherFallbackResId = null,
                     weatherType = cachedWeatherType,
                     isDaytime = cachedIsDaytime,
                     temperature = savedTemp,
                     weatherIconUrl = savedIcon,
-                    locationName = savedLocName,
-                    recommendation = savedRec,
+                    locationName = validLocName ?: "",
+                    locationNameResId = if (validLocName != null) null else R.string.home_location_unknown,
+                    recommendation = "",
+                    recommendationResId = R.string.home_recommendation_default,
                     hourlyForecasts = injectEvents(filteredHourly),
                     humidity = savedHumidity,
                     uvIndex = savedUV,
@@ -98,6 +109,7 @@ class HomeViewModel(
             _uiState.update {
                 it.copy(
                     greeting = getGreetingMessage(),
+                    greetingResId = getGreetingResId(),
                     isDaytime = cachedIsDaytime
                 )
             }
@@ -209,7 +221,12 @@ class HomeViewModel(
                 if (lastLat != 0.0 || lastLon != 0.0) {
                     fetchWeatherData(lastLat, lastLon, isGps, showLoader = false)
                 } else {
-                    _uiState.update { it.copy(greeting = getGreetingMessage()) }
+                    _uiState.update {
+                        it.copy(
+                            greeting = getGreetingMessage(),
+                            greetingResId = getGreetingResId()
+                        )
+                    }
                 }
             }
         }
@@ -222,6 +239,16 @@ class HomeViewModel(
             in 11..15 -> "Good Afternoon!"
             in 16..20 -> "Good Evening!"
             else -> "Good Night!"
+        }
+    }
+
+    private fun getGreetingResId(): Int {
+        val calendar = Calendar.getInstance()
+        return when (calendar.get(Calendar.HOUR_OF_DAY)) {
+            in 4..10 -> R.string.home_greeting_morning
+            in 11..15 -> R.string.home_greeting_afternoon
+            in 16..20 -> R.string.home_greeting_evening
+            else -> R.string.home_greeting_night
         }
     }
 
@@ -389,12 +416,14 @@ class HomeViewModel(
 
         val currentSlot = getTimestampSlot(currentTime)
         val lastSlot = getTimestampSlot(lastFetchTime)
-        val isCacheValid = currentSlot == lastSlot
+        val activeLang = sharedPreferences.getString("APP_LANGUAGE", "en") ?: "en"
+        val lastWeatherLang = sharedPreferences.getString("LAST_WEATHER_LANG", null)
+        val isCacheValid = currentSlot == lastSlot && lastWeatherLang == activeLang
 
         if (isSameLocation && isCacheValid) {
             Log.d("HomeViewModel", "Menggunakan data cuaca dari Cache Memori")
 
-            val savedWeather = sharedPreferences.getString("WEATHER_DESC", "Unknown") ?: "Unknown"
+            val savedWeather = sharedPreferences.getString("WEATHER_DESC", null)
             val savedWeatherType = sharedPreferences.getString("WEATHER_TYPE", "") ?: ""
             val savedIsDaytime = if (sharedPreferences.contains("IS_DAYTIME")) {
                 sharedPreferences.getBoolean("IS_DAYTIME", true)
@@ -403,8 +432,14 @@ class HomeViewModel(
             }
             val savedTemp = sharedPreferences.getString("TEMP", "--°C") ?: "--°C"
             val savedIcon = sharedPreferences.getString("ICON_URL", "") ?: ""
-            val savedLocName = sharedPreferences.getString("LOCATION_NAME", "Unknown Location") ?: "Unknown Location"
-            val savedRec = sharedPreferences.getString("RECOMMENDATION", "Rekomendasi dimuat...") ?: "Rekomendasi dimuat..."
+            val rawLocName = sharedPreferences.getString("LOCATION_NAME", null)
+            val validLocName = rawLocName?.takeIf {
+                it.isNotBlank() &&
+                    !it.equals("Mencari lokasi...", ignoreCase = true) &&
+                    !it.equals("Lokasi tidak diketahui", ignoreCase = true) &&
+                    !it.equals("Gagal memuat alamat", ignoreCase = true) &&
+                    !it.equals("Unknown Location", ignoreCase = true)
+            }
 
             val savedHumidity = sharedPreferences.getString("HUMIDITY", "--%") ?: "--%"
             val savedUV = sharedPreferences.getString("UV_INDEX", "--") ?: "--"
@@ -435,13 +470,17 @@ class HomeViewModel(
                 it.copy(
                     isLoading = false,
                     greeting = getGreetingMessage(),
-                    weather = savedWeather,
+                    greetingResId = getGreetingResId(),
+                    weather = savedWeather ?: "",
+                    weatherFallbackResId = if (savedWeather.isNullOrBlank()) R.string.common_unknown else null,
                     weatherType = savedWeatherType,
                     isDaytime = savedIsDaytime,
                     temperature = savedTemp,
                     weatherIconUrl = savedIcon,
-                    locationName = savedLocName,
-                    recommendation = savedRec,
+                    locationName = validLocName ?: "",
+                    locationNameResId = if (validLocName != null) null else R.string.home_location_unknown,
+                    recommendation = "",
+                    recommendationResId = R.string.home_recommendation_default,
                     isGpsLocation = isGps,
                     hourlyForecasts = combinedForecast,
                     humidity = savedHumidity,
@@ -463,12 +502,12 @@ class HomeViewModel(
 
         viewModelScope.launch {
             try {
-                val weatherResponse = weatherApiService.getCurrentConditions(lat = lat, lon = lon)
-                val forecastResponse = weatherApiService.getHourlyForecastData(lat = lat, lon = lon, hours = 24)
-                val dailyResponse = weatherApiService.getDailyForecastData(lat = lat, lon = lon, days = 2)
+                val weatherResponse = weatherApiService.getCurrentConditions(lat = lat, lon = lon, lang = activeLang)
+                val forecastResponse = weatherApiService.getHourlyForecastData(lat = lat, lon = lon, hours = 24, lang = activeLang)
+                val dailyResponse = weatherApiService.getDailyForecastData(lat = lat, lon = lon, days = 2, lang = activeLang)
 
                 val geoResponse = geocodingApiService.getAddressFromLocation("$lat,$lon", BuildConfig.API_KEY)
-                var addressText = "Lokasi tidak diketahui"
+                var addressText: String? = null
                 if (geoResponse.status == "OK" && geoResponse.results.isNotEmpty()) {
                     val fullAddress = geoResponse.results[0].formattedAddress
                     val parts = fullAddress.split(",").map { it.trim() }
@@ -522,9 +561,6 @@ class HomeViewModel(
                 currentWeatherOnlyForecast = hourlyForecasts
                 val combinedForecast = injectEvents(hourlyForecasts)
 
-                // Logika rekomendasi (bisa kamu ganti dengan engine AI nantinya)
-                val newRecommendation = "Pastikan semua cucian disimpan dalam ruang tertutup atau diberi pelindung."
-
                 // Extract Sunrise & Sunset
                 val sunriseTimestamps = mutableListOf<Long>()
                 val sunsetTimestamps = mutableListOf<Long>()
@@ -537,6 +573,7 @@ class HomeViewModel(
 
                 sharedPreferences.edit().apply {
                     putLong("LAST_FETCH_TIME", currentTime)
+                    putString("LAST_WEATHER_LANG", activeLang)
                     putFloat("LAST_LAT", lat.toFloat())
                     putFloat("LAST_LON", lon.toFloat())
                     putString("WEATHER_DESC", weatherResponse.weatherCondition.description.text)
@@ -544,8 +581,12 @@ class HomeViewModel(
                     putBoolean("IS_DAYTIME", weatherResponse.isDaytime)
                     putString("TEMP", "${weatherResponse.temperature.degrees.roundToInt()}°C")
                     putString("ICON_URL", "${weatherResponse.weatherCondition.iconBaseUri}.png")
-                    putString("LOCATION_NAME", addressText)
-                    putString("RECOMMENDATION", newRecommendation)
+                    if (addressText != null) {
+                        putString("LOCATION_NAME", addressText)
+                    } else {
+                        remove("LOCATION_NAME")
+                    }
+                    remove("RECOMMENDATION")
                     putString("HOURLY_JSON", gson.toJson(hourlyForecasts)) // Keep weather-only JSON for cleaner caching
 
                     putString("HUMIDITY", "${weatherResponse.relativeHumidity}%")
@@ -566,14 +607,18 @@ class HomeViewModel(
                     currentState.copy(
                         isLoading = false,
                         greeting = getGreetingMessage(),
+                        greetingResId = getGreetingResId(),
                         weather = weatherResponse.weatherCondition.description.text,
+                        weatherFallbackResId = null,
                         weatherType = weatherResponse.weatherCondition.type,
                         isDaytime = weatherResponse.isDaytime,
                         temperature = "${weatherResponse.temperature.degrees.roundToInt()}°C",
                         weatherIconUrl = "${weatherResponse.weatherCondition.iconBaseUri}.png",
-                        locationName = addressText,
+                        locationName = addressText ?: "",
+                        locationNameResId = if (addressText != null) null else R.string.home_location_unknown,
                         isGpsLocation = isGps,
-                        recommendation = newRecommendation,
+                        recommendation = "",
+                        recommendationResId = R.string.home_recommendation_default,
                         hourlyForecasts = combinedForecast,
                         humidity = "${weatherResponse.relativeHumidity}%",
                         uvIndex = "${weatherResponse.uvIndex}",
@@ -590,9 +635,13 @@ class HomeViewModel(
                     it.copy(
                         isLoading = false,
                         greeting = getGreetingMessage(),
-                        weather = "Failed to load data",
-                        locationName = "Gagal memuat alamat",
-                        recommendation = "Gagal memuat rekomendasi"
+                        greetingResId = getGreetingResId(),
+                        weather = "",
+                        weatherFallbackResId = R.string.home_weather_failed,
+                        locationName = "",
+                        locationNameResId = R.string.home_location_failed,
+                        recommendation = "",
+                        recommendationResId = R.string.home_recommendation_failed
                     )
                 }
             }

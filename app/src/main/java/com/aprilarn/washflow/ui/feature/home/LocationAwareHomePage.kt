@@ -19,10 +19,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aprilarn.washflow.R
 import com.google.android.gms.location.LocationServices
 
 @Composable
@@ -116,7 +118,7 @@ fun LocationAwareHomePage(
         // Tampilan jika pengguna menolak izin GPS (dan mereka belum pernah mengeset manual pin)
         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
             Text(
-                text = "Aplikasi memerlukan izin lokasi untuk menampilkan data cuaca. Silakan berikan izin atau set lokasi manual di Settings.",
+                text = stringResource(R.string.home_location_permission_message),
                 color = Color.White,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(32.dp)

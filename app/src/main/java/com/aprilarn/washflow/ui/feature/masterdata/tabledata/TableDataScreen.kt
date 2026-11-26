@@ -8,8 +8,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.core.navigation.AppNavigation
 
 @Composable
@@ -27,8 +29,8 @@ fun TableDataScreen(
         // Kartu untuk Customers
         item {
             TableDataCard(
-                text = "Customers",
-                subText = "Pelanggan",
+                text = stringResource(R.string.master_customers_title),
+                subText = stringResource(R.string.table_subtitle_customers),
                 count = uiState.customerCount,
                 onClick = { onNavigate(AppNavigation.Customers.route) }
             )
@@ -37,8 +39,8 @@ fun TableDataScreen(
         // Kartu untuk Services
         item {
             TableDataCard(
-                text = "Services",
-                subText = "Layanan",
+                text = stringResource(R.string.master_services_title),
+                subText = stringResource(R.string.table_subtitle_services),
                 count = uiState.serviceCount,
                 onClick = { onNavigate(AppNavigation.Services.route) }
             )
@@ -47,8 +49,8 @@ fun TableDataScreen(
         // Kartu untuk Items
         item {
             TableDataCard(
-                text = "Items",
-                subText = "Barang",
+                text = stringResource(R.string.master_items_title),
+                subText = stringResource(R.string.table_subtitle_items),
                 count = uiState.itemCount,
                 onClick = { onNavigate(AppNavigation.Items.route) }
             )

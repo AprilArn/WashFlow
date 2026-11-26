@@ -11,8 +11,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
 
 @Composable
@@ -22,7 +24,7 @@ fun AccountSection(
 ) {
     Column(modifier = modifier) {
         Text(
-            text = "Account",
+            text = stringResource(R.string.settings_account),
             style = MaterialTheme.typography.bodyMedium.copy(
                 color = GrayBlue,
                 fontWeight = FontWeight.Bold
@@ -39,7 +41,7 @@ fun AccountSection(
                 // 1. Support
                 SettingsItem(
                     icon = Icons.AutoMirrored.Rounded.HelpOutline,
-                    title = "Support",
+                    title = stringResource(R.string.settings_support),
                     trailingContent = {
                         Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
                     }
@@ -50,7 +52,7 @@ fun AccountSection(
                 // 2. Logout
                 SettingsItem(
                     icon = Icons.AutoMirrored.Rounded.ExitToApp,
-                    title = "Logout",
+                    title = stringResource(R.string.settings_logout),
                     titleColor = MaterialTheme.colorScheme.error, // Warna merah
                     iconTint = MaterialTheme.colorScheme.error, // Icon merah
                     onClick = onSignOut,

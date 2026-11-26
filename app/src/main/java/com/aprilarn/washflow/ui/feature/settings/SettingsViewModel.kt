@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.aprilarn.washflow.BuildConfig
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.remote.weather.service.GeocodingApiService
+import com.aprilarn.washflow.ui.core.utils.UiText
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -23,7 +25,14 @@ class SettingsViewModel(
     fun fetchAddressAndSave(lat: Double, lon: Double) {
         viewModelScope.launch {
             // Set sementara saat loading
-            _uiState.update { it.copy(locationName = "Mencari lokasi...", latitude = lat, longitude = lon) }
+            _uiState.update {
+                it.copy(
+                    locationName = UiText.StringResource(R.string.settings_finding_location),
+                    hasFetchedLocation = true,
+                    latitude = lat,
+                    longitude = lon
+                )
+            }
 
             try {
                 val response = geocodingApiService.getAddressFromLocation(
@@ -42,14 +51,24 @@ class SettingsViewModel(
                         fullAddress
                     }
 
-                    _uiState.update { it.copy(locationName = cleanedAddress) }
+                    _uiState.update { it.copy(locationName = UiText.DynamicString(cleanedAddress)) }
 
                 } else {
-                    _uiState.update { it.copy(locationName = "Pilih lokasi") }
+                    _uiState.update {
+                        it.copy(
+                            locationName = UiText.StringResource(R.string.settings_select_location),
+                            hasFetchedLocation = false
+                        )
+                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                _uiState.update { it.copy(locationName = "Gagal mengambil nama tempat") }
+                _uiState.update {
+                    it.copy(
+                        locationName = UiText.StringResource(R.string.settings_location_error),
+                        hasFetchedLocation = false
+                    )
+                }
             }
         }
     }

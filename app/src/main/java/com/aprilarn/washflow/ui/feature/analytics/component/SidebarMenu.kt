@@ -26,8 +26,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.zIndex
 import androidx.compose.animation.core.animateFloatAsState
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
 import com.aprilarn.washflow.ui.core.theme.PastelBlue
 import com.aprilarn.washflow.ui.core.theme.PastelBlueSoftBg
@@ -44,9 +46,9 @@ fun SidebarMenu(
         verticalArrangement = Arrangement.spacedBy(8.dp) // Jarak antar tab dirapatkan
     ) {
         val menuItems = listOf(
-            Triple("Order", "Ringkasan", Icons.Rounded.ShoppingCart),
-            Triple("Report", "Buku Besar", Icons.Rounded.Cloud),
-            Triple("Tertunda", "Tertunda", Icons.Rounded.PendingActions)
+            Triple("Order", stringResource(R.string.analytics_tab_summary), Icons.Rounded.ShoppingCart),
+            Triple("Report", stringResource(R.string.analytics_tab_ledger), Icons.Rounded.Cloud),
+            Triple("Tertunda", stringResource(R.string.analytics_tab_pending), Icons.Rounded.PendingActions)
         )
 
         menuItems.forEach { (tabKey, displayLabel, icon) ->

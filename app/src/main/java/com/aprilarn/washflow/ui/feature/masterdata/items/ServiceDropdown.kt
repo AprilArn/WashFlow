@@ -35,6 +35,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -42,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Services
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
 import com.aprilarn.washflow.ui.core.theme.PastelAmber
@@ -80,7 +82,7 @@ fun ServiceDropdown(
                 trailingIcon = {
                     Icon(
                         imageVector = if (expanded) Icons.Rounded.ArrowDropUp else Icons.Rounded.ArrowDropDown,
-                        contentDescription = "Dropdown Icon",
+                        contentDescription = stringResource(R.string.master_dropdown_cd),
                         tint = PastelAmber
                     )
                 },

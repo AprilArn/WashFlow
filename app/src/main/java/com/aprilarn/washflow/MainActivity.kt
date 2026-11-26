@@ -1,5 +1,6 @@
 package com.aprilarn.washflow
 
+import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.view.View
@@ -12,12 +13,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
@@ -52,8 +51,10 @@ import com.aprilarn.washflow.ui.feature.workspace.PhoneWorkspaceScreen
 import com.aprilarn.washflow.ui.feature.workspace.WorkspaceEvent
 import com.aprilarn.washflow.ui.feature.workspace.WorkspaceScreen
 import com.aprilarn.washflow.ui.feature.workspace.WorkspaceViewModel
+import com.aprilarn.washflow.utils.AppLanguageManager
 import com.aprilarn.washflow.utils.NetworkMonitor
 import com.aprilarn.washflow.utils.NetworkStatus
+import com.aprilarn.washflow.utils.WorkspacePresenceManager
 import com.google.android.gms.auth.api.identity.Identity
 import kotlinx.coroutines.launch
 
@@ -68,6 +69,10 @@ class MainActivity : ComponentActivity() {
 
     private val networkMonitor by lazy {
         NetworkMonitor(applicationContext)
+    }
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLanguageManager.wrapContext(newBase))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -143,7 +148,11 @@ class MainActivity : ComponentActivity() {
                                     }
 
                                     if (state.userHasWorkspace == true) {
-                                        Toast.makeText(applicationContext, "Welcome back!", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            getString(R.string.common_welcome_back),
+                                            Toast.LENGTH_SHORT
+                                        ).show()
                                         navController.navigate("main") {
                                             popUpTo("login") { inclusive = true }
                                         }
@@ -240,24 +249,32 @@ class MainActivity : ComponentActivity() {
                                                 navController.navigate("login") {
                                                     popUpTo("workspace") { inclusive = true }
                                                 }
-                                                Toast.makeText(applicationContext, "Signed out", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(
+                                                    this@MainActivity,
+                                                    getString(R.string.common_signed_out),
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
                                             }
                                             is WorkspaceEvent.ShowError -> {
-                                                Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
+                                                Toast.makeText(context, event.message.asString(context), Toast.LENGTH_LONG).show()
                                             }
                                         }
                                     }
                                 }
 
+                                val workspacePrefs = remember {
+                                    applicationContext.getSharedPreferences("WashFlowPrefs", MODE_PRIVATE)
+                                }
+                                val cachedWorkspaceWeather = remember {
+                                    workspacePrefs.getString("WEATHER_DESC", "Sunny") ?: "Sunny"
+                                }
                                 Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(
-                                            Brush.linearGradient(
-                                                colors = listOf(Color(0xFF8EC5FC), Color(0xFFE0C3FC))
-                                            )
-                                        )
+                                    modifier = Modifier.fillMaxSize()
                                 ) {
+                                    WeatherBackgroundIllustration(
+                                        weather = cachedWorkspaceWeather,
+                                        modifier = Modifier.matchParentSize()
+                                    )
                                     if (windowLayoutInfo.isTablet) {
                                         WorkspaceScreen(
                                             state = uiState,
@@ -305,6 +322,7 @@ class MainActivity : ComponentActivity() {
                                 val handleSignOut: () -> Unit = {
                                     lifecycleScope.launch {
                                         try {
+                                            userData?.userId?.let { WorkspacePresenceManager.setOffline(this@MainActivity, it) }
                                             googleAuthUiClient.signOut()
                                         } catch (e: Exception) {
                                             e.printStackTrace()
@@ -312,7 +330,11 @@ class MainActivity : ComponentActivity() {
                                         navController.navigate("login") {
                                             popUpTo(navController.graph.id) { inclusive = true }
                                         }
-                                        Toast.makeText(applicationContext, "Signed out", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            getString(R.string.common_signed_out),
+                                            Toast.LENGTH_SHORT
+                                        ).show()
                                     }
                                 }
 

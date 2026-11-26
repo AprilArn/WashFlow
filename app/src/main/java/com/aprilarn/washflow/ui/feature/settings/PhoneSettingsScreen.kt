@@ -53,7 +53,7 @@ fun PhoneSettingsScreen(
         )
 
         PreferencesSection(
-            locationName = settingsUiState.locationName,
+            locationName = settingsUiState.locationName.asString(),
             onSetLocationClicked = onSetLocationClicked,
             isSoundEnabled = isSoundEnabled,
             onSoundToggled = { newValue ->

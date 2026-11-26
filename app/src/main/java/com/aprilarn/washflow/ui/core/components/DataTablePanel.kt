@@ -36,9 +36,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.feature.masterdata.tabledata.TableDataBannerIllustration
 import com.aprilarn.washflow.ui.feature.masterdata.tabledata.resolveTableDataTheme
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
@@ -112,7 +114,7 @@ fun <T> DataTablePanel(
                                 )
                             )
                             Text(
-                                text = subTitle ?: theme.defaultSubtitle,
+                                text = subTitle ?: stringResource(theme.defaultSubtitleRes),
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     fontWeight = FontWeight.Medium,
                                     fontSize = 12.sp,
@@ -131,7 +133,7 @@ fun <T> DataTablePanel(
                             color = theme.badgeBgColor.copy(alpha = 0.75f)
                         ) {
                             Text(
-                                text = "Total",
+                                text = stringResource(R.string.common_total),
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     color = theme.accentColor,
@@ -176,7 +178,7 @@ fun <T> DataTablePanel(
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Rounded.Search,
-                            contentDescription = "Search",
+                            contentDescription = stringResource(R.string.common_search),
                             tint = theme.accentColor
                         )
                     },
@@ -185,7 +187,7 @@ fun <T> DataTablePanel(
                             IconButton(onClick = { onSearchQueryChange("") }) {
                                 Icon(
                                     imageVector = Icons.Rounded.Close,
-                                    contentDescription = "Clear search",
+                                    contentDescription = stringResource(R.string.common_clear_search),
                                     tint = PastelNeutralText,
                                     modifier = Modifier.size(18.dp)
                                 )
@@ -254,9 +256,9 @@ fun <T> DataTablePanel(
                     ) {
                         Text(
                             text = if (searchQuery.isNotBlank()) {
-                                "Tidak ada data yang cocok dengan \"$searchQuery\""
+                                stringResource(R.string.table_empty_no_match, searchQuery)
                             } else {
-                                "Belum ada data tersimpan"
+                                stringResource(R.string.table_empty_no_data)
                             },
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 color = PastelNeutralText,

@@ -47,11 +47,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Items
 import com.aprilarn.washflow.data.model.OrderItem
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
@@ -139,7 +141,7 @@ fun OrderPanel(
                     )
                     Column {
                         Text(
-                            text = "Services & Items",
+                            text = stringResource(R.string.orders_services_items_title),
                             style = MaterialTheme.typography.titleLarge.copy(
                                 color = GrayBlue,
                                 fontWeight = FontWeight.Bold,
@@ -147,7 +149,7 @@ fun OrderPanel(
                             )
                         )
                         Text(
-                            text = "Pilih atau geser kategori layanan",
+                            text = stringResource(R.string.orders_services_items_compact_subtitle),
                             style = MaterialTheme.typography.bodySmall.copy(
                                 color = PastelNeutralText,
                                 fontWeight = FontWeight.Medium,
@@ -204,7 +206,7 @@ fun OrderPanel(
                         )
                         Column {
                             Text(
-                                text = "Services & Items",
+                                text = stringResource(R.string.orders_services_items_title),
                                 style = MaterialTheme.typography.titleLarge.copy(
                                     color = GrayBlue,
                                     fontWeight = FontWeight.Bold,
@@ -212,7 +214,7 @@ fun OrderPanel(
                                 )
                             )
                             Text(
-                                text = "Pilih layanan dan barang cucian",
+                                text = stringResource(R.string.orders_services_items_subtitle),
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     color = PastelNeutralText,
                                     fontWeight = FontWeight.Medium
@@ -323,7 +325,11 @@ fun OrderPanel(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = if (uiState.editingOrderId != null) "Update Order" else "Create Order",
+                                text = if (uiState.editingOrderId != null) {
+                                    stringResource(R.string.orders_update_button)
+                                } else {
+                                    stringResource(R.string.orders_create_button)
+                                },
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
@@ -358,7 +364,7 @@ private fun ServiceItemsList(
                     modifier = Modifier.size(36.dp)
                 )
                 Text(
-                    text = "Belum ada barang untuk layanan ini",
+                    text = stringResource(R.string.orders_no_items_for_service),
                     style = MaterialTheme.typography.bodyMedium.copy(
                         color = PastelNeutralText,
                         fontWeight = FontWeight.Medium
@@ -514,7 +520,10 @@ private fun ItemCheckRow(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = "${CurrencyUtils.formatRupiahWithSymbol(item.itemPrice)} / unit",
+                text = stringResource(
+                    R.string.orders_price_per_unit,
+                    CurrencyUtils.formatRupiahWithSymbol(item.itemPrice)
+                ),
                 style = MaterialTheme.typography.bodySmall.copy(
                     color = PastelNeutralText,
                     fontWeight = FontWeight.Medium,

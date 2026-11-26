@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aprilarn.washflow.domain.usecase.ManageInviteUseCase
 import com.aprilarn.washflow.domain.usecase.ManageWorkspaceUseCase
+import com.aprilarn.washflow.utils.WorkspacePresenceManager
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.auth
@@ -236,6 +237,7 @@ class MainViewModel(
         viewModelScope.launch {
             isExpectingWorkspaceRemoval = true
             _uiState.update { it.copy(showLeaveWorkspaceDialog = false) }
+            Firebase.auth.currentUser?.uid?.let { WorkspacePresenceManager.setOffline(sharedPreferences, it) }
             val success = workspaceUseCase.leaveWorkspace()
             if (success) {
                 // Kirim event untuk navigasi
@@ -262,6 +264,7 @@ class MainViewModel(
         viewModelScope.launch {
             isExpectingWorkspaceRemoval = true
             _uiState.update { it.copy(showDeleteWorkspaceDialog = false) }
+            Firebase.auth.currentUser?.uid?.let { WorkspacePresenceManager.setOffline(sharedPreferences, it) }
             val success = workspaceUseCase.deleteCurrentWorkspace()
             if (success) {
                 // Kirim event untuk navigasi kembali ke WorkspaceScreen

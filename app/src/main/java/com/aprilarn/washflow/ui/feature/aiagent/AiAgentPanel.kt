@@ -33,7 +33,9 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.TextFieldValue
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.feature.aiagent.component.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -49,6 +51,7 @@ fun AiAgentPanel(
     isTypewriterActive: Boolean = false,
     currentModelName: String? = null,
     modelStatus: AiModelStatus = AiModelStatus.IDLE,
+    cooldownSeconds: Int = 0,
     customers: List<Customers> = emptyList(),
     items: List<Items> = emptyList(),
     services: List<Services> = emptyList(),
@@ -438,6 +441,7 @@ fun AiAgentPanel(
                                 onStopProcessing = onStopProcessing,
                                 modelStatus = modelStatus,
                                 currentModelName = currentModelName,
+                                cooldownSeconds = cooldownSeconds,
                                 isAiThinking = isAiThinking,
                                 isTypewriterActive = isTypewriterActive
                             )
@@ -448,7 +452,7 @@ fun AiAgentPanel(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    "AI can make mistakes, so double-check it",
+                                    stringResource(R.string.ai_disclaimer),
                                     color = Gray,
                                     fontSize = 10.sp
                                 )

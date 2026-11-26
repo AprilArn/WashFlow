@@ -11,11 +11,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
 
 @Composable
@@ -35,11 +38,11 @@ fun LoginScreen(
     if (state.showTimeoutDialog) {
         AlertDialog(
             onDismissRequest = { /* Do nothing to force click OK */ },
-            title = { Text("Error") },
-            text = { Text("Stuck in loading, try again later") },
+            title = { Text(stringResource(R.string.common_error)) },
+            text = { Text(stringResource(R.string.login_timeout_message)) },
             confirmButton = {
                 TextButton(onClick = onTimeoutDialogDismiss) {
-                    Text("OK")
+                    Text(stringResource(R.string.common_ok))
                 }
             }
         )
@@ -89,12 +92,12 @@ fun LoginScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = state.networkErrorMessage
-                        ?: "Koneksi internet terganggu. Menunggu jaringan kembali normal...",
+                    text = state.networkErrorMessage?.asString()
+                        ?: stringResource(R.string.login_network_waiting_default),
                     color = Color.White,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    textAlign = TextAlign.Center,
                     modifier = Modifier.widthIn(max = 360.dp)
                 )
                 Button(
@@ -109,7 +112,7 @@ fun LoginScreen(
                     shape = RoundedCornerShape(24.dp)
                 ) {
                     Text(
-                        text = "Coba Lagi",
+                        text = stringResource(R.string.common_retry),
                         fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -135,7 +138,7 @@ fun LoginScreen(
                         shape = RoundedCornerShape(25.dp)
                     ) {
                         Text(
-                            text = "Sign in with Google",
+                            text = stringResource(R.string.login_sign_in_google),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium
                         )

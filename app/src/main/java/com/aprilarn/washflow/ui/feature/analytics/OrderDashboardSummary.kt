@@ -1,7 +1,10 @@
 package com.aprilarn.washflow.ui.feature.analytics
 
+import androidx.annotation.StringRes
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Orders
 import com.aprilarn.washflow.data.model.Services
+import com.aprilarn.washflow.ui.core.utils.UiText
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -36,21 +39,16 @@ data class OrderDashboardSummary(
         } else null
 }
 
-enum class RecentOrderFilter(val label: String) {
-    ALL("Semua"),
-    ACTIVE("Diproses"),
-    READY_FOR_PICKUP("Siap Diambil"),
-    UNPAID("Belum Lunas");
-
-    companion object {
-        fun fromLabel(label: String): RecentOrderFilter =
-            entries.firstOrNull { it.label == label } ?: ALL
-    }
+enum class RecentOrderFilter(@param:StringRes val labelRes: Int) {
+    ALL(R.string.analytics_filter_all),
+    ACTIVE(R.string.analytics_filter_active),
+    READY_FOR_PICKUP(R.string.analytics_filter_ready_pickup),
+    UNPAID(R.string.analytics_filter_unpaid)
 }
 
 enum class DeadlineUrgency { OVERDUE, TODAY, UPCOMING }
 
-data class DeadlineInfo(val label: String, val urgency: DeadlineUrgency)
+data class DeadlineInfo(val label: UiText, val urgency: DeadlineUrgency)
 
 // ------------------------------------------------------------------
 // Helper status order
@@ -161,7 +159,7 @@ fun filterRecentOrders(
  * "Terlambat 2 hari", "Hari ini, 15:00", "Besok, 09:00", "3 hari lagi".
  */
 fun deadlineInfo(due: Date, now: Date = Date()): DeadlineInfo {
-    val locale = Locale.forLanguageTag("id-ID")
+    val locale = Locale.getDefault()
     val timeText = SimpleDateFormat("HH:mm", locale).format(due)
 
     val dueDay = Calendar.getInstance().apply { time = due; startOfDay() }.timeInMillis
@@ -169,16 +167,31 @@ fun deadlineInfo(due: Date, now: Date = Date()): DeadlineInfo {
     val diffDays = TimeUnit.MILLISECONDS.toDays(dueDay - today).toInt()
 
     return when {
-        diffDays < 0 -> DeadlineInfo("Terlambat ${-diffDays} hari", DeadlineUrgency.OVERDUE)
-        diffDays == 0 && due.before(now) -> DeadlineInfo("Terlambat, $timeText", DeadlineUrgency.OVERDUE)
-        diffDays == 0 -> DeadlineInfo("Hari ini, $timeText", DeadlineUrgency.TODAY)
-        diffDays == 1 -> DeadlineInfo("Besok, $timeText", DeadlineUrgency.UPCOMING)
-        else -> DeadlineInfo("$diffDays hari lagi", DeadlineUrgency.UPCOMING)
+        diffDays < 0 -> DeadlineInfo(
+            UiText.StringResource(R.string.analytics_deadline_overdue_days, -diffDays),
+            DeadlineUrgency.OVERDUE
+        )
+        diffDays == 0 && due.before(now) -> DeadlineInfo(
+            UiText.StringResource(R.string.analytics_deadline_overdue_time, timeText),
+            DeadlineUrgency.OVERDUE
+        )
+        diffDays == 0 -> DeadlineInfo(
+            UiText.StringResource(R.string.analytics_deadline_today_time, timeText),
+            DeadlineUrgency.TODAY
+        )
+        diffDays == 1 -> DeadlineInfo(
+            UiText.StringResource(R.string.analytics_deadline_tomorrow_time, timeText),
+            DeadlineUrgency.UPCOMING
+        )
+        else -> DeadlineInfo(
+            UiText.StringResource(R.string.analytics_deadline_in_days, diffDays),
+            DeadlineUrgency.UPCOMING
+        )
     }
 }
 
 /**
- * Performa satu layanan pada bulan berjalan, digunakan pada bagian "Layanan terlaris".
+ * Performa satu layanan pada bulan berjalan, digunakan pada bagian "Top Services".
  */
 data class ServicePerformance(
     val serviceId: String,
@@ -189,21 +202,23 @@ data class ServicePerformance(
     val share: Float
 )
 
-fun topServicesPeriodLabel(period: String): String = when (period) {
-    "Day" -> "Hari ini"
-    "Week" -> "Minggu ini"
-    else -> "Bulan ini"
+@StringRes
+fun topServicesPeriodLabelRes(period: String): Int = when (period) {
+    "Day" -> R.string.analytics_period_today
+    "Week" -> R.string.analytics_period_this_week
+    else -> R.string.analytics_period_this_month
 }
 
 /**
  * Mengelompokkan item order pada periode berjalan ([period]: "Day", "Week", atau "Month")
  * berdasarkan layanan, diurutkan dari pendapatan terbesar.
- * Item dengan layanan yang sudah dihapus / tidak dikenal digabung ke "Lainnya".
+ * Item dengan layanan yang sudah dihapus / tidak dikenal digabung ke [otherServiceLabel].
  */
 fun buildTopServices(
     orders: List<Orders>,
     services: List<Services>,
     period: String = "Month",
+    otherServiceLabel: String = "Other",
     now: Date = Date()
 ): List<ServicePerformance> {
     val startOfPeriod = Calendar.getInstance().apply {
@@ -241,7 +256,7 @@ fun buildTopServices(
         .map { (id, revenue) ->
             ServicePerformance(
                 serviceId = id,
-                serviceName = serviceNames[id] ?: "Lainnya",
+                serviceName = serviceNames[id] ?: otherServiceLabel,
                 revenue = revenue,
                 quantity = quantityById[id] ?: 0,
                 share = if (totalRevenue > 0) (revenue / totalRevenue).toFloat() else 0f

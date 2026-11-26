@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -28,6 +29,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.core.components.StatusCard
 import com.aprilarn.washflow.ui.core.components.isDarkWeatherScene
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
@@ -88,6 +90,11 @@ fun HomeScreen(
             val density = LocalDensity.current
             var weatherHeaderWidth by remember { mutableIntStateOf(0) }
 
+            val greetingText = state.greetingResId?.let { stringResource(it) } ?: state.greeting
+            val weatherText = state.weatherFallbackResId?.let { stringResource(it) } ?: state.weather
+            val locationText = state.locationNameResId?.let { stringResource(it) } ?: state.locationName
+            val recommendationText = state.recommendationResId?.let { stringResource(it) } ?: state.recommendation
+
             // Greeting and weather
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -99,7 +106,7 @@ fun HomeScreen(
                 // Column untuk teks sapaan & cuaca
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = state.greeting,
+                        text = greetingText,
                         style = MaterialTheme.typography.headlineLarge.copy(
                             color = Color.White,
                             fontSize = 42.sp,
@@ -109,7 +116,7 @@ fun HomeScreen(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "${state.weather} | ${state.temperature}",
+                        text = "$weatherText | ${state.temperature}",
                         style = MaterialTheme.typography.bodyLarge.copy(
                             color = Color.White,
                             fontSize = 22.sp,
@@ -125,7 +132,7 @@ fun HomeScreen(
                 if (state.weatherIconUrl.isNotBlank()) {
                     AsyncImage(
                         model = state.weatherIconUrl,
-                        contentDescription = "Current Weather Icon",
+                        contentDescription = null,
                         modifier = Modifier.size(64.dp)
                     )
                 }
@@ -145,7 +152,7 @@ fun HomeScreen(
                     )
             ) {
                 Text(
-                    text = state.locationName,
+                    text = locationText,
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = locationContentColor,
                         fontWeight = FontWeight.SemiBold,
@@ -158,7 +165,7 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.width(4.dp))
                 Icon(
                     imageVector = if (state.isGpsLocation) Icons.Rounded.LocationOn else Icons.Rounded.LocationOff,
-                    contentDescription = "Location Type",
+                    contentDescription = null,
                     tint = locationContentColor,
                     modifier = Modifier.size(14.dp)
                 )
@@ -166,7 +173,7 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.weight(0.8f))
 
-            // Pill rekomendasi cucian putih solid senada dengan StatusCard
+            // Weather tip pill
             Surface(
                 modifier = Modifier.padding(horizontal = 24.dp),
                 shape = RoundedCornerShape(50),
@@ -185,7 +192,7 @@ fun HomeScreen(
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
-                        text = state.recommendation,
+                        text = recommendationText,
                         style = MaterialTheme.typography.bodySmall.copy(
                             color = GrayBlue,
                             fontWeight = FontWeight.Medium,
@@ -208,9 +215,9 @@ fun HomeScreen(
 
             // Status cards
             Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
-                StatusCard(text = "On Queue", count = state.inQueue, onClick = onStatusCardClick)
-                StatusCard(text = "On Process", count = state.onProcess, onClick = onStatusCardClick)
-                StatusCard(text = "Done", count = state.done, onClick = onStatusCardClick)
+                StatusCard(text = stringResource(R.string.home_status_on_queue), count = state.inQueue, onClick = onStatusCardClick)
+                StatusCard(text = stringResource(R.string.home_status_on_process), count = state.onProcess, onClick = onStatusCardClick)
+                StatusCard(text = stringResource(R.string.home_status_done), count = state.done, onClick = onStatusCardClick)
             }
 
             Spacer(modifier = Modifier.weight(1.2f))
@@ -224,12 +231,15 @@ fun HomeScreenPreview() {
     val previewState = HomeUiState(
         isLoading = false,
         greeting = "Good Evening!",
+        greetingResId = R.string.home_greeting_evening,
         weather = "Cloudy",
+        weatherFallbackResId = null,
         temperature = "25°C",
         weatherIconUrl = "https://openweathermap.org/img/wn/04d@4x.png",
-        locationName = "Kec. Boyolali, Kabupaten Boyolali, Jawa Tengah 57311",
+        locationName = "Boyolali, Central Java",
+        locationNameResId = null,
         isGpsLocation = false,
-        recommendation = "Pastikan semua cucian disimpan dalam ruang tertutup atau diberi pelindung.",
+        recommendationResId = R.string.home_recommendation_default,
         inQueue = 3,
         onProcess = 2,
         done = 4,

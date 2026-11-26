@@ -24,7 +24,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import android.widget.Toast
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.feature.analytics.component.*
 import com.aprilarn.washflow.data.model.OrderItem
 import com.aprilarn.washflow.data.model.Orders
@@ -59,7 +61,7 @@ fun AnalyticsScreen(
 
     LaunchedEffect(uiState.toastMessage) {
         uiState.toastMessage?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, it.asString(context), Toast.LENGTH_SHORT).show()
             onToastShown()
         }
     }
@@ -146,7 +148,7 @@ fun AnalyticsScreen(
                                             .background(PastelBlue, RoundedCornerShape(2.dp))
                                     )
                                     Text(
-                                        text = "Ringkasan",
+                                        text = stringResource(R.string.analytics_summary_title),
                                         fontSize = 18.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = GrayBlue,
@@ -178,7 +180,7 @@ fun AnalyticsScreen(
                                                 .background(PastelBlue, RoundedCornerShape(2.dp))
                                         )
                                         Text(
-                                            text = "Deadline Terdekat",
+                                            text = stringResource(R.string.analytics_upcoming_deadlines_title),
                                             fontSize = 18.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = GrayBlue,
@@ -199,6 +201,12 @@ fun AnalyticsScreen(
 
                         Spacer(modifier = Modifier.height(36.dp))
 
+                        val recentFilterOptions = RecentOrderFilter.entries.map {
+                            it to stringResource(it.labelRes)
+                        }
+                        val selectedRecentLabel = recentFilterOptions
+                            .firstOrNull { it.first == recentFilter }?.second.orEmpty()
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -215,16 +223,19 @@ fun AnalyticsScreen(
                                         .background(PastelBlue, RoundedCornerShape(2.dp))
                                 )
                                 Text(
-                                    text = "Order Terbaru",
+                                    text = stringResource(R.string.analytics_recent_orders_title),
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = GrayBlue
                                 )
                             }
                             GeneralDropdown(
-                                selectedText = recentFilter.label,
-                                items = RecentOrderFilter.entries.map { it.label },
-                                onItemSelected = { recentFilter = RecentOrderFilter.fromLabel(it) },
+                                selectedText = selectedRecentLabel,
+                                items = recentFilterOptions.map { it.second },
+                                onItemSelected = { pickedLabel ->
+                                    recentFilter = recentFilterOptions
+                                        .firstOrNull { it.second == pickedLabel }?.first ?: RecentOrderFilter.ALL
+                                },
                                 icon = Icons.Default.FilterList,
                                 dropdownWidth = 150.dp,
                                 backgroundColor = PastelBlueSoftBg,
@@ -249,8 +260,11 @@ fun AnalyticsScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
-                                        text = if (recentFilter == RecentOrderFilter.ALL) "Belum ada order"
-                                        else "Tidak ada order \"${recentFilter.label}\"",
+                                        text = if (recentFilter == RecentOrderFilter.ALL) {
+                                            stringResource(R.string.analytics_no_orders_yet)
+                                        } else {
+                                            stringResource(R.string.analytics_no_orders_for_filter, selectedRecentLabel)
+                                        },
                                         fontSize = 13.sp,
                                         color = PastelNeutralText
                                     )
@@ -344,7 +358,10 @@ fun AnalyticsScreen(
                                     .padding(4.dp),
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
-                                val chartTabs = listOf("Pendapatan", "Pelanggan")
+                                val chartTabs = listOf(
+                                    stringResource(R.string.analytics_chart_tab_revenue),
+                                    stringResource(R.string.analytics_chart_tab_customers)
+                                )
                                 chartTabs.forEachIndexed { index, label ->
                                     val isSelected = pagerState.currentPage == index
                                     Box(
@@ -442,10 +459,16 @@ fun AnalyticsScreen(
 
                             Spacer(modifier = Modifier.height(24.dp))
 
-                            val topServices = remember(uiState.orders, uiState.services, selectedChartPeriod) {
-                                buildTopServices(uiState.orders, uiState.services, period = selectedChartPeriod)
+                            val otherServiceLabel = stringResource(R.string.analytics_service_other)
+                            val topServices = remember(uiState.orders, uiState.services, selectedChartPeriod, otherServiceLabel) {
+                                buildTopServices(
+                                    orders = uiState.orders,
+                                    services = uiState.services,
+                                    period = selectedChartPeriod,
+                                    otherServiceLabel = otherServiceLabel
+                                )
                             }
-                            val topServicesPeriodText = topServicesPeriodLabel(selectedChartPeriod)
+                            val topServicesPeriodText = stringResource(topServicesPeriodLabelRes(selectedChartPeriod))
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -463,7 +486,7 @@ fun AnalyticsScreen(
                                             .background(PastelBlue, RoundedCornerShape(2.dp))
                                     )
                                     Text(
-                                        text = "Layanan Terlaris",
+                                        text = stringResource(R.string.analytics_top_services_title),
                                         fontSize = 18.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = GrayBlue

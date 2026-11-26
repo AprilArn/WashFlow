@@ -44,6 +44,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.compose.ui.res.stringResource
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.core.navigation.AppNavigation
 import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.data.model.Items
@@ -104,6 +106,7 @@ import com.aprilarn.washflow.ui.feature.workspace.DeleteWorkspaceDialog
 import com.aprilarn.washflow.ui.feature.workspace.OperationalHoursDialog
 import com.aprilarn.washflow.ui.feature.workspace.RenameWorkspaceDialog
 import com.aprilarn.washflow.ui.feature.workspace.WorkspaceOptionsDropdown
+import com.aprilarn.washflow.utils.WorkspacePresenceEffect
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -120,6 +123,9 @@ fun PhoneMainScreen(
 ) {
     val bottomNavController = rememberNavController()
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
+
+    // Lacak kehadiran online/offline user saat aktif di workspace
+    WorkspacePresenceEffect(userUid = userData?.userId ?: mainUiState.currentUserUid)
 
     val orderUseCase = remember { ManageOrderUseCase(OrderRepository()) }
     val customerUseCase = remember { ManageCustomerUseCase(CustomerRepository()) }
@@ -158,7 +164,7 @@ fun PhoneMainScreen(
             if (isGranted) {
                 aiAgentViewModel.onStartVoiceAgent(context)
             } else {
-                Toast.makeText(context, "Microphone permission is required for voice agent", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.main_mic_permission_required), Toast.LENGTH_SHORT).show()
             }
         }
     )
@@ -190,7 +196,7 @@ fun PhoneMainScreen(
                 }
                 is AiAgentAction.AddCustomer -> {
                     customersViewModel.addCustomer(action.name, action.phoneNumber)
-                    Toast.makeText(context, "Customer '${action.name}' added successfully!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.main_customer_added, action.name), Toast.LENGTH_SHORT).show()
                 }
                 is AiAgentAction.DeleteCustomer -> {
                     if (action.customerId.isNotEmpty()) {
@@ -199,14 +205,14 @@ fun PhoneMainScreen(
                             name = action.name
                         )
                         customersViewModel.deleteCustomer(customerToDelete)
-                        Toast.makeText(context, "Customer '${action.name}' deleted successfully!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.main_customer_deleted, action.name), Toast.LENGTH_SHORT).show()
                     } else {
-                        Toast.makeText(context, "Error: Customer ID not found.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.main_customer_id_not_found), Toast.LENGTH_SHORT).show()
                     }
                 }
                 is AiAgentAction.AddItem -> {
                     itemsViewModel.addItem(action.serviceId, action.itemName, action.itemPrice)
-                    Toast.makeText(context, "Item '${action.itemName}' added successfully!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.main_item_added, action.itemName), Toast.LENGTH_SHORT).show()
                 }
                 is AiAgentAction.DeleteItem -> {
                     if (action.itemId.isNotEmpty()) {
@@ -215,9 +221,9 @@ fun PhoneMainScreen(
                             itemName = action.itemName
                         )
                         itemsViewModel.deleteItem(itemToDelete)
-                        Toast.makeText(context, "Item '${action.itemName}' deleted successfully!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.main_item_deleted, action.itemName), Toast.LENGTH_SHORT).show()
                     } else {
-                        Toast.makeText(context, "Error: Item ID not found.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.main_item_id_not_found), Toast.LENGTH_SHORT).show()
                     }
                 }
                 is AiAgentAction.Unknown -> Unit
@@ -381,7 +387,7 @@ fun PhoneMainScreen(
                                 bottomNavController.navigate(AppNavigation.ManageOrder.route)
                             },
                             onLocationFetched = { lat, lon ->
-                                if (settingsState.locationName == "Pilih Lokasi") {
+                                if (!settingsState.hasFetchedLocation) {
                                     settingsViewModel.fetchAddressAndSave(lat, lon)
                                 }
                             }
@@ -428,7 +434,7 @@ fun PhoneMainScreen(
 
                         LaunchedEffect(uiState.errorMessage) {
                             uiState.errorMessage?.let {
-                                Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, it.asString(context), Toast.LENGTH_LONG).show()
                                 viewModel.onErrorMessageShown()
                             }
                         }
@@ -508,11 +514,11 @@ fun PhoneMainScreen(
 
                         LaunchedEffect(uiState.successMessage, uiState.errorMessage) {
                             uiState.successMessage?.let {
-                                Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, it.asString(context), Toast.LENGTH_SHORT).show()
                                 customersViewModel.onMessageShown()
                             }
                             uiState.errorMessage?.let {
-                                Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, it.asString(context), Toast.LENGTH_LONG).show()
                                 customersViewModel.onMessageShown()
                             }
                         }
@@ -541,11 +547,11 @@ fun PhoneMainScreen(
 
                         LaunchedEffect(uiState.successMessage, uiState.errorMessage) {
                             uiState.successMessage?.let {
-                                Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, it.asString(context), Toast.LENGTH_SHORT).show()
                                 viewModel.onMessageShown()
                             }
                             uiState.errorMessage?.let {
-                                Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, it.asString(context), Toast.LENGTH_LONG).show()
                                 viewModel.onMessageShown()
                             }
                         }
@@ -565,11 +571,11 @@ fun PhoneMainScreen(
 
                         LaunchedEffect(uiState.successMessage, uiState.errorMessage) {
                             uiState.successMessage?.let {
-                                Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, it.asString(context), Toast.LENGTH_SHORT).show()
                                 itemsViewModel.onMessageShown()
                             }
                             uiState.errorMessage?.let {
-                                Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, it.asString(context), Toast.LENGTH_LONG).show()
                                 itemsViewModel.onMessageShown()
                             }
                         }
@@ -615,11 +621,11 @@ fun PhoneMainScreen(
 
                         LaunchedEffect(uiState.successMessage, uiState.errorMessage) {
                             uiState.successMessage?.let {
-                                Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, it.asString(context), Toast.LENGTH_SHORT).show()
                                 viewModel.onMessageShown()
                             }
                             uiState.errorMessage?.let {
-                                Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, it.asString(context), Toast.LENGTH_LONG).show()
                                 viewModel.onMessageShown()
                             }
                         }
@@ -745,7 +751,11 @@ fun PhoneMainScreen(
                             notification = notif,
                             isCompact = true,
                             onClick = {
-                                if (notif.title == "Order Baru" || notif.title == "Order Diperbarui") {
+                                if (notif.title == "Order Baru" ||
+                                    notif.title == "Order Diperbarui" ||
+                                    notif.title == "New Order" ||
+                                    notif.title == "Order Updated"
+                                ) {
                                     bottomNavController.navigate(AppNavigation.ManageOrder.route)
                                 }
                                 notificationsViewModel.removeNotificationPreview(notif.notificationId, true)
@@ -763,7 +773,7 @@ fun PhoneMainScreen(
     Box(modifier = Modifier.fillMaxSize().zIndex(100f)) {
         AiAgentPanel(
             expanded = aiAgentUiState.expanded,
-            userName = userData?.displayName ?: "Unknown",
+            userName = userData?.displayName ?: stringResource(R.string.common_unknown),
             profilePictureUrl = userData?.profilePictureUrl,
             inputMessage = aiAgentUiState.inputMessage,
             messages = aiAgentUiState.messages,
@@ -771,6 +781,7 @@ fun PhoneMainScreen(
             isTypewriterActive = aiAgentUiState.isTypewriterActive,
             currentModelName = aiAgentUiState.currentModelName,
             modelStatus = aiAgentUiState.modelStatus,
+            cooldownSeconds = aiAgentUiState.cooldownSeconds,
             customers = aiAgentUiState.customers,
             items = aiAgentUiState.items,
             services = aiAgentUiState.services,

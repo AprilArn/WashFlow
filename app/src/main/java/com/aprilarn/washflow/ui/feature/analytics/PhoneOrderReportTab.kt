@@ -57,10 +57,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Orders
 import com.aprilarn.washflow.data.model.Services
 import com.aprilarn.washflow.ui.feature.analytics.component.GeneralDropdown
@@ -112,10 +114,19 @@ fun PhoneOrderReportTab(
 ) {
     var selectedOrderForReceipt by remember { mutableStateOf<Orders?>(null) }
 
-    val monthList = remember(orders) {
-        val months = orders.map { it.orderDate.toReportMonthYearString() }.distinct()
-        listOf("Semua Bulan") + months
+    val allMonthsLabel = stringResource(R.string.analytics_all_months)
+    val currentLocale = Locale.getDefault()
+
+    val monthOptions = remember(orders, allMonthsLabel, currentLocale) {
+        val months = orders
+            .map { it.orderDate.toReportMonthKey() to it.orderDate.toReportMonthYearString(currentLocale) }
+            .distinctBy { it.first }
+        listOf(ANALYTICS_ALL_MONTHS_KEY to allMonthsLabel) + months
     }
+    val isAllMonthsSelected = selectedMonth == ANALYTICS_ALL_MONTHS_KEY || selectedMonth == "Semua Bulan"
+    val selectedMonthDisplayLabel = monthOptions.firstOrNull {
+        it.first == selectedMonth || it.second.equals(selectedMonth, ignoreCase = true)
+    }?.second ?: allMonthsLabel
 
     val filteredAndSortedOrders = remember(
         orders,
@@ -124,7 +135,8 @@ fun PhoneOrderReportTab(
         selectedStatusFilter,
         selectedMonth,
         sortColumn,
-        isAscending
+        isAscending,
+        currentLocale
     ) {
         val filtered = orders.filter { order ->
             val matchesSearch = if (searchQuery.isBlank()) true else {
@@ -139,13 +151,14 @@ fun PhoneOrderReportTab(
             }
             if (!matchesSearch) return@filter false
 
-            val matchesStatus = if (selectedStatusFilter == "Semua") true else {
+            val matchesStatus = if (selectedStatusFilter == ANALYTICS_ALL_STATUS_KEY || selectedStatusFilter == "Semua") true else {
                 (order.status ?: "").equals(selectedStatusFilter, ignoreCase = true)
             }
             if (!matchesStatus) return@filter false
 
-            if (selectedMonth == "Semua Bulan") true else {
-                order.orderDate.toReportMonthYearString().equals(selectedMonth, ignoreCase = true)
+            if (isAllMonthsSelected) true else {
+                order.orderDate.toReportMonthKey() == selectedMonth ||
+                    order.orderDate.toReportMonthYearString(currentLocale).equals(selectedMonth, ignoreCase = true)
             }
         }
 
@@ -162,12 +175,17 @@ fun PhoneOrderReportTab(
         if (isAscending) filtered.sortedWith(comparator) else filtered.sortedWith(comparator.reversed())
     }
 
-    val comparison = remember(orders, selectedMonth) {
-        buildPhoneReportComparison(orders = orders, selectedMonth = selectedMonth)
+    val comparison = remember(orders, selectedMonth, currentLocale) {
+        buildPhoneReportComparison(orders = orders, selectedMonth = selectedMonth, locale = currentLocale)
     }
 
-    val statusFilters = remember { listOf("Semua", "On Queue", "On Process", "Done") }
-    val dateFormat = remember { SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.forLanguageTag("id-ID")) }
+    val statusFilters = listOf(
+        ANALYTICS_ALL_STATUS_KEY to stringResource(R.string.analytics_filter_all),
+        "On Queue" to stringResource(R.string.home_status_on_queue),
+        "On Process" to stringResource(R.string.home_status_on_process),
+        "Done" to stringResource(R.string.home_status_done)
+    )
+    val dateFormat = remember(currentLocale) { SimpleDateFormat("dd MMM yyyy, HH:mm", currentLocale) }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -189,7 +207,7 @@ fun PhoneOrderReportTab(
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Buku Besar Order",
+                        text = stringResource(R.string.analytics_report_phone_title),
                         style = MaterialTheme.typography.titleLarge.copy(
                             color = GrayBlue,
                             fontWeight = FontWeight.Bold,
@@ -197,7 +215,7 @@ fun PhoneOrderReportTab(
                         )
                     )
                     Text(
-                        text = "Catatan histori digital transaksi laundry",
+                        text = stringResource(R.string.analytics_report_subtitle),
                         style = MaterialTheme.typography.bodySmall.copy(
                             color = PastelNeutralText,
                             fontWeight = FontWeight.Medium
@@ -215,9 +233,13 @@ fun PhoneOrderReportTab(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 GeneralDropdown(
-                    selectedText = selectedMonth,
-                    items = monthList,
-                    onItemSelected = onMonthSelected,
+                    selectedText = selectedMonthDisplayLabel,
+                    items = monthOptions.map { it.second },
+                    onItemSelected = { pickedLabel ->
+                        val pickedKey = monthOptions.firstOrNull { it.second == pickedLabel }?.first
+                            ?: ANALYTICS_ALL_MONTHS_KEY
+                        onMonthSelected(pickedKey)
+                    },
                     icon = Icons.Rounded.CalendarToday,
                     modifier = Modifier.weight(1f),
                     dropdownWidth = 175.dp,
@@ -240,12 +262,18 @@ fun PhoneOrderReportTab(
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.SwapVert,
-                            contentDescription = "Urutkan",
+                            contentDescription = stringResource(R.string.analytics_report_sort_cd),
                             tint = GrayBlue,
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
-                            text = if (isAscending && sortColumn == ReportSortColumn.DATE) "Terlama" else "Terbaru",
+                            text = stringResource(
+                                if (isAscending && sortColumn == ReportSortColumn.DATE) {
+                                    R.string.analytics_report_sort_oldest
+                                } else {
+                                    R.string.analytics_report_sort_newest
+                                }
+                            ),
                             style = MaterialTheme.typography.labelMedium.copy(
                                 color = GrayBlue,
                                 fontWeight = FontWeight.SemiBold
@@ -256,21 +284,21 @@ fun PhoneOrderReportTab(
             }
         }
 
-        // 3. KPI Ringkasan Proporsional (Full-width agar angka & persentase tidak pernah terpotong)
+        // 3. KPI Ringkasan Proporsional
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 PhoneReportKpiCard(
                     icon = Icons.Rounded.Payments,
-                    label = "Pendapatan (${comparison.targetShortLabel})",
+                    label = stringResource(R.string.analytics_report_revenue_card_label, comparison.targetShortLabel),
                     value = CurrencyUtils.formatRupiahWithSymbol(comparison.targetRevenue),
-                    compareLabel = "vs ${comparison.compareShortLabel}",
+                    compareLabel = stringResource(R.string.analytics_report_vs_short, comparison.compareShortLabel),
                     trendPercent = comparison.revenueTrendPercent
                 )
                 PhoneReportKpiCard(
                     icon = Icons.Rounded.Receipt,
-                    label = "Jumlah Order (${comparison.targetShortLabel})",
-                    value = "${comparison.targetOrderCount} Order",
-                    compareLabel = "vs ${comparison.compareShortLabel}",
+                    label = stringResource(R.string.analytics_report_orders_card_label, comparison.targetShortLabel),
+                    value = stringResource(R.string.analytics_report_order_count_value, comparison.targetOrderCount),
+                    compareLabel = stringResource(R.string.analytics_report_vs_short, comparison.compareShortLabel),
                     trendPercent = comparison.orderTrendPercent
                 )
             }
@@ -283,7 +311,7 @@ fun PhoneOrderReportTab(
                 onValueChange = onSearchQueryChanged,
                 placeholder = {
                     Text(
-                        text = "Cari nama, layanan, item, atau ID...",
+                        text = stringResource(R.string.analytics_report_phone_search_placeholder),
                         style = MaterialTheme.typography.bodyMedium.copy(
                             color = PastelNeutralText,
                             fontSize = 13.sp
@@ -305,7 +333,7 @@ fun PhoneOrderReportTab(
                         IconButton(onClick = { onSearchQueryChanged("") }) {
                             Icon(
                                 imageVector = Icons.Rounded.Close,
-                                contentDescription = "Hapus pencarian",
+                                contentDescription = stringResource(R.string.analytics_pending_clear_search_cd),
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -331,19 +359,20 @@ fun PhoneOrderReportTab(
             )
         }
 
-        // 5. Status Filter Chips (Horizontal Scrollable agar tidak wrap vertikal)
+        // 5. Status Filter Chips
         item {
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                items(statusFilters) { status ->
-                    val isSelected = selectedStatusFilter.equals(status, ignoreCase = true)
+                items(statusFilters) { (statusKey, statusLabel) ->
+                    val isSelected = selectedStatusFilter.equals(statusKey, ignoreCase = true) ||
+                        (statusKey == ANALYTICS_ALL_STATUS_KEY && selectedStatusFilter == "Semua")
                     Surface(
                         modifier = Modifier
                             .clip(RoundedCornerShape(50))
-                            .clickable { onStatusFilterChanged(status) },
+                            .clickable { onStatusFilterChanged(statusKey) },
                         shape = RoundedCornerShape(50),
                         color = if (isSelected) PastelBlue else PastelBlueSoftBg.copy(alpha = 0.55f),
                         border = BorderStroke(
@@ -352,7 +381,7 @@ fun PhoneOrderReportTab(
                         )
                     ) {
                         Text(
-                            text = status,
+                            text = statusLabel,
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
                             style = MaterialTheme.typography.labelMedium.copy(
                                 color = if (isSelected) Color.White else GrayBlue,
@@ -373,14 +402,14 @@ fun PhoneOrderReportTab(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Daftar Transaksi",
+                    text = stringResource(R.string.analytics_report_transactions_header),
                     style = MaterialTheme.typography.titleSmall.copy(
                         color = GrayBlue,
                         fontWeight = FontWeight.Bold
                     )
                 )
                 Text(
-                    text = "${filteredAndSortedOrders.size} transaksi",
+                    text = stringResource(R.string.analytics_report_transactions_count, filteredAndSortedOrders.size),
                     style = MaterialTheme.typography.labelSmall.copy(
                         color = PastelNeutralText,
                         fontWeight = FontWeight.SemiBold
@@ -409,7 +438,7 @@ fun PhoneOrderReportTab(
                     color = PastelNeutralBg
                 ) {
                     Text(
-                        text = "Tidak ada transaksi yang sesuai filter.",
+                        text = stringResource(R.string.analytics_report_phone_empty),
                         color = PastelNeutralText,
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(vertical = 28.dp, horizontal = 16.dp)
@@ -445,7 +474,7 @@ fun PhoneOrderReportTab(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Muat Data Bulan Sebelumnya",
+                    text = stringResource(R.string.analytics_report_phone_load_more),
                     color = PastelBlue,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 13.sp
@@ -583,21 +612,22 @@ private fun PhoneReportOrderCard(
     onClick: () -> Unit
 ) {
     val status = order.status ?: "On Queue"
-    val (statusBg, statusColor) = when {
-        status.equals("Done", ignoreCase = true) -> PastelGreenBg to PastelGreen
-        status.equals("On Process", ignoreCase = true) -> PastelBlueBg to PastelBlue
-        else -> PastelAmberBg to PastelAmber
+    val (statusBg, statusColor, statusLabelRes) = when {
+        status.equals("Done", ignoreCase = true) -> Triple(PastelGreenBg, PastelGreen, R.string.home_status_done)
+        status.equals("On Process", ignoreCase = true) -> Triple(PastelBlueBg, PastelBlue, R.string.home_status_on_process)
+        else -> Triple(PastelAmberBg, PastelAmber, R.string.home_status_on_queue)
     }
 
     val totalQty = remember(order.orderItems) {
         order.orderItems.sumOf { it.itemQuantity ?: 0 }
     }
-    val serviceSummary = remember(order.orderItems, services) {
+    val itemCountFallback = stringResource(R.string.analytics_report_item_count, order.orderItems.size)
+    val serviceSummary = remember(order.orderItems, services, itemCountFallback) {
         order.orderItems
             .mapNotNull { item -> services.find { it.serviceId == item.serviceId }?.serviceName }
             .distinct()
             .joinToString(", ")
-            .ifBlank { "${order.orderItems.size} item" }
+            .ifBlank { itemCountFallback }
     }
 
     Surface(
@@ -620,7 +650,7 @@ private fun PhoneReportOrderCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = order.customerName ?: "Pelanggan",
+                    text = order.customerName ?: stringResource(R.string.analytics_customer_fallback),
                     style = MaterialTheme.typography.titleSmall.copy(
                         color = GrayBlue,
                         fontWeight = FontWeight.Bold,
@@ -636,7 +666,7 @@ private fun PhoneReportOrderCard(
                     color = statusBg
                 ) {
                     Text(
-                        text = status,
+                        text = stringResource(statusLabelRes),
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                         style = MaterialTheme.typography.labelSmall.copy(
                             color = statusColor,
@@ -649,7 +679,7 @@ private fun PhoneReportOrderCard(
 
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    text = "$serviceSummary • $totalQty pcs",
+                    text = stringResource(R.string.analytics_report_service_pcs, serviceSummary, totalQty),
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = GrayBlue.copy(alpha = 0.85f),
                         fontWeight = FontWeight.Medium
@@ -678,7 +708,9 @@ private fun PhoneReportOrderCard(
                         color = if (order.alreadyPaid) PastelGreenBg else PastelAmberBg
                     ) {
                         Text(
-                            text = if (order.alreadyPaid) "Lunas" else "Belum Bayar",
+                            text = stringResource(
+                                if (order.alreadyPaid) R.string.manage_order_paid else R.string.manage_order_unpaid
+                            ),
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 color = if (order.alreadyPaid) PastelGreen else PastelAmber,
@@ -693,7 +725,10 @@ private fun PhoneReportOrderCard(
                             color = if (order.alreadyPickedUp) PastelGreenBg else PastelBlueSoftBg
                         ) {
                             Text(
-                                text = if (order.alreadyPickedUp) "Diambil" else "Siap Diambil",
+                                text = stringResource(
+                                    if (order.alreadyPickedUp) R.string.manage_order_picked_up
+                                    else R.string.manage_order_ready_pickup
+                                ),
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     color = if (order.alreadyPickedUp) PastelGreen else PastelBlue,
@@ -725,13 +760,15 @@ private fun PhoneReportReceiptBottomSheet(
     services: List<Services>,
     onDismiss: () -> Unit
 ) {
-    val groupedItems = remember(order.orderItems, services) {
-        groupOrderItemsByService(order.orderItems, services)
+    val otherServiceLabel = stringResource(R.string.orders_receipt_other_service)
+    val groupedItems = remember(order.orderItems, services, otherServiceLabel) {
+        groupOrderItemsByService(order.orderItems, services, otherServiceLabel)
     }
     val totalQty = remember(order.orderItems) {
         order.orderItems.sumOf { it.itemQuantity ?: 0 }
     }
-    val dateFormat = remember { SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.forLanguageTag("id-ID")) }
+    val currentLocale = Locale.getDefault()
+    val dateFormat = remember(currentLocale) { SimpleDateFormat("dd MMM yyyy, HH:mm", currentLocale) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
@@ -764,7 +801,7 @@ private fun PhoneReportReceiptBottomSheet(
                     )
                     Column {
                         Text(
-                            text = "Nota Pesanan",
+                            text = stringResource(R.string.analytics_report_receipt_title),
                             style = MaterialTheme.typography.titleLarge.copy(
                                 color = GrayBlue,
                                 fontWeight = FontWeight.Bold,
@@ -772,7 +809,7 @@ private fun PhoneReportReceiptBottomSheet(
                             )
                         )
                         Text(
-                            text = "Order #${order.orderId.take(8)}",
+                            text = stringResource(R.string.manage_order_code_prefix, order.orderId.take(8)),
                             style = MaterialTheme.typography.bodySmall.copy(
                                 color = PastelNeutralText,
                                 fontWeight = FontWeight.Medium
@@ -797,7 +834,7 @@ private fun PhoneReportReceiptBottomSheet(
                             modifier = Modifier.size(14.dp)
                         )
                         Text(
-                            text = "${order.orderItems.size} item",
+                            text = stringResource(R.string.analytics_report_item_count, order.orderItems.size),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 color = PastelBlue,
                                 fontWeight = FontWeight.Bold
@@ -827,7 +864,7 @@ private fun PhoneReportReceiptBottomSheet(
                             modifier = Modifier.size(15.dp)
                         )
                         Text(
-                            text = order.customerName ?: "Pelanggan",
+                            text = order.customerName ?: stringResource(R.string.analytics_customer_fallback),
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 color = GrayBlue,
                                 fontWeight = FontWeight.Bold
@@ -845,7 +882,10 @@ private fun PhoneReportReceiptBottomSheet(
                             modifier = Modifier.size(14.dp)
                         )
                         Text(
-                            text = "Masuk: ${dateFormat.format(order.orderDate.toDate())}",
+                            text = stringResource(
+                                R.string.analytics_report_received_colon,
+                                dateFormat.format(order.orderDate.toDate())
+                            ),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 color = PastelNeutralText
                             )
@@ -881,14 +921,14 @@ private fun PhoneReportReceiptBottomSheet(
                 ) {
                     Column {
                         Text(
-                            text = "Total Pembayaran",
+                            text = stringResource(R.string.manage_order_total_payment),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 color = PastelNeutralText,
                                 fontWeight = FontWeight.Medium
                             )
                         )
                         Text(
-                            text = "$totalQty pcs",
+                            text = stringResource(R.string.analytics_report_item_pcs, totalQty),
                             style = MaterialTheme.typography.labelMedium.copy(
                                 color = GrayBlue,
                                 fontWeight = FontWeight.Bold
@@ -911,8 +951,13 @@ private fun PhoneReportReceiptBottomSheet(
     }
 }
 
-private fun Timestamp.toReportMonthYearString(): String {
-    val sdf = SimpleDateFormat("MMMM yyyy", Locale.forLanguageTag("id-ID"))
+private fun Timestamp.toReportMonthYearString(locale: Locale = Locale.getDefault()): String {
+    val sdf = SimpleDateFormat("MMMM yyyy", locale)
+    return sdf.format(this.toDate())
+}
+
+private fun Timestamp.toReportMonthKey(): String {
+    val sdf = SimpleDateFormat("yyyy-MM", Locale.US)
     return sdf.format(this.toDate())
 }
 
@@ -943,20 +988,22 @@ private data class PhoneReportMonthlyComparison(
 private fun buildPhoneReportComparison(
     orders: List<Orders>,
     selectedMonth: String,
+    locale: Locale = Locale.getDefault(),
     now: Date = Date()
 ): PhoneReportMonthlyComparison {
-    val idLocale = Locale.forLanguageTag("id-ID")
-    val fullMonthFormat = SimpleDateFormat("MMMM yyyy", idLocale)
-    val shortMonthFormat = SimpleDateFormat("MMM yyyy", idLocale)
+    val keyFormat = SimpleDateFormat("yyyy-MM", Locale.US)
+    val fullMonthFormat = SimpleDateFormat("MMMM yyyy", locale)
+    val shortMonthFormat = SimpleDateFormat("MMM yyyy", locale)
 
     val targetCal = Calendar.getInstance().apply {
         time = now
         set(Calendar.DAY_OF_MONTH, 1)
     }
-    if (selectedMonth == "Semua Bulan") {
+    if (selectedMonth == ANALYTICS_ALL_MONTHS_KEY || selectedMonth == "Semua Bulan") {
         targetCal.add(Calendar.MONTH, -1)
     } else {
-        val parsed = runCatching { fullMonthFormat.parse(selectedMonth) }.getOrNull()
+        val parsed = runCatching { keyFormat.parse(selectedMonth) }.getOrNull()
+            ?: runCatching { fullMonthFormat.parse(selectedMonth) }.getOrNull()
         if (parsed != null) {
             targetCal.time = parsed
         } else {

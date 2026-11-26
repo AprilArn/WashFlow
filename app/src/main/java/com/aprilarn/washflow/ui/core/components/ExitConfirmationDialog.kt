@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -52,7 +53,7 @@ fun ExitConfirmationDialog(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Keluar dari Aplikasi",
+                    text = stringResource(R.string.dialog_exit_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black
@@ -61,7 +62,7 @@ fun ExitConfirmationDialog(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "Apakah Anda yakin ingin keluar dari aplikasi WashFlow?",
+                    text = stringResource(R.string.dialog_exit_message),
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.Gray,
                     textAlign = TextAlign.Center
@@ -78,7 +79,7 @@ fun ExitConfirmationDialog(
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Gray)
                     ) {
-                        Text("Batal")
+                        Text(stringResource(R.string.common_cancel))
                     }
 
                     Button(
@@ -88,7 +89,7 @@ fun ExitConfirmationDialog(
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
                     ) {
-                        Text("Keluar", color = Color.White)
+                        Text(stringResource(R.string.dialog_exit_confirm), color = Color.White)
                     }
                 }
             }

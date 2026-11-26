@@ -5,12 +5,17 @@ data class ContributorUiModel(
     val name: String,
     val email: String,
     val photoUrl: String?,
-    val role: String
+    val role: String,
+    val isOnline: Boolean = false,
+    val activeDeviceCount: Int = 0,
+    val lastActiveAtMillis: Long? = null
 )
 
 data class ContributorsUiState(
     val contributors: List<ContributorUiModel> = emptyList(),
     val filteredContributors: List<ContributorUiModel> = emptyList(),
+    val onlineCount: Int = 0,
+    val totalOnlineDevices: Int = 0,
     val searchQuery: String = "",
     val isLoading: Boolean = false,
     val errorMessage: String? = null,

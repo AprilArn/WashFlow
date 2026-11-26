@@ -1,7 +1,6 @@
 package com.aprilarn.washflow.ui.feature.settings
 
 import android.Manifest
-import android.R
 import android.annotation.SuppressLint
 import android.content.Context
 import android.location.Address
@@ -32,10 +31,12 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -131,6 +132,9 @@ fun LocationSelectionPanel(
         }
     }
 
+    val searchingAddressText = stringResource(R.string.settings_map_searching_address)
+    val addressNotFoundText = stringResource(R.string.settings_map_address_not_found)
+
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -141,7 +145,7 @@ fun LocationSelectionPanel(
                     val currentLatLng = LatLng(location.latitude, location.longitude)
                     selectedLatLng = currentLatLng
                     isGpsPin = (gpsTriggerMode == "AUTO")
-                    selectedAddressName = "Mencari alamat..."
+                    selectedAddressName = searchingAddressText
 
                     coroutineScope.launch {
                         // Terbangkan kamera
@@ -151,7 +155,7 @@ fun LocationSelectionPanel(
                         )
                         // Ambil nama jalan dari GPS
                         val addressText = getAddressFromLatLng(context, currentLatLng)
-                        selectedAddressName = addressText ?: "Alamat tidak ditemukan"
+                        selectedAddressName = addressText ?: addressNotFoundText
                     }
                 }
             }
@@ -163,10 +167,10 @@ fun LocationSelectionPanel(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
-                title = { Text("Set Location on Map") },
+                title = { Text(stringResource(R.string.settings_map_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back")
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.common_back))
                     }
                 }
             )
@@ -190,10 +194,10 @@ fun LocationSelectionPanel(
                                 isSearchExpanded = false
 
                                 // Mulai proses pencarian nama alamat untuk pin yang baru dijatuhkan
-                                selectedAddressName = "Mencari alamat..."
+                                selectedAddressName = searchingAddressText
                                 coroutineScope.launch {
                                     val addressText = getAddressFromLatLng(context, latLng)
-                                    selectedAddressName = addressText ?: "Alamat tidak ditemukan"
+                                    selectedAddressName = addressText ?: addressNotFoundText
                                 }
                             }
                         ) {
@@ -235,7 +239,7 @@ fun LocationSelectionPanel(
                                             .background(Color(0xFF4CAF50).copy(alpha = alpha))
                                     )
                                     Text(
-                                        text = "Auto Mode",
+                                        text = stringResource(R.string.settings_map_auto_mode),
                                         color = GrayBlue,
                                         style = MaterialTheme.typography.labelLarge,
                                         fontWeight = FontWeight.Bold
@@ -261,7 +265,7 @@ fun LocationSelectionPanel(
                                     onClick = { isSearchExpanded = true } // Buka bar pencarian saat diklik
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
-                                        Icon(Icons.Rounded.Search, contentDescription = "Open Search", tint = Color.DarkGray)
+                                        Icon(Icons.Rounded.Search, contentDescription = stringResource(R.string.common_search), tint = Color.DarkGray)
                                     }
                                 }
                             } else {
@@ -273,7 +277,7 @@ fun LocationSelectionPanel(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .background(Color.White, RoundedCornerShape(12.dp)),
-                                        placeholder = { Text("Search here...") },
+                                        placeholder = { Text(stringResource(R.string.settings_map_search_placeholder)) },
                                         leadingIcon = {
                                             // Tombol back untuk menutup search bar
                                             IconButton(onClick = {
@@ -282,7 +286,7 @@ fun LocationSelectionPanel(
                                                 searchResults = emptyList()
                                                 focusManager.clearFocus()
                                             }) {
-                                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Close Search")
+                                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.common_close))
                                             }
                                         },
                                         trailingIcon = {
@@ -291,7 +295,7 @@ fun LocationSelectionPanel(
                                                     searchQuery = ""
                                                     searchResults = emptyList()
                                                 }) {
-                                                    Icon(Icons.Rounded.Close, contentDescription = "Clear")
+                                                    Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.common_clear_search))
                                                 }
                                             }
                                         },
@@ -402,7 +406,7 @@ fun LocationSelectionPanel(
                                 },
                                 modifier = Modifier.height(50.dp)
                             ) {
-                                Text("Auto", color = GrayBlue)
+                                Text(stringResource(R.string.settings_map_auto_button), color = GrayBlue)
                             }
 
                             // 2. Tombol Sniper (Statis / Lock Coordinate)
@@ -415,7 +419,7 @@ fun LocationSelectionPanel(
                                 },
                                 modifier = Modifier.height(50.dp)
                             ) {
-                                Icon(Icons.Rounded.MyLocation, contentDescription = "Current Location (Static)", tint = GrayBlue)
+                                Icon(Icons.Rounded.MyLocation, contentDescription = stringResource(R.string.settings_map_current_location_cd), tint = GrayBlue)
                             }
 
                             // 3. Tombol Confirm
@@ -434,7 +438,7 @@ fun LocationSelectionPanel(
                                     contentColor = Color.White
                                 )
                             ) {
-                                Text("Confirm")
+                                Text(stringResource(R.string.common_confirm))
                             }
                         }
                     }
@@ -446,13 +450,13 @@ fun LocationSelectionPanel(
                         onDismissRequest = { showAutoDialog = false },
                         title = {
                             Text(
-                                text = "Aktifkan Mode Otomatis?",
+                                text = stringResource(R.string.settings_map_auto_dialog_title),
                                 style = MaterialTheme.typography.titleLarge
                             )
                         },
                         text = {
                             Text(
-                                text = "Rekomendasi cuaca akan selalu diperbarui secara dinamis mengikuti lokasi GPS perangkat Anda saat ini ke manapun Anda pergi.",
+                                text = stringResource(R.string.settings_map_auto_dialog_message),
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         },
@@ -470,19 +474,19 @@ fun LocationSelectionPanel(
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = GrayBlue)
                             ) {
-                                Text("Aktifkan", color = Color.White)
+                                Text(stringResource(R.string.settings_map_enable), color = Color.White)
                             }
                         },
                         dismissButton = {
                             TextButton(onClick = { showAutoDialog = false }) {
-                                Text("Batal", color = GrayBlue)
+                                Text(stringResource(R.string.common_cancel), color = GrayBlue)
                             }
                         }
                     )
                 }
             } else {
                 Box(modifier = Modifier.fillMaxSize().background(Color.LightGray), contentAlignment = Alignment.Center) {
-                    Text("Google Map (Preview Mode)", color = Color.DarkGray)
+                    Text(stringResource(R.string.settings_map_preview), color = Color.DarkGray)
                 }
             }
         }

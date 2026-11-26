@@ -3,6 +3,7 @@ package com.aprilarn.washflow.ui.feature.manageorder
 import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.data.model.Orders
 import com.aprilarn.washflow.data.model.Services
+import com.aprilarn.washflow.ui.core.utils.UiText
 
 data class ManageOrderUiState(
     val ordersOnQueue: List<Orders> = emptyList(),
@@ -12,5 +13,5 @@ data class ManageOrderUiState(
     val services: List<Services> = emptyList(),
     val selectedOrderForDetail: Orders? = null,
     val isLoading: Boolean = true,
-    val errorMessage: String? = null
+    val errorMessage: UiText? = null
 )

@@ -55,7 +55,7 @@ data class StatusWorkflowTheme(
 fun resolveStatusWorkflowTheme(statusText: String): StatusWorkflowTheme {
     val normalized = statusText.trim().lowercase()
     return when {
-        normalized.contains("process") || normalized.contains("progress") -> StatusWorkflowTheme(
+        normalized.contains("process") || normalized.contains("progress") || normalized.contains("proses") -> StatusWorkflowTheme(
             kind = StatusWorkflowKind.ON_PROCESS,
             skyTop = Color(0xFFEEF3FB),
             skyBottom = PastelBlueBg,

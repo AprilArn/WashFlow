@@ -2,8 +2,10 @@ package com.aprilarn.washflow.ui.feature.masterdata.customers
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.domain.usecase.ManageCustomerUseCase
+import com.aprilarn.washflow.ui.core.utils.UiText
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -29,7 +31,7 @@ class CustomersViewModel(
                     // Tangani error jika flow gagal
                     _uiState.update {
                         it.copy(
-                            errorMessage = "Failed to listen for customer data.",
+                            errorMessage = UiText.StringResource(R.string.master_customers_msg_listen_failed),
                             isLoading = false
                         )
                     }
@@ -53,7 +55,7 @@ class CustomersViewModel(
         if (name.isBlank()) {
             _uiState.update {
                 it.copy(
-                    errorMessage = "Customer name cannot be empty."
+                    errorMessage = UiText.StringResource(R.string.master_customers_msg_name_empty)
                 )
             }
             return
@@ -64,13 +66,13 @@ class CustomersViewModel(
             if (success) {
                 _uiState.update {
                     it.copy(
-                        successMessage = "Customer '$name' added successfully!"
+                        successMessage = UiText.StringResource(R.string.master_customers_msg_added, name)
                     )
                 }
             } else {
                 _uiState.update {
                     it.copy(
-                        errorMessage = "Failed to add customer. Please try again."
+                        errorMessage = UiText.StringResource(R.string.master_customers_msg_add_failed)
                     )
                 }
             }
@@ -83,14 +85,14 @@ class CustomersViewModel(
             if (success) {
                 _uiState.update {
                     it.copy(
-                        successMessage = "Customer updated!",
+                        successMessage = UiText.StringResource(R.string.master_customers_msg_updated),
                         selectedCustomer = null
                     )
                 }
             } else {
                 _uiState.update {
                     it.copy(
-                        errorMessage = "Failed to update customer."
+                        errorMessage = UiText.StringResource(R.string.master_customers_msg_update_failed)
                     )
                 }
             }
@@ -103,14 +105,14 @@ class CustomersViewModel(
             if (success) {
                 _uiState.update {
                     it.copy(
-                        successMessage = "Customer deleted!",
+                        successMessage = UiText.StringResource(R.string.master_customers_msg_deleted),
                         selectedCustomer = null
                     )
                 }
             } else {
                 _uiState.update {
                     it.copy(
-                        errorMessage = "Failed to delete customer."
+                        errorMessage = UiText.StringResource(R.string.master_customers_msg_delete_failed)
                     )
                 }
             }

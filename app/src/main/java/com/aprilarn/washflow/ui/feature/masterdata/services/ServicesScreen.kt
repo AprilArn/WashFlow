@@ -22,10 +22,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Services
 import com.aprilarn.washflow.ui.core.components.AddNewDataInputField
 import com.aprilarn.washflow.ui.core.components.AddNewDataPanel
@@ -80,12 +82,12 @@ fun ServicesScreen(
                     AddNewDataInputField(
                         value = editedName,
                         onValueChange = { editedName = it },
-                        label = "Service Name"
+                        label = stringResource(R.string.master_services_name_label)
                     )
                 )
 
                 EditDataPanel(
-                    title = "Edit ${serviceToEdit.serviceName}",
+                    title = stringResource(R.string.master_edit_item_title, serviceToEdit.serviceName),
                     inputFields = editInputFields,
                     onDoneClick = {
                         val updatedService = serviceToEdit.copy(serviceName = editedName)
@@ -112,7 +114,7 @@ fun ServicesScreen(
         ) {
             val serviceColumns = listOf(
                 ColumnConfig<Services>(
-                    header = "ID",
+                    header = stringResource(R.string.master_services_col_id),
                     weight = 0.28f,
                     content = { service ->
                         Surface(
@@ -132,7 +134,7 @@ fun ServicesScreen(
                     }
                 ),
                 ColumnConfig<Services>(
-                    header = "Service Name",
+                    header = stringResource(R.string.master_services_col_name),
                     weight = 0.80f,
                     content = { service ->
                         Text(
@@ -146,7 +148,7 @@ fun ServicesScreen(
                     }
                 ),
                 ColumnConfig<Services>(
-                    header = "Edit",
+                    header = stringResource(R.string.common_edit),
                     weight = 0.12f,
                     content = {
                         Box(
@@ -157,7 +159,7 @@ fun ServicesScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.Edit,
-                                contentDescription = "Edit Service",
+                                contentDescription = stringResource(R.string.master_services_edit_cd),
                                 tint = PastelGreen,
                                 modifier = Modifier.size(16.dp)
                             )
@@ -167,11 +169,11 @@ fun ServicesScreen(
             )
 
             DataTablePanel(
-                title = "Services",
+                title = stringResource(R.string.master_services_title),
                 itemCount = serviceCount,
                 searchQuery = newServiceName,
                 onSearchQueryChange = { newServiceName = it },
-                searchPlaceholder = "Cari kode ID atau nama layanan...",
+                searchPlaceholder = stringResource(R.string.master_services_search_placeholder),
                 columns = serviceColumns,
                 data = filteredServices,
                 isLoading = uiState.isLoading,
@@ -185,25 +187,25 @@ fun ServicesScreen(
                 AddNewDataInputField(
                     value = newServiceName,
                     onValueChange = { newServiceName = it },
-                    label = "Nama Service"
+                    label = stringResource(R.string.master_services_name_label)
                 ),
                 AddNewDataInputField(
                     value = newServiceId,
                     onValueChange = { newServiceId = it },
-                    label = "ID Service"
+                    label = stringResource(R.string.master_services_id_label)
                 )
             )
 
             AddNewDataPanel(
-                title = "Add New Service",
-                subTitle = "Tambah layanan baru",
+                title = stringResource(R.string.master_services_add_title),
+                subTitle = stringResource(R.string.master_services_add_subtitle),
                 inputFields = inputFields,
                 onAddClick = {
                     onAddServiceClick(newServiceId, newServiceName)
                     newServiceId = ""
                     newServiceName = ""
                 },
-                addButtonText = "Add Service"
+                addButtonText = stringResource(R.string.master_services_add_button)
             )
         }
     }

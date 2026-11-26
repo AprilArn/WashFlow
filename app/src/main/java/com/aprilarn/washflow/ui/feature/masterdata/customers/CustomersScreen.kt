@@ -24,12 +24,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.ui.core.components.AddNewDataInputField
 import com.aprilarn.washflow.ui.core.components.AddNewDataPanel
@@ -85,18 +87,18 @@ fun CustomersScreen(
                     AddNewDataInputField(
                         value = editedName,
                         onValueChange = { editedName = it },
-                        label = "Customer Name"
+                        label = stringResource(R.string.master_customers_name_label)
                     ),
                     AddNewDataInputField(
                         value = editedContact,
                         onValueChange = { editedContact = it },
-                        label = "Contact",
+                        label = stringResource(R.string.master_customers_contact_label),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                     )
                 )
 
                 EditDataPanel(
-                    title = "Edit ${customerToEdit.name}",
+                    title = stringResource(R.string.master_edit_item_title, customerToEdit.name),
                     inputFields = editInputFields,
                     onDoneClick = {
                         val updatedCustomer = customerToEdit.copy(
@@ -126,7 +128,7 @@ fun CustomersScreen(
         ) {
             val customerColumns = listOf(
                 ColumnConfig<Customers>(
-                    header = "Name",
+                    header = stringResource(R.string.master_customers_col_name),
                     weight = 0.65f,
                     content = { customer ->
                         Text(
@@ -140,7 +142,7 @@ fun CustomersScreen(
                     }
                 ),
                 ColumnConfig<Customers>(
-                    header = "Contact",
+                    header = stringResource(R.string.master_customers_col_contact),
                     weight = 0.45f,
                     content = { customer ->
                         val contactText = customer.contact?.takeIf { it.isNotBlank() }
@@ -155,7 +157,7 @@ fun CustomersScreen(
                     }
                 ),
                 ColumnConfig<Customers>(
-                    header = "Edit",
+                    header = stringResource(R.string.common_edit),
                     weight = 0.12f,
                     content = {
                         Box(
@@ -166,7 +168,7 @@ fun CustomersScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.Edit,
-                                contentDescription = "Edit Customer",
+                                contentDescription = stringResource(R.string.master_customers_edit_cd),
                                 tint = PastelBlue,
                                 modifier = Modifier.size(16.dp)
                             )
@@ -176,11 +178,11 @@ fun CustomersScreen(
             )
 
             DataTablePanel(
-                title = "Customers",
+                title = stringResource(R.string.master_customers_title),
                 itemCount = customerCount,
                 searchQuery = newCustomerName,
                 onSearchQueryChange = { newCustomerName = it },
-                searchPlaceholder = "Cari nama atau nomor kontak pelanggan...",
+                searchPlaceholder = stringResource(R.string.master_customers_search_placeholder),
                 columns = customerColumns,
                 data = filteredCustomers,
                 isLoading = uiState.isLoading,
@@ -194,7 +196,7 @@ fun CustomersScreen(
                 AddNewDataInputField(
                     value = newCustomerName,
                     onValueChange = { newCustomerName = it },
-                    label = "Nama Pelanggan"
+                    label = stringResource(R.string.master_customers_name_label)
                 ),
                 AddNewDataInputField(
                     value = newCustomerPhone,
@@ -203,21 +205,21 @@ fun CustomersScreen(
                             newCustomerPhone = newValue
                         }
                     },
-                    label = "No. WA",
+                    label = stringResource(R.string.master_customers_phone_label),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
             )
 
             AddNewDataPanel(
-                title = "Add New Customer",
-                subTitle = "Tambah pelanggan baru",
+                title = stringResource(R.string.master_customers_add_title),
+                subTitle = stringResource(R.string.master_customers_add_subtitle),
                 inputFields = inputFields,
                 onAddClick = {
                     onAddCustomerClick(newCustomerName, newCustomerPhone)
                     newCustomerName = ""
                     newCustomerPhone = ""
                 },
-                addButtonText = "Add Customer"
+                addButtonText = stringResource(R.string.master_customers_add_button)
             )
         }
     }

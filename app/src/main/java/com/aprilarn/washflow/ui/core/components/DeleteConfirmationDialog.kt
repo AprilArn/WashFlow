@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -80,7 +81,7 @@ fun DeleteConfirmationDialog(
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.DeleteForever,
-                        contentDescription = "Delete Confirmation",
+                        contentDescription = stringResource(R.string.dialog_delete_title),
                         tint = PastelRose,
                         modifier = Modifier.size(28.dp)
                     )
@@ -89,7 +90,7 @@ fun DeleteConfirmationDialog(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 Text(
-                    text = "Delete Confirmation",
+                    text = stringResource(R.string.dialog_delete_title),
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp,
@@ -98,7 +99,7 @@ fun DeleteConfirmationDialog(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Apakah Anda yakin ingin menghapus '$itemName'?",
+                    text = stringResource(R.string.dialog_delete_message, itemName),
                     style = MaterialTheme.typography.bodyMedium.copy(
                         color = GrayBlue,
                         fontWeight = FontWeight.Medium
@@ -107,7 +108,7 @@ fun DeleteConfirmationDialog(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Tindakan ini tidak dapat dibatalkan.",
+                    text = stringResource(R.string.dialog_delete_warning),
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = PastelNeutralText
                     ),
@@ -117,8 +118,8 @@ fun DeleteConfirmationDialog(
 
                 // Tombol Delete Khusus (Long Press)
                 HoldToConfirmButton(
-                    defaultText = "Hold to Delete (1s)",
-                    progressText = "Deleting...",
+                    defaultText = stringResource(R.string.dialog_delete_hold_default),
+                    progressText = stringResource(R.string.dialog_delete_hold_progress),
                     durationMillis = 1500,
                     onConfirm = onConfirm
                 )
@@ -136,7 +137,7 @@ fun DeleteConfirmationDialog(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            text = "Cancel",
+                            text = stringResource(R.string.common_cancel),
                             color = GrayBlue,
                             fontWeight = FontWeight.SemiBold
                         )

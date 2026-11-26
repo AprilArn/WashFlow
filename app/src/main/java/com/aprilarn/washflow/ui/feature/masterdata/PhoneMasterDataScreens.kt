@@ -40,11 +40,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.core.navigation.AppNavigation
 import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.data.model.Items
@@ -90,24 +92,24 @@ fun PhoneTableDataScreen(
     ) {
         item {
             TableDataCard(
-                text = "Customers",
-                subText = "Pelanggan",
+                text = stringResource(R.string.master_customers_title),
+                subText = stringResource(R.string.table_subtitle_customers),
                 count = uiState.customerCount,
                 onClick = { onNavigate(AppNavigation.Customers.route) }
             )
         }
         item {
             TableDataCard(
-                text = "Services",
-                subText = "Layanan",
+                text = stringResource(R.string.master_services_title),
+                subText = stringResource(R.string.table_subtitle_services),
                 count = uiState.serviceCount,
                 onClick = { onNavigate(AppNavigation.Services.route) }
             )
         }
         item {
             TableDataCard(
-                text = "Items",
-                subText = "Barang",
+                text = stringResource(R.string.master_items_title),
+                subText = stringResource(R.string.table_subtitle_items),
                 count = uiState.itemCount,
                 onClick = { onNavigate(AppNavigation.Items.route) }
             )
@@ -143,7 +145,7 @@ fun PhoneCustomersScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         val customerColumns = listOf(
             ColumnConfig<Customers>(
-                header = "Name",
+                header = stringResource(R.string.master_customers_col_name),
                 weight = 0.50f,
                 content = { customer ->
                     Text(
@@ -157,7 +159,7 @@ fun PhoneCustomersScreen(
                 }
             ),
             ColumnConfig<Customers>(
-                header = "Contact",
+                header = stringResource(R.string.master_customers_col_contact),
                 weight = 0.35f,
                 content = { customer ->
                     Text(
@@ -170,7 +172,7 @@ fun PhoneCustomersScreen(
                 }
             ),
             ColumnConfig<Customers>(
-                header = "Edit",
+                header = stringResource(R.string.common_edit),
                 weight = 0.15f,
                 content = {
                     Box(
@@ -181,7 +183,7 @@ fun PhoneCustomersScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Edit,
-                            contentDescription = "Edit",
+                            contentDescription = stringResource(R.string.common_edit),
                             tint = PastelBlue,
                             modifier = Modifier.size(15.dp)
                         )
@@ -191,11 +193,11 @@ fun PhoneCustomersScreen(
         )
 
         DataTablePanel(
-            title = "Customers",
+            title = stringResource(R.string.master_customers_title),
             itemCount = uiState.customers.size,
             searchQuery = searchQuery,
             onSearchQueryChange = { searchQuery = it },
-            searchPlaceholder = "Cari nama atau kontak pelanggan...",
+            searchPlaceholder = stringResource(R.string.master_customers_search_placeholder),
             columns = customerColumns,
             data = filteredCustomers,
             isLoading = uiState.isLoading,
@@ -206,8 +208,8 @@ fun PhoneCustomersScreen(
             onClick = { showAddSheet = true },
             containerColor = PastelBlue,
             contentColor = Color.White,
-            icon = { Icon(Icons.Rounded.Add, contentDescription = "Tambah Pelanggan") },
-            text = { Text("Pelanggan", fontWeight = FontWeight.Bold) },
+            icon = { Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.master_customers_add_button)) },
+            text = { Text(stringResource(R.string.master_customers_fab), fontWeight = FontWeight.Bold) },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp)
@@ -223,18 +225,18 @@ fun PhoneCustomersScreen(
         ) {
             Box(modifier = Modifier.padding(16.dp)) {
                 AddNewDataPanel(
-                    title = "Add New Customer",
-                    subTitle = "Tambah pelanggan baru",
+                    title = stringResource(R.string.master_customers_add_title),
+                    subTitle = stringResource(R.string.master_customers_add_subtitle),
                     inputFields = listOf(
                         AddNewDataInputField(
                             value = newCustomerName,
                             onValueChange = { newCustomerName = it },
-                            label = "Nama Pelanggan"
+                            label = stringResource(R.string.master_customers_name_label)
                         ),
                         AddNewDataInputField(
                             value = newCustomerPhone,
                             onValueChange = { newCustomerPhone = it },
-                            label = "Kontak / WhatsApp",
+                            label = stringResource(R.string.master_customers_phone_label),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
                     ),
@@ -244,7 +246,7 @@ fun PhoneCustomersScreen(
                         newCustomerPhone = ""
                         showAddSheet = false
                     },
-                    addButtonText = "Add Customer"
+                    addButtonText = stringResource(R.string.master_customers_add_button)
                 )
             }
         }
@@ -267,17 +269,17 @@ fun PhoneCustomersScreen(
         } else {
             Dialog(onDismissRequest = onDismissDialog) {
                 EditDataPanel(
-                    title = "Edit ${customerToEdit.name}",
+                    title = stringResource(R.string.master_edit_item_title, customerToEdit.name),
                     inputFields = listOf(
                         AddNewDataInputField(
                             value = editedName,
                             onValueChange = { editedName = it },
-                            label = "Customer Name"
+                            label = stringResource(R.string.master_customers_name_label)
                         ),
                         AddNewDataInputField(
                             value = editedContact,
                             onValueChange = { editedContact = it },
-                            label = "Contact",
+                            label = stringResource(R.string.master_customers_contact_label),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
                     ),
@@ -320,7 +322,7 @@ fun PhoneServicesScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         val serviceColumns = listOf(
             ColumnConfig<Services>(
-                header = "ID",
+                header = stringResource(R.string.master_services_col_id),
                 weight = 0.28f,
                 content = { service ->
                     Surface(
@@ -340,7 +342,7 @@ fun PhoneServicesScreen(
                 }
             ),
             ColumnConfig<Services>(
-                header = "Service Name",
+                header = stringResource(R.string.master_services_col_name),
                 weight = 0.57f,
                 content = { service ->
                     Text(
@@ -354,7 +356,7 @@ fun PhoneServicesScreen(
                 }
             ),
             ColumnConfig<Services>(
-                header = "Edit",
+                header = stringResource(R.string.common_edit),
                 weight = 0.15f,
                 content = {
                     Box(
@@ -365,7 +367,7 @@ fun PhoneServicesScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Edit,
-                            contentDescription = "Edit Service",
+                            contentDescription = stringResource(R.string.master_services_edit_cd),
                             tint = PastelGreen,
                             modifier = Modifier.size(15.dp)
                         )
@@ -375,11 +377,11 @@ fun PhoneServicesScreen(
         )
 
         DataTablePanel(
-            title = "Services",
+            title = stringResource(R.string.master_services_title),
             itemCount = uiState.services.size,
             searchQuery = searchQuery,
             onSearchQueryChange = { searchQuery = it },
-            searchPlaceholder = "Cari ID atau nama layanan...",
+            searchPlaceholder = stringResource(R.string.master_services_search_placeholder),
             columns = serviceColumns,
             data = filteredServices,
             isLoading = uiState.isLoading,
@@ -390,8 +392,8 @@ fun PhoneServicesScreen(
             onClick = { showAddSheet = true },
             containerColor = PastelGreen,
             contentColor = Color.White,
-            icon = { Icon(Icons.Rounded.Add, contentDescription = "Tambah Layanan") },
-            text = { Text("Layanan", fontWeight = FontWeight.Bold) },
+            icon = { Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.master_services_add_button)) },
+            text = { Text(stringResource(R.string.master_services_fab), fontWeight = FontWeight.Bold) },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp)
@@ -407,18 +409,18 @@ fun PhoneServicesScreen(
         ) {
             Box(modifier = Modifier.padding(16.dp)) {
                 AddNewDataPanel(
-                    title = "Add New Service",
-                    subTitle = "Tambah layanan baru",
+                    title = stringResource(R.string.master_services_add_title),
+                    subTitle = stringResource(R.string.master_services_add_subtitle),
                     inputFields = listOf(
                         AddNewDataInputField(
                             value = newServiceName,
                             onValueChange = { newServiceName = it },
-                            label = "Nama Service"
+                            label = stringResource(R.string.master_services_name_label)
                         ),
                         AddNewDataInputField(
                             value = newServiceId,
                             onValueChange = { newServiceId = it },
-                            label = "ID Service"
+                            label = stringResource(R.string.master_services_id_label)
                         )
                     ),
                     onAddClick = {
@@ -427,7 +429,7 @@ fun PhoneServicesScreen(
                         newServiceName = ""
                         showAddSheet = false
                     },
-                    addButtonText = "Add Service"
+                    addButtonText = stringResource(R.string.master_services_add_button)
                 )
             }
         }
@@ -449,12 +451,12 @@ fun PhoneServicesScreen(
         } else {
             Dialog(onDismissRequest = onDismissDialog) {
                 EditDataPanel(
-                    title = "Edit ${serviceToEdit.serviceName}",
+                    title = stringResource(R.string.master_edit_item_title, serviceToEdit.serviceName),
                     inputFields = listOf(
                         AddNewDataInputField(
                             value = editedName,
                             onValueChange = { editedName = it },
-                            label = "Service Name"
+                            label = stringResource(R.string.master_services_name_label)
                         )
                     ),
                     onDoneClick = {
@@ -498,7 +500,7 @@ fun PhoneItemsScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         val itemColumns = listOf(
             ColumnConfig<Items>(
-                header = "Svc",
+                header = stringResource(R.string.master_items_col_svc_short),
                 weight = 0.22f,
                 content = { item ->
                     Surface(
@@ -517,7 +519,7 @@ fun PhoneItemsScreen(
                 }
             ),
             ColumnConfig<Items>(
-                header = "Item",
+                header = stringResource(R.string.master_items_col_item_short),
                 weight = 0.40f,
                 content = { item ->
                     Text(
@@ -531,7 +533,7 @@ fun PhoneItemsScreen(
                 }
             ),
             ColumnConfig<Items>(
-                header = "Price",
+                header = stringResource(R.string.master_items_col_price_short),
                 weight = 0.25f,
                 content = { item ->
                     Text(
@@ -545,7 +547,7 @@ fun PhoneItemsScreen(
                 }
             ),
             ColumnConfig<Items>(
-                header = "Edit",
+                header = stringResource(R.string.common_edit),
                 weight = 0.13f,
                 content = {
                     Box(
@@ -556,7 +558,7 @@ fun PhoneItemsScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Edit,
-                            contentDescription = "Edit Item",
+                            contentDescription = stringResource(R.string.master_items_edit_cd),
                             tint = PastelAmber,
                             modifier = Modifier.size(15.dp)
                         )
@@ -566,11 +568,11 @@ fun PhoneItemsScreen(
         )
 
         DataTablePanel(
-            title = "Items",
+            title = stringResource(R.string.master_items_title),
             itemCount = uiState.items.size,
             searchQuery = searchQuery,
             onSearchQueryChange = { searchQuery = it },
-            searchPlaceholder = "Cari nama barang, layanan, atau harga...",
+            searchPlaceholder = stringResource(R.string.master_items_search_placeholder),
             columns = itemColumns,
             data = filteredItems,
             isLoading = uiState.isLoading,
@@ -581,8 +583,8 @@ fun PhoneItemsScreen(
             onClick = { showAddSheet = true },
             containerColor = PastelAmber,
             contentColor = Color.White,
-            icon = { Icon(Icons.Rounded.Add, contentDescription = "Tambah Barang") },
-            text = { Text("Barang", fontWeight = FontWeight.Bold) },
+            icon = { Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.master_items_add_button)) },
+            text = { Text(stringResource(R.string.master_items_fab), fontWeight = FontWeight.Bold) },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp)
@@ -603,7 +605,7 @@ fun PhoneItemsScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Tambah Barang Baru",
+                    text = stringResource(R.string.master_items_add_title),
                     style = MaterialTheme.typography.titleLarge.copy(
                         color = GrayBlue,
                         fontWeight = FontWeight.Bold
@@ -613,13 +615,13 @@ fun PhoneItemsScreen(
                     services = uiState.services,
                     selectedServiceId = newItemService,
                     onServiceSelected = { newItemService = it.serviceId },
-                    label = "Pilih Layanan",
+                    label = stringResource(R.string.master_items_select_service),
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = newItemName,
                     onValueChange = { newItemName = it },
-                    label = { Text("Nama Barang") },
+                    label = { Text(stringResource(R.string.master_items_name_label)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp)
@@ -627,7 +629,7 @@ fun PhoneItemsScreen(
                 OutlinedTextField(
                     value = newItemPrice,
                     onValueChange = { newItemPrice = it },
-                    label = { Text("Harga (Rp)") },
+                    label = { Text(stringResource(R.string.master_items_price_rp_label)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
@@ -648,7 +650,7 @@ fun PhoneItemsScreen(
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PastelAmber)
                 ) {
-                    Text("Simpan Barang", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.master_items_save_button), color = Color.White, fontWeight = FontWeight.Bold)
                 }
                 Spacer(modifier = Modifier.height(8.dp))
             }
@@ -686,7 +688,7 @@ fun PhoneItemsScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = "Edit ${itemToEdit.itemName}",
+                            text = stringResource(R.string.master_edit_item_title, itemToEdit.itemName),
                             style = MaterialTheme.typography.titleLarge.copy(
                                 color = GrayBlue,
                                 fontWeight = FontWeight.Bold
@@ -697,13 +699,13 @@ fun PhoneItemsScreen(
                             services = uiState.services,
                             selectedServiceId = editedService,
                             onServiceSelected = { editedService = it.serviceId },
-                            label = "Service",
+                            label = stringResource(R.string.master_items_service_label),
                             modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
                             value = editedName,
                             onValueChange = { editedName = it },
-                            label = { Text("Item Name") },
+                            label = { Text(stringResource(R.string.master_items_name_label)) },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(14.dp)
@@ -711,7 +713,7 @@ fun PhoneItemsScreen(
                         OutlinedTextField(
                             value = editedPrice,
                             onValueChange = { editedPrice = it },
-                            label = { Text("Item Price") },
+                            label = { Text(stringResource(R.string.master_items_price_label)) },
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth(),
@@ -722,11 +724,11 @@ fun PhoneItemsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             TextButton(onClick = { showDeleteConfirmation = true }) {
-                                Text("Hapus", color = PastelRoseText, fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.common_delete), color = PastelRoseText, fontWeight = FontWeight.Bold)
                             }
                             Row {
                                 TextButton(onClick = onDismissDialog) {
-                                    Text("Batal", color = GrayBlue)
+                                    Text(stringResource(R.string.common_cancel), color = GrayBlue)
                                 }
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Button(
@@ -743,7 +745,7 @@ fun PhoneItemsScreen(
                                     shape = RoundedCornerShape(12.dp),
                                     colors = ButtonDefaults.buttonColors(containerColor = PastelAmber)
                                 ) {
-                                    Text("Simpan", color = Color.White, fontWeight = FontWeight.Bold)
+                                    Text(stringResource(R.string.common_save), color = Color.White, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }

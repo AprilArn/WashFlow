@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -54,7 +55,7 @@ fun LogoutConfirmationDialog(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Konfirmasi Logout",
+                    text = stringResource(R.string.settings_logout_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black
@@ -63,7 +64,7 @@ fun LogoutConfirmationDialog(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "Apakah Anda yakin ingin keluar? Anda harus login kembali untuk mengakses workspace Anda.",
+                    text = stringResource(R.string.settings_logout_message),
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.Gray,
                     textAlign = TextAlign.Center
@@ -73,8 +74,8 @@ fun LogoutConfirmationDialog(
 
                 // Indikator Hold to Logout
                 HoldToConfirmButton(
-                    defaultText = "Hold to Logout (1s)",
-                    progressText = "Logging out...",
+                    defaultText = stringResource(R.string.settings_logout_hold_default),
+                    progressText = stringResource(R.string.settings_logout_hold_progress),
                     durationMillis = 1500,
                     onConfirm = onLogoutConfirmed
                 )
@@ -85,7 +86,7 @@ fun LogoutConfirmationDialog(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Batal", color = Color.Gray)
+                    Text(stringResource(R.string.common_cancel), color = Color.Gray)
                 }
             }
         }

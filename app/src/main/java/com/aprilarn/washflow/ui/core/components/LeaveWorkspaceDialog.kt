@@ -8,10 +8,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
 
 @Composable
@@ -33,7 +35,7 @@ fun LeaveWorkspaceDialog(
             ) {
                 // Judul
                 Text(
-                    text = "Leave Workspace?",
+                    text = stringResource(R.string.dialog_leave_workspace_title),
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Bold,
                         color = GrayBlue
@@ -44,7 +46,7 @@ fun LeaveWorkspaceDialog(
 
                 // Peringatan
                 Text(
-                    text = "Anda akan kehilangan akses ke semua data di workspace ini. Tindakan ini tidak dapat dibatalkan.",
+                    text = stringResource(R.string.dialog_leave_workspace_message),
                     style = MaterialTheme.typography.bodyMedium.copy(
                         color = Color.Gray,
                         textAlign = TextAlign.Center
@@ -55,8 +57,8 @@ fun LeaveWorkspaceDialog(
 
                 // Tombol Hold-to-Leave (4 Detik)
                 HoldToConfirmButton(
-                    defaultText = "Hold to Leave (4s)",
-                    progressText = "Leaving...",
+                    defaultText = stringResource(R.string.dialog_leave_workspace_hold_default),
+                    progressText = stringResource(R.string.dialog_leave_workspace_hold_progress),
                     durationMillis = 4000,
                     onConfirm = onConfirm
                 )
@@ -68,7 +70,7 @@ fun LeaveWorkspaceDialog(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Cancel", color = Color.Gray)
+                    Text(stringResource(R.string.common_cancel), color = Color.Gray)
                 }
             }
         }

@@ -31,7 +31,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.annotation.StringRes
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -40,6 +42,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.data.model.OrderItem
 import com.aprilarn.washflow.data.model.Orders
@@ -71,11 +74,11 @@ import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-private enum class PendingFilter(val label: String) {
-    ALL("Semua"),
-    UNPAID("Belum Lunas"),
-    UNPICKED("Belum Diambil"),
-    OVERDUE_30("Lama (> 30 hari)")
+private enum class PendingFilter(@param:StringRes val labelRes: Int) {
+    ALL(R.string.analytics_filter_all),
+    UNPAID(R.string.analytics_filter_unpaid),
+    UNPICKED(R.string.analytics_filter_unpicked),
+    OVERDUE_30(R.string.analytics_filter_overdue_30)
 }
 
 private sealed interface PendingActionConfirm {
@@ -156,13 +159,13 @@ fun PendingOrdersPanel(
             )
             Column {
                 Text(
-                    text = "Order Tertunda & Piutang",
+                    text = stringResource(R.string.analytics_pending_title),
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = GrayBlue
                 )
                 Text(
-                    text = "Pantau order selesai yang belum dibayar atau belum diambil lintas bulan",
+                    text = stringResource(R.string.analytics_pending_subtitle),
                     fontSize = 13.sp,
                     color = PastelNeutralText,
                     fontWeight = FontWeight.Medium
@@ -181,9 +184,13 @@ fun PendingOrdersPanel(
             val hasUnpaid = totalUnpaidOrders.isNotEmpty()
             PendingSummaryCard(
                 modifier = Modifier.weight(1.2f),
-                title = "Total Piutang",
+                title = stringResource(R.string.analytics_pending_receivables_title),
                 value = CurrencyUtils.formatRupiahWithSymbol(totalUnpaidAmount),
-                subtitle = if (hasUnpaid) "${totalUnpaidOrders.size} order belum bayar" else "Semua sudah lunas",
+                subtitle = if (hasUnpaid) {
+                    stringResource(R.string.analytics_pending_unpaid_orders_sub, totalUnpaidOrders.size)
+                } else {
+                    stringResource(R.string.analytics_pending_all_paid_sub)
+                },
                 containerColor = if (hasUnpaid) PastelAmberBg else PastelGreenSoftBg,
                 iconBgColor = if (hasUnpaid) PastelAmber.copy(alpha = 0.14f) else PastelGreenIconBg,
                 accentColor = if (hasUnpaid) PastelAmber else PastelGreen,
@@ -193,9 +200,13 @@ fun PendingOrdersPanel(
 
             PendingSummaryCard(
                 modifier = Modifier.weight(1f),
-                title = "Siap Diambil",
-                value = "$readyUnpickedCount Order",
-                subtitle = if (readyUnpickedCount > 0) "Selesai, menunggu diambil" else "Tidak ada cucian menumpuk",
+                title = stringResource(R.string.analytics_pending_ready_title),
+                value = stringResource(R.string.analytics_report_order_count_value, readyUnpickedCount),
+                subtitle = if (readyUnpickedCount > 0) {
+                    stringResource(R.string.analytics_pending_waiting_pickup_sub)
+                } else {
+                    stringResource(R.string.analytics_pending_all_picked_sub)
+                },
                 containerColor = PastelBlueSoftBg,
                 iconBgColor = PastelBlueIconBg,
                 accentColor = PastelBlue,
@@ -206,9 +217,13 @@ fun PendingOrdersPanel(
             val hasOldPending = oldPendingCount > 0
             PendingSummaryCard(
                 modifier = Modifier.weight(1f),
-                title = "Tertunda > 30 Hari",
-                value = "$oldPendingCount Order",
-                subtitle = if (hasOldPending) "Perlu segera dihubungi" else "Tidak ada tunggakan lama",
+                title = stringResource(R.string.analytics_pending_overdue30_title),
+                value = stringResource(R.string.analytics_report_order_count_value, oldPendingCount),
+                subtitle = if (hasOldPending) {
+                    stringResource(R.string.analytics_pending_follow_up_sub)
+                } else {
+                    stringResource(R.string.analytics_pending_no_overdue_sub)
+                },
                 containerColor = if (hasOldPending) PastelRoseBg else PastelNeutralBg,
                 iconBgColor = if (hasOldPending) PastelRose.copy(alpha = 0.14f) else PastelSlateBg,
                 accentColor = if (hasOldPending) PastelRoseText else GrayBlue,
@@ -237,7 +252,7 @@ fun PendingOrdersPanel(
                         border = BorderStroke(1.dp, if (isSelected) PastelBlue else PastelBlueBg)
                     ) {
                         Text(
-                            text = filter.label,
+                            text = stringResource(filter.labelRes),
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
                             fontSize = 12.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
@@ -275,7 +290,11 @@ fun PendingOrdersPanel(
                             contentAlignment = Alignment.CenterStart
                         ) {
                             if (searchQuery.isEmpty()) {
-                                Text("Cari nama/kontak/item...", fontSize = 13.sp, color = PastelNeutralText)
+                                Text(
+                                    stringResource(R.string.analytics_pending_search_placeholder),
+                                    fontSize = 13.sp,
+                                    color = PastelNeutralText
+                                )
                             }
                             innerTextField()
                         }
@@ -286,7 +305,7 @@ fun PendingOrdersPanel(
                             ) {
                                 Icon(
                                     Icons.Rounded.Clear,
-                                    contentDescription = "Clear",
+                                    contentDescription = stringResource(R.string.analytics_pending_clear_search_cd),
                                     modifier = Modifier.size(16.dp),
                                     tint = PastelNeutralText
                                 )
@@ -315,6 +334,7 @@ fun PendingOrdersPanel(
                     }
                 }
                 filteredOrders.isEmpty() -> {
+                    val selectedFilterLabel = stringResource(selectedFilter.labelRes)
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Box(
@@ -332,16 +352,22 @@ fun PendingOrdersPanel(
                             }
                             Spacer(modifier = Modifier.height(12.dp))
                             Text(
-                                text = if (allPendingOrders.isEmpty()) "Semua order sudah beres"
-                                else "Tidak ada order pada filter \"${selectedFilter.label}\"",
+                                text = if (allPendingOrders.isEmpty()) {
+                                    stringResource(R.string.analytics_pending_empty_all_title)
+                                } else {
+                                    stringResource(R.string.analytics_pending_empty_filter_title, selectedFilterLabel)
+                                },
                                 color = GrayBlue,
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 14.sp
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = if (allPendingOrders.isEmpty()) "Tidak ada tagihan atau cucian tertunda saat ini."
-                                else "Coba pilih filter atau kata kunci pencarian lain.",
+                                text = if (allPendingOrders.isEmpty()) {
+                                    stringResource(R.string.analytics_pending_empty_all_subtitle)
+                                } else {
+                                    stringResource(R.string.analytics_pending_empty_filter_subtitle)
+                                },
                                 color = PastelNeutralText,
                                 fontSize = 12.sp
                             )
@@ -367,7 +393,7 @@ fun PendingOrdersPanel(
                                     if (rawDigits.isBlank()) {
                                         Toast.makeText(
                                             context,
-                                            "Nomor WhatsApp pelanggan belum tersedia",
+                                            context.getString(R.string.analytics_pending_msg_no_whatsapp),
                                             Toast.LENGTH_SHORT
                                         ).show()
                                     } else {
@@ -472,24 +498,30 @@ private fun PendingOrderRow(
     onMarkPaid: () -> Unit,
     onMarkPickedUp: () -> Unit
 ) {
-    val customerName = order.customerName?.takeIf { it.isNotBlank() } ?: "Tanpa nama"
+    val customerName = order.customerName?.takeIf { it.isNotBlank() }
+        ?: stringResource(R.string.orders_unnamed_customer)
     val initial = customerName.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "?"
-    val dateFormat = remember { SimpleDateFormat("dd MMM yyyy", Locale.forLanguageTag("id-ID")) }
+    val currentLocale = Locale.getDefault()
+    val dateFormat = remember(currentLocale) { SimpleDateFormat("dd MMM yyyy", currentLocale) }
     val finishDateText = order.orderFinishDate?.let { dateFormat.format(it.toDate()) }
     val dateSummaryText = if (finishDateText != null) {
-        "Selesai $finishDateText"
+        stringResource(R.string.analytics_report_completed_prefix, finishDateText)
     } else {
-        "Masuk ${dateFormat.format(order.orderDate.toDate())}"
+        stringResource(R.string.analytics_report_received_prefix, dateFormat.format(order.orderDate.toDate()))
     }
-    val itemsPreview = remember(order.orderItems) {
-        if (order.orderItems.isEmpty()) "Tidak ada item"
-        else order.orderItems.joinToString(", ") { "${it.itemName ?: "Item"} (${it.itemQuantity ?: 0})" }
+    val noItemsLabel = stringResource(R.string.analytics_pending_no_items)
+    val defaultItemLabel = stringResource(R.string.analytics_report_default_item)
+    val itemsPreview = remember(order.orderItems, noItemsLabel, defaultItemLabel) {
+        if (order.orderItems.isEmpty()) noItemsLabel
+        else order.orderItems.joinToString(", ") { "${it.itemName ?: defaultItemLabel} (${it.itemQuantity ?: 0})" }
     }
 
     val ageLabel = if (order.orderFinishDate != null) {
-        if (ageDays >= 1) "Selesai $ageDays hari lalu" else "Selesai hari ini"
+        if (ageDays >= 1) stringResource(R.string.analytics_pending_done_days_ago, ageDays)
+        else stringResource(R.string.analytics_pending_done_today)
     } else {
-        if (ageDays >= 1) "Masuk $ageDays hari lalu" else "Masuk hari ini"
+        if (ageDays >= 1) stringResource(R.string.analytics_pending_received_days_ago, ageDays)
+        else stringResource(R.string.analytics_pending_received_today)
     }
     val (ageBg, ageColor) = when {
         ageDays > 30 -> PastelRoseBg to PastelRoseText
@@ -588,7 +620,10 @@ private fun PendingOrderRow(
                         color = if (order.alreadyPickedUp) PastelGreenBg else PastelAmberBg
                     ) {
                         Text(
-                            text = if (order.alreadyPickedUp) "Diambil" else "Belum Diambil",
+                            text = stringResource(
+                                if (order.alreadyPickedUp) R.string.manage_order_picked_up
+                                else R.string.manage_order_not_picked_up
+                            ),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (order.alreadyPickedUp) PastelGreen else PastelAmber,
@@ -632,7 +667,7 @@ private fun PendingOrderRow(
                                     modifier = Modifier.size(14.dp)
                                 )
                                 Text(
-                                    text = "Tandai Lunas",
+                                    text = stringResource(R.string.analytics_pending_mark_paid),
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = PastelBlue
@@ -659,7 +694,7 @@ private fun PendingOrderRow(
                                     modifier = Modifier.size(14.dp)
                                 )
                                 Text(
-                                    text = "Diambil",
+                                    text = stringResource(R.string.analytics_pending_mark_picked_up),
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = PastelGreenDark
@@ -680,12 +715,12 @@ private fun PendingOrderRow(
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Rounded.Chat,
-                                contentDescription = "Ingatkan WhatsApp",
+                                contentDescription = stringResource(R.string.analytics_pending_whatsapp_cd),
                                 tint = if (!customerContact.isNullOrBlank()) PastelGreenDark else Gray,
                                 modifier = Modifier.size(14.dp)
                             )
                             Text(
-                                text = "WhatsApp",
+                                text = stringResource(R.string.analytics_pending_whatsapp),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = if (!customerContact.isNullOrBlank()) PastelGreenDark else Gray
@@ -704,6 +739,7 @@ private fun PendingActionConfirmDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
+    val customerFallback = stringResource(R.string.analytics_customer_fallback)
     val customerName: String
     val title: String
     val description: String
@@ -714,29 +750,29 @@ private fun PendingActionConfirmDialog(
 
     when (action) {
         is PendingActionConfirm.MarkPaid -> {
-            customerName = action.order.customerName?.takeIf { it.isNotBlank() } ?: "Pelanggan"
+            customerName = action.order.customerName?.takeIf { it.isNotBlank() } ?: customerFallback
             val totalText = CurrencyUtils.formatRupiahWithSymbol(action.order.totalPrice)
-            title = "Konfirmasi Pelunasan"
-            description = "Tandai order milik $customerName sebesar $totalText sebagai sudah dibayar?"
-            confirmLabel = "Ya, Tandai Lunas"
+            title = stringResource(R.string.analytics_pending_confirm_paid_title)
+            description = stringResource(R.string.analytics_pending_confirm_paid_msg, customerName, totalText)
+            confirmLabel = stringResource(R.string.analytics_pending_confirm_paid_btn)
             icon = Icons.Rounded.Payments
             badgeBgColor = PastelBlueBg
             accentColor = PastelBlue
         }
         is PendingActionConfirm.MarkPickedUp -> {
-            customerName = action.order.customerName?.takeIf { it.isNotBlank() } ?: "Pelanggan"
-            title = "Konfirmasi Pengambilan"
-            description = "Tandai cucian milik $customerName sebagai sudah diambil oleh pelanggan?"
-            confirmLabel = "Ya, Sudah Diambil"
+            customerName = action.order.customerName?.takeIf { it.isNotBlank() } ?: customerFallback
+            title = stringResource(R.string.analytics_pending_confirm_pickup_title)
+            description = stringResource(R.string.analytics_pending_confirm_pickup_msg, customerName)
+            confirmLabel = stringResource(R.string.analytics_pending_confirm_pickup_btn)
             icon = Icons.Rounded.Storefront
             badgeBgColor = PastelGreenBg
             accentColor = PastelGreenDark
         }
         is PendingActionConfirm.SendWhatsApp -> {
-            customerName = action.order.customerName?.takeIf { it.isNotBlank() } ?: "Pelanggan"
-            title = "Kirim Pengingat WhatsApp"
-            description = "Buka WhatsApp untuk mengirim pengingat ke $customerName (${action.contact})?"
-            confirmLabel = "Buka WhatsApp"
+            customerName = action.order.customerName?.takeIf { it.isNotBlank() } ?: customerFallback
+            title = stringResource(R.string.analytics_pending_confirm_wa_title)
+            description = stringResource(R.string.analytics_pending_confirm_wa_msg, customerName, action.contact)
+            confirmLabel = stringResource(R.string.analytics_pending_confirm_wa_btn)
             icon = Icons.AutoMirrored.Rounded.Chat
             badgeBgColor = PastelGreenBg
             accentColor = PastelGreenDark
@@ -801,7 +837,7 @@ private fun PendingActionConfirmDialog(
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
-                            text = "Batal",
+                            text = stringResource(R.string.common_cancel),
                             color = Gray,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -842,7 +878,7 @@ private fun openWhatsAppReminder(
 ) {
     val rawDigits = contact.orEmpty().filter { it.isDigit() }
     if (rawDigits.isBlank()) {
-        Toast.makeText(context, "Nomor WhatsApp pelanggan belum tersedia", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.analytics_pending_msg_no_whatsapp), Toast.LENGTH_SHORT).show()
         return
     }
     val formattedPhone = when {
@@ -851,24 +887,25 @@ private fun openWhatsAppReminder(
         else -> rawDigits
     }
 
-    val customerName = order.customerName?.takeIf { it.isNotBlank() } ?: "Kak"
+    val customerName = order.customerName?.takeIf { it.isNotBlank() }
+        ?: context.getString(R.string.analytics_customer_fallback)
     val totalText = CurrencyUtils.formatRupiahWithSymbol(order.totalPrice)
     val message = when {
         order.isDone() && !order.alreadyPickedUp && !order.alreadyPaid ->
-            "Halo $customerName, cucian Anda di laundry sudah selesai dan siap diambil dengan total tagihan $totalText. Terima kasih."
+            context.getString(R.string.analytics_wa_ready_unpaid, customerName, totalText)
         order.isDone() && !order.alreadyPickedUp ->
-            "Halo $customerName, cucian Anda di laundry sudah selesai dan siap diambil ya. Terima kasih."
+            context.getString(R.string.analytics_wa_ready_paid, customerName)
         !order.alreadyPaid ->
-            "Halo $customerName, kami ingin mengingatkan untuk tagihan order laundry sebesar $totalText yang belum dilunasi. Terima kasih."
+            context.getString(R.string.analytics_wa_unpaid, customerName, totalText)
         else ->
-            "Halo $customerName, kami ingin mengabarkan informasi terkait order laundry Anda (total $totalText). Terima kasih."
+            context.getString(R.string.analytics_wa_general, customerName, totalText)
     }
 
     val url = "https://wa.me/$formattedPhone?text=${Uri.encode(message)}"
     try {
         context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
     } catch (_: Exception) {
-        Toast.makeText(context, "Tidak dapat membuka WhatsApp", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.analytics_pending_msg_wa_failed), Toast.LENGTH_SHORT).show()
     }
 }
 

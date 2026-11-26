@@ -2,9 +2,11 @@ package com.aprilarn.washflow.ui.feature.masterdata.items
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Items
 import com.aprilarn.washflow.domain.usecase.ManageItemUseCase
 import com.aprilarn.washflow.domain.usecase.ManageServiceUseCase
+import com.aprilarn.washflow.ui.core.utils.UiText
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -50,7 +52,10 @@ class ItemsViewModel(
                 }
             }.catch { e ->
                 _uiState.update {
-                    it.copy(errorMessage = "Failed to load data.", isLoading = false)
+                    it.copy(
+                        errorMessage = UiText.StringResource(R.string.master_items_msg_load_failed),
+                        isLoading = false
+                    )
                 }
             }.collect() // Mulai mengoleksi flow gabungan
         }
@@ -60,7 +65,7 @@ class ItemsViewModel(
         if (service.isBlank() || name.isBlank() || price <= 0.0) {
             _uiState.update {
                 it.copy(
-                    errorMessage = "All fields must be filled correctly."
+                    errorMessage = UiText.StringResource(R.string.master_items_msg_fields_required)
                 )
             }
             return
@@ -71,13 +76,13 @@ class ItemsViewModel(
             if (success) {
                 _uiState.update {
                     it.copy(
-                        successMessage = "Item '$name' added successfully!"
+                        successMessage = UiText.StringResource(R.string.master_items_msg_added, name)
                     )
                 }
             } else {
                 _uiState.update {
                     it.copy(
-                        errorMessage = "Failed to add item. Please try again."
+                        errorMessage = UiText.StringResource(R.string.master_items_msg_add_failed)
                     )
                 }
             }
@@ -90,14 +95,14 @@ class ItemsViewModel(
             if (success) {
                 _uiState.update {
                     it.copy(
-                        successMessage = "Item updated!",
+                        successMessage = UiText.StringResource(R.string.master_items_msg_updated),
                         selectedItem = null
                     )
                 }
             } else {
                 _uiState.update {
                     it.copy(
-                        errorMessage = "Failed to update item."
+                        errorMessage = UiText.StringResource(R.string.master_items_msg_update_failed)
                     )
                 }
             }
@@ -110,14 +115,14 @@ class ItemsViewModel(
             if (success) {
                 _uiState.update {
                     it.copy(
-                        successMessage = "Item deleted!",
+                        successMessage = UiText.StringResource(R.string.master_items_msg_deleted),
                         selectedItem = null
                     )
                 }
             } else {
                 _uiState.update {
                     it.copy(
-                        errorMessage = "Failed to delete item."
+                        errorMessage = UiText.StringResource(R.string.master_items_msg_delete_failed)
                     )
                 }
             }

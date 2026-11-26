@@ -32,10 +32,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.feature.masterdata.tabledata.resolveTableDataTheme
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
 import com.aprilarn.washflow.ui.core.theme.PastelNeutralBg
@@ -54,7 +56,7 @@ fun AddNewDataPanel(
     subTitle: String,
     inputFields: List<AddNewDataInputField>,
     onAddClick: () -> Unit,
-    addButtonText: String = "Add",
+    addButtonText: String = stringResource(R.string.common_add),
     modifier: Modifier = Modifier
 ) {
     val borderRadius = RoundedCornerShape(24.dp)
@@ -190,12 +192,12 @@ fun AddNewDataPanelPreview() {
             ) {}
 
             val sampleFields = listOf(
-                AddNewDataInputField(label = "Nama Pelanggan", value = "", onValueChange = {}),
-                AddNewDataInputField(label = "No. WA", value = "", onValueChange = {})
+                AddNewDataInputField(label = "Customer Name", value = "", onValueChange = {}),
+                AddNewDataInputField(label = "WhatsApp Number", value = "", onValueChange = {})
             )
             AddNewDataPanel(
                 title = "Add New Customer",
-                subTitle = "Tambah pelanggan baru",
+                subTitle = "Add a new customer",
                 inputFields = sampleFields,
                 onAddClick = {},
                 addButtonText = "Add Customer",

@@ -23,7 +23,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.withStyle
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.data.model.Items
 import com.aprilarn.washflow.data.model.Services
@@ -207,48 +209,68 @@ fun ActionConfirmationCard(
     var serviceTextFieldSize by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
 
     val description = when (action) {
-        is AiAgentAction.Navigate -> buildAnnotatedString {
-            append("Go to ")
-            withStyle(style = SpanStyle(color = SkyBlue, fontWeight = FontWeight.Bold)) {
-                append(action.destination.label)
+        is AiAgentAction.Navigate -> {
+            val navPrefix = stringResource(R.string.ai_confirm_navigate_prefix)
+            val navLabel = stringResource(action.destination.labelRes)
+            val navSuffix = stringResource(R.string.ai_confirm_navigate_suffix)
+            buildAnnotatedString {
+                append(navPrefix)
+                withStyle(style = SpanStyle(color = SkyBlue, fontWeight = FontWeight.Bold)) {
+                    append(navLabel)
+                }
+                append(navSuffix)
             }
-            append(" page?")
         }
-        is AiAgentAction.AddCustomer -> buildAnnotatedString {
-            append("Add ")
-            withStyle(style = SpanStyle(color = GrayBlue, fontWeight = FontWeight.Bold)) {
-                append(editedName)
+        is AiAgentAction.AddCustomer -> {
+            val prefix = stringResource(R.string.ai_confirm_add_customer_prefix)
+            val suffix = stringResource(R.string.ai_confirm_add_customer_suffix)
+            buildAnnotatedString {
+                append(prefix)
+                withStyle(style = SpanStyle(color = GrayBlue, fontWeight = FontWeight.Bold)) {
+                    append(editedName)
+                }
+                append(suffix)
             }
-            append(" as a new customer?")
         }
-        is AiAgentAction.AddItem -> buildAnnotatedString {
-            append("Add laundry item ")
-            withStyle(style = SpanStyle(color = GrayBlue, fontWeight = FontWeight.Bold)) {
-                append(editedName)
+        is AiAgentAction.AddItem -> {
+            val prefix = stringResource(R.string.ai_confirm_add_item_prefix)
+            val midService = stringResource(R.string.ai_confirm_add_item_middle_service)
+            val midPrice = stringResource(R.string.ai_confirm_add_item_middle_price)
+            buildAnnotatedString {
+                append(prefix)
+                withStyle(style = SpanStyle(color = GrayBlue, fontWeight = FontWeight.Bold)) {
+                    append(editedName)
+                }
+                append(midService)
+                withStyle(style = SpanStyle(color = GrayBlue, fontWeight = FontWeight.Bold)) {
+                    append(editedServiceName)
+                }
+                append(midPrice)
+                withStyle(style = SpanStyle(color = SkyBlue, fontWeight = FontWeight.Bold)) {
+                    append(CurrencyUtils.formatRupiahWithSymbol(editedValue.toDoubleOrNull() ?: 0.0))
+                }
+                append("?")
             }
-            append(" to ")
-            withStyle(style = SpanStyle(color = GrayBlue, fontWeight = FontWeight.Bold)) {
-                append(editedServiceName)
-            }
-            append(" with price ")
-            withStyle(style = SpanStyle(color = SkyBlue, fontWeight = FontWeight.Bold)) {
-                append(CurrencyUtils.formatRupiahWithSymbol(editedValue.toDoubleOrNull() ?: 0.0))
-            }
-            append("?")
         }
-        is AiAgentAction.DeleteCustomer -> buildAnnotatedString {
-            append("Delete customer ")
-            withStyle(style = SpanStyle(color = Color.Red, fontWeight = FontWeight.Bold)) {
-                append(editedName)
+        is AiAgentAction.DeleteCustomer -> {
+            val prefix = stringResource(R.string.ai_confirm_delete_customer_prefix)
+            buildAnnotatedString {
+                append(prefix)
+                withStyle(style = SpanStyle(color = Color.Red, fontWeight = FontWeight.Bold)) {
+                    append(editedName)
+                }
+                append("?")
             }
-            append("?")
         }
-        is AiAgentAction.DeleteItem -> buildAnnotatedString {
-            append("Delete laundry item ")
-            withStyle(style = SpanStyle(color = Color.Red, fontWeight = FontWeight.Bold)) {
-                append(editedName)
+        is AiAgentAction.DeleteItem -> {
+            val prefix = stringResource(R.string.ai_confirm_delete_item_prefix)
+            buildAnnotatedString {
+                append(prefix)
+                withStyle(style = SpanStyle(color = Color.Red, fontWeight = FontWeight.Bold)) {
+                    append(editedName)
+                }
+                append("?")
             }
-            append("?")
         }
         is AiAgentAction.Unknown -> AnnotatedString(action.message)
         else -> AnnotatedString("")
@@ -261,7 +283,7 @@ fun ActionConfirmationCard(
             .padding(16.dp)
     ) {
         Text(
-            text = "Aira needs your confirmation:",
+            text = stringResource(R.string.ai_confirm_header),
             style = MaterialTheme.typography.labelSmall,
             color = Gray,
             fontWeight = FontWeight.Medium
@@ -279,7 +301,18 @@ fun ActionConfirmationCard(
                                 isPhoneDropdownExpanded = false
                                 isServiceDropdownExpanded = false
                             },
-                            label = { Text(if (action is AiAgentAction.DeleteItem || action is AiAgentAction.AddItem) "Item Name" else "Customer Name", fontSize = 12.sp) },
+                            label = {
+                                Text(
+                                    stringResource(
+                                        if (action is AiAgentAction.DeleteItem || action is AiAgentAction.AddItem) {
+                                            R.string.ai_field_item_name
+                                        } else {
+                                            R.string.ai_field_customer_name
+                                        }
+                                    ),
+                                    fontSize = 12.sp
+                                )
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .onGloballyPositioned { coordinates ->
@@ -405,11 +438,13 @@ fun ActionConfirmationCard(
                                 },
                                 label = {
                                     Text(
-                                        when (action) {
-                                            is AiAgentAction.AddCustomer, is AiAgentAction.DeleteCustomer -> "Phone Number"
-                                            is AiAgentAction.AddItem -> "Price"
-                                            else -> "Customer ID"
-                                        },
+                                        stringResource(
+                                            when (action) {
+                                                is AiAgentAction.AddCustomer, is AiAgentAction.DeleteCustomer -> R.string.ai_field_phone_number
+                                                is AiAgentAction.AddItem -> R.string.ai_field_price
+                                                else -> R.string.ai_field_customer_id
+                                            }
+                                        ),
                                         fontSize = 12.sp
                                     )
                                 },
@@ -489,7 +524,7 @@ fun ActionConfirmationCard(
                                         isNameDropdownExpanded = false
                                         isPhoneDropdownExpanded = false
                                     },
-                                    label = { Text("Service", fontSize = 12.sp) },
+                                    label = { Text(stringResource(R.string.ai_field_service), fontSize = 12.sp) },
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .onGloballyPositioned { coordinates ->
@@ -554,7 +589,7 @@ fun ActionConfirmationCard(
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
                                 Text(
-                                    text = "Item Details",
+                                    text = stringResource(R.string.ai_item_details_header),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = Gray
                                 )
@@ -564,7 +599,8 @@ fun ActionConfirmationCard(
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Column {
-                                        val serviceName = services.find { it.serviceId == selectedItem!!.serviceId }?.serviceName ?: "Unknown Service"
+                                        val serviceName = services.find { it.serviceId == selectedItem!!.serviceId }?.serviceName
+                                            ?: stringResource(R.string.ai_unknown_service)
                                         Text(
                                             text = selectedItem!!.itemName,
                                             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
@@ -600,7 +636,7 @@ fun ActionConfirmationCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 TextButton(onClick = onCancel) {
-                    Text("Cancel", color = Gray, fontSize = 13.sp)
+                    Text(stringResource(R.string.common_cancel), color = Gray, fontSize = 13.sp)
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Button(
@@ -634,7 +670,13 @@ fun ActionConfirmationCard(
                     modifier = Modifier.height(36.dp)
                 ) {
                     Text(
-                        if (action is AiAgentAction.DeleteCustomer || action is AiAgentAction.DeleteItem) "Delete" else "Confirm",
+                        stringResource(
+                            if (action is AiAgentAction.DeleteCustomer || action is AiAgentAction.DeleteItem) {
+                                R.string.common_delete
+                            } else {
+                                R.string.ai_confirm_btn
+                            }
+                        ),
                         color = Color.White,
                         fontSize = 13.sp
                     )

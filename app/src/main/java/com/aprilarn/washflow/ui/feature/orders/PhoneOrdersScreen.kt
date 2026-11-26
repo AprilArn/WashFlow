@@ -69,6 +69,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -76,6 +77,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.data.model.Items
 import com.aprilarn.washflow.ui.core.components.NoDeadlineConfirmationDialog
@@ -198,13 +200,17 @@ fun PhoneOrdersScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.ReceiptLong,
-                                contentDescription = "Preview Nota",
+                                contentDescription = stringResource(R.string.orders_phone_preview_receipt_cd),
                                 tint = PastelBlue
                             )
                         }
                         Column {
                             Text(
-                                text = if (totalItemTypes > 0) "$totalItemTypes jenis ($totalQty pcs)" else "Belum ada item dipilih",
+                                text = if (totalItemTypes > 0) {
+                                    stringResource(R.string.orders_phone_cart_summary, totalItemTypes, totalQty)
+                                } else {
+                                    stringResource(R.string.orders_phone_no_items_selected)
+                                },
                                 style = MaterialTheme.typography.labelMedium.copy(
                                     color = PastelNeutralText,
                                     fontWeight = FontWeight.SemiBold
@@ -227,7 +233,7 @@ fun PhoneOrdersScreen(
                         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
                     ) {
                         Text(
-                            text = "Lihat Nota",
+                            text = stringResource(R.string.orders_phone_view_receipt),
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp
@@ -266,12 +272,12 @@ fun PhoneOrdersScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = PastelBlue)
                 ) {
-                    Text("OK", color = Color.White)
+                    Text(stringResource(R.string.common_ok), color = Color.White)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) {
-                    Text("Batal", color = GrayBlue)
+                    Text(stringResource(R.string.common_cancel), color = GrayBlue)
                 }
             }
         ) {
@@ -296,7 +302,7 @@ fun PhoneOrdersScreen(
         )
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
-            title = { Text("Set Batas Waktu", color = GrayBlue, fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(R.string.orders_set_due_time_title), color = GrayBlue, fontWeight = FontWeight.Bold) },
             text = {
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     TimePicker(state = timePickerState)
@@ -312,12 +318,12 @@ fun PhoneOrdersScreen(
                         showTimePicker = false
                     }
                 ) {
-                    Text("OK", color = PastelBlue, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.common_ok), color = PastelBlue, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showTimePicker = false }) {
-                    Text("Batal", color = GrayBlue)
+                    Text(stringResource(R.string.common_cancel), color = GrayBlue)
                 }
             }
         )
@@ -358,7 +364,11 @@ fun PhoneOrdersScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = PastelBlue)
                 ) {
                     Text(
-                        text = if (uiState.editingOrderId != null) "Simpan Perubahan Order" else "Buat Order Sekarang",
+                        text = if (uiState.editingOrderId != null) {
+                            stringResource(R.string.orders_save_changes_button)
+                        } else {
+                            stringResource(R.string.orders_create_now_button)
+                        },
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
@@ -430,7 +440,7 @@ private fun PhoneCustomerSelectionStep(
                     )
                     Column {
                         Text(
-                            text = "Pilih Pelanggan",
+                            text = stringResource(R.string.orders_phone_select_customer_title),
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 19.sp,
@@ -438,7 +448,7 @@ private fun PhoneCustomerSelectionStep(
                             )
                         )
                         Text(
-                            text = "Ketik minimal 2 karakter untuk mencari",
+                            text = stringResource(R.string.orders_phone_select_customer_subtitle),
                             style = MaterialTheme.typography.bodySmall.copy(
                                 color = PastelNeutralText,
                                 fontWeight = FontWeight.Medium
@@ -452,7 +462,7 @@ private fun PhoneCustomerSelectionStep(
                     color = PastelBlueSoftBg
                 ) {
                     Text(
-                        text = "Tahap 1/2",
+                        text = stringResource(R.string.orders_phone_step_1_of_2),
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall.copy(
                             color = PastelBlue,
@@ -469,7 +479,7 @@ private fun PhoneCustomerSelectionStep(
                 onValueChange = onSearchQueryChange,
                 placeholder = {
                     Text(
-                        text = "Cari nama atau nomor WA/Telp...",
+                        text = stringResource(R.string.orders_phone_search_customer_placeholder),
                         style = MaterialTheme.typography.bodyMedium.copy(
                             color = PastelNeutralText,
                             fontSize = 13.sp
@@ -491,7 +501,7 @@ private fun PhoneCustomerSelectionStep(
                         IconButton(onClick = { onSearchQueryChange("") }) {
                             Icon(
                                 imageVector = Icons.Rounded.Close,
-                                contentDescription = "Hapus pencarian",
+                                contentDescription = stringResource(R.string.common_clear_search),
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -521,7 +531,10 @@ private fun PhoneCustomerSelectionStep(
 
                 trimmedQuery.length < OrdersViewModel.MIN_CUSTOMER_SEARCH_CHARS -> {
                     Text(
-                        text = "Ketik minimal ${OrdersViewModel.MIN_CUSTOMER_SEARCH_CHARS} karakter untuk menampilkan pelanggan...",
+                        text = stringResource(
+                            R.string.orders_phone_min_chars_hint,
+                            OrdersViewModel.MIN_CUSTOMER_SEARCH_CHARS
+                        ),
                         color = PastelNeutralText,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier
@@ -545,7 +558,7 @@ private fun PhoneCustomerSelectionStep(
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = "Mencari pelanggan...",
+                            text = stringResource(R.string.orders_phone_searching_customers),
                             color = PastelNeutralText,
                             style = MaterialTheme.typography.bodySmall
                         )
@@ -554,7 +567,7 @@ private fun PhoneCustomerSelectionStep(
 
                 debouncedQuery.length >= OrdersViewModel.MIN_CUSTOMER_SEARCH_CHARS && filteredCustomers.isEmpty() -> {
                     Text(
-                        text = "Pelanggan \"$debouncedQuery\" tidak ditemukan.",
+                        text = stringResource(R.string.orders_phone_customer_not_found, debouncedQuery),
                         color = PastelNeutralText,
                         style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center,
@@ -722,7 +735,7 @@ private fun PhoneSelectedCustomerCard(
                 border = BorderStroke(1.dp, PastelBlue.copy(alpha = 0.25f))
             ) {
                 Text(
-                    text = "Ganti",
+                    text = stringResource(R.string.common_change),
                     style = MaterialTheme.typography.labelMedium.copy(
                         color = PastelBlue,
                         fontWeight = FontWeight.SemiBold,
@@ -781,9 +794,9 @@ private fun PhoneDueDateButton(
                 )
                 Text(
                     text = if (formattedDueDate != null) {
-                        "Batas Waktu: $formattedDueDate"
+                        stringResource(R.string.orders_phone_due_date_value, formattedDueDate)
                     } else {
-                        "Atur Batas Waktu"
+                        stringResource(R.string.orders_phone_set_due_date)
                     },
                     style = MaterialTheme.typography.bodyMedium.copy(
                         color = if (dueDate != null) GrayBlue else PastelBlue,
@@ -806,7 +819,7 @@ private fun PhoneDueDateButton(
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Close,
-                        contentDescription = "Hapus Batas Waktu",
+                        contentDescription = stringResource(R.string.orders_phone_clear_due_date_cd),
                         tint = PastelRoseText,
                         modifier = Modifier.size(15.dp)
                     )
@@ -841,7 +854,7 @@ private fun PhoneQuantityInputDialog(
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 Text(
-                    text = "Masukkan Jumlah Barang",
+                    text = stringResource(R.string.orders_qty_dialog_title),
                     style = MaterialTheme.typography.labelLarge.copy(
                         color = PastelNeutralText,
                         fontWeight = FontWeight.SemiBold
@@ -860,7 +873,10 @@ private fun PhoneQuantityInputDialog(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "${CurrencyUtils.formatRupiahWithSymbol(item.itemPrice)} / unit",
+                        text = stringResource(
+                            R.string.orders_price_per_unit,
+                            CurrencyUtils.formatRupiahWithSymbol(item.itemPrice)
+                        ),
                         style = MaterialTheme.typography.bodySmall.copy(
                             color = PastelNeutralText,
                             fontWeight = FontWeight.Medium
@@ -889,7 +905,7 @@ private fun PhoneQuantityInputDialog(
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Remove,
-                            contentDescription = "Kurangi",
+                            contentDescription = stringResource(R.string.orders_qty_decrease_cd),
                             tint = PastelBlue
                         )
                     }
@@ -897,7 +913,7 @@ private fun PhoneQuantityInputDialog(
                     OutlinedTextField(
                         value = quantityText,
                         onValueChange = { if (it.all { char -> char.isDigit() }) quantityText = it },
-                        label = { Text("Qty") },
+                        label = { Text(stringResource(R.string.orders_qty_label)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                         textStyle = MaterialTheme.typography.titleMedium.copy(
@@ -934,7 +950,7 @@ private fun PhoneQuantityInputDialog(
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Add,
-                            contentDescription = "Tambah",
+                            contentDescription = stringResource(R.string.orders_qty_increase_cd),
                             tint = PastelBlue
                         )
                     }
@@ -953,7 +969,7 @@ private fun PhoneQuantityInputDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Subtotal",
+                            text = stringResource(R.string.orders_subtotal),
                             style = MaterialTheme.typography.bodySmall.copy(
                                 color = PastelNeutralText,
                                 fontWeight = FontWeight.Medium
@@ -974,7 +990,7 @@ private fun PhoneQuantityInputDialog(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("Batal", color = GrayBlue, fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.common_cancel), color = GrayBlue, fontWeight = FontWeight.SemiBold)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
@@ -983,7 +999,7 @@ private fun PhoneQuantityInputDialog(
                         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = PastelBlue)
                     ) {
-                        Text("Simpan", color = Color.White, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.common_save), color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 }
             }

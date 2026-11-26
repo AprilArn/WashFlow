@@ -2,7 +2,9 @@ package com.aprilarn.washflow.ui.feature.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.domain.usecase.ManageUserUseCase
+import com.aprilarn.washflow.ui.core.utils.UiText
 import com.aprilarn.washflow.utils.NetworkStatus
 import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.firestore.FirebaseFirestoreException
@@ -111,7 +113,7 @@ class LoginViewModel(
                         isCheckingWorkspace = false,
                         showTimeoutDialog = false,
                         isWaitingForNetwork = true,
-                        networkErrorMessage = "Koneksi terlalu lambat. Menunggu jaringan stabil atau coba lagi.",
+                        networkErrorMessage = UiText.StringResource(R.string.login_network_slow),
                         userHasWorkspace = null
                     )
                 }
@@ -122,7 +124,7 @@ class LoginViewModel(
                         it.copy(
                             isCheckingWorkspace = false,
                             isWaitingForNetwork = true,
-                            networkErrorMessage = "Koneksi internet terganggu. Akan mencoba lagi otomatis saat jaringan normal.",
+                            networkErrorMessage = UiText.StringResource(R.string.login_network_disrupted),
                             userHasWorkspace = null
                         )
                     }
@@ -131,8 +133,8 @@ class LoginViewModel(
                         it.copy(
                             isCheckingWorkspace = false,
                             isWaitingForNetwork = true,
-                            networkErrorMessage = "Gagal memverifikasi workspace. Silakan coba lagi.",
-                            signInError = e.message ?: "Terjadi kesalahan saat memeriksa workspace",
+                            networkErrorMessage = UiText.StringResource(R.string.login_workspace_verify_failed),
+                            signInError = e.message,
                             userHasWorkspace = null
                         )
                     }

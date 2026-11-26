@@ -27,8 +27,10 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.feature.aiagent.AiModelStatus
 import com.aprilarn.washflow.ui.core.theme.Gray
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
@@ -50,7 +52,7 @@ fun AiAgentPanelHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Aira",
+            text = stringResource(R.string.ai_name),
             style = MaterialTheme.typography.titleLarge.copy(
                 fontWeight = FontWeight.Bold,
                 fontSize = 19.sp
@@ -65,7 +67,7 @@ fun AiAgentPanelHeader(
                 IconButton(onClick = { showMenu = true }) {
                     Icon(
                         imageVector = Icons.Rounded.MoreVert,
-                        contentDescription = "More Options",
+                        contentDescription = stringResource(R.string.ai_more_options_cd),
                         tint = MainFontBlack
                     )
                 }
@@ -87,7 +89,7 @@ fun AiAgentPanelHeader(
                         ) {
                             Column(modifier = Modifier.width(IntrinsicSize.Max)) {
                                 Text(
-                                    text = "Delete History",
+                                    text = stringResource(R.string.ai_delete_history),
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable {
@@ -118,7 +120,7 @@ fun AiAgentPanelHeader(
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Rounded.Close,
-                        contentDescription = "Tutup Panel AI",
+                        contentDescription = stringResource(R.string.ai_close_panel_cd),
                         tint = GrayBlue,
                         modifier = Modifier.size(20.dp)
                     )
@@ -136,6 +138,7 @@ fun AiAgentPanelInputArea(
     onStopProcessing: () -> Unit,
     modelStatus: AiModelStatus,
     currentModelName: String?,
+    cooldownSeconds: Int = 0,
     isAiThinking: Boolean,
     isTypewriterActive: Boolean
 ) {
@@ -163,7 +166,7 @@ fun AiAgentPanelInputArea(
                             false
                         }
                     },
-                placeholder = { Text("Ask WashFlow AI...", color = Color.Gray) },
+                placeholder = { Text(stringResource(R.string.ai_input_placeholder), color = Color.Gray) },
                 keyboardOptions = KeyboardOptions(
                     imeAction = ImeAction.Send
                 ),
@@ -195,19 +198,25 @@ fun AiAgentPanelInputArea(
                             .clip(RoundedCornerShape(8.dp))
                     ) {
                         AnimatedContent(
-                            targetState = modelStatus to currentModelName,
+                            targetState = Triple(modelStatus, currentModelName, cooldownSeconds),
                             transitionSpec = {
                                 fadeIn(animationSpec = tween(300)) togetherWith
                                         fadeOut(animationSpec = tween(300))
                             },
                             label = "ModelIndicatorTransition"
-                        ) { (status, name) ->
+                        ) { (status, name, cooldown) ->
+                            val statusText = when (status) {
+                                AiModelStatus.IDLE -> stringResource(R.string.ai_status_idle)
+                                AiModelStatus.SWITCHING -> stringResource(R.string.ai_status_switching)
+                                AiModelStatus.COOLDOWN -> stringResource(R.string.ai_status_cooldown, cooldown)
+                                else -> name ?: ""
+                            }
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.padding(vertical = 8.dp)
                             ) {
                                 Text(
-                                    text = if (status == AiModelStatus.IDLE) "Idle" else (name ?: ""),
+                                    text = statusText,
                                     color = Gray,
                                     fontSize = 12.sp
                                 )
@@ -216,7 +225,7 @@ fun AiAgentPanelInputArea(
                                     AiModelStatus.IDLE -> {
                                         Icon(
                                             imageVector = Icons.Rounded.MoreHoriz,
-                                            contentDescription = "Idle",
+                                            contentDescription = stringResource(R.string.ai_status_idle),
                                             modifier = Modifier.size(14.dp),
                                             tint = Gray
                                         )
@@ -231,7 +240,7 @@ fun AiAgentPanelInputArea(
                                     AiModelStatus.SUCCESS -> {
                                         Icon(
                                             imageVector = Icons.Rounded.Check,
-                                            contentDescription = "Success",
+                                            contentDescription = stringResource(R.string.ai_status_success_cd),
                                             modifier = Modifier.size(14.dp),
                                             tint = Color(0xFF4CAF50)
                                         )
@@ -239,7 +248,7 @@ fun AiAgentPanelInputArea(
                                     AiModelStatus.FAILURE -> {
                                         Icon(
                                             imageVector = Icons.Rounded.Close,
-                                            contentDescription = "Failed",
+                                            contentDescription = stringResource(R.string.ai_status_failed_cd),
                                             modifier = Modifier.size(14.dp),
                                             tint = Color.Red
                                         )
@@ -247,7 +256,7 @@ fun AiAgentPanelInputArea(
                                     AiModelStatus.SWITCHING -> {
                                         Icon(
                                             imageVector = Icons.Rounded.Refresh,
-                                            contentDescription = "Switching",
+                                            contentDescription = stringResource(R.string.ai_status_switching_cd),
                                             modifier = Modifier.size(14.dp),
                                             tint = GrayBlue
                                         )
@@ -255,7 +264,7 @@ fun AiAgentPanelInputArea(
                                     AiModelStatus.COOLDOWN -> {
                                         Icon(
                                             imageVector = Icons.Rounded.Timer,
-                                            contentDescription = "Cooldown",
+                                            contentDescription = stringResource(R.string.ai_status_cooldown_cd),
                                             modifier = Modifier.size(14.dp),
                                             tint = Color.Gray
                                         )
@@ -288,7 +297,9 @@ fun AiAgentPanelInputArea(
                     ) {
                         Icon(
                             imageVector = if (showStopButton) Icons.Rounded.Stop else Icons.AutoMirrored.Rounded.Send,
-                            contentDescription = if (showStopButton) "Stop" else "Send",
+                            contentDescription = stringResource(
+                                if (showStopButton) R.string.ai_action_stop_cd else R.string.ai_action_send_cd
+                            ),
                             tint = Color.White,
                             modifier = Modifier.size(20.dp)
                         )
@@ -304,10 +315,16 @@ fun AiAgentEmptyState(
     userName: String,
     onPromptClick: (String) -> Unit
 ) {
+    val promptAddCustomer = stringResource(R.string.ai_prompt_add_customer)
+    val promptDeleteCustomer = stringResource(R.string.ai_prompt_delete_customer)
+    val promptAddItem = stringResource(R.string.ai_prompt_add_item)
+    val promptDeleteItem = stringResource(R.string.ai_prompt_delete_item)
+    val promptNavigate = stringResource(R.string.ai_prompt_navigate)
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Spacer(modifier = Modifier.height(64.dp))
         Text(
-            text = "Hi, $userName",
+            text = stringResource(R.string.ai_greeting, userName),
             style = MaterialTheme.typography.headlineLarge.copy(
                 fontWeight = FontWeight.Bold,
                 color = GrayBlue,
@@ -315,7 +332,7 @@ fun AiAgentEmptyState(
             )
         )
         Text(
-            text = "What can I help you today?",
+            text = stringResource(R.string.ai_greeting_subtitle),
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Medium,
                 color = Gray,
@@ -335,14 +352,14 @@ fun AiAgentEmptyState(
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        Icons.Rounded.Refresh,
+                        Icons.Rounded.AutoAwesome,
                         contentDescription = null,
                         tint = Color.White,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        "More ways to access AI",
+                        stringResource(R.string.ai_empty_tip_title),
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp
@@ -350,7 +367,7 @@ fun AiAgentEmptyState(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    "Upgrade to a qualified Google AI plan for subscription access to Gemini, or provide API keys to use Anthropic, OpenAI, and Gemini via AI Studio. For offline development, run local models via local LLM hosts.",
+                    stringResource(R.string.ai_empty_tip_body),
                     color = Color(0xFFB0B0B0),
                     fontSize = 12.sp,
                     lineHeight = 16.sp
@@ -360,33 +377,18 @@ fun AiAgentEmptyState(
 
         Spacer(modifier = Modifier.height(32.dp))
         Text(
-            "Prompts to try",
+            stringResource(R.string.ai_prompts_header),
             fontWeight = FontWeight.Bold,
             color = MainFontBlack,
             fontSize = 14.sp
         )
         Spacer(modifier = Modifier.height(12.dp))
 
-        PromptItem(
-            text = "Saya ingin menambahkan pelanggan baru",
-            onClick = { onPromptClick("Saya ingin menambahkan pelanggan baru") }
-        )
-        PromptItem(
-            text = "Tolong hapus data pelanggan",
-            onClick = { onPromptClick("Tolong hapus data pelanggan") }
-        )
-        PromptItem(
-            text = "Saya mau menambahkan item/layanan baru",
-            onClick = { onPromptClick("Saya mau menambahkan item/layanan baru") }
-        )
-        PromptItem(
-            text = "Tolong hapus data item/layanan",
-            onClick = { onPromptClick("Tolong hapus data item/layanan") }
-        )
-        PromptItem(
-            text = "Tolong arahkan ke halaman",
-            onClick = { onPromptClick("Tolong arahkan ke halaman") }
-        )
+        PromptItem(text = promptAddCustomer, onClick = { onPromptClick(promptAddCustomer) })
+        PromptItem(text = promptDeleteCustomer, onClick = { onPromptClick(promptDeleteCustomer) })
+        PromptItem(text = promptAddItem, onClick = { onPromptClick(promptAddItem) })
+        PromptItem(text = promptDeleteItem, onClick = { onPromptClick(promptDeleteItem) })
+        PromptItem(text = promptNavigate, onClick = { onPromptClick(promptNavigate) })
 
         Spacer(modifier = Modifier.height(24.dp))
     }
@@ -410,7 +412,7 @@ fun AiAgentScrollToBottomButton(
             horizontalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "Scroll to bottom",
+                text = stringResource(R.string.ai_scroll_to_bottom),
                 style = MaterialTheme.typography.labelLarge.copy(
                     fontWeight = FontWeight.Bold,
                     fontSize = 12.sp

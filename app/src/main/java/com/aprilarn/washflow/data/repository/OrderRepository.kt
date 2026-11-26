@@ -184,7 +184,7 @@ class OrderRepository : OrderRepositoryContract {
         val currentUser = Firebase.auth.currentUser ?: return false
 
         // Ambil nama user yang sedang login untuk isi pesan notifikasi
-        val userName = currentUser.displayName ?: "Anggota tim"
+        val userName = currentUser.displayName ?: "Team member"
 
         return try {
             val workspaceRef = db.collection("workspaces").document(workspaceId)
@@ -199,8 +199,8 @@ class OrderRepository : OrderRepositoryContract {
             // 2. Siapkan data Notifikasi
             val notification = Notifications(
                 notificationId = newNotifDoc.id,
-                title = "Order Baru",
-                message = "$userName membuat order baru untuk pelanggan ${order.customerName}",
+                title = "New Order",
+                message = "$userName created a new order for ${order.customerName}",
                 senderUid = currentUser.uid,
                 timestamp = Timestamp.now(),
                 // Masukkan UID pembuat ke readBy agar dia tidak mendapat notif buatannya sendiri
@@ -291,18 +291,18 @@ class OrderRepository : OrderRepositoryContract {
         val workspaceId = getWorkspaceId() ?: return false
         val currentUser = Firebase.auth.currentUser ?: return false
 
-        val userName = currentUser.displayName ?: "Anggota tim"
+        val userName = currentUser.displayName ?: "Team member"
 
         return try {
             val workspaceRef = db.collection("workspaces").document(workspaceId)
             val orderRef = workspaceRef.collection("orders").document(order.orderId)
             val newNotifDoc = workspaceRef.collection("notifications").document()
 
-            // Siapkan data Notifikasi (Order Diperbarui)
+            // Siapkan data Notifikasi (Order Updated)
             val notification = Notifications(
                 notificationId = newNotifDoc.id,
-                title = "Order Diperbarui",
-                message = "$userName memperbarui order milik ${order.customerName}",
+                title = "Order Updated",
+                message = "$userName updated ${order.customerName}'s order",
                 senderUid = currentUser.uid,
                 timestamp = Timestamp.now(),
                 readBy = listOf(currentUser.uid)

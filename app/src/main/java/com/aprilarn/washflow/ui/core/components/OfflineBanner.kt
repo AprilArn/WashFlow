@@ -36,12 +36,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.core.theme.AlertRed
 import com.aprilarn.washflow.ui.core.theme.SuccessGreen
 import com.aprilarn.washflow.ui.core.theme.WarningAmber
@@ -93,13 +95,13 @@ fun OfflineBanner(
 
     val (icon, displayText) = when (displayedStatus) {
         NetworkStatus.Offline -> Icons.Rounded.WifiOff to
-            "Tidak ada koneksi internet. Beberapa fitur terbatas."
+            stringResource(R.string.network_offline)
         NetworkStatus.NoInternet -> Icons.Rounded.CloudOff to
-            "Terhubung ke jaringan, namun tidak ada akses internet."
+            stringResource(R.string.network_no_internet)
         NetworkStatus.PoorConnection -> Icons.Rounded.NetworkCheck to
-            "Koneksi internet lambat. Sinkronisasi mungkin tertunda."
+            stringResource(R.string.network_poor)
         NetworkStatus.Connected -> Icons.Rounded.Wifi to
-            "Koneksi internet kembali normal."
+            stringResource(R.string.network_restored)
     }
 
     OfflineBannerContent(
@@ -185,7 +187,7 @@ fun OfflineBannerPreview() {
             isVisible = true,
             backgroundColor = AlertRed,
             icon = Icons.Rounded.WifiOff,
-            displayText = "Tidak ada koneksi internet. Beberapa fitur terbatas."
+            displayText = "No internet connection. Some features may be limited."
         )
     }
 }
@@ -198,7 +200,7 @@ fun OfflineBannerNoInternetPreview() {
             isVisible = true,
             backgroundColor = AlertRed,
             icon = Icons.Rounded.CloudOff,
-            displayText = "Terhubung ke jaringan, namun tidak ada akses internet."
+            displayText = "Connected to network, but no internet access."
         )
     }
 }
@@ -211,7 +213,7 @@ fun OfflineBannerPoorConnectionPreview() {
             isVisible = true,
             backgroundColor = WarningAmber,
             icon = Icons.Rounded.NetworkCheck,
-            displayText = "Koneksi internet lambat. Sinkronisasi mungkin tertunda."
+            displayText = "Slow internet connection. Syncing may be delayed."
         )
     }
 }
@@ -224,7 +226,7 @@ fun OfflineBannerReconnectedPreview() {
             isVisible = true,
             backgroundColor = SuccessGreen,
             icon = Icons.Rounded.Wifi,
-            displayText = "Koneksi internet kembali normal."
+            displayText = "Internet connection restored."
         )
     }
 }

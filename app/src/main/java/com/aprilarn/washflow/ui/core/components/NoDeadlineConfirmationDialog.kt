@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -50,17 +51,17 @@ fun NoDeadlineConfirmationDialog(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Batas Waktu Kosong",
+                    text = stringResource(R.string.dialog_no_deadline_title),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "Pesanan ini akan dibuat tanpa batas waktu pengerjaan.",
+                    text = stringResource(R.string.dialog_no_deadline_message),
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center
                 )
                 Text(
-                    text = "Apakah Anda yakin ingin melanjutkan?",
+                    text = stringResource(R.string.dialog_no_deadline_confirm_prompt),
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.Gray,
                     textAlign = TextAlign.Center
@@ -68,8 +69,8 @@ fun NoDeadlineConfirmationDialog(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 HoldToConfirmButton(
-                    defaultText = "Hold to Proceed (1s)",
-                    progressText = "Memproses...",
+                    defaultText = stringResource(R.string.dialog_no_deadline_hold_default),
+                    progressText = stringResource(R.string.dialog_no_deadline_hold_progress),
                     durationMillis = 1500,
                     containerColor = Color(0xFFE3F2FD),
                     progressColor = com.aprilarn.washflow.ui.core.theme.GrayBlue,
@@ -83,7 +84,7 @@ fun NoDeadlineConfirmationDialog(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Batal", color = Color.Gray)
+                    Text(stringResource(R.string.common_cancel), color = Color.Gray)
                 }
             }
         }

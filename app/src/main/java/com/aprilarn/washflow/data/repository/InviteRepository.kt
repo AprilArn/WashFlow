@@ -175,11 +175,11 @@ class InviteRepository : InviteRepositoryContract {
             val inviteSnapshot = inviteDocRef.get().await()
 
             if (!inviteSnapshot.exists()) {
-                return Pair(false, "Kode tidak valid")
+                return Pair(false, "Invalid invitation code.")
             }
 
             val inviteData = inviteSnapshot.toObject(Invites::class.java)
-                ?: return Pair(false, "Gagal memuat data undangan.")
+                ?: return Pair(false, "Failed to load invitation data.")
 
             // 1. Validasi Tanggal Kedaluwarsa (Prioritas 1)
             val expiresAt = inviteData.expiresAt
@@ -189,14 +189,14 @@ class InviteRepository : InviteRepositoryContract {
                     inviteDocRef.update("status", "expired").await() // Update terpisah
                 }
                 // Kembalikan error
-                return Pair(false, "Kode undangan sudah kedaluwarsa")
+                return Pair(false, "Invitation code has expired.")
             }
 
             // 2. Validasi Status (Prioritas 2)
             if (inviteData.status != "active") {
-                if (inviteData.status == "used") return Pair(false, "Kode undangan sudah penuh")
+                if (inviteData.status == "used") return Pair(false, "Invitation code has reached its limit.")
                 // Menangkap status 'expired' manual atau status tidak valid lainnya
-                return Pair(false, "Kode undangan sudah tidak berlaku")
+                return Pair(false, "Invitation code is no longer valid.")
             }
 
             // 3. Validasi Kuota (Prioritas 3)
@@ -206,7 +206,7 @@ class InviteRepository : InviteRepositoryContract {
                 inviteDocRef.update("status", "used").await() // Update terpisah
                 
                 // Kembalikan error
-                return Pair(false, "Kode undangan sudah penuh")
+                return Pair(false, "Invitation code has reached its limit.")
             }
 
             // --- BAGIAN 2: EKSEKUSI JOIN (DI DALAM TRANSAKSI) ---
@@ -217,7 +217,7 @@ class InviteRepository : InviteRepositoryContract {
                 // Kita tidak perlu 'get' lagi karena sudah punya 'inviteData'
 
                 val workspaceId = inviteData.workspaceId
-                    ?: throw Exception("Workspace ID tidak ditemukan dalam undangan.")
+                    ?: throw Exception("Workspace ID not found in invitation.")
                 finalWorkspaceId = workspaceId
 
                 val workspaceDocRef = workspacesCollection.document(workspaceId)
@@ -240,7 +240,7 @@ class InviteRepository : InviteRepositoryContract {
 
         } catch (e: Exception) {
             // Catch block ini sekarang hanya menangani kegagalan pada Transaksi (Bagian 2)
-            return Pair(false, e.message ?: "Gagal bergabung ke workspace.")
+            return Pair(false, e.message ?: "Failed to join workspace.")
         }
     }
 }

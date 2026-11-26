@@ -26,11 +26,13 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Notifications
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
 import com.aprilarn.washflow.ui.core.theme.MainFontBlack
@@ -50,19 +52,30 @@ import kotlin.math.abs
 @Composable
 private fun getNotificationPreviewIcon(title: String): ImageVector {
     return when (title) {
-        "Order Baru" -> Icons.Rounded.ShoppingBasket
-        "Contributor Baru" -> Icons.Rounded.PersonAdd
-        "Update Sistem", "Order Diperbarui" -> Icons.Rounded.Update
+        "Order Baru", "New Order" -> Icons.Rounded.ShoppingBasket
+        "Contributor Baru", "New Contributor" -> Icons.Rounded.PersonAdd
+        "Update Sistem", "Sistem Update", "System Update", "Order Diperbarui", "Order Updated" -> Icons.Rounded.Update
         else -> Icons.Rounded.Notifications
     }
 }
 
 private fun resolveNotificationAccent(title: String): Pair<Color, Color> {
     return when (title) {
-        "Order Baru" -> PastelBlueSoftBg to PastelBlue
-        "Contributor Baru" -> PastelGreenBg to PastelGreen
-        "Update Sistem", "Order Diperbarui" -> PastelAmberBg to PastelAmber
+        "Order Baru", "New Order" -> PastelBlueSoftBg to PastelBlue
+        "Contributor Baru", "New Contributor" -> PastelGreenBg to PastelGreen
+        "Update Sistem", "Sistem Update", "System Update", "Order Diperbarui", "Order Updated" -> PastelAmberBg to PastelAmber
         else -> PastelBlueSoftBg to PastelBlue
+    }
+}
+
+@Composable
+private fun localizePreviewTitle(title: String): String {
+    return when (title) {
+        "Order Baru", "New Order" -> stringResource(R.string.notif_title_new_order)
+        "Order Diperbarui", "Order Updated" -> stringResource(R.string.notif_title_order_updated)
+        "Contributor Baru", "New Contributor" -> stringResource(R.string.notif_title_new_contributor)
+        "Update Sistem", "Sistem Update", "System Update" -> stringResource(R.string.notif_title_system_update)
+        else -> title
     }
 }
 
@@ -359,7 +372,7 @@ fun NotificationPreviewItem(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = notification.title,
+                                        text = localizePreviewTitle(notification.title),
                                         style = MaterialTheme.typography.titleSmall.copy(
                                             color = GrayBlue,
                                             fontWeight = FontWeight.Bold,
@@ -371,7 +384,7 @@ fun NotificationPreviewItem(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = "Baru saja",
+                                        text = stringResource(R.string.notif_just_now),
                                         style = MaterialTheme.typography.labelSmall.copy(
                                             color = PastelNeutralText,
                                             fontSize = 10.5.sp,
@@ -448,7 +461,7 @@ fun NotificationPreviewItem(
                                 verticalArrangement = Arrangement.Center
                             ) {
                                 Text(
-                                    text = notification.title,
+                                    text = localizePreviewTitle(notification.title),
                                     style = MaterialTheme.typography.bodyLarge.copy(
                                         color = MainFontBlack,
                                         fontWeight = FontWeight.Bold,
@@ -501,15 +514,15 @@ fun NotificationPreviewItem(
 fun NotificationPreviewItemPreview() {
     val sampleNotif1 = Notifications(
         notificationId = "1",
-        title = "Order Baru",
-        message = "April Arn membuat order baru untuk pelanggan Verstappen.",
+        title = "New Order",
+        message = "April Arn created a new order for Verstappen.",
         senderUid = "system",
         timestamp = Timestamp.now()
     )
     val sampleNotif2 = Notifications(
         notificationId = "2",
-        title = "Update Sistem",
-        message = "Versi terbaru 2.0.4 kini tersedia dengan perbaikan bug pada sistem pembayaran.",
+        title = "System Update",
+        message = "Version 2.0.4 is now available with payment workflow improvements.",
         senderUid = "system",
         timestamp = Timestamp.now()
     )

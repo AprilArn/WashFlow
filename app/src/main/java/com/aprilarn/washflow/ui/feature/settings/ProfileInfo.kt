@@ -13,9 +13,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.feature.login.UserData
 import com.aprilarn.washflow.ui.core.theme.MainFontBlack
 
@@ -39,7 +41,7 @@ fun ProfileInfoCard(
             if (userData.profilePictureUrl != null) {
                 AsyncImage(
                     model = userData.profilePictureUrl,
-                    contentDescription = "Profile picture",
+                    contentDescription = stringResource(R.string.settings_profile_picture_cd),
                     modifier = Modifier
                         .size(64.dp)
                         .clip(CircleShape),
@@ -58,7 +60,7 @@ fun ProfileInfoCard(
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = userData.displayName ?: "Nama Tidak Tersedia",
+                    text = userData.displayName ?: stringResource(R.string.settings_profile_no_name),
                     style = MaterialTheme.typography.titleLarge.copy(
                         color = MainFontBlack,
                         fontWeight = FontWeight.Bold
@@ -68,7 +70,7 @@ fun ProfileInfoCard(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = userData.email ?: "Email Tidak Tersedia",
+                    text = userData.email ?: stringResource(R.string.settings_profile_no_email),
                     style = MaterialTheme.typography.bodyMedium.copy(
                         color = Color.Gray
                     )

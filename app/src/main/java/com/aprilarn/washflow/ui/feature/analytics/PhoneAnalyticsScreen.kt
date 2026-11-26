@@ -38,9 +38,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.feature.analytics.component.AnalyticsChartType
 import com.aprilarn.washflow.ui.feature.analytics.component.DeadlineCountBadge
 import com.aprilarn.washflow.ui.feature.analytics.component.GeneralDropdown
@@ -76,18 +78,16 @@ fun PhoneAnalyticsScreen(
     val context = LocalContext.current
     LaunchedEffect(uiState.toastMessage) {
         uiState.toastMessage?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, it.asString(context), Toast.LENGTH_SHORT).show()
             onToastShown()
         }
     }
 
-    val tabs = remember {
-        listOf(
-            "Order" to "Ringkasan",
-            "Report" to "Buku Besar",
-            "Tertunda" to "Tertunda"
-        )
-    }
+    val tabs = listOf(
+        "Order" to stringResource(R.string.analytics_tab_summary),
+        "Report" to stringResource(R.string.analytics_tab_ledger),
+        "Tertunda" to stringResource(R.string.analytics_tab_pending)
+    )
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -209,7 +209,7 @@ private fun PhoneAnalyticsSummaryTab(
                 )
                 Column {
                     Text(
-                        text = "Ringkasan",
+                        text = stringResource(R.string.analytics_summary_title),
                         style = MaterialTheme.typography.titleLarge.copy(
                             color = GrayBlue,
                             fontWeight = FontWeight.Bold,
@@ -217,7 +217,7 @@ private fun PhoneAnalyticsSummaryTab(
                         )
                     )
                     Text(
-                        text = "Performa pendapatan & status antrean",
+                        text = stringResource(R.string.analytics_summary_subtitle),
                         style = MaterialTheme.typography.bodySmall.copy(
                             color = PastelNeutralText,
                             fontWeight = FontWeight.Medium
@@ -252,7 +252,10 @@ private fun PhoneAnalyticsSummaryTab(
                         .padding(4.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    val chartTabs = listOf("Pendapatan", "Pelanggan")
+                    val chartTabs = listOf(
+                        stringResource(R.string.analytics_chart_tab_revenue),
+                        stringResource(R.string.analytics_chart_tab_customers)
+                    )
                     chartTabs.forEachIndexed { index, label ->
                         val isSelected = pagerState.currentPage == index
                         Box(
@@ -319,7 +322,7 @@ private fun PhoneAnalyticsSummaryTab(
                             .background(PastelBlue, RoundedCornerShape(2.dp))
                     )
                     Text(
-                        text = "Deadline Terdekat",
+                        text = stringResource(R.string.analytics_upcoming_deadlines_title),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = GrayBlue
@@ -334,6 +337,12 @@ private fun PhoneAnalyticsSummaryTab(
         }
 
         // D. Order Terbaru
+        val recentFilterOptions = RecentOrderFilter.entries.map {
+            it to stringResource(it.labelRes)
+        }
+        val selectedRecentLabel = recentFilterOptions
+            .firstOrNull { it.first == recentFilter }?.second.orEmpty()
+
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -351,16 +360,19 @@ private fun PhoneAnalyticsSummaryTab(
                             .background(PastelBlue, RoundedCornerShape(2.dp))
                     )
                     Text(
-                        text = "Order Terbaru",
+                        text = stringResource(R.string.analytics_recent_orders_title),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = GrayBlue
                     )
                 }
                 GeneralDropdown(
-                    selectedText = recentFilter.label,
-                    items = RecentOrderFilter.entries.map { it.label },
-                    onItemSelected = { recentFilter = RecentOrderFilter.fromLabel(it) },
+                    selectedText = selectedRecentLabel,
+                    items = recentFilterOptions.map { it.second },
+                    onItemSelected = { pickedLabel ->
+                        recentFilter = recentFilterOptions
+                            .firstOrNull { it.second == pickedLabel }?.first ?: RecentOrderFilter.ALL
+                    },
                     icon = Icons.Default.FilterList,
                     dropdownWidth = 140.dp,
                     backgroundColor = PastelBlueSoftBg
@@ -383,7 +395,7 @@ private fun PhoneAnalyticsSummaryTab(
                     color = ThemeBgGray
                 ) {
                     Text(
-                        text = "Belum ada order untuk filter ini",
+                        text = stringResource(R.string.analytics_no_orders_for_this_filter),
                         fontSize = 13.sp,
                         color = PastelNeutralText,
                         modifier = Modifier.padding(16.dp)

@@ -28,18 +28,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.modifier.modifierLocalConsumer
-import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.data.model.OrderItem
 import com.aprilarn.washflow.data.model.Orders
 import com.aprilarn.washflow.data.model.Services
+import com.aprilarn.washflow.domain.model.OrderQueueStatus
 import com.aprilarn.washflow.ui.core.components.DeleteConfirmationDialog
 import com.aprilarn.washflow.ui.core.components.HapticSwitch
 import com.aprilarn.washflow.ui.feature.orders.ReceiptDashedDivider
@@ -96,33 +97,36 @@ fun ManageOrderScreen(
                 // Column untuk "On Queue"
                 OrderStatusColumn(
                     modifier = Modifier.weight(1f),
-                    title = "On Queue",
-                    subTitle = "Dalam antrian",
+                    title = stringResource(OrderQueueStatus.ON_QUEUE.displayLabelRes),
+                    subTitle = stringResource(OrderQueueStatus.ON_QUEUE.subTitleRes),
+                    statusKey = OrderQueueStatus.ON_QUEUE.label,
                     orders = uiState.ordersOnQueue,
                     services = uiState.services,
-                    onDrop = { orderId -> onDrop(orderId, "On Queue") },
+                    onDrop = { orderId -> onDrop(orderId, OrderQueueStatus.ON_QUEUE.label) },
                     onOrderClick = onOrderClick
                 )
 
                 // Column untuk "On Process"
                 OrderStatusColumn(
                     modifier = Modifier.weight(1f),
-                    title = "On Process",
-                    subTitle = "Sedang diproses",
+                    title = stringResource(OrderQueueStatus.ON_PROCESS.displayLabelRes),
+                    subTitle = stringResource(OrderQueueStatus.ON_PROCESS.subTitleRes),
+                    statusKey = OrderQueueStatus.ON_PROCESS.label,
                     orders = uiState.ordersOnProcess,
                     services = uiState.services,
-                    onDrop = { orderId -> onDrop(orderId, "On Process") },
+                    onDrop = { orderId -> onDrop(orderId, OrderQueueStatus.ON_PROCESS.label) },
                     onOrderClick = onOrderClick
                 )
 
                 // Column untuk "Done"
                 OrderStatusColumn(
                     modifier = Modifier.weight(1f),
-                    title = "Done",
-                    subTitle = "Selesai",
+                    title = stringResource(OrderQueueStatus.DONE.displayLabelRes),
+                    subTitle = stringResource(OrderQueueStatus.DONE.subTitleRes),
+                    statusKey = OrderQueueStatus.DONE.label,
                     orders = uiState.ordersDone,
                     services = uiState.services,
-                    onDrop = { orderId -> onDrop(orderId, "Done") },
+                    onDrop = { orderId -> onDrop(orderId, OrderQueueStatus.DONE.label) },
                     onOrderClick = onOrderClick
                 )
             }
@@ -171,7 +175,10 @@ fun OrderDetailDialog(
     if (showDeleteConfirmation) {
         // Tampilkan Dialog Konfirmasi (Tombol Tahan 2 Detik)
         DeleteConfirmationDialog(
-            itemName = "Order milik ${order.customerName ?: "Pelanggan"}",
+            itemName = stringResource(
+                R.string.manage_order_delete_item_name,
+                order.customerName ?: stringResource(R.string.common_customer)
+            ),
             onConfirm = {
                 onDelete() // Hapus data sebenarnya
                 showDeleteConfirmation = false
@@ -259,7 +266,7 @@ private fun LeftDetailPanel(
                             .background(PastelBlue, RoundedCornerShape(2.dp))
                     )
                     Text(
-                        text = "Detail Order",
+                        text = stringResource(R.string.manage_order_detail_title),
                         style = MaterialTheme.typography.headlineSmall.copy(
                             fontWeight = FontWeight.Bold,
                             color = GrayBlue
@@ -281,12 +288,12 @@ private fun LeftDetailPanel(
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Edit,
-                            contentDescription = "Edit Order",
+                            contentDescription = stringResource(R.string.manage_order_edit_cd),
                             tint = GrayBlue,
                             modifier = Modifier.size(15.dp)
                         )
                         Text(
-                            text = "Edit",
+                            text = stringResource(R.string.common_edit),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = GrayBlue
@@ -302,7 +309,7 @@ private fun LeftDetailPanel(
                 // 1. Hero Profil Pelanggan + ID Order
                 item {
                     CustomerProfileCard(
-                        customerName = order.customerName ?: "Pelanggan",
+                        customerName = order.customerName ?: stringResource(R.string.common_customer),
                         contact = customer?.contact,
                         orderId = order.orderId
                     )
@@ -350,7 +357,7 @@ private fun LeftDetailPanel(
                     modifier = Modifier.padding(horizontal = 8.dp)
                 ) {
                     Text(
-                        text = "Tutup",
+                        text = stringResource(R.string.common_close),
                         color = GrayBlue,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -370,7 +377,7 @@ private fun LeftDetailPanel(
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Hapus Order", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Text(stringResource(R.string.manage_order_delete_button), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                 }
             }
         }
@@ -379,10 +386,10 @@ private fun LeftDetailPanel(
 
 @Composable
 private fun OrderStatusChip(status: String) {
-    val (bgColor, textColor, label) = when {
-        status.equals("Done", ignoreCase = true) -> Triple(PastelGreenBg, PastelGreen, "Selesai")
-        status.equals("On Process", ignoreCase = true) -> Triple(PastelBlueBg, PastelBlue, "Diproses")
-        else -> Triple(PastelAmberBg, PastelAmber, "Dalam Antrian")
+    val (bgColor, textColor, labelRes) = when {
+        status.equals("Done", ignoreCase = true) -> Triple(PastelGreenBg, PastelGreen, R.string.home_status_done)
+        status.equals("On Process", ignoreCase = true) -> Triple(PastelBlueBg, PastelBlue, R.string.home_status_on_process)
+        else -> Triple(PastelAmberBg, PastelAmber, R.string.home_status_on_queue)
     }
 
     Surface(
@@ -390,7 +397,7 @@ private fun OrderStatusChip(status: String) {
         color = bgColor
     ) {
         Text(
-            text = label,
+            text = stringResource(labelRes),
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
             style = MaterialTheme.typography.labelSmall.copy(
                 fontWeight = FontWeight.SemiBold,
@@ -453,7 +460,7 @@ private fun CustomerProfileCard(
                         modifier = Modifier.size(13.dp)
                     )
                     Text(
-                        text = contact?.takeIf { it.isNotBlank() } ?: "Tidak ada kontak",
+                        text = contact?.takeIf { it.isNotBlank() } ?: stringResource(R.string.manage_order_no_contact),
                         style = MaterialTheme.typography.bodySmall.copy(
                             color = Gray
                         )
@@ -499,22 +506,22 @@ private fun OrderTimelineRow(
         TimelineCard(
             modifier = Modifier.weight(1f),
             icon = Icons.Rounded.CalendarToday,
-            label = "Tanggal Masuk",
+            label = stringResource(R.string.manage_order_date_received),
             dateText = dateFormat.format(orderDateObj),
             timeText = timeFormat.format(orderDateObj)
         )
         TimelineCard(
             modifier = Modifier.weight(1f),
             icon = Icons.Rounded.Timer,
-            label = "Batas Waktu",
+            label = stringResource(R.string.manage_order_date_due),
             dateText = dueDateObj?.let { dateFormat.format(it) } ?: "-",
-            timeText = dueDateObj?.let { timeFormat.format(it) } ?: "Belum diatur"
+            timeText = dueDateObj?.let { timeFormat.format(it) } ?: stringResource(R.string.manage_order_not_set)
         )
         TimelineCard(
             modifier = Modifier.weight(1f),
             icon = Icons.Rounded.TaskAlt,
-            label = "Waktu Selesai",
-            dateText = finishDateObj?.let { dateFormat.format(it) } ?: "Belum selesai",
+            label = stringResource(R.string.manage_order_date_completed),
+            dateText = finishDateObj?.let { dateFormat.format(it) } ?: stringResource(R.string.manage_order_not_completed),
             timeText = finishDateObj?.let { timeFormat.format(it) } ?: "-"
         )
     }
@@ -622,7 +629,7 @@ private fun RightDetailPanel(
                     )
                     Column {
                         Text(
-                            text = "Nota Pesanan",
+                            text = stringResource(R.string.orders_receipt_title),
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 19.sp,
@@ -631,7 +638,7 @@ private fun RightDetailPanel(
                             maxLines = 1
                         )
                         Text(
-                            text = "Rincian item per layanan",
+                            text = stringResource(R.string.manage_order_receipt_per_service),
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontWeight = FontWeight.Medium,
                                 color = PastelNeutralText
@@ -657,7 +664,7 @@ private fun RightDetailPanel(
                             modifier = Modifier.size(15.dp)
                         )
                         Text(
-                            text = "$totalItemTypes item",
+                            text = stringResource(R.string.orders_receipt_items_count, totalItemTypes),
                             style = MaterialTheme.typography.labelMedium.copy(
                                 color = PastelBlue,
                                 fontWeight = FontWeight.Bold
@@ -709,14 +716,14 @@ private fun RightDetailPanel(
                 ) {
                     Column {
                         Text(
-                            text = "Total Pembayaran",
+                            text = stringResource(R.string.manage_order_total_payment),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 color = PastelNeutralText,
                                 fontWeight = FontWeight.Medium
                             )
                         )
                         Text(
-                            text = if (totalQty > 0) "$totalQty pcs" else "0 pcs",
+                            text = stringResource(R.string.orders_receipt_pcs_count, totalQty.coerceAtLeast(0)),
                             style = MaterialTheme.typography.labelMedium.copy(
                                 color = GrayBlue,
                                 fontWeight = FontWeight.Bold
@@ -781,7 +788,7 @@ private fun PaymentStatusRow(
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
-                    text = "Status Pembayaran",
+                    text = stringResource(R.string.manage_order_payment_status),
                     style = MaterialTheme.typography.labelSmall,
                     color = contentColor.copy(alpha = 0.75f)
                 )
@@ -790,7 +797,7 @@ private fun PaymentStatusRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = if (isPaid) "Lunas" else "Belum Dibayar",
+                        text = if (isPaid) stringResource(R.string.manage_order_paid) else stringResource(R.string.manage_order_unpaid),
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = contentColor
@@ -845,9 +852,9 @@ private fun PickupStatusRow(
         format.format(pickupDate.toDate())
     } else null
 
-    val statusTitle = if (!isDone) "Belum bisa diambil"
-    else if (displayState) "Sudah Diambil"
-    else "Belum Diambil"
+    val statusTitle = if (!isDone) stringResource(R.string.manage_order_not_ready_pickup)
+    else if (displayState) stringResource(R.string.manage_order_picked_up)
+    else stringResource(R.string.manage_order_not_picked_up)
 
     Surface(
         shape = RoundedCornerShape(16.dp),
@@ -878,7 +885,7 @@ private fun PickupStatusRow(
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
-                    text = "Status Pengambilan",
+                    text = stringResource(R.string.manage_order_pickup_status),
                     style = MaterialTheme.typography.labelSmall,
                     color = contentColor.copy(alpha = 0.75f)
                 )

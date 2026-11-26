@@ -41,12 +41,14 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.OrderItem
 import com.aprilarn.washflow.data.model.Orders
 import com.aprilarn.washflow.data.model.Services
@@ -129,6 +131,7 @@ fun OrderStatusColumn(
     modifier: Modifier = Modifier,
     title: String,
     subTitle: String,
+    statusKey: String = title,
     orders: List<Orders>,
     services: List<Services>,
     onDrop: (orderId: String) -> Unit,
@@ -138,14 +141,14 @@ fun OrderStatusColumn(
     val currentOnDrop by rememberUpdatedState(onDrop)
     val haptic = LocalHapticFeedback.current
     val density = LocalDensity.current
-    val theme = remember(title) { resolveStatusWorkflowTheme(title) }
+    val theme = remember(statusKey) { resolveStatusWorkflowTheme(statusKey) }
 
     var centerX by remember { mutableStateOf(0f) }
 
     val isHighlighted by remember(dragDropState.isDragging, dragDropState.fingerPosition) {
         derivedStateOf {
             dragDropState.isDragging &&
-                    dragDropState.dropTargets.find { it.id == title }?.bounds?.contains(dragDropState.fingerPosition) == true
+                    dragDropState.dropTargets.find { it.id == statusKey }?.bounds?.contains(dragDropState.fingerPosition) == true
         }
     }
 
@@ -198,9 +201,9 @@ fun OrderStatusColumn(
     }
 
     // Efek untuk mendaftarkan & menghapus diri sebagai target drop
-    DisposableEffect(key1 = title) {
+    DisposableEffect(key1 = statusKey) {
         onDispose {
-            dragDropState.dropTargets.removeAll { it.id == title }
+            dragDropState.dropTargets.removeAll { it.id == statusKey }
         }
     }
 
@@ -228,9 +231,9 @@ fun OrderStatusColumn(
                 centerX = windowPosition.x + it.size.width / 2f
 
                 // Hapus pendaftaran lama & daftarkan yang baru dengan bounds terbaru
-                dragDropState.dropTargets.removeAll { t -> t.id == title }
+                dragDropState.dropTargets.removeAll { t -> t.id == statusKey }
                 val newTarget = DropTarget(
-                    id = title,
+                    id = statusKey,
                     bounds = bounds,
                     onDrop = { orderId -> currentOnDrop(orderId) }
                 )
@@ -408,10 +411,11 @@ fun OrderCardContent(
     val formattedOrderDate = remember(order.orderDate) {
         SimpleDateFormat("EEEE, dd MMMM yyyy, HH:mm", Locale.getDefault()).format(order.orderDate.toDate())
     }
-    val formattedDueDate = remember(order.orderDueDate) {
+    val noDueDateText = stringResource(R.string.manage_order_no_due_date)
+    val formattedDueDate = remember(order.orderDueDate, noDueDateText) {
         order.orderDueDate?.toDate()?.let {
             SimpleDateFormat("EEEE, dd MMMM yyyy, HH:mm", Locale.getDefault()).format(it)
-        } ?: "No due date"
+        } ?: noDueDateText
     }
     // val totalQuantity = order.orderItems.sumOf { it.itemQuantity ?: 0 }
     val totalItemTypes = order.orderItems.size
@@ -533,13 +537,13 @@ fun OrderCardContent(
                     .weight(1f)
             ) {
                 Text(
-                    text = if (serviceNames.isEmpty()) "No services" else serviceNames, // Ganti dengan data sebenarnya
+                    text = if (serviceNames.isEmpty()) stringResource(R.string.manage_order_no_services) else serviceNames, // Ganti dengan data sebenarnya
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = Gray
                     )
                 )
                 Text(
-                    text = order.customerName ?: "N/A",
+                    text = order.customerName ?: stringResource(R.string.common_unknown),
                     style = MaterialTheme.typography.bodyMedium.copy(
                         color = customerNameColor,
                         fontWeight = FontWeight.Bold,
@@ -589,7 +593,7 @@ fun OrderCardContent(
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Payments,
-                            contentDescription = "Paid",
+                            contentDescription = stringResource(R.string.manage_order_paid_cd),
                             modifier = Modifier.size(16.dp),
                             tint = Color.White
                         )
@@ -609,7 +613,7 @@ fun OrderCardContent(
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Storefront,
-                            contentDescription = "Picked Up",
+                            contentDescription = stringResource(R.string.manage_order_picked_up_cd),
                             modifier = Modifier.size(16.dp),
                             tint = Color.White
                         )

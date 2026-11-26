@@ -209,7 +209,7 @@ class WorkspaceRepository : WorkspaceRepositoryContract {
 
             val workspace = workspaceSnapshot.toObject(Workspaces::class.java)
             if (workspace?.ownerUid != user.uid) {
-                throw Exception("Hanya owner yang bisa menghapus workspace.")
+                throw Exception("Only the workspace owner can delete the workspace.")
             }
 
             // 3. Jalankan transaksi HANYA untuk owner

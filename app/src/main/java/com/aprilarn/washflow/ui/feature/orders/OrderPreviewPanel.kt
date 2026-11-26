@@ -38,12 +38,14 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.data.model.OrderItem
 import com.aprilarn.washflow.data.model.Services
@@ -72,14 +74,16 @@ fun OrderPreviewPanel(
         uiState.selectedItems.values.toList()
     }
 
-    val groupedItemsByService = remember(selectedItemsList, uiState.services) {
-        groupOrderItemsByService(selectedItemsList, uiState.services)
+    val otherServiceLabel = stringResource(R.string.orders_receipt_other_service)
+    val groupedItemsByService = remember(selectedItemsList, uiState.services, otherServiceLabel) {
+        groupOrderItemsByService(selectedItemsList, uiState.services, otherServiceLabel)
     }
 
-    val formattedDate = remember(uiState.dueDate) {
+    val noDueDateText = stringResource(R.string.orders_receipt_no_due_date)
+    val formattedDate = remember(uiState.dueDate, noDueDateText) {
         uiState.dueDate?.toDate()?.let {
             SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(it)
-        } ?: "Tanpa batas waktu"
+        } ?: noDueDateText
     }
 
     val totalQty = remember(selectedItemsList) {
@@ -120,7 +124,7 @@ fun OrderPreviewPanel(
                     )
                     Column {
                         Text(
-                            text = "Nota Pesanan",
+                            text = stringResource(R.string.orders_receipt_title),
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 19.sp,
@@ -130,7 +134,7 @@ fun OrderPreviewPanel(
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = "Rincian item yang dipilih",
+                            text = stringResource(R.string.orders_receipt_subtitle),
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontWeight = FontWeight.Medium,
                                 color = PastelNeutralText
@@ -156,7 +160,7 @@ fun OrderPreviewPanel(
                             modifier = Modifier.size(15.dp)
                         )
                         Text(
-                            text = "${selectedItemsList.size} item",
+                            text = stringResource(R.string.orders_receipt_items_count, selectedItemsList.size),
                             style = MaterialTheme.typography.labelMedium.copy(
                                 color = PastelBlue,
                                 fontWeight = FontWeight.Bold
@@ -191,7 +195,7 @@ fun OrderPreviewPanel(
                             modifier = Modifier.size(14.dp)
                         )
                         Text(
-                            text = uiState.selectedCustomer?.name ?: "Belum pilih pelanggan",
+                            text = uiState.selectedCustomer?.name ?: stringResource(R.string.orders_receipt_no_customer),
                             style = MaterialTheme.typography.bodySmall.copy(
                                 color = if (uiState.selectedCustomer != null) GrayBlue else PastelNeutralText,
                                 fontWeight = FontWeight.Bold
@@ -255,7 +259,7 @@ fun OrderPreviewPanel(
                             )
                         }
                         Text(
-                            text = "Belum ada item di nota",
+                            text = stringResource(R.string.orders_receipt_empty_title),
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 color = GrayBlue,
                                 fontWeight = FontWeight.SemiBold
@@ -263,7 +267,7 @@ fun OrderPreviewPanel(
                             textAlign = TextAlign.Center
                         )
                         Text(
-                            text = "Pilih item dari daftar layanan untuk menambahkannya ke pesanan.",
+                            text = stringResource(R.string.orders_receipt_empty_subtitle),
                             style = MaterialTheme.typography.bodySmall.copy(
                                 color = PastelNeutralText
                             ),
@@ -311,14 +315,14 @@ fun OrderPreviewPanel(
                 ) {
                     Column {
                         Text(
-                            text = "Total Estimasi",
+                            text = stringResource(R.string.orders_receipt_estimated_total),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 color = PastelNeutralText,
                                 fontWeight = FontWeight.Medium
                             )
                         )
                         Text(
-                            text = if (totalQty > 0) "$totalQty pcs" else "0 pcs",
+                            text = stringResource(R.string.orders_receipt_pcs_count, totalQty.coerceAtLeast(0)),
                             style = MaterialTheme.typography.labelMedium.copy(
                                 color = GrayBlue,
                                 fontWeight = FontWeight.Bold
@@ -344,12 +348,13 @@ fun OrderPreviewPanel(
  */
 fun groupOrderItemsByService(
     items: List<OrderItem>,
-    services: List<Services>
+    services: List<Services>,
+    otherServiceLabel: String = "Other Service"
 ): List<Pair<String, List<OrderItem>>> {
     val serviceNameById = services.associate { it.serviceId to it.serviceName }
     return items
         .groupBy { item ->
-            serviceNameById[item.serviceId]?.takeIf { it.isNotBlank() } ?: "Layanan Lainnya"
+            serviceNameById[item.serviceId]?.takeIf { it.isNotBlank() } ?: otherServiceLabel
         }
         .entries
         .map { it.key to it.value }
@@ -406,7 +411,7 @@ fun ReceiptServiceSection(
                     )
                 }
                 Text(
-                    text = "$sectionQty pcs",
+                    text = stringResource(R.string.orders_receipt_pcs_count, sectionQty),
                     style = MaterialTheme.typography.labelSmall.copy(
                         color = PastelBlue.copy(alpha = 0.8f),
                         fontWeight = FontWeight.SemiBold
@@ -465,7 +470,7 @@ fun ReceiptItemRow(
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text(
-                    text = item.itemName ?: "Item",
+                    text = item.itemName ?: stringResource(R.string.orders_receipt_item_fallback),
                     style = MaterialTheme.typography.bodyMedium.copy(
                         color = GrayBlue,
                         fontWeight = FontWeight.Bold
@@ -527,7 +532,7 @@ fun ReceiptItemRow(
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Close,
-                        contentDescription = "Hapus item",
+                        contentDescription = stringResource(R.string.orders_receipt_remove_item_cd),
                         tint = PastelRoseText,
                         modifier = Modifier.size(13.dp)
                     )

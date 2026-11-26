@@ -41,6 +41,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -52,6 +53,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.core.components.WeatherBackgroundIllustration
 import com.aprilarn.washflow.ui.core.components.isDarkWeatherScene
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
@@ -143,7 +145,7 @@ fun PhoneLocationAwareHomeScreen(
                 color = Color.White.copy(alpha = 0.9f)
             ) {
                 Text(
-                    text = "Aplikasi memerlukan izin lokasi untuk menampilkan data cuaca. Silakan berikan izin atau atur lokasi manual di Settings.",
+                    text = stringResource(R.string.home_location_permission_message),
                     color = GrayBlue,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(24.dp)
@@ -184,6 +186,11 @@ fun PhoneHomeScreen(
         )
     }
 
+    val greetingText = state.greetingResId?.let { stringResource(it) } ?: state.greeting
+    val weatherText = state.weatherFallbackResId?.let { stringResource(it) } ?: state.weather
+    val locationText = state.locationNameResId?.let { stringResource(it) } ?: state.locationName
+    val recommendationText = state.recommendationResId?.let { stringResource(it) } ?: state.recommendation
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -205,7 +212,7 @@ fun PhoneHomeScreen(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = state.greeting,
+                        text = greetingText,
                         style = MaterialTheme.typography.headlineMedium.copy(
                             color = Color.White,
                             fontSize = 28.sp,
@@ -215,7 +222,7 @@ fun PhoneHomeScreen(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "${state.weather} | ${state.temperature}",
+                        text = "$weatherText | ${state.temperature}",
                         style = MaterialTheme.typography.titleMedium.copy(
                             color = Color.White,
                             fontSize = 18.sp,
@@ -230,7 +237,7 @@ fun PhoneHomeScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                     AsyncImage(
                         model = state.weatherIconUrl,
-                        contentDescription = "Current Weather Icon",
+                        contentDescription = null,
                         modifier = Modifier.size(52.dp)
                     )
                 }
@@ -245,13 +252,13 @@ fun PhoneHomeScreen(
             ) {
                 Icon(
                     imageVector = if (state.isGpsLocation) Icons.Rounded.LocationOn else Icons.Rounded.LocationOff,
-                    contentDescription = "Location Type",
+                    contentDescription = null,
                     tint = locationContentColor,
                     modifier = Modifier.size(14.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = state.locationName,
+                    text = locationText,
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = locationContentColor,
                         fontWeight = FontWeight.SemiBold,
@@ -264,7 +271,7 @@ fun PhoneHomeScreen(
             }
         }
 
-        // 2. Pill Rekomendasi Cucian
+        // 2. Pill Rekomendasi
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
@@ -283,7 +290,7 @@ fun PhoneHomeScreen(
                     modifier = Modifier.size(18.dp)
                 )
                 Text(
-                    text = state.recommendation,
+                    text = recommendationText,
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = GrayBlue,
                         fontWeight = FontWeight.Medium,
@@ -299,22 +306,22 @@ fun PhoneHomeScreen(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             PhoneCompactStatusCard(
-                title = "On Queue",
-                subTitle = "Antrian",
+                title = stringResource(R.string.home_status_on_queue),
+                subTitle = stringResource(R.string.home_status_on_queue_sub),
                 count = state.inQueue,
                 onClick = onStatusCardClick,
                 modifier = Modifier.weight(1f)
             )
             PhoneCompactStatusCard(
-                title = "On Process",
-                subTitle = "Diproses",
+                title = stringResource(R.string.home_status_on_process),
+                subTitle = stringResource(R.string.home_status_on_process_sub),
                 count = state.onProcess,
                 onClick = onStatusCardClick,
                 modifier = Modifier.weight(1f)
             )
             PhoneCompactStatusCard(
-                title = "Done",
-                subTitle = "Selesai",
+                title = stringResource(R.string.home_status_done),
+                subTitle = stringResource(R.string.home_status_done_sub),
                 count = state.done,
                 onClick = onStatusCardClick,
                 modifier = Modifier.weight(1f)
@@ -400,10 +407,13 @@ private fun PhoneHomeScreenPreview() {
     val previewState = HomeUiState(
         isLoading = false,
         greeting = "Good Evening!",
+        greetingResId = R.string.home_greeting_evening,
         weather = "Cloudy",
+        weatherFallbackResId = null,
         temperature = "25°C",
-        locationName = "Kec. Boyolali, Jawa Tengah",
-        recommendation = "Pastikan semua cucian disimpan dalam ruang tertutup atau diberi pelindung.",
+        locationName = "Boyolali, Central Java",
+        locationNameResId = null,
+        recommendationResId = R.string.home_recommendation_default,
         inQueue = 3,
         onProcess = 2,
         done = 4,

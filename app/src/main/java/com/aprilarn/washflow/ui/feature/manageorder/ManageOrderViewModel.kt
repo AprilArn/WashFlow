@@ -3,10 +3,12 @@ package com.aprilarn.washflow.ui.feature.manageorder
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Orders
 import com.aprilarn.washflow.domain.usecase.ManageCustomerUseCase
 import com.aprilarn.washflow.domain.usecase.ManageOrderUseCase
 import com.aprilarn.washflow.domain.usecase.ManageServiceUseCase
+import com.aprilarn.washflow.ui.core.utils.UiText
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -56,7 +58,13 @@ class ManageOrderViewModel(
                     )
                 }
             }.catch { e ->
-                _uiState.update { it.copy(isLoading = false, errorMessage = e.message) }
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = e.message?.let { msg -> UiText.DynamicString(msg) }
+                            ?: UiText.StringResource(R.string.orders_msg_load_data_failed)
+                    )
+                }
             }.collect {}
         }
     }
@@ -85,7 +93,9 @@ class ManageOrderViewModel(
                 Log.e("ManageOrderVM", "Failed to update status for order '$orderId'.")
                 // Tampilkan pesan error. UI akan otomatis sinkron kembali dengan
                 // data server yang lama pada pembaruan listener berikutnya.
-                _uiState.update { it.copy(errorMessage = "Failed to update order status.") }
+                _uiState.update {
+                    it.copy(errorMessage = UiText.StringResource(R.string.manage_order_msg_status_failed))
+                }
             }
         }
     }
@@ -94,7 +104,9 @@ class ManageOrderViewModel(
         viewModelScope.launch {
             val success = orderUseCase.togglePayment(orderId, isPaid)
             if (!success) {
-                _uiState.update { it.copy(errorMessage = "Failed to update payment status.") }
+                _uiState.update {
+                    it.copy(errorMessage = UiText.StringResource(R.string.manage_order_msg_payment_failed))
+                }
             }
         }
     }
@@ -103,7 +115,9 @@ class ManageOrderViewModel(
         viewModelScope.launch {
             val success = orderUseCase.togglePickup(orderId, isPickedUp)
             if (!success) {
-                _uiState.update { it.copy(errorMessage = "Failed to update pickup status.") }
+                _uiState.update {
+                    it.copy(errorMessage = UiText.StringResource(R.string.manage_order_msg_pickup_failed))
+                }
             }
         }
     }
@@ -127,7 +141,9 @@ class ManageOrderViewModel(
                 // Tutup dialog setelah berhasil dihapus
                 _uiState.update { it.copy(selectedOrderForDetail = null) }
             } else {
-                _uiState.update { it.copy(errorMessage = "Failed to delete order.") }
+                _uiState.update {
+                    it.copy(errorMessage = UiText.StringResource(R.string.manage_order_msg_delete_failed))
+                }
             }
         }
     }

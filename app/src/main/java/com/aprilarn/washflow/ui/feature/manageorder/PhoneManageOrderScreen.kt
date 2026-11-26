@@ -59,10 +59,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.data.model.Orders
 import com.aprilarn.washflow.data.model.Services
@@ -165,7 +167,7 @@ fun PhoneManageOrderScreen(
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Text(
-                                    text = stage.label,
+                                    text = stringResource(stage.displayLabelRes),
                                     fontSize = 12.sp,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                     maxLines = 1
@@ -212,7 +214,10 @@ fun PhoneManageOrderScreen(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Text(
-                            text = "Tidak ada order di tahap ${currentStage.label}",
+                            text = stringResource(
+                                R.string.manage_order_empty_stage,
+                                stringResource(currentStage.displayLabelRes)
+                            ),
                             color = PastelNeutralText,
                             style = MaterialTheme.typography.bodyMedium
                         )
@@ -297,7 +302,7 @@ private fun PhoneOrderKanbanCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = order.customerName ?: "Pelanggan",
+                        text = order.customerName ?: stringResource(R.string.common_customer),
                         style = MaterialTheme.typography.titleMedium.copy(
                             color = GrayBlue,
                             fontWeight = FontWeight.Bold
@@ -306,7 +311,11 @@ private fun PhoneOrderKanbanCard(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = "$totalQty item • ${CurrencyUtils.formatRupiahWithSymbol(order.totalPrice ?: 0.0)}",
+                        text = stringResource(
+                            R.string.manage_order_card_summary,
+                            totalQty,
+                            CurrencyUtils.formatRupiahWithSymbol(order.totalPrice ?: 0.0)
+                        ),
                         style = MaterialTheme.typography.bodySmall.copy(
                             color = PastelNeutralText,
                             fontWeight = FontWeight.SemiBold
@@ -320,7 +329,11 @@ private fun PhoneOrderKanbanCard(
                     color = if (order.alreadyPaid) PastelGreenBg else PastelAmberBg
                 ) {
                     Text(
-                        text = if (order.alreadyPaid) "Lunas" else "Belum Bayar",
+                        text = if (order.alreadyPaid) {
+                            stringResource(R.string.manage_order_paid)
+                        } else {
+                            stringResource(R.string.manage_order_unpaid)
+                        },
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall.copy(
                             color = if (order.alreadyPaid) PastelGreen else PastelAmber,
@@ -342,7 +355,7 @@ private fun PhoneOrderKanbanCard(
                         modifier = Modifier.size(14.dp)
                     )
                     Text(
-                        text = "Deadline: ${dateFormat.format(due.toDate())}",
+                        text = stringResource(R.string.manage_order_due_prefix, dateFormat.format(due.toDate())),
                         style = MaterialTheme.typography.labelSmall.copy(color = PastelNeutralText)
                     )
                 }
@@ -370,7 +383,7 @@ private fun PhoneOrderKanbanCard(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = prevStage.label,
+                            text = stringResource(prevStage.displayLabelRes),
                             fontSize = 11.sp,
                             color = GrayBlue,
                             fontWeight = FontWeight.SemiBold
@@ -388,7 +401,10 @@ private fun PhoneOrderKanbanCard(
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                     ) {
                         Text(
-                            text = "Ke ${nextStage.label}",
+                            text = stringResource(
+                                R.string.manage_order_move_to,
+                                stringResource(nextStage.displayLabelRes)
+                            ),
                             fontSize = 11.sp,
                             color = Color.White,
                             fontWeight = FontWeight.Bold
@@ -426,7 +442,11 @@ private fun PhoneOrderKanbanCard(
                                 modifier = Modifier.size(15.dp)
                             )
                             Text(
-                                text = if (order.alreadyPickedUp) "Sudah Diambil" else "Siap Diambil",
+                                text = if (order.alreadyPickedUp) {
+                                    stringResource(R.string.manage_order_picked_up)
+                                } else {
+                                    stringResource(R.string.manage_order_ready_pickup)
+                                },
                                 fontSize = 11.sp,
                                 color = pickupContentColor,
                                 fontWeight = FontWeight.Bold
@@ -455,7 +475,10 @@ private fun PhoneOrderDetailBottomSheet(
 
     if (showDeleteConfirmation) {
         DeleteConfirmationDialog(
-            itemName = "Order milik ${order.customerName ?: "Pelanggan"}",
+            itemName = stringResource(
+                R.string.manage_order_delete_item_name,
+                order.customerName ?: stringResource(R.string.common_customer)
+            ),
             onConfirm = {
                 onDelete()
                 showDeleteConfirmation = false
@@ -466,21 +489,23 @@ private fun PhoneOrderDetailBottomSheet(
         return
     }
 
-    val groupedItemsByService = remember(order.orderItems, services) {
-        groupOrderItemsByService(order.orderItems, services)
+    val otherServiceLabel = stringResource(R.string.orders_receipt_other_service)
+    val groupedItemsByService = remember(order.orderItems, services, otherServiceLabel) {
+        groupOrderItemsByService(order.orderItems, services, otherServiceLabel)
     }
     val dateFormat = remember { SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()) }
-    val formattedDueDate = remember(order.orderDueDate) {
-        order.orderDueDate?.toDate()?.let { dateFormat.format(it) } ?: "Tanpa batas waktu"
+    val noDueDateText = stringResource(R.string.orders_receipt_no_due_date)
+    val formattedDueDate = remember(order.orderDueDate, noDueDateText) {
+        order.orderDueDate?.toDate()?.let { dateFormat.format(it) } ?: noDueDateText
     }
     val totalQty = remember(order.orderItems) {
         order.orderItems.sumOf { it.itemQuantity ?: 0 }
     }
     val status = order.status ?: "On Queue"
-    val (statusBg, statusColor, statusLabel) = when {
-        status.equals("Done", ignoreCase = true) -> Triple(PastelGreenBg, PastelGreen, "Selesai")
-        status.equals("On Process", ignoreCase = true) -> Triple(PastelBlueBg, PastelBlue, "Diproses")
-        else -> Triple(PastelAmberBg, PastelAmber, "Dalam Antrian")
+    val (statusBg, statusColor, statusLabelRes) = when {
+        status.equals("Done", ignoreCase = true) -> Triple(PastelGreenBg, PastelGreen, R.string.home_status_done)
+        status.equals("On Process", ignoreCase = true) -> Triple(PastelBlueBg, PastelBlue, R.string.home_status_on_process)
+        else -> Triple(PastelAmberBg, PastelAmber, R.string.home_status_on_queue)
     }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -520,7 +545,7 @@ private fun PhoneOrderDetailBottomSheet(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Text(
-                                text = "Nota Pesanan",
+                                text = stringResource(R.string.orders_receipt_title),
                                 style = MaterialTheme.typography.titleLarge.copy(
                                     color = GrayBlue,
                                     fontWeight = FontWeight.Bold,
@@ -532,7 +557,7 @@ private fun PhoneOrderDetailBottomSheet(
                                 color = statusBg
                             ) {
                                 Text(
-                                    text = statusLabel,
+                                    text = stringResource(statusLabelRes),
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         color = statusColor,
@@ -543,7 +568,7 @@ private fun PhoneOrderDetailBottomSheet(
                             }
                         }
                         Text(
-                            text = "Order #${order.orderId.take(8)}",
+                            text = stringResource(R.string.manage_order_code_prefix, order.orderId.take(8)),
                             style = MaterialTheme.typography.bodySmall.copy(
                                 color = PastelNeutralText,
                                 fontWeight = FontWeight.Medium
@@ -556,14 +581,14 @@ private fun PhoneOrderDetailBottomSheet(
                     IconButton(onClick = onEditOrder) {
                         Icon(
                             imageVector = Icons.Rounded.Edit,
-                            contentDescription = "Edit Order",
+                            contentDescription = stringResource(R.string.manage_order_edit_cd),
                             tint = PastelBlue
                         )
                     }
                     IconButton(onClick = { showDeleteConfirmation = true }) {
                         Icon(
                             imageVector = Icons.Rounded.Delete,
-                            contentDescription = "Delete Order",
+                            contentDescription = stringResource(R.string.manage_order_delete_cd),
                             tint = PastelRoseText
                         )
                     }
@@ -593,7 +618,7 @@ private fun PhoneOrderDetailBottomSheet(
                             modifier = Modifier.size(15.dp)
                         )
                         Text(
-                            text = order.customerName ?: "Pelanggan",
+                            text = order.customerName ?: stringResource(R.string.common_customer),
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 color = GrayBlue,
                                 fontWeight = FontWeight.Bold
@@ -636,7 +661,7 @@ private fun PhoneOrderDetailBottomSheet(
                             modifier = Modifier.size(14.dp)
                         )
                         Text(
-                            text = "Batas Waktu: $formattedDueDate",
+                            text = stringResource(R.string.orders_phone_due_date_value, formattedDueDate),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 color = PastelNeutralText,
                                 fontWeight = FontWeight.Medium
@@ -657,7 +682,7 @@ private fun PhoneOrderDetailBottomSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Rincian Barang",
+                    text = stringResource(R.string.manage_order_items_breakdown),
                     style = MaterialTheme.typography.titleSmall.copy(
                         color = GrayBlue,
                         fontWeight = FontWeight.Bold
@@ -679,7 +704,7 @@ private fun PhoneOrderDetailBottomSheet(
                             modifier = Modifier.size(14.dp)
                         )
                         Text(
-                            text = "${order.orderItems.size} item",
+                            text = stringResource(R.string.orders_receipt_items_count, order.orderItems.size),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 color = PastelBlue,
                                 fontWeight = FontWeight.Bold
@@ -715,14 +740,14 @@ private fun PhoneOrderDetailBottomSheet(
                 ) {
                     Column {
                         Text(
-                            text = "Total Tagihan",
+                            text = stringResource(R.string.manage_order_total_bill),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 color = PastelNeutralText,
                                 fontWeight = FontWeight.Medium
                             )
                         )
                         Text(
-                            text = if (totalQty > 0) "$totalQty pcs" else "0 pcs",
+                            text = stringResource(R.string.orders_receipt_pcs_count, totalQty.coerceAtLeast(0)),
                             style = MaterialTheme.typography.labelMedium.copy(
                                 color = GrayBlue,
                                 fontWeight = FontWeight.Bold
@@ -756,7 +781,7 @@ private fun PhoneOrderDetailBottomSheet(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Sudah Dibayar (Lunas)",
+                            text = stringResource(R.string.manage_order_paid_toggle),
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 color = GrayBlue,
                                 fontWeight = FontWeight.SemiBold
@@ -783,7 +808,7 @@ private fun PhoneOrderDetailBottomSheet(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Sudah Diambil Pelanggan",
+                                text = stringResource(R.string.manage_order_picked_up_toggle),
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     color = GrayBlue,
                                     fontWeight = FontWeight.SemiBold

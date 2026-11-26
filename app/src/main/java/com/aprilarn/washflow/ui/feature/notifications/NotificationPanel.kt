@@ -26,11 +26,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Notifications
 import com.aprilarn.washflow.ui.core.theme.Gray
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
@@ -42,10 +44,21 @@ import java.util.Locale
 @Composable
 private fun getNotificationIcon(title: String): ImageVector {
     return when (title) {
-        "Order Baru" -> Icons.Rounded.ShoppingBasket
-        "Contributor Baru" -> Icons.Rounded.PersonAdd
-        "Update Sistem" -> Icons.Rounded.Update
+        "Order Baru", "New Order" -> Icons.Rounded.ShoppingBasket
+        "Contributor Baru", "New Contributor" -> Icons.Rounded.PersonAdd
+        "Update Sistem", "Sistem Update", "System Update", "Order Diperbarui", "Order Updated" -> Icons.Rounded.Update
         else -> Icons.Rounded.Notifications
+    }
+}
+
+@Composable
+private fun localizeNotificationTitle(title: String): String {
+    return when (title) {
+        "Order Baru", "New Order" -> stringResource(R.string.notif_title_new_order)
+        "Order Diperbarui", "Order Updated" -> stringResource(R.string.notif_title_order_updated)
+        "Contributor Baru", "New Contributor" -> stringResource(R.string.notif_title_new_contributor)
+        "Update Sistem", "Sistem Update", "System Update" -> stringResource(R.string.notif_title_system_update)
+        else -> title
     }
 }
 
@@ -118,7 +131,7 @@ fun NotificationPanel(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Notifications",
+                                text = stringResource(R.string.notif_title),
                                 style = MaterialTheme.typography.titleLarge.copy(
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 19.sp
@@ -132,7 +145,7 @@ fun NotificationPanel(
                             ) {
                                 TextButton(onClick = onMarkAllAsRead) {
                                     Text(
-                                        text = "Mark all as read",
+                                        text = stringResource(R.string.notif_mark_all_read),
                                         color = GrayBlue,
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.Medium
@@ -147,7 +160,7 @@ fun NotificationPanel(
                                     Box(contentAlignment = Alignment.Center) {
                                         Icon(
                                             imageVector = Icons.Rounded.Close,
-                                            contentDescription = "Tutup Notifikasi",
+                                            contentDescription = stringResource(R.string.notif_close_cd),
                                             tint = GrayBlue,
                                             modifier = Modifier.size(20.dp)
                                         )
@@ -165,7 +178,7 @@ fun NotificationPanel(
                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
                             ) {
                                 Text(
-                                    text = "Unread",
+                                    text = stringResource(R.string.notif_filter_unread),
                                     color = if (filter == NotificationFilter.UNREAD) MainFontBlack else Color.Gray,
                                     fontWeight = if (filter == NotificationFilter.UNREAD) FontWeight.Bold else FontWeight.Medium,
                                     fontSize = 14.sp
@@ -176,7 +189,7 @@ fun NotificationPanel(
                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
                             ) {
                                 Text(
-                                    text = "All",
+                                    text = stringResource(R.string.notif_filter_all),
                                     color = if (filter == NotificationFilter.ALL) MainFontBlack else Color.Gray,
                                     fontWeight = if (filter == NotificationFilter.ALL) FontWeight.Bold else FontWeight.Medium,
                                     fontSize = 14.sp
@@ -192,7 +205,7 @@ fun NotificationPanel(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text("Belum ada notifikasi", color = Color.Gray)
+                                Text(stringResource(R.string.notif_empty), color = Color.Gray)
                             }
                         } else {
                             LazyColumn(
@@ -264,7 +277,7 @@ fun NotificationPanelItem(
                 .padding(horizontal = 20.dp, vertical = 12.dp)
         ) {
             Text(
-                text = notification.title,
+                text = localizeNotificationTitle(notification.title),
                 style = MaterialTheme.typography.bodyLarge.copy(
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
@@ -314,7 +327,7 @@ fun NotificationPanelItem(
 
             Icon(
                 imageVector = Icons.Rounded.MoreVert,
-                contentDescription = "Options",
+                contentDescription = stringResource(R.string.common_options),
                 tint = Color(0xFFCBD5E1),
                 modifier = Modifier.size(20.dp)
             )
@@ -328,8 +341,8 @@ fun NotificationPanelItemPreview() {
     NotificationPanelItem(
         notification = Notifications(
             notificationId = "1",
-            title = "Order Baru",
-            message = "Ada pesanan baru masuk dari pelanggan.",
+            title = "New Order",
+            message = "A new service order has been received.",
             senderUid = "sender123"
         ),
         isUnread = true,
@@ -345,20 +358,14 @@ fun NotificationPanelPreview() {
         notifications = listOf(
             Notifications(
                 notificationId = "1",
-                title = "Order Baru",
-                message = "Pesanan cuci kering 5kg telah diterima.",
-                readBy = emptyList()
-            ),
-            Notifications(
-                notificationId = "1",
-                title = "Order Baru",
-                message = "Pesanan cuci kering 5kg telah diterima.",
+                title = "New Order",
+                message = "Express service order has been received.",
                 readBy = emptyList()
             ),
             Notifications(
                 notificationId = "2",
-                title = "Sistem Update",
-                message = "Sistem akan melakukan maintenance malam ini pada pukul 23:00.",
+                title = "System Update",
+                message = "Scheduled system maintenance tonight at 23:00.",
                 readBy = listOf("user123")
             )
         ),

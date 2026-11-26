@@ -4,6 +4,7 @@ import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.data.model.Items
 import com.aprilarn.washflow.data.model.OrderItem
 import com.aprilarn.washflow.data.model.Services
+import com.aprilarn.washflow.ui.core.utils.UiText
 import com.google.firebase.Timestamp
 
 data class OrdersUiState(
@@ -29,6 +30,6 @@ data class OrdersUiState(
     val isSearchingCustomers: Boolean = false,
     val isCreatingOrder: Boolean = false,
     val isLoading: Boolean = true,
-    val successMessage: String? = null,
-    val errorMessage: String? = null
+    val successMessage: UiText? = null,
+    val errorMessage: UiText? = null
 )

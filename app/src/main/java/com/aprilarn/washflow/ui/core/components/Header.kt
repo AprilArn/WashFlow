@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -55,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Notifications
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
@@ -178,7 +180,7 @@ fun Header(
                 )
                 Icon(
                     imageVector = Icons.Rounded.ArrowDropDown,
-                    contentDescription = "Workspace Options",
+                    contentDescription = stringResource(R.string.nav_workspace_options),
                     tint = Color.White,
                     modifier = Modifier.graphicsLayer {
                         rotationZ = wsArrowRotationState.value
@@ -214,7 +216,7 @@ fun Header(
         ) {
             Icon(
                 imageVector = Icons.Rounded.AutoAwesome,
-                contentDescription = "AI Agent",
+                contentDescription = stringResource(R.string.nav_ai_agent),
                 tint = Color.White
             )
         }
@@ -230,7 +232,11 @@ fun Header(
                     }
                 }
             ) {
-                Icon(Icons.Rounded.Notifications, contentDescription = "Notifikasi", tint = Color.White)
+                Icon(
+                    Icons.Rounded.Notifications,
+                    contentDescription = stringResource(R.string.nav_notifications),
+                    tint = Color.White
+                )
             }
         }
     }
@@ -272,7 +278,7 @@ private fun HeaderClockAndUptime(
                 )
             )
             Text(
-                text = "active ${formatDuration(uptimeMillis)}",
+                text = stringResource(R.string.header_active_uptime, formatDuration(uptimeMillis)),
                 style = MaterialTheme.typography.labelSmall.copy(
                     color = subTextColor,
                     fontSize = 10.sp,

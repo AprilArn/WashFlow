@@ -238,12 +238,12 @@ class AiAgentViewModel(
         // Start 10-second cooldown
         cooldownJob?.cancel()
         cooldownJob = viewModelScope.launch {
-            _uiState.update { it.copy(modelStatus = AiModelStatus.COOLDOWN) }
+            _uiState.update { it.copy(modelStatus = AiModelStatus.COOLDOWN, cooldownSeconds = 10) }
             for (i in 10 downTo 1) {
-                _uiState.update { it.copy(currentModelName = "Cooldown ${i}s") }
+                _uiState.update { it.copy(cooldownSeconds = i, currentModelName = null) }
                 kotlinx.coroutines.delay(1000)
             }
-            _uiState.update { it.copy(modelStatus = AiModelStatus.IDLE, currentModelName = null) }
+            _uiState.update { it.copy(modelStatus = AiModelStatus.IDLE, currentModelName = null, cooldownSeconds = 0) }
         }
     }
 
@@ -292,12 +292,11 @@ class AiAgentViewModel(
                     msg
                 }
             }
+            val isAllFailed = finalResponseText.startsWith(Brain.ALL_FAILED_PREFIX_EN) ||
+                finalResponseText.startsWith(Brain.ALL_FAILED_PREFIX_ID)
             state.copy(
                 messages = updatedMessages,
-                modelStatus = if (finalResponseText.startsWith("Maaf, semua layanan"))
-                    AiModelStatus.FAILURE
-                else
-                    AiModelStatus.SUCCESS,
+                modelStatus = if (isAllFailed) AiModelStatus.FAILURE else AiModelStatus.SUCCESS,
                 isAiThinking = false
             )
         }
@@ -391,7 +390,8 @@ class AiAgentViewModel(
             isAiThinking = false,
             animatedMessageIds = emptySet(),
             modelStatus = AiModelStatus.IDLE,
-            currentModelName = null
+            currentModelName = null,
+            cooldownSeconds = 0
         ) }
         messageAnimationProgress.clear()
         // Resetting any other internal UI states that might be tracked via callbacks

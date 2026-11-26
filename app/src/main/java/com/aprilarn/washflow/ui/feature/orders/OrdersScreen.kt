@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -50,6 +51,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Items
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
 import com.aprilarn.washflow.ui.core.theme.PastelBlue
@@ -158,7 +160,7 @@ private fun QuantityInputDialogContent(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Text(
-                text = "Masukkan Jumlah Barang",
+                text = stringResource(R.string.orders_qty_dialog_title),
                 style = MaterialTheme.typography.labelLarge.copy(
                     color = PastelNeutralText,
                     fontWeight = FontWeight.SemiBold
@@ -177,7 +179,10 @@ private fun QuantityInputDialogContent(
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "${CurrencyUtils.formatRupiahWithSymbol(item.itemPrice)} / unit",
+                    text = stringResource(
+                        R.string.orders_price_per_unit,
+                        CurrencyUtils.formatRupiahWithSymbol(item.itemPrice)
+                    ),
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = PastelNeutralText,
                         fontWeight = FontWeight.Medium
@@ -207,7 +212,7 @@ private fun QuantityInputDialogContent(
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Remove,
-                        contentDescription = "Kurangi",
+                        contentDescription = stringResource(R.string.orders_qty_decrease_cd),
                         tint = PastelBlue
                     )
                 }
@@ -215,7 +220,7 @@ private fun QuantityInputDialogContent(
                 OutlinedTextField(
                     value = quantityText,
                     onValueChange = { if (it.all { char -> char.isDigit() }) quantityText = it },
-                    label = { Text("Qty") },
+                    label = { Text(stringResource(R.string.orders_qty_label)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
                     textStyle = MaterialTheme.typography.titleMedium.copy(
@@ -252,7 +257,7 @@ private fun QuantityInputDialogContent(
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Add,
-                        contentDescription = "Tambah",
+                        contentDescription = stringResource(R.string.orders_qty_increase_cd),
                         tint = PastelBlue
                     )
                 }
@@ -272,7 +277,7 @@ private fun QuantityInputDialogContent(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Subtotal",
+                        text = stringResource(R.string.orders_subtotal),
                         style = MaterialTheme.typography.bodySmall.copy(
                             color = PastelNeutralText,
                             fontWeight = FontWeight.Medium
@@ -293,7 +298,7 @@ private fun QuantityInputDialogContent(
                 horizontalArrangement = Arrangement.End
             ) {
                 TextButton(onClick = onDismiss) {
-                    Text("Cancel", color = GrayBlue, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.common_cancel), color = GrayBlue, fontWeight = FontWeight.SemiBold)
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Button(
@@ -302,7 +307,7 @@ private fun QuantityInputDialogContent(
                     contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PastelBlue)
                 ) {
-                    Text("Simpan", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.common_save), color = Color.White, fontWeight = FontWeight.Bold)
                 }
             }
         }

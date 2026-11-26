@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -45,6 +46,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.core.components.shimmerModifier
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
 import com.aprilarn.washflow.ui.core.theme.PastelBlue
@@ -177,7 +179,7 @@ fun WeatherDetailsPanel(state: HomeUiState) {
                     .background(PastelBlue, RoundedCornerShape(2.dp))
             )
             Text(
-                text = "Current Details",
+                text = stringResource(R.string.home_weather_details_title),
                 color = GrayBlue,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold
@@ -202,43 +204,43 @@ fun WeatherDetailsPanel(state: HomeUiState) {
         ) {
             WeatherDetailRow(
                 icon = Icons.Rounded.Thermostat,
-                label = "Feels Like",
+                label = stringResource(R.string.home_weather_feels_like),
                 value = state.feelsLike,
                 isLoading = state.isLoading
             )
             WeatherDetailRow(
                 icon = Icons.Rounded.WaterDrop,
-                label = "Humidity",
+                label = stringResource(R.string.home_weather_humidity),
                 value = state.humidity,
                 isLoading = state.isLoading
             )
             WeatherDetailRow(
                 icon = Icons.Rounded.Cloud,
-                label = "Precipitation",
+                label = stringResource(R.string.home_weather_precipitation),
                 value = state.precipitationProb,
                 isLoading = state.isLoading
             )
             WeatherDetailRow(
                 icon = Icons.Rounded.WbSunny,
-                label = "UV Index",
+                label = stringResource(R.string.home_weather_uv_index),
                 value = state.uvIndex,
                 isLoading = state.isLoading
             )
             WeatherDetailRow(
                 icon = Icons.Rounded.Air,
-                label = "Wind Speed",
+                label = stringResource(R.string.home_weather_wind_speed),
                 value = state.windSpeed,
                 isLoading = state.isLoading
             )
             WeatherDetailRow(
                 icon = Icons.Rounded.Explore,
-                label = "Wind Direction",
+                label = stringResource(R.string.home_weather_wind_direction),
                 value = formattedWindDir,
                 isLoading = state.isLoading
             )
             WeatherDetailRow(
                 icon = Icons.Rounded.Thunderstorm,
-                label = "Thunderstorm",
+                label = stringResource(R.string.home_weather_thunderstorm),
                 value = state.thunderstormProb,
                 isLoading = state.isLoading
             )
@@ -331,7 +333,7 @@ fun HorizontalWeatherForecast(
                 HorizontalWeatherForecastShimmer()
             } else if (forecasts.isEmpty()) {
                 Text(
-                    text = "Loading weather forecast...",
+                    text = stringResource(R.string.home_loading_forecast),
                     style = MaterialTheme.typography.bodySmall.copy(color = GrayBlue),
                     modifier = Modifier.padding(12.dp)
                 )
@@ -541,8 +543,20 @@ fun HorizontalForecastItem(
         Spacer(modifier = Modifier.height(6.dp))
 
         // 3. Suhu atau Label Event
+        val displayEventLabel = if (forecast.isEvent) {
+            when (forecast.iconUrl) {
+                "WS_OPEN" -> stringResource(R.string.home_event_open)
+                "WS_CLOSE" -> stringResource(R.string.home_event_closed)
+                "WS_DEADLINE" -> stringResource(R.string.home_event_deadline)
+                "WS_SUNRISE" -> stringResource(R.string.home_event_sunrise)
+                "WS_SUNSET" -> stringResource(R.string.home_event_sunset)
+                else -> forecast.eventLabel ?: forecast.temperature
+            }
+        } else {
+            forecast.temperature
+        }
         Text(
-            text = forecast.eventLabel ?: forecast.temperature,
+            text = displayEventLabel,
             style = if (forecast.isEvent) {
                 MaterialTheme.typography.bodyMedium.copy(
                     color = PastelBlue,

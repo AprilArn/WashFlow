@@ -29,10 +29,12 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.annotation.StringRes
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
 import com.aprilarn.washflow.ui.core.theme.PastelAmber
 import com.aprilarn.washflow.ui.core.theme.PastelAmberBg
@@ -58,7 +60,7 @@ data class TableDataTheme(
     val countColor: Color,
     val softBgColor: Color,
     val badgeBgColor: Color,
-    val defaultSubtitle: String
+    @param:StringRes val defaultSubtitleRes: Int
 )
 
 fun resolveTableDataTheme(text: String): TableDataTheme {
@@ -72,7 +74,7 @@ fun resolveTableDataTheme(text: String): TableDataTheme {
             countColor = PastelGreenDark,
             softBgColor = PastelGreenSoftBg,
             badgeBgColor = PastelGreenBg,
-            defaultSubtitle = "Kategori layanan laundry"
+            defaultSubtitleRes = R.string.table_subtitle_services
         )
         normalized.contains("item") || normalized.contains("barang") -> TableDataTheme(
             kind = TableDataKind.ITEMS,
@@ -82,7 +84,7 @@ fun resolveTableDataTheme(text: String): TableDataTheme {
             countColor = PastelAmber,
             softBgColor = Color(0xFFFCF7F0),
             badgeBgColor = PastelAmberBg,
-            defaultSubtitle = "Katalog barang & harga layanan"
+            defaultSubtitleRes = R.string.table_subtitle_items
         )
         else -> TableDataTheme(
             kind = TableDataKind.CUSTOMERS,
@@ -92,7 +94,7 @@ fun resolveTableDataTheme(text: String): TableDataTheme {
             countColor = PastelBlue,
             softBgColor = PastelBlueSoftBg,
             badgeBgColor = PastelBlueBg,
-            defaultSubtitle = "Direktori pelanggan terdaftar"
+            defaultSubtitleRes = R.string.table_subtitle_customers
         )
     }
 }

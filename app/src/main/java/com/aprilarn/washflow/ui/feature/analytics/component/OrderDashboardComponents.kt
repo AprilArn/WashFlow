@@ -11,9 +11,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.TrendingDown
 import androidx.compose.material.icons.automirrored.rounded.TrendingFlat
 import androidx.compose.material.icons.automirrored.rounded.TrendingUp
+import androidx.compose.material.icons.rounded.Autorenew
 import androidx.compose.material.icons.rounded.EventAvailable
 import androidx.compose.material.icons.rounded.HourglassTop
-import androidx.compose.material.icons.rounded.LocalLaundryService
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -25,11 +25,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Orders
 import com.aprilarn.washflow.ui.feature.analytics.DeadlineUrgency
 import com.aprilarn.washflow.ui.feature.analytics.OrderDashboardSummary
@@ -94,7 +96,7 @@ fun MonthlySummaryCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Pendapatan bulan ini",
+                            text = stringResource(R.string.analytics_month_revenue_label),
                             color = Gray,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Medium,
@@ -126,7 +128,7 @@ fun MonthlySummaryCard(
                             color = PastelSlateBg
                         ) {
                             Text(
-                                text = "${summary.monthOrderCount} order",
+                                text = stringResource(R.string.analytics_order_count_badge, summary.monthOrderCount),
                                 color = PastelBlue,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.SemiBold,
@@ -147,7 +149,7 @@ fun MonthlySummaryCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 SummaryStatCard(
-                    label = "Diproses",
+                    label = stringResource(R.string.analytics_stat_in_progress),
                     value = summary.activeOrderCount.toString(),
                     accentColor = PastelBlue,
                     modifier = Modifier
@@ -155,7 +157,7 @@ fun MonthlySummaryCard(
                         .fillMaxHeight()
                 )
                 SummaryStatCard(
-                    label = "Siap diambil",
+                    label = stringResource(R.string.analytics_stat_ready_pickup),
                     value = summary.readyForPickupCount.toString(),
                     accentColor = PastelGreen,
                     modifier = Modifier
@@ -163,7 +165,7 @@ fun MonthlySummaryCard(
                         .fillMaxHeight()
                 )
                 SummaryStatCard(
-                    label = "Belum lunas",
+                    label = stringResource(R.string.analytics_stat_unpaid),
                     value = summary.unpaidCount.toString(),
                     accentColor = PastelAmber,
                     modifier = Modifier
@@ -288,9 +290,9 @@ fun DeadlineCountBadge(
     }
 
     val (textColor, label) = if (overdueCount > 0) {
-        PastelRose to "$overdueCount terlambat"
+        PastelRose to stringResource(R.string.analytics_deadline_overdue_count, overdueCount)
     } else {
-        Color.Gray to "${deadlines.size} aktif"
+        Color.Gray to stringResource(R.string.analytics_deadline_active_count, deadlines.size)
     }
 
     Text(
@@ -342,9 +344,10 @@ fun DeadlineOrderRow(order: Orders, modifier: Modifier = Modifier) {
         DeadlineUrgency.TODAY -> PastelAmber to PastelAmberBg
         DeadlineUrgency.UPCOMING -> GrayBlue to PastelSlateBg
     }
-    val customerName = order.customerName?.takeIf { it.isNotBlank() } ?: "Tanpa nama"
+    val customerName = order.customerName?.takeIf { it.isNotBlank() }
+        ?: stringResource(R.string.orders_unnamed_customer)
     val isOnProcess = order.status.equals("On Process", ignoreCase = true)
-    val statusIcon = if (isOnProcess) Icons.Rounded.LocalLaundryService else Icons.Rounded.HourglassTop
+    val statusIcon = if (isOnProcess) Icons.Rounded.Autorenew else Icons.Rounded.HourglassTop
 
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -414,7 +417,7 @@ fun DeadlineOrderRow(order: Orders, modifier: Modifier = Modifier) {
                         )
                         Spacer(modifier = Modifier.width(3.dp))
                         Text(
-                            text = info.label,
+                            text = info.label.asString(),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             color = accentColor,
@@ -452,7 +455,7 @@ fun DeadlineEmptyState(modifier: Modifier = Modifier) {
         }
         Spacer(modifier = Modifier.height(10.dp))
         Text(
-            text = "Semua deadline aman",
+            text = stringResource(R.string.analytics_deadline_empty_title),
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold,
             color = GrayBlue,
@@ -460,7 +463,7 @@ fun DeadlineEmptyState(modifier: Modifier = Modifier) {
         )
         Spacer(modifier = Modifier.height(2.dp))
         Text(
-            text = "Tidak ada order aktif dengan deadline",
+            text = stringResource(R.string.analytics_deadline_empty_subtitle),
             fontSize = 11.sp,
             color = Color.Gray,
             textAlign = TextAlign.Center
@@ -474,10 +477,12 @@ fun DeadlineEmptyState(modifier: Modifier = Modifier) {
 
 @Composable
 fun RecentOrderItem(order: Orders, modifier: Modifier = Modifier) {
-    val customerName = order.customerName?.takeIf { it.isNotBlank() } ?: "Tanpa nama"
+    val customerName = order.customerName?.takeIf { it.isNotBlank() }
+        ?: stringResource(R.string.orders_unnamed_customer)
     val totalQty = order.orderItems.sumOf { it.itemQuantity ?: 0 }
-    val dateText = remember(order.orderDate) {
-        SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.forLanguageTag("id-ID")).format(order.orderDate.toDate())
+    val locale = Locale.getDefault()
+    val dateText = remember(order.orderDate, locale) {
+        SimpleDateFormat("dd MMM yyyy, HH:mm", locale).format(order.orderDate.toDate())
     }
 
     Row(
@@ -513,7 +518,7 @@ fun RecentOrderItem(order: Orders, modifier: Modifier = Modifier) {
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = "$dateText · $totalQty item",
+                text = stringResource(R.string.analytics_recent_order_meta, dateText, totalQty),
                 fontSize = 11.sp,
                 color = Color.Gray,
                 maxLines = 1,
@@ -587,7 +592,7 @@ fun TopServiceItem(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = "${service.quantity} item · $percentText",
+                        text = stringResource(R.string.analytics_service_share_summary, service.quantity, percentText),
                         fontSize = 10.sp,
                         color = Color.Gray
                     )
@@ -621,7 +626,7 @@ fun TopServiceItem(
 
 @Composable
 fun TopServicesEmptyState(
-    periodLabel: String = "Bulan ini",
+    periodLabel: String,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -630,7 +635,7 @@ fun TopServicesEmptyState(
         color = Color.White
     ) {
         Text(
-            text = "Belum ada transaksi layanan ${periodLabel.lowercase()}",
+            text = stringResource(R.string.analytics_top_services_empty, periodLabel.lowercase()),
             fontSize = 12.sp,
             color = Color.Gray,
             textAlign = TextAlign.Center,

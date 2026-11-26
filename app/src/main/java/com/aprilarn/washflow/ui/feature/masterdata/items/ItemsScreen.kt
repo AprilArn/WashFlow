@@ -41,12 +41,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Items
 import com.aprilarn.washflow.ui.core.components.ColumnConfig
 import com.aprilarn.washflow.ui.core.components.DataTablePanel
@@ -129,7 +131,7 @@ fun ItemsScreen(
                             )
                             Column {
                                 Text(
-                                    text = "Edit ${itemToEdit.itemName}",
+                                    text = stringResource(R.string.master_edit_item_title, itemToEdit.itemName),
                                     style = MaterialTheme.typography.titleLarge.copy(
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 19.sp,
@@ -137,7 +139,7 @@ fun ItemsScreen(
                                     )
                                 )
                                 Text(
-                                    text = "Perbarui layanan, nama, atau harga barang",
+                                    text = stringResource(R.string.master_items_edit_subtitle),
                                     style = MaterialTheme.typography.bodySmall.copy(
                                         color = PastelNeutralText,
                                         fontSize = 12.sp
@@ -155,13 +157,13 @@ fun ItemsScreen(
                                 services = uiState.services,
                                 selectedServiceId = editedService,
                                 onServiceSelected = { editedService = it.serviceId },
-                                label = "Service",
+                                label = stringResource(R.string.master_items_service_label),
                                 modifier = Modifier.fillMaxWidth()
                             )
                             OutlinedTextField(
                                 value = editedName,
                                 onValueChange = { editedName = it },
-                                label = { Text("Item Name") },
+                                label = { Text(stringResource(R.string.master_items_name_label)) },
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(14.dp),
@@ -184,7 +186,7 @@ fun ItemsScreen(
                                         editedPrice = newValue
                                     }
                                 },
-                                label = { Text("Item Price") },
+                                label = { Text(stringResource(R.string.master_items_price_label)) },
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(14.dp),
@@ -223,11 +225,11 @@ fun ItemsScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Rounded.Delete,
-                                    contentDescription = "Delete",
+                                    contentDescription = stringResource(R.string.common_delete),
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(Modifier.width(6.dp))
-                                Text("Delete", fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.common_delete), fontWeight = FontWeight.Bold)
                             }
                             Button(
                                 onClick = {
@@ -249,11 +251,11 @@ fun ItemsScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Rounded.Check,
-                                    contentDescription = "Done",
+                                    contentDescription = stringResource(R.string.common_done),
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(Modifier.width(6.dp))
-                                Text("Done", fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.common_done), fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -274,7 +276,7 @@ fun ItemsScreen(
         ) {
             val itemColumns = listOf(
                 ColumnConfig<Items>(
-                    header = "Service ID",
+                    header = stringResource(R.string.master_items_col_service_id),
                     weight = 0.28f,
                     content = { item ->
                         Surface(
@@ -294,7 +296,7 @@ fun ItemsScreen(
                     }
                 ),
                 ColumnConfig<Items>(
-                    header = "Item Name",
+                    header = stringResource(R.string.master_items_col_name),
                     weight = 0.50f,
                     content = { item ->
                         Text(
@@ -308,7 +310,7 @@ fun ItemsScreen(
                     }
                 ),
                 ColumnConfig<Items>(
-                    header = "Item Price",
+                    header = stringResource(R.string.master_items_col_price),
                     weight = 0.30f,
                     content = { item ->
                         Text(
@@ -322,7 +324,7 @@ fun ItemsScreen(
                     }
                 ),
                 ColumnConfig<Items>(
-                    header = "Edit",
+                    header = stringResource(R.string.common_edit),
                     weight = 0.12f,
                     content = {
                         Box(
@@ -333,7 +335,7 @@ fun ItemsScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.Edit,
-                                contentDescription = "Edit Item",
+                                contentDescription = stringResource(R.string.master_items_edit_cd),
                                 tint = PastelAmber,
                                 modifier = Modifier.size(16.dp)
                             )
@@ -343,11 +345,11 @@ fun ItemsScreen(
             )
 
             DataTablePanel(
-                title = "Items",
+                title = stringResource(R.string.master_items_title),
                 itemCount = itemCount,
                 searchQuery = newItemName,
                 onSearchQueryChange = { newItemName = it },
-                searchPlaceholder = "Cari kode layanan, nama barang, atau harga...",
+                searchPlaceholder = stringResource(R.string.master_items_search_placeholder),
                 columns = itemColumns,
                 data = filteredItems,
                 isLoading = uiState.isLoading,
@@ -383,7 +385,7 @@ fun ItemsScreen(
                         )
                         Column {
                             Text(
-                                text = "Add New Item",
+                                text = stringResource(R.string.master_items_add_title),
                                 style = MaterialTheme.typography.titleLarge.copy(
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 20.sp,
@@ -391,7 +393,7 @@ fun ItemsScreen(
                                 )
                             )
                             Text(
-                                text = "Tambah item baru",
+                                text = stringResource(R.string.master_items_add_subtitle),
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     color = PastelNeutralText,
                                     fontSize = 12.sp
@@ -409,13 +411,13 @@ fun ItemsScreen(
                             services = uiState.services,
                             selectedServiceId = newItemService,
                             onServiceSelected = { newItemService = it.serviceId },
-                            label = "Service",
+                            label = stringResource(R.string.master_items_service_label),
                             modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
                             value = newItemName,
                             onValueChange = { newItemName = it },
-                            label = { Text("Nama Barang") },
+                            label = { Text(stringResource(R.string.master_items_name_label)) },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(14.dp),
@@ -438,7 +440,7 @@ fun ItemsScreen(
                                     newItemPrice = newValue
                                 }
                             },
-                            label = { Text("Harga Barang") },
+                            label = { Text(stringResource(R.string.master_items_price_label)) },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(14.dp),
@@ -481,12 +483,12 @@ fun ItemsScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Add,
-                            contentDescription = "Add Icon",
+                            contentDescription = stringResource(R.string.common_add),
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Add Item",
+                            text = stringResource(R.string.master_items_add_button),
                             style = MaterialTheme.typography.labelLarge.copy(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp

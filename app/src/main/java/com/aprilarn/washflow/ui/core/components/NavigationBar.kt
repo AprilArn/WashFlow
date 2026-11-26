@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -232,7 +233,7 @@ private fun NavigationBarContent(
                 val isSelected = selectedRoute == screen.route
                 NavItem(
                     icon = screen.icon,
-                    label = screen.label,
+                    label = stringResource(screen.labelRes),
                     route = screen.route,
                     isSelected = isSelected,
                     selectionProgressState = progressStates[index],

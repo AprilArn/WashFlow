@@ -34,6 +34,7 @@ data class AiAgentUiState(
     val isAiThinking: Boolean = false,
     val currentModelName: String? = null,
     val modelStatus: AiModelStatus = AiModelStatus.IDLE,
+    val cooldownSeconds: Int = 0,
     val customers: List<Customers> = emptyList(),
     val items: List<Items> = emptyList(),
     val services: List<Services> = emptyList(),

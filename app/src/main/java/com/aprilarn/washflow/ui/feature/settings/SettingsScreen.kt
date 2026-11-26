@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.aprilarn.washflow.ui.core.utils.UiText
 import com.aprilarn.washflow.ui.feature.login.UserData
 
 @Composable
@@ -64,7 +65,7 @@ fun SettingsScreen(
         ) {
             // Masukkan state switch suara ke PreferencesSection
             PreferencesSection(
-                locationName = settingsUiState.locationName,
+                locationName = settingsUiState.locationName.asString(),
                 onSetLocationClicked = onSetLocationClicked,
                 isSoundEnabled = isSoundEnabled,
                 onSoundToggled = { newValue ->
@@ -109,7 +110,12 @@ fun SettingsScreenPreview() {
                 email = "diannerussel@mail.com",
                 profilePictureUrl = null
             ),
-            settingsUiState = SettingsUiState(locationName = "Boyolali, Central Java", latitude = -7.797068, longitude = 110.370529),
+            settingsUiState = SettingsUiState(
+                locationName = UiText.DynamicString("Boyolali, Central Java"),
+                hasFetchedLocation = true,
+                latitude = -7.797068,
+                longitude = 110.370529
+            ),
             onSetLocationClicked = {},
             onSignOut = {}
         )

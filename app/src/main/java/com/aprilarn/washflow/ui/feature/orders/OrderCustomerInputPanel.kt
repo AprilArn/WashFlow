@@ -57,6 +57,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -64,6 +65,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.core.components.HapticSwitch
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
 import com.aprilarn.washflow.ui.core.theme.PastelBlue
@@ -133,7 +135,7 @@ fun OrderCustomerInputPanel(
                 )
                 Column {
                     Text(
-                        text = "Customer",
+                        text = stringResource(R.string.common_customer),
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold,
                             fontSize = 20.sp,
@@ -141,7 +143,7 @@ fun OrderCustomerInputPanel(
                         )
                     )
                     Text(
-                        text = "Pelanggan",
+                        text = stringResource(R.string.orders_customer_subtitle),
                         style = MaterialTheme.typography.bodySmall.copy(
                             fontWeight = FontWeight.Medium,
                             color = PastelNeutralText
@@ -166,7 +168,7 @@ fun OrderCustomerInputPanel(
                         viewModel.onCustomerQueryChanged(it)
                         isDropdownExpanded = true
                     },
-                    label = { Text("Nama Pelanggan") },
+                    label = { Text(stringResource(R.string.master_customers_name_label)) },
                     singleLine = true,
                     leadingIcon = {
                         Icon(
@@ -251,7 +253,7 @@ fun OrderCustomerInputPanel(
                 onValueChange = {},
                 readOnly = true,
                 singleLine = true,
-                label = { Text("No WA/Telp") },
+                label = { Text(stringResource(R.string.master_customers_phone_label)) },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Rounded.Phone,
@@ -272,7 +274,7 @@ fun OrderCustomerInputPanel(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Gunakan Batas Waktu",
+                    text = stringResource(R.string.orders_use_due_date),
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.Medium,
                         color = GrayBlue
@@ -302,7 +304,7 @@ fun OrderCustomerInputPanel(
                 Column {
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Batas Waktu:",
+                        text = stringResource(R.string.orders_due_date_label),
                         style = MaterialTheme.typography.bodySmall.copy(
                             color = PastelNeutralText,
                             fontWeight = FontWeight.Medium
@@ -366,12 +368,12 @@ fun OrderCustomerInputPanel(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = PastelBlue)
                 ) {
-                    Text("OK", color = Color.White)
+                    Text(stringResource(R.string.common_ok), color = Color.White)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) {
-                    Text("Cancel", color = GrayBlue)
+                    Text(stringResource(R.string.common_cancel), color = GrayBlue)
                 }
             }
         ) {
@@ -396,7 +398,7 @@ fun OrderCustomerInputPanel(
         )
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
-            title = { Text("Set Batas Waktu", color = GrayBlue, fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(R.string.orders_set_due_time_title), color = GrayBlue, fontWeight = FontWeight.Bold) },
             text = {
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     TimePicker(state = timePickerState)
@@ -412,12 +414,12 @@ fun OrderCustomerInputPanel(
                         showTimePicker = false
                     }
                 ) {
-                    Text("OK", color = PastelBlue, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.common_ok), color = PastelBlue, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showTimePicker = false }) {
-                    Text("Cancel", color = GrayBlue)
+                    Text(stringResource(R.string.common_cancel), color = GrayBlue)
                 }
             }
         )

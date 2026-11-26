@@ -15,11 +15,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
 import com.aprilarn.washflow.ui.core.theme.WashFlowTheme
 
@@ -51,7 +53,7 @@ fun KickedDialogContent(
         ) {
             // Judul
             Text(
-                text = "Akses Dicabut",
+                text = stringResource(R.string.dialog_kicked_title),
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFFD32F2F) // Merah
@@ -62,7 +64,7 @@ fun KickedDialogContent(
 
             // Pesan
             Text(
-                text = "Anda telah dikeluarkan dari workspace",
+                text = stringResource(R.string.dialog_kicked_message),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = Color.Gray,
                     textAlign = TextAlign.Center
@@ -94,11 +96,11 @@ fun KickedDialogContent(
                     Icon(
                         modifier = Modifier.size(18.dp),
                         imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                        contentDescription = "Create Icon",
+                        contentDescription = stringResource(R.string.dialog_kicked_back_button),
                         tint = GrayBlue
                     )
                     Spacer(modifier = Modifier.width(8.dp) )
-                    Text("Back to workspace screen", color = GrayBlue)
+                    Text(stringResource(R.string.dialog_kicked_back_button), color = GrayBlue)
                 }
             }
 //            Button(

@@ -2,8 +2,10 @@ package com.aprilarn.washflow.ui.feature.masterdata.services
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Services
 import com.aprilarn.washflow.domain.usecase.ManageServiceUseCase
+import com.aprilarn.washflow.ui.core.utils.UiText
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -29,7 +31,7 @@ class ServicesViewModel(
                     // Tangani error jika flow gagal
                     _uiState.update {
                         it.copy(
-                            errorMessage = "Failed to listen for service data.",
+                            errorMessage = UiText.StringResource(R.string.master_services_msg_listen_failed),
                             isLoading = false
                         )
                     }
@@ -53,7 +55,7 @@ class ServicesViewModel(
         if (id.isBlank() || name.isBlank()) {
             _uiState.update {
                 it.copy(
-                    errorMessage = "All fields must be filled correctly."
+                    errorMessage = UiText.StringResource(R.string.master_services_msg_fields_required)
                 )
             }
             return
@@ -64,13 +66,13 @@ class ServicesViewModel(
             if (success) {
                 _uiState.update {
                     it.copy(
-                        successMessage = "Service '$name' added successfully!"
+                        successMessage = UiText.StringResource(R.string.master_services_msg_added, name)
                     )
                 }
             } else {
                 _uiState.update {
                     it.copy(
-                        errorMessage = "Failed to add service. The ID might already exist."
+                        errorMessage = UiText.StringResource(R.string.master_services_msg_add_failed)
                     )
                 }
             }
@@ -83,14 +85,14 @@ class ServicesViewModel(
             if (success) {
                 _uiState.update {
                     it.copy(
-                        successMessage = "Service updated!",
+                        successMessage = UiText.StringResource(R.string.master_services_msg_updated),
                         selectedService = null
                     )
                 }
             } else {
                 _uiState.update {
                     it.copy(
-                        errorMessage = "Failed to update service."
+                        errorMessage = UiText.StringResource(R.string.master_services_msg_update_failed)
                     )
                 }
             }
@@ -103,14 +105,14 @@ class ServicesViewModel(
             if (success) {
                 _uiState.update {
                     it.copy(
-                        successMessage = "Service deleted!",
+                        successMessage = UiText.StringResource(R.string.master_services_msg_deleted),
                         selectedService = null
                     )
                 }
             } else {
                 _uiState.update {
                     it.copy(
-                        errorMessage = "Failed to delete service."
+                        errorMessage = UiText.StringResource(R.string.master_services_msg_delete_failed)
                     )
                 }
             }

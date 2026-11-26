@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -51,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
 import com.aprilarn.washflow.ui.core.theme.PastelBlueBg
 import com.aprilarn.washflow.ui.core.theme.PastelBlueMedium
@@ -132,7 +134,7 @@ fun PhoneTopHeader(
                         .padding(horizontal = 10.dp, vertical = 5.dp)
                 ) {
                     Text(
-                        text = workspaceName.ifBlank { "Workspace" },
+                        text = workspaceName.ifBlank { stringResource(R.string.common_workspace) },
                         style = MaterialTheme.typography.labelMedium.copy(
                             color = Color.White,
                             fontWeight = FontWeight.SemiBold
@@ -143,7 +145,7 @@ fun PhoneTopHeader(
                     )
                     Icon(
                         imageVector = Icons.Rounded.ArrowDropDown,
-                        contentDescription = "Workspace Options",
+                        contentDescription = stringResource(R.string.nav_workspace_options),
                         tint = Color.White,
                         modifier = Modifier.size(18.dp)
                     )
@@ -178,7 +180,7 @@ fun PhoneTopHeader(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.AutoAwesome,
-                    contentDescription = "AI Agent",
+                    contentDescription = stringResource(R.string.nav_ai_agent),
                     tint = Color.White,
                     modifier = Modifier.size(19.dp)
                 )
@@ -211,7 +213,7 @@ fun PhoneTopHeader(
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Notifications,
-                        contentDescription = "Notifications",
+                        contentDescription = stringResource(R.string.nav_notifications),
                         tint = Color.White,
                         modifier = Modifier.size(19.dp)
                     )
@@ -340,7 +342,7 @@ fun PhoneBottomNavigationBar(
                             ) {
                                 Icon(
                                     imageVector = screen.icon,
-                                    contentDescription = screen.label,
+                                    contentDescription = stringResource(screen.labelRes),
                                     tint = homeIconTint,
                                     modifier = Modifier.size(26.dp)
                                 )
@@ -370,7 +372,7 @@ fun PhoneBottomNavigationBar(
                     ) {
                         Icon(
                             imageVector = screen.icon,
-                            contentDescription = screen.label,
+                            contentDescription = stringResource(screen.labelRes),
                             tint = contentColor,
                             modifier = Modifier.size(23.dp)
                         )

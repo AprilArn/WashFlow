@@ -26,9 +26,11 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.data.model.Items
 import com.aprilarn.washflow.data.model.Services
@@ -393,10 +395,10 @@ fun VoiceAgentOverlay(
                             contentAlignment = Alignment.CenterStart
                         ) { targetStatus ->
                             val targetTitle = when (targetStatus) {
-                                VoiceAgentStatus.LISTENING -> "Listening..."
-                                VoiceAgentStatus.THINKING -> "Thinking..."
-                                VoiceAgentStatus.ANSWERING -> "Aira"
-                                VoiceAgentStatus.WAITING_FOR_CONFIRMATION -> "Aira"
+                                VoiceAgentStatus.LISTENING -> stringResource(R.string.ai_listening)
+                                VoiceAgentStatus.THINKING -> stringResource(R.string.ai_thinking)
+                                VoiceAgentStatus.ANSWERING -> stringResource(R.string.ai_name)
+                                VoiceAgentStatus.WAITING_FOR_CONFIRMATION -> stringResource(R.string.ai_name)
                                 else -> ""
                             }
 

@@ -1,11 +1,13 @@
 package com.aprilarn.washflow.ui.feature.login
 
+import com.aprilarn.washflow.ui.core.utils.UiText
+
 data class LoginUiState(
     val isSignInSuccessful: Boolean = false,
     val signInError: String? = null,
-    val isCheckingWorkspace: Boolean = false,   // Untuk menampilkan loading
-    val userHasWorkspace: Boolean? = null,      // null: belum dicek/error jaringan, true: ada, false: tidak ada
+    val isCheckingWorkspace: Boolean = false,
+    val userHasWorkspace: Boolean? = null,
     val showTimeoutDialog: Boolean = false,
-    val isWaitingForNetwork: Boolean = false,   // True jika cek workspace gagal karena sinyal hilang/buruk
-    val networkErrorMessage: String? = null
+    val isWaitingForNetwork: Boolean = false,
+    val networkErrorMessage: UiText? = null
 )

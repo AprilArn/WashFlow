@@ -41,14 +41,18 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Orders
 import com.aprilarn.washflow.data.model.Services
+import com.aprilarn.washflow.ui.feature.analytics.ANALYTICS_ALL_MONTHS_KEY
+import com.aprilarn.washflow.ui.feature.analytics.ANALYTICS_ALL_STATUS_KEY
 import com.aprilarn.washflow.ui.feature.analytics.ReportSortColumn
 import com.aprilarn.washflow.ui.feature.analytics.isDone
 import com.aprilarn.washflow.ui.core.theme.Gray
@@ -94,11 +98,20 @@ fun OrderReportPanel(
     onSortColumnClicked: (ReportSortColumn) -> Unit,
     onLoadMoreMonths: () -> Unit
 ) {
-    // 1. Ekstrak daftar bulan unik dari data order
-    val monthList = remember(orders) {
-        val months = orders.map { it.orderDate.toMonthYearString() }.distinct()
-        listOf("Semua Bulan") + months
+    val allMonthsLabel = stringResource(R.string.analytics_all_months)
+    val currentLocale = Locale.getDefault()
+
+    // 1. Ekstrak daftar bulan unik (key = "yyyy-MM", label = localized "MMMM yyyy")
+    val monthOptions = remember(orders, allMonthsLabel, currentLocale) {
+        val months = orders
+            .map { it.orderDate.toMonthKey() to it.orderDate.toMonthYearString(currentLocale) }
+            .distinctBy { it.first }
+        listOf(ANALYTICS_ALL_MONTHS_KEY to allMonthsLabel) + months
     }
+    val isAllMonthsSelected = selectedMonth == ANALYTICS_ALL_MONTHS_KEY || selectedMonth == "Semua Bulan"
+    val selectedMonthDisplayLabel = monthOptions.firstOrNull {
+        it.first == selectedMonth || it.second.equals(selectedMonth, ignoreCase = true)
+    }?.second ?: allMonthsLabel
 
     // 2. Filter berdasarkan kata kunci pencarian
     val searchFiltered = orders.filter { order ->
@@ -117,14 +130,15 @@ fun OrderReportPanel(
 
     // 3. Filter berdasarkan status
     val statusFiltered = searchFiltered.filter { order ->
-        if (selectedStatusFilter == "Semua") true
+        if (selectedStatusFilter == ANALYTICS_ALL_STATUS_KEY || selectedStatusFilter == "Semua") true
         else (order.status ?: "").equals(selectedStatusFilter, ignoreCase = true)
     }
 
     // 4. Filter berdasarkan bulan
     val monthFiltered = statusFiltered.filter { order ->
-        if (selectedMonth == "Semua Bulan") true
-        else order.orderDate.toMonthYearString().equals(selectedMonth, ignoreCase = true)
+        if (isAllMonthsSelected) true
+        else order.orderDate.toMonthKey() == selectedMonth ||
+            order.orderDate.toMonthYearString(currentLocale).equals(selectedMonth, ignoreCase = true)
     }
 
     // 5. Urutkan data berdasarkan kolom yang dipilih
@@ -144,10 +158,9 @@ fun OrderReportPanel(
         else monthFiltered.sortedWith(comparator.reversed())
     }
 
-    // Ringkasan perbandingan bulanan (Opsi 2: Semua Bulan -> bulan lalu vs 2 bulan lalu;
-    // bulan terpilih -> bulan tersebut vs 1 bulan sebelumnya), dihitung dari seluruh order bulan terkait.
-    val reportSummary = remember(orders, selectedMonth) {
-        buildReportMonthlyComparison(orders = orders, selectedMonth = selectedMonth)
+    // Ringkasan perbandingan bulanan
+    val reportSummary = remember(orders, selectedMonth, currentLocale) {
+        buildReportMonthlyComparison(orders = orders, selectedMonth = selectedMonth, locale = currentLocale)
     }
 
     val listState = rememberLazyListState()
@@ -233,13 +246,13 @@ fun OrderReportPanel(
                 )
                 Column {
                     Text(
-                        text = "Buku Besar / Log Laporan Order",
+                        text = stringResource(R.string.analytics_report_title),
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
                         color = GrayBlue
                     )
                     Text(
-                        text = "Catatan histori digital transaksi order laundry",
+                        text = stringResource(R.string.analytics_report_subtitle),
                         fontSize = 13.sp,
                         color = PastelNeutralText,
                         fontWeight = FontWeight.Medium
@@ -249,9 +262,13 @@ fun OrderReportPanel(
 
             // Dropdown Filter Bulan Menggunakan GeneralDropdown
             GeneralDropdown(
-                selectedText = selectedMonth,
-                items = monthList,
-                onItemSelected = { onMonthSelected(it) },
+                selectedText = selectedMonthDisplayLabel,
+                items = monthOptions.map { it.second },
+                onItemSelected = { pickedLabel ->
+                    val pickedKey = monthOptions.firstOrNull { it.second == pickedLabel }?.first
+                        ?: ANALYTICS_ALL_MONTHS_KEY
+                    onMonthSelected(pickedKey)
+                },
                 icon = Icons.Rounded.CalendarToday,
                 modifier = Modifier,
                 dropdownWidth = 175.dp,
@@ -319,7 +336,7 @@ fun OrderReportPanel(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Order ${reportSummary.targetShortLabel}",
+                                    text = stringResource(R.string.analytics_report_orders_card_label, reportSummary.targetShortLabel),
                                     fontSize = 11.sp,
                                     color = PastelNeutralText,
                                     fontWeight = FontWeight.Medium,
@@ -334,7 +351,7 @@ fun OrderReportPanel(
                                 )
                             }
                             Text(
-                                text = "${reportSummary.targetOrderCount} Order",
+                                text = stringResource(R.string.analytics_report_order_count_value, reportSummary.targetOrderCount),
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = GrayBlue,
@@ -343,9 +360,13 @@ fun OrderReportPanel(
                             )
                             Text(
                                 text = if (reportSummary.compareOrderCount > 0) {
-                                    "vs ${reportSummary.compareShortLabel} (${reportSummary.compareOrderCount} order)"
+                                    stringResource(
+                                        R.string.analytics_report_vs_orders,
+                                        reportSummary.compareShortLabel,
+                                        reportSummary.compareOrderCount
+                                    )
                                 } else {
-                                    "Belum ada pembanding (${reportSummary.compareShortLabel})"
+                                    stringResource(R.string.analytics_report_no_comparison, reportSummary.compareShortLabel)
                                 },
                                 fontSize = 10.sp,
                                 color = PastelNeutralText,
@@ -385,7 +406,7 @@ fun OrderReportPanel(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Pendapatan ${reportSummary.targetShortLabel}",
+                                    text = stringResource(R.string.analytics_report_revenue_card_label, reportSummary.targetShortLabel),
                                     fontSize = 11.sp,
                                     color = PastelNeutralText,
                                     fontWeight = FontWeight.Medium,
@@ -409,9 +430,13 @@ fun OrderReportPanel(
                             )
                             Text(
                                 text = if (reportSummary.compareRevenue > 0.0) {
-                                    "vs ${reportSummary.compareShortLabel} (${CurrencyUtils.formatRupiahWithSymbol(reportSummary.compareRevenue)})"
+                                    stringResource(
+                                        R.string.analytics_report_vs_revenue,
+                                        reportSummary.compareShortLabel,
+                                        CurrencyUtils.formatRupiahWithSymbol(reportSummary.compareRevenue)
+                                    )
                                 } else {
-                                    "Belum ada pembanding (${reportSummary.compareShortLabel})"
+                                    stringResource(R.string.analytics_report_no_comparison, reportSummary.compareShortLabel)
                                 },
                                 fontSize = 10.sp,
                                 color = PastelBlue,
@@ -432,21 +457,27 @@ fun OrderReportPanel(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Status Filter Chips (selaras dengan gaya pil pastel pada tampilan HP)
+            // Status Filter Chips
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                val statusOptions = listOf("Semua", "On Queue", "On Process", "Done")
-                statusOptions.forEach { status ->
-                    val isSelected = selectedStatusFilter == status
+                val statusOptions = listOf(
+                    ANALYTICS_ALL_STATUS_KEY to stringResource(R.string.analytics_filter_all),
+                    "On Queue" to stringResource(R.string.home_status_on_queue),
+                    "On Process" to stringResource(R.string.home_status_on_process),
+                    "Done" to stringResource(R.string.home_status_done)
+                )
+                statusOptions.forEach { (statusKey, statusLabel) ->
+                    val isSelected = selectedStatusFilter == statusKey ||
+                        (statusKey == ANALYTICS_ALL_STATUS_KEY && selectedStatusFilter == "Semua")
                     Surface(
                         modifier = Modifier
                             .clip(RoundedCornerShape(50))
-                            .clickable { onStatusFilterChanged(status) },
+                            .clickable { onStatusFilterChanged(statusKey) },
                         shape = RoundedCornerShape(50),
                         color = if (isSelected) PastelBlue else PastelBlueSoftBg.copy(alpha = 0.55f),
                         border = BorderStroke(1.dp, if (isSelected) PastelBlue else PastelBlueBg)
                     ) {
                         Text(
-                            text = status,
+                            text = statusLabel,
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
                             fontSize = 12.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
@@ -488,7 +519,11 @@ fun OrderReportPanel(
                             contentAlignment = Alignment.CenterStart
                         ) {
                             if (searchQuery.isEmpty()) {
-                                Text("Cari nama/order...", fontSize = 13.sp, color = PastelNeutralText)
+                                Text(
+                                    stringResource(R.string.analytics_report_search_placeholder),
+                                    fontSize = 13.sp,
+                                    color = PastelNeutralText
+                                )
                             }
                             innerTextField()
                         }
@@ -500,7 +535,7 @@ fun OrderReportPanel(
                             ) {
                                 Icon(
                                     Icons.Rounded.Clear,
-                                    contentDescription = "Clear",
+                                    contentDescription = stringResource(R.string.analytics_pending_clear_search_cd),
                                     modifier = Modifier.size(16.dp),
                                     tint = PastelNeutralText
                                 )
@@ -513,7 +548,7 @@ fun OrderReportPanel(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // --- Digital Logbook / Ledger List Container (Card-row style seragam dengan halaman Tertunda) ---
+        // --- Digital Logbook / Ledger List Container ---
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -538,20 +573,20 @@ fun OrderReportPanel(
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Text(
-                                text = "Urutkan:",
+                                text = stringResource(R.string.analytics_report_sort_by),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = PastelNeutralText
                             )
-                            ReportSortPill("Tanggal", ReportSortColumn.DATE, sortColumn, isAscending, onSortColumnClicked)
-                            ReportSortPill("Pelanggan", ReportSortColumn.CUSTOMER_NAME, sortColumn, isAscending, onSortColumnClicked)
-                            ReportSortPill("Total", ReportSortColumn.TOTAL_PRICE, sortColumn, isAscending, onSortColumnClicked)
-                            ReportSortPill("Tgl. Selesai", ReportSortColumn.FINISH_DATE, sortColumn, isAscending, onSortColumnClicked)
-                            ReportSortPill("Status", ReportSortColumn.STATUS, sortColumn, isAscending, onSortColumnClicked)
+                            ReportSortPill(stringResource(R.string.analytics_sort_date), ReportSortColumn.DATE, sortColumn, isAscending, onSortColumnClicked)
+                            ReportSortPill(stringResource(R.string.analytics_sort_customer_short), ReportSortColumn.CUSTOMER_NAME, sortColumn, isAscending, onSortColumnClicked)
+                            ReportSortPill(stringResource(R.string.analytics_sort_total), ReportSortColumn.TOTAL_PRICE, sortColumn, isAscending, onSortColumnClicked)
+                            ReportSortPill(stringResource(R.string.analytics_sort_finish_date_short), ReportSortColumn.FINISH_DATE, sortColumn, isAscending, onSortColumnClicked)
+                            ReportSortPill(stringResource(R.string.analytics_sort_status_short), ReportSortColumn.STATUS, sortColumn, isAscending, onSortColumnClicked)
                         }
 
                         Text(
-                            text = "${sortedOrders.size} order",
+                            text = stringResource(R.string.analytics_order_count_badge, sortedOrders.size),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = PastelNeutralText
@@ -583,23 +618,23 @@ fun OrderReportPanel(
                                 }
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Text(
-                                    text = "Tidak ada data order ditemukan",
+                                    text = stringResource(R.string.analytics_report_empty_title),
                                     color = GrayBlue,
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 14.sp
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Coba ubah filter bulan, status, atau kata kunci pencarian.",
+                                    text = stringResource(R.string.analytics_report_empty_subtitle),
                                     color = PastelNeutralText,
                                     fontSize = 12.sp
                                 )
                             }
                         }
                     } else {
-                        // Grouping berdasarkan bulan jika "Semua Bulan" dipilih
-                        if (selectedMonth == "Semua Bulan") {
-                            val groupedByMonth = sortedOrders.groupBy { it.orderDate.toMonthYearString() }
+                        // Grouping berdasarkan bulan jika "All Months" dipilih
+                        if (isAllMonthsSelected) {
+                            val groupedByMonth = sortedOrders.groupBy { it.orderDate.toMonthYearString(currentLocale) }
                             val monthEntries = groupedByMonth.entries.toList()
 
                             LazyColumn(
@@ -784,7 +819,7 @@ private fun ReportMonthHeader(
                         border = androidx.compose.foundation.BorderStroke(0.5.dp, theme.dividerColor)
                     ) {
                         Text(
-                            text = "$orderCount Order",
+                            text = stringResource(R.string.analytics_report_order_count_value, orderCount),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = theme.titleColor.copy(alpha = 0.85f),
@@ -825,7 +860,7 @@ private fun LoadMoreMonthsButton(onLoadMoreMonths: () -> Unit) {
             border = BorderStroke(1.dp, PastelBlueBg)
         ) {
             Text(
-                text = "Muat 1 bulan lebih lama",
+                text = stringResource(R.string.analytics_report_load_more),
                 color = PastelBlue,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 12.sp
@@ -842,28 +877,32 @@ private fun OrderLedgerRow(
 ) {
     var isExpanded by remember(order.orderId) { mutableStateOf(false) }
 
-    val customerName = order.customerName?.takeIf { it.isNotBlank() } ?: "Tanpa Nama"
+    val customerName = order.customerName?.takeIf { it.isNotBlank() }
+        ?: stringResource(R.string.orders_unnamed_customer)
     val initial = customerName.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "?"
-    val orderDateText = remember(order.orderDate) {
-        "${order.orderDate.toDateString()} • ${order.orderDate.toTimeString()}"
+    val currentLocale = Locale.getDefault()
+    val orderDateText = remember(order.orderDate, currentLocale) {
+        "${order.orderDate.toDateString(currentLocale)} • ${order.orderDate.toTimeString(currentLocale)}"
     }
-    val finishDateText = remember(order.orderFinishDate) {
-        order.orderFinishDate?.toDateString()
+    val finishDateText = remember(order.orderFinishDate, currentLocale) {
+        order.orderFinishDate?.toDateString(currentLocale)
     }
 
-    val groupedItems = remember(order.orderItems, services) {
+    val defaultServiceLabel = stringResource(R.string.analytics_report_default_service)
+    val defaultItemLabel = stringResource(R.string.analytics_report_default_item)
+    val groupedItems = remember(order.orderItems, services, defaultServiceLabel) {
         order.orderItems.groupBy { item ->
             val matchedService = services.find { it.serviceId == item.serviceId }
             matchedService?.serviceName?.ifBlank { null }
                 ?: item.serviceId?.ifBlank { null }
-                ?: "Layanan Utama"
+                ?: defaultServiceLabel
         }
     }
     val totalItemQty = remember(order.orderItems) {
         order.orderItems.sumOf { it.itemQuantity ?: 1 }
     }
-    val serviceSummaryLabel = remember(groupedItems) {
-        if (groupedItems.isEmpty()) null else "${groupedItems.size} Layanan"
+    val serviceSummaryLabel = if (groupedItems.isEmpty()) null else {
+        stringResource(R.string.analytics_report_service_count, groupedItems.size)
     }
 
     Surface(
@@ -883,7 +922,7 @@ private fun OrderLedgerRow(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                // Avatar (identik dengan PendingOrderRow)
+                // Avatar
                 Box(
                     modifier = Modifier
                         .size(42.dp)
@@ -950,7 +989,7 @@ private fun OrderLedgerRow(
                                         modifier = Modifier.size(11.dp)
                                     )
                                     Text(
-                                        text = "Selesai $finishDateText",
+                                        text = stringResource(R.string.analytics_report_completed_prefix, finishDateText),
                                         fontSize = 10.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = PastelGreen,
@@ -987,7 +1026,10 @@ private fun OrderLedgerRow(
                                 color = if (order.alreadyPickedUp) PastelGreenBg else PastelAmberBg
                             ) {
                                 Text(
-                                    text = if (order.alreadyPickedUp) "Diambil" else "Belum Diambil",
+                                    text = stringResource(
+                                        if (order.alreadyPickedUp) R.string.manage_order_picked_up
+                                        else R.string.manage_order_not_picked_up
+                                    ),
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = if (order.alreadyPickedUp) PastelGreen else PastelAmber,
@@ -1021,14 +1063,21 @@ private fun OrderLedgerRow(
                                 horizontalArrangement = Arrangement.spacedBy(3.dp)
                             ) {
                                 Text(
-                                    text = if (isExpanded) "Tutup" else "$totalItemQty item",
+                                    text = if (isExpanded) {
+                                        stringResource(R.string.analytics_report_close_details)
+                                    } else {
+                                        stringResource(R.string.analytics_report_item_count, totalItemQty)
+                                    },
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = GrayBlue
                                 )
                                 Icon(
                                     imageVector = if (isExpanded) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown,
-                                    contentDescription = if (isExpanded) "Tutup rincian" else "Lihat rincian",
+                                    contentDescription = stringResource(
+                                        if (isExpanded) R.string.analytics_report_close_details_cd
+                                        else R.string.analytics_report_view_details_cd
+                                    ),
                                     tint = GrayBlue,
                                     modifier = Modifier.size(15.dp)
                                 )
@@ -1099,7 +1148,7 @@ private fun OrderLedgerRow(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = "• ${item.itemName ?: "Item"} ($qty)",
+                                            text = "• ${item.itemName ?: defaultItemLabel} ($qty)",
                                             fontSize = 12.sp,
                                             color = MainFontBlack,
                                             fontWeight = FontWeight.Medium
@@ -1128,12 +1177,15 @@ private fun OrderLedgerRow(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Masuk: $orderDateText",
+                                    text = stringResource(R.string.analytics_report_received_colon, orderDateText),
                                     fontSize = 11.sp,
                                     color = Gray
                                 )
                                 Text(
-                                    text = "Selesai: ${order.orderFinishDate.toDateString()} • ${order.orderFinishDate.toTimeString()}",
+                                    text = stringResource(
+                                        R.string.analytics_report_completed_colon,
+                                        "${order.orderFinishDate.toDateString(currentLocale)} • ${order.orderFinishDate.toTimeString(currentLocale)}"
+                                    ),
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = PastelGreen
@@ -1149,10 +1201,10 @@ private fun OrderLedgerRow(
 
 @Composable
 internal fun StatusBadge(status: String) {
-    val (bgColor, textColor, label) = when (status.lowercase()) {
-        "done", "completed" -> Triple(PastelGreenBg, PastelGreen, "Done")
-        "on process", "in progress" -> Triple(PastelBlueBg, PastelBlue, "On Process")
-        else -> Triple(PastelAmberBg, PastelAmber, "On Queue")
+    val (bgColor, textColor, labelRes) = when (status.lowercase()) {
+        "done", "completed" -> Triple(PastelGreenBg, PastelGreen, R.string.home_status_done)
+        "on process", "in progress" -> Triple(PastelBlueBg, PastelBlue, R.string.home_status_on_process)
+        else -> Triple(PastelAmberBg, PastelAmber, R.string.home_status_on_queue)
     }
 
     Surface(
@@ -1160,7 +1212,7 @@ internal fun StatusBadge(status: String) {
         color = bgColor
     ) {
         Text(
-            text = label,
+            text = stringResource(labelRes),
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
             color = textColor,
@@ -1173,14 +1225,14 @@ internal fun StatusBadge(status: String) {
 internal fun PaymentBadge(alreadyPaid: Boolean) {
     val bgColor = if (alreadyPaid) PastelGreenBg else PastelRoseBg
     val textColor = if (alreadyPaid) PastelGreen else PastelRoseText
-    val label = if (alreadyPaid) "Lunas" else "Belum"
+    val labelRes = if (alreadyPaid) R.string.manage_order_paid else R.string.manage_order_unpaid
 
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = bgColor
     ) {
         Text(
-            text = label,
+            text = stringResource(labelRes),
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
             color = textColor,
@@ -1190,18 +1242,23 @@ internal fun PaymentBadge(alreadyPaid: Boolean) {
 }
 
 // Helper formatting extensions
-private fun Timestamp.toDateString(): String {
-    val sdf = SimpleDateFormat("dd MMM yyyy", Locale.forLanguageTag("id-ID"))
+private fun Timestamp.toDateString(locale: Locale = Locale.getDefault()): String {
+    val sdf = SimpleDateFormat("dd MMM yyyy", locale)
     return sdf.format(this.toDate())
 }
 
-private fun Timestamp.toTimeString(): String {
-    val sdf = SimpleDateFormat("HH:mm", Locale.forLanguageTag("id-ID"))
+private fun Timestamp.toTimeString(locale: Locale = Locale.getDefault()): String {
+    val sdf = SimpleDateFormat("HH:mm", locale)
     return sdf.format(this.toDate())
 }
 
-private fun Timestamp.toMonthYearString(): String {
-    val sdf = SimpleDateFormat("MMMM yyyy", Locale.forLanguageTag("id-ID"))
+private fun Timestamp.toMonthYearString(locale: Locale = Locale.getDefault()): String {
+    val sdf = SimpleDateFormat("MMMM yyyy", locale)
+    return sdf.format(this.toDate())
+}
+
+private fun Timestamp.toMonthKey(): String {
+    val sdf = SimpleDateFormat("yyyy-MM", Locale.US)
     return sdf.format(this.toDate())
 }
 
@@ -1232,20 +1289,22 @@ private data class ReportMonthlyComparison(
 private fun buildReportMonthlyComparison(
     orders: List<Orders>,
     selectedMonth: String,
+    locale: Locale = Locale.getDefault(),
     now: Date = Date()
 ): ReportMonthlyComparison {
-    val idLocale = Locale.forLanguageTag("id-ID")
-    val fullMonthFormat = SimpleDateFormat("MMMM yyyy", idLocale)
-    val shortMonthFormat = SimpleDateFormat("MMM yyyy", idLocale)
+    val keyFormat = SimpleDateFormat("yyyy-MM", Locale.US)
+    val fullMonthFormat = SimpleDateFormat("MMMM yyyy", locale)
+    val shortMonthFormat = SimpleDateFormat("MMM yyyy", locale)
 
     val targetCal = Calendar.getInstance().apply {
         time = now
         set(Calendar.DAY_OF_MONTH, 1)
     }
-    if (selectedMonth == "Semua Bulan") {
+    if (selectedMonth == ANALYTICS_ALL_MONTHS_KEY || selectedMonth == "Semua Bulan") {
         targetCal.add(Calendar.MONTH, -1)
     } else {
-        val parsed = runCatching { fullMonthFormat.parse(selectedMonth) }.getOrNull()
+        val parsed = runCatching { keyFormat.parse(selectedMonth) }.getOrNull()
+            ?: runCatching { fullMonthFormat.parse(selectedMonth) }.getOrNull()
         if (parsed != null) {
             targetCal.time = parsed
         } else {
@@ -1366,7 +1425,7 @@ fun ScrollToTopFab(
                 contentColor = GrayBlue,
                 elevation = FloatingActionButtonDefaults.elevation(0.dp)
             ) {
-                Icon(Icons.Rounded.KeyboardArrowUp, contentDescription = "Scroll to top")
+                Icon(Icons.Rounded.KeyboardArrowUp, contentDescription = stringResource(R.string.analytics_report_scroll_top_cd))
             }
         }
     }

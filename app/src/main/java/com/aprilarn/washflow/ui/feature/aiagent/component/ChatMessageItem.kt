@@ -23,10 +23,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.data.model.Items
 import com.aprilarn.washflow.data.model.Services
@@ -49,7 +51,7 @@ fun AiMessageHeader() {
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = "Aira",
+            text = stringResource(R.string.ai_name),
             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
             color = GrayBlue
         )
@@ -150,7 +152,7 @@ fun ChatMessageItem(
             Spacer(modifier = Modifier.width(8.dp))
             AsyncImage(
                 model = profilePictureUrl,
-                contentDescription = "User Profile",
+                contentDescription = stringResource(R.string.ai_user_profile_cd),
                 modifier = Modifier
                     .size(32.dp)
                     .clip(CircleShape)
@@ -179,7 +181,7 @@ fun ChatMessageItem(
             ) { thinking ->
                 if (thinking) {
                     Text(
-                        text = "Thinking...",
+                        text = stringResource(R.string.ai_thinking),
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
                         ),
@@ -254,7 +256,7 @@ fun ChatMessageItem(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    "Action executed",
+                                    stringResource(R.string.ai_action_executed),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = Color(0xFF4CAF50)
                                 )
@@ -272,7 +274,7 @@ fun ChatMessageItem(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    "Action cancelled",
+                                    stringResource(R.string.ai_action_cancelled),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = Gray
                                 )

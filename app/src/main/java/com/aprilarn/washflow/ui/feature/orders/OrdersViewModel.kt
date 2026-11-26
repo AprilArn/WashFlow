@@ -2,6 +2,7 @@ package com.aprilarn.washflow.ui.feature.orders
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.data.model.Items
 import com.aprilarn.washflow.data.model.OrderItem
@@ -11,6 +12,7 @@ import com.aprilarn.washflow.domain.usecase.ManageCustomerUseCase
 import com.aprilarn.washflow.domain.usecase.ManageItemUseCase
 import com.aprilarn.washflow.domain.usecase.ManageOrderUseCase
 import com.aprilarn.washflow.domain.usecase.ManageServiceUseCase
+import com.aprilarn.washflow.ui.core.utils.UiText
 import com.google.firebase.Timestamp
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -60,7 +62,12 @@ class OrdersViewModel(
                     )
                 }
             }.catch { e ->
-                _uiState.update { it.copy(errorMessage = "Failed to load data.", isLoading = false) }
+                _uiState.update {
+                    it.copy(
+                        errorMessage = UiText.StringResource(R.string.orders_msg_load_data_failed),
+                        isLoading = false
+                    )
+                }
             }.collect {}
         }
     }
@@ -225,7 +232,7 @@ class OrdersViewModel(
                 // Konversi list OrderItem ke map
                 val itemsMap = order.orderItems.associateBy { it.itemId }
                 val customer = _uiState.value.customers.find { it.customerId == order.customerId }
-                    ?: Customers(order.customerId, order.customerName ?: "Tanpa Nama")
+                    ?: Customers(order.customerId, order.customerName ?: "Unnamed")
 
                 _uiState.update {
                     it.copy(
@@ -238,7 +245,12 @@ class OrdersViewModel(
                     )
                 }
             } else {
-                _uiState.update { it.copy(isLoading = false, errorMessage = "Failed to load order.") }
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = UiText.StringResource(R.string.orders_msg_load_order_failed)
+                    )
+                }
             }
         }
     }
@@ -246,7 +258,9 @@ class OrdersViewModel(
     fun createOrder() {
         val state = _uiState.value
         if (state.selectedCustomer == null || state.selectedItems.isEmpty()) {
-            _uiState.update { it.copy(errorMessage = "Please complete the customer and item details.") }
+            _uiState.update {
+                it.copy(errorMessage = UiText.StringResource(R.string.orders_msg_incomplete))
+            }
             return
         }
 
@@ -277,7 +291,12 @@ class OrdersViewModel(
                 // Update Order
                 val existingOrder = orderUseCase.getOrderById(state.editingOrderId)
                 if (existingOrder == null) {
-                    _uiState.update { it.copy(isCreatingOrder = false, errorMessage = "Failed to load existing order.") }
+                    _uiState.update {
+                        it.copy(
+                            isCreatingOrder = false,
+                            errorMessage = UiText.StringResource(R.string.orders_msg_existing_order_failed)
+                        )
+                    }
                     return@launch
                 }
                 
@@ -297,7 +316,7 @@ class OrdersViewModel(
                     _uiState.update {
                         it.copy(
                             isCreatingOrder = false,
-                            successMessage = "Order updated successfully!",
+                            successMessage = UiText.StringResource(R.string.orders_msg_updated),
                             editingOrderId = null,
                             customerSearchQuery = "",
                             debouncedCustomerQuery = "",
@@ -310,7 +329,10 @@ class OrdersViewModel(
                     }
                 } else {
                     _uiState.update {
-                        it.copy(isCreatingOrder = false, errorMessage = "Failed to update order.")
+                        it.copy(
+                            isCreatingOrder = false,
+                            errorMessage = UiText.StringResource(R.string.orders_msg_update_failed)
+                        )
                     }
                 }
             } else {
@@ -334,7 +356,7 @@ class OrdersViewModel(
                     _uiState.update {
                         it.copy(
                             isCreatingOrder = false,
-                            successMessage = "Order created successfully!",
+                            successMessage = UiText.StringResource(R.string.orders_msg_created),
                             customerSearchQuery = "",
                             debouncedCustomerQuery = "",
                             filteredCustomers = emptyList(),
@@ -346,7 +368,10 @@ class OrdersViewModel(
                     }
                 } else {
                     _uiState.update {
-                        it.copy(isCreatingOrder = false, errorMessage = "Failed to create order.")
+                        it.copy(
+                            isCreatingOrder = false,
+                            errorMessage = UiText.StringResource(R.string.orders_msg_create_failed)
+                        )
                     }
                 }
             }

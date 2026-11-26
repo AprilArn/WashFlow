@@ -57,13 +57,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.annotation.StringRes
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
+import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.data.model.Orders
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
@@ -87,11 +90,11 @@ import com.aprilarn.washflow.ui.core.theme.PastelSlateBg
 import com.aprilarn.washflow.utils.CurrencyUtils
 import java.util.concurrent.TimeUnit
 
-private enum class PhonePendingFilter(val label: String) {
-    ALL("Semua"),
-    UNPAID("Belum Lunas"),
-    UNPICKED("Belum Diambil"),
-    OVERDUE_30("Lama (> 30 hari)")
+private enum class PhonePendingFilter(@param:StringRes val labelRes: Int) {
+    ALL(R.string.analytics_filter_all),
+    UNPAID(R.string.analytics_filter_unpaid),
+    UNPICKED(R.string.analytics_filter_unpicked),
+    OVERDUE_30(R.string.analytics_filter_overdue_30)
 }
 
 private sealed interface PhonePendingConfirm {
@@ -173,7 +176,7 @@ fun PhonePendingOrdersTab(
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Order Tertunda & Piutang",
+                        text = stringResource(R.string.analytics_pending_title),
                         style = MaterialTheme.typography.titleLarge.copy(
                             color = GrayBlue,
                             fontWeight = FontWeight.Bold,
@@ -181,7 +184,7 @@ fun PhonePendingOrdersTab(
                         )
                     )
                     Text(
-                        text = "Order selesai yang belum dibayar atau diambil",
+                        text = stringResource(R.string.analytics_pending_phone_subtitle),
                         style = MaterialTheme.typography.bodySmall.copy(
                             color = PastelNeutralText,
                             fontWeight = FontWeight.Medium
@@ -191,7 +194,7 @@ fun PhonePendingOrdersTab(
             }
         }
 
-        // 2. Ringkasan Proporsional: Hero Full-Width (Total Piutang) + 2 Kartu Kompak (Siap Diambil & >30 Hari)
+        // 2. Ringkasan Proporsional: Hero Full-Width (Total Piutang) + 2 Kartu Kompak
         item {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 val hasUnpaid = totalUnpaidOrders.isNotEmpty()
@@ -229,7 +232,7 @@ fun PhonePendingOrdersTab(
                             verticalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
                             Text(
-                                text = "Total Piutang",
+                                text = stringResource(R.string.analytics_pending_receivables_title),
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     color = if (hasUnpaid) PastelAmber else PastelGreen,
                                     fontWeight = FontWeight.SemiBold
@@ -246,7 +249,11 @@ fun PhonePendingOrdersTab(
                                 overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                text = if (hasUnpaid) "${totalUnpaidOrders.size} order belum bayar" else "Semua order sudah lunas",
+                                text = if (hasUnpaid) {
+                                    stringResource(R.string.analytics_pending_unpaid_orders_sub, totalUnpaidOrders.size)
+                                } else {
+                                    stringResource(R.string.analytics_pending_all_paid_sub)
+                                },
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     color = (if (hasUnpaid) PastelAmber else PastelGreen).copy(alpha = 0.85f)
                                 )
@@ -262,9 +269,13 @@ fun PhonePendingOrdersTab(
                     PhonePendingCompactStatCard(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Rounded.Storefront,
-                        title = "Siap Diambil",
-                        value = "$readyUnpickedCount Order",
-                        subtitle = if (readyUnpickedCount > 0) "Menunggu diambil" else "Semua diambil",
+                        title = stringResource(R.string.analytics_pending_ready_title),
+                        value = stringResource(R.string.analytics_report_order_count_value, readyUnpickedCount),
+                        subtitle = if (readyUnpickedCount > 0) {
+                            stringResource(R.string.analytics_pending_phone_waiting_sub)
+                        } else {
+                            stringResource(R.string.analytics_pending_all_picked_sub)
+                        },
                         containerColor = PastelBlueSoftBg,
                         iconBgColor = PastelBlueIconBg,
                         accentColor = PastelBlue,
@@ -275,9 +286,13 @@ fun PhonePendingOrdersTab(
                     PhonePendingCompactStatCard(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Rounded.WarningAmber,
-                        title = "Tertunda >30 Hari",
-                        value = "$oldPendingCount Order",
-                        subtitle = if (hasOld) "Perlu dihubungi" else "Aman terkendali",
+                        title = stringResource(R.string.analytics_pending_overdue30_title),
+                        value = stringResource(R.string.analytics_report_order_count_value, oldPendingCount),
+                        subtitle = if (hasOld) {
+                            stringResource(R.string.analytics_pending_follow_up_sub)
+                        } else {
+                            stringResource(R.string.analytics_pending_phone_safe_sub)
+                        },
                         containerColor = if (hasOld) PastelRoseBg else PastelNeutralBg,
                         iconBgColor = if (hasOld) PastelRose.copy(alpha = 0.14f) else PastelSlateBg,
                         accentColor = if (hasOld) PastelRoseText else GrayBlue,
@@ -294,7 +309,7 @@ fun PhonePendingOrdersTab(
                 onValueChange = { searchQuery = it },
                 placeholder = {
                     Text(
-                        text = "Cari nama, kontak, atau item...",
+                        text = stringResource(R.string.analytics_pending_phone_search_placeholder),
                         style = MaterialTheme.typography.bodyMedium.copy(
                             color = PastelNeutralText,
                             fontSize = 13.sp
@@ -316,7 +331,7 @@ fun PhonePendingOrdersTab(
                         IconButton(onClick = { searchQuery = "" }) {
                             Icon(
                                 imageVector = Icons.Rounded.Close,
-                                contentDescription = "Hapus pencarian",
+                                contentDescription = stringResource(R.string.analytics_pending_clear_search_cd),
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -359,7 +374,7 @@ fun PhonePendingOrdersTab(
                         border = BorderStroke(1.dp, if (isSelected) PastelBlue else PastelBlueBg)
                     ) {
                         Text(
-                            text = filter.label,
+                            text = stringResource(filter.labelRes),
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
                             style = MaterialTheme.typography.labelMedium.copy(
                                 color = if (isSelected) Color.White else GrayBlue,
@@ -405,11 +420,13 @@ fun PhonePendingOrdersTab(
                             modifier = Modifier.size(32.dp)
                         )
                         Text(
-                            text = if (allPendingOrders.isEmpty()) {
-                                "Semua order selesai sudah lunas dan diambil!"
-                            } else {
-                                "Tidak ada order tertunda untuk filter ini."
-                            },
+                            text = stringResource(
+                                if (allPendingOrders.isEmpty()) {
+                                    R.string.analytics_pending_phone_empty_all
+                                } else {
+                                    R.string.analytics_pending_phone_empty_filter
+                                }
+                            ),
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 color = PastelGreenDark,
                                 fontWeight = FontWeight.SemiBold
@@ -432,7 +449,11 @@ fun PhonePendingOrdersTab(
                     onWhatsAppClick = {
                         val contact = customer?.contact.orEmpty()
                         if (contact.isBlank()) {
-                            Toast.makeText(context, "Nomor WhatsApp pelanggan belum tersedia", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.analytics_pending_msg_no_whatsapp),
+                                Toast.LENGTH_SHORT
+                            ).show()
                         } else {
                             pendingConfirm = PhonePendingConfirm.SendWhatsApp(order, contact)
                         }
@@ -444,23 +465,35 @@ fun PhonePendingOrdersTab(
 
     // Dialog Konfirmasi Aksi (Lunas / Diambil / WhatsApp)
     pendingConfirm?.let { confirm ->
+        val customerFallback = stringResource(R.string.analytics_customer_fallback)
         val (title, message, confirmText, confirmColor) = when (confirm) {
             is PhonePendingConfirm.MarkPaid -> Quadruple(
-                "Konfirmasi Pembayaran",
-                "Tandai order milik ${confirm.order.customerName ?: "Pelanggan"} sebesar ${CurrencyUtils.formatRupiahWithSymbol(confirm.order.totalPrice)} sebagai LUNAS?",
-                "Tandai Lunas",
+                stringResource(R.string.analytics_pending_confirm_paid_title),
+                stringResource(
+                    R.string.analytics_pending_confirm_paid_msg,
+                    confirm.order.customerName?.takeIf { it.isNotBlank() } ?: customerFallback,
+                    CurrencyUtils.formatRupiahWithSymbol(confirm.order.totalPrice)
+                ),
+                stringResource(R.string.analytics_pending_mark_paid),
                 PastelGreen
             )
             is PhonePendingConfirm.MarkPickedUp -> Quadruple(
-                "Konfirmasi Pengambilan",
-                "Tandai cucian milik ${confirm.order.customerName ?: "Pelanggan"} sudah DIAMBIL oleh pelanggan?",
-                "Sudah Diambil",
+                stringResource(R.string.analytics_pending_confirm_pickup_title),
+                stringResource(
+                    R.string.analytics_pending_confirm_pickup_msg,
+                    confirm.order.customerName?.takeIf { it.isNotBlank() } ?: customerFallback
+                ),
+                stringResource(R.string.analytics_pending_mark_picked_up),
                 PastelBlue
             )
             is PhonePendingConfirm.SendWhatsApp -> Quadruple(
-                "Kirim Pengingat WhatsApp",
-                "Buka WhatsApp untuk mengirim pengingat order ke ${confirm.order.customerName ?: "Pelanggan"} (${confirm.contact})?",
-                "Buka WhatsApp",
+                stringResource(R.string.analytics_pending_confirm_wa_title),
+                stringResource(
+                    R.string.analytics_pending_confirm_wa_msg,
+                    confirm.order.customerName?.takeIf { it.isNotBlank() } ?: customerFallback,
+                    confirm.contact
+                ),
+                stringResource(R.string.analytics_pending_confirm_wa_btn),
                 PastelGreen
             )
         }
@@ -502,7 +535,11 @@ fun PhonePendingOrdersTab(
             },
             dismissButton = {
                 TextButton(onClick = { pendingConfirm = null }) {
-                    Text("Batal", color = PastelNeutralText, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        stringResource(R.string.common_cancel),
+                        color = PastelNeutralText,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
         )
@@ -628,7 +665,7 @@ private fun PhonePendingOrderCard(
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Text(
-                            text = order.customerName ?: "Pelanggan",
+                            text = order.customerName ?: stringResource(R.string.analytics_customer_fallback),
                             style = MaterialTheme.typography.titleSmall.copy(
                                 color = GrayBlue,
                                 fontWeight = FontWeight.Bold,
@@ -643,7 +680,7 @@ private fun PhonePendingOrderCard(
                             color = if (isOverdue) PastelRoseBg else PastelNeutralBg
                         ) {
                             Text(
-                                text = "${ageDays}h",
+                                text = stringResource(R.string.analytics_pending_age_short, ageDays),
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     color = if (isOverdue) PastelRoseText else PastelNeutralText,
@@ -666,7 +703,7 @@ private fun PhonePendingOrderCard(
                                 modifier = Modifier.size(12.dp)
                             )
                             Text(
-                                text = "$contact • $totalQty pcs",
+                                text = stringResource(R.string.analytics_report_service_pcs, contact, totalQty),
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     color = PastelNeutralText
                                 ),
@@ -676,7 +713,7 @@ private fun PhonePendingOrderCard(
                         }
                     } else {
                         Text(
-                            text = "$totalQty pcs",
+                            text = stringResource(R.string.analytics_report_item_pcs, totalQty),
                             style = MaterialTheme.typography.labelSmall.copy(color = PastelNeutralText)
                         )
                     }
@@ -701,7 +738,9 @@ private fun PhonePendingOrderCard(
                     color = if (order.alreadyPaid) PastelGreenBg else PastelAmberBg
                 ) {
                     Text(
-                        text = if (order.alreadyPaid) "Sudah Lunas" else "Belum Lunas",
+                        text = stringResource(
+                            if (order.alreadyPaid) R.string.manage_order_paid else R.string.manage_order_unpaid
+                        ),
                         modifier = Modifier.padding(horizontal = 9.dp, vertical = 3.dp),
                         style = MaterialTheme.typography.labelSmall.copy(
                             color = if (order.alreadyPaid) PastelGreen else PastelAmber,
@@ -716,7 +755,10 @@ private fun PhonePendingOrderCard(
                     color = if (order.alreadyPickedUp) PastelGreenBg else PastelBlueSoftBg
                 ) {
                     Text(
-                        text = if (order.alreadyPickedUp) "Sudah Diambil" else "Siap Diambil",
+                        text = stringResource(
+                            if (order.alreadyPickedUp) R.string.manage_order_picked_up
+                            else R.string.manage_order_ready_pickup
+                        ),
                         modifier = Modifier.padding(horizontal = 9.dp, vertical = 3.dp),
                         style = MaterialTheme.typography.labelSmall.copy(
                             color = if (order.alreadyPickedUp) PastelGreen else PastelBlue,
@@ -757,7 +799,7 @@ private fun PhonePendingOrderCard(
                             )
                             Spacer(modifier = Modifier.width(5.dp))
                             Text(
-                                text = "Lunas",
+                                text = stringResource(R.string.manage_order_paid),
                                 style = MaterialTheme.typography.labelMedium.copy(
                                     color = PastelGreen,
                                     fontWeight = FontWeight.Bold
@@ -790,7 +832,7 @@ private fun PhonePendingOrderCard(
                             )
                             Spacer(modifier = Modifier.width(5.dp))
                             Text(
-                                text = "Diambil",
+                                text = stringResource(R.string.analytics_pending_mark_picked_up),
                                 style = MaterialTheme.typography.labelMedium.copy(
                                     color = PastelBlue,
                                     fontWeight = FontWeight.Bold
@@ -813,7 +855,7 @@ private fun PhonePendingOrderCard(
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Rounded.Chat,
-                            contentDescription = "WhatsApp Pengingat",
+                            contentDescription = stringResource(R.string.analytics_pending_whatsapp_cd),
                             tint = PastelGreen,
                             modifier = Modifier.size(17.dp)
                         )
@@ -837,7 +879,7 @@ private fun openPhoneWhatsAppReminder(
 ) {
     val rawDigits = contact.orEmpty().filter { it.isDigit() }
     if (rawDigits.isBlank()) {
-        Toast.makeText(context, "Nomor WhatsApp pelanggan belum tersedia", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.analytics_pending_msg_no_whatsapp), Toast.LENGTH_SHORT).show()
         return
     }
     val formattedPhone = when {
@@ -846,23 +888,24 @@ private fun openPhoneWhatsAppReminder(
         else -> rawDigits
     }
 
-    val customerName = order.customerName?.takeIf { it.isNotBlank() } ?: "Kak"
+    val customerName = order.customerName?.takeIf { it.isNotBlank() }
+        ?: context.getString(R.string.analytics_customer_fallback)
     val totalText = CurrencyUtils.formatRupiahWithSymbol(order.totalPrice)
     val message = when {
         order.isDone() && !order.alreadyPickedUp && !order.alreadyPaid ->
-            "Halo $customerName, cucian Anda di laundry sudah selesai dan siap diambil dengan total tagihan $totalText. Terima kasih."
+            context.getString(R.string.analytics_wa_ready_unpaid, customerName, totalText)
         order.isDone() && !order.alreadyPickedUp ->
-            "Halo $customerName, cucian Anda di laundry sudah selesai dan siap diambil ya. Terima kasih."
+            context.getString(R.string.analytics_wa_ready_paid, customerName)
         !order.alreadyPaid ->
-            "Halo $customerName, kami ingin mengingatkan untuk tagihan order laundry sebesar $totalText yang belum dilunasi. Terima kasih."
+            context.getString(R.string.analytics_wa_unpaid, customerName, totalText)
         else ->
-            "Halo $customerName, kami ingin mengabarkan informasi terkait order laundry Anda (total $totalText). Terima kasih."
+            context.getString(R.string.analytics_wa_general, customerName, totalText)
     }
 
     val url = "https://wa.me/$formattedPhone?text=${Uri.encode(message)}"
     try {
         context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
     } catch (_: Exception) {
-        Toast.makeText(context, "Tidak dapat membuka WhatsApp", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.analytics_pending_msg_wa_failed), Toast.LENGTH_SHORT).show()
     }
 }
