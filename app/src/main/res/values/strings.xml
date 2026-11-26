@@ -140,7 +140,6 @@
     <string name="workspace_delete_title">Are you sure you want to delete this workspace?</string>
     <string name="workspace_delete_message">This action will remove all contributors from this workspace and permanently delete the workspace.</string>
     <string name="workspace_delete_confirm_label">Type \'%1$s\' to confirm</string>
-    <string name="workspace_delete_keyword" translatable="false">delete</string>
     <string name="workspace_error_create">Failed to create workspace.</string>
     <string name="workspace_error_sign_out">Failed to sign out.</string>
 

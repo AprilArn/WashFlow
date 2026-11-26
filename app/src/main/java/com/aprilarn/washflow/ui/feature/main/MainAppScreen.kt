@@ -901,6 +901,7 @@ fun MainAppScreen(
     // --- DIALOG BARU UNTUK DELETE WORKSPACE ---
     if (mainUiState.showDeleteWorkspaceDialog) {
         DeleteWorkspaceDialog(
+            workspaceName = mainUiState.workspaceName,
             onDismiss = { mainViewModel.onDismissDeleteWorkspaceDialog() },
             onConfirm = { mainViewModel.confirmDeleteWorkspace() }
         )

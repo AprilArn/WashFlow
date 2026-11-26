@@ -22,6 +22,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Logout
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.DeleteForever
@@ -30,6 +31,7 @@ import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.PersonAdd
+import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -637,16 +639,88 @@ fun CreateInviteDialog(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                OutlinedTextField(
-                    modifier = Modifier.fillMaxWidth(),
-                    value = maxContributors,
-                    onValueChange = { if (it.all { char -> char.isDigit() }) maxContributors = it },
-                    label = { Text(stringResource(R.string.workspace_invite_max_contributors)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = workspaceDialogTextFieldColors()
+                Text(
+                    text = stringResource(R.string.workspace_invite_max_contributors),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = PastelNeutralText
                 )
+                Spacer(modifier = Modifier.height(6.dp))
+
+                val currentMax = maxContributors.toIntOrNull() ?: 1
+                val canDecrease = currentMax > 1
+                val stepperBtnShape = RoundedCornerShape(14.dp)
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Surface(
+                        onClick = {
+                            val next = (currentMax - 1).coerceAtLeast(1)
+                            maxContributors = next.toString()
+                        },
+                        enabled = canDecrease,
+                        modifier = Modifier.size(48.dp),
+                        shape = stepperBtnShape,
+                        color = if (canDecrease) PastelBlueSoftBg else PastelNeutralBg,
+                        border = BorderStroke(
+                            1.dp,
+                            if (canDecrease) PastelBlueBg else Color.Transparent
+                        )
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Rounded.Remove,
+                                contentDescription = stringResource(R.string.orders_qty_decrease_cd),
+                                tint = if (canDecrease) PastelBlue else PastelNeutralText.copy(alpha = 0.5f)
+                            )
+                        }
+                    }
+
+                    OutlinedTextField(
+                        modifier = Modifier.weight(1f),
+                        value = maxContributors,
+                        onValueChange = { if (it.all { char -> char.isDigit() }) maxContributors = it },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        textStyle = MaterialTheme.typography.titleMedium.copy(
+                            textAlign = TextAlign.Center,
+                            fontWeight = FontWeight.Bold,
+                            color = GrayBlue
+                        ),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = GrayBlue,
+                            unfocusedTextColor = GrayBlue,
+                            focusedContainerColor = PastelBlueSoftBg.copy(alpha = 0.45f),
+                            unfocusedContainerColor = PastelBlueSoftBg.copy(alpha = 0.25f),
+                            focusedBorderColor = PastelBlue,
+                            unfocusedBorderColor = PastelBlueBg,
+                            cursorColor = PastelBlue
+                        )
+                    )
+
+                    Surface(
+                        onClick = {
+                            val next = (currentMax + 1).coerceAtLeast(1)
+                            maxContributors = next.toString()
+                        },
+                        modifier = Modifier.size(48.dp),
+                        shape = stepperBtnShape,
+                        color = PastelBlueSoftBg,
+                        border = BorderStroke(1.dp, PastelBlueBg)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Rounded.Add,
+                                contentDescription = stringResource(R.string.orders_qty_increase_cd),
+                                tint = PastelBlue
+                            )
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(14.dp))
 
@@ -1021,12 +1095,13 @@ private fun WorkspaceTimePickerDialog(
 
 @Composable
 fun DeleteWorkspaceDialog(
+    workspaceName: String,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
     var confirmText by remember { mutableStateOf("") }
-    val deleteKeyword = stringResource(R.string.workspace_delete_keyword)
-    val isDeleteButtonEnabled = confirmText == deleteKeyword
+    val expectedName = workspaceName.trim()
+    val isDeleteButtonEnabled = expectedName.isNotEmpty() && confirmText.trim() == expectedName
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -1049,12 +1124,29 @@ fun DeleteWorkspaceDialog(
                     subtitle = stringResource(R.string.workspace_delete_message)
                 )
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = stringResource(R.string.workspace_delete_confirm_label, expectedName),
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = MainFontBlack,
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
 
                 OutlinedTextField(
                     value = confirmText,
                     onValueChange = { confirmText = it },
-                    label = { Text(stringResource(R.string.workspace_delete_confirm_label, deleteKeyword)) },
+                    placeholder = {
+                        Text(
+                            text = expectedName,
+                            color = PastelNeutralText
+                        )
+                    },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),

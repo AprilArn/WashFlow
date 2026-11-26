@@ -843,6 +843,7 @@ fun PhoneMainScreen(
 
     if (mainUiState.showDeleteWorkspaceDialog) {
         DeleteWorkspaceDialog(
+            workspaceName = mainUiState.workspaceName,
             onDismiss = { mainViewModel.onDismissDeleteWorkspaceDialog() },
             onConfirm = { mainViewModel.confirmDeleteWorkspace() }
         )
