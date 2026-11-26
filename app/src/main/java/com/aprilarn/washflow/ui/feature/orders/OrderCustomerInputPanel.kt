@@ -28,8 +28,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowDropDown
-import androidx.compose.material.icons.rounded.ArrowDropUp
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Event
 import androidx.compose.material.icons.rounded.Person
@@ -72,7 +70,6 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -201,6 +198,7 @@ private fun OrderCustomerInputPanelContent(
 
             AnimatedContent(
                 targetState = uiState.selectedCustomer,
+                contentKey = { it?.customerId },
                 transitionSpec = {
                     (fadeIn(tween(200)) + expandVertically(tween(220)))
                         .togetherWith(fadeOut(tween(150)) + shrinkVertically(tween(180)))
@@ -226,6 +224,10 @@ private fun OrderCustomerInputPanelContent(
                     }
 
                     val trimmedQuery = uiState.customerSearchQuery.trim()
+                    val showNotFoundInline = !uiState.isSearchingCustomers &&
+                        uiState.debouncedCustomerQuery.length >= OrdersViewModel.MIN_CUSTOMER_SEARCH_CHARS &&
+                        uiState.filteredCustomers.isEmpty()
+
                     Column(modifier = Modifier.fillMaxWidth()) {
                         OutlinedTextField(
                             value = uiState.customerSearchQuery,
@@ -248,16 +250,18 @@ private fun OrderCustomerInputPanelContent(
                                 .onGloballyPositioned { coordinates ->
                                     textFieldSize = coordinates.size.toSize()
                                 },
-                            trailingIcon = {
-                                when {
-                                    uiState.isSearchingCustomers -> {
+                            trailingIcon = when {
+                                uiState.isSearchingCustomers -> {
+                                    {
                                         CircularProgressIndicator(
                                             modifier = Modifier.size(18.dp),
                                             strokeWidth = 2.dp,
                                             color = PastelBlue
                                         )
                                     }
-                                    uiState.customerSearchQuery.isNotEmpty() -> {
+                                }
+                                uiState.customerSearchQuery.isNotEmpty() -> {
+                                    {
                                         IconButton(
                                             onClick = {
                                                 onCustomerQueryChanged("")
@@ -271,22 +275,16 @@ private fun OrderCustomerInputPanelContent(
                                             )
                                         }
                                     }
-                                    else -> {
-                                        IconButton(onClick = { isDropdownExpanded = !isDropdownExpanded }) {
-                                            Icon(
-                                                imageVector = if (isDropdownExpanded) Icons.Rounded.ArrowDropUp else Icons.Rounded.ArrowDropDown,
-                                                contentDescription = null
-                                            )
-                                        }
-                                    }
                                 }
+                                else -> null
                             },
                             colors = textFieldColors,
                             shape = RoundedCornerShape(14.dp)
                         )
 
                         AnimatedVisibility(
-                            visible = trimmedQuery.isNotEmpty() && trimmedQuery.length < OrdersViewModel.MIN_CUSTOMER_SEARCH_CHARS
+                            visible = trimmedQuery.isNotEmpty() &&
+                                (trimmedQuery.length < OrdersViewModel.MIN_CUSTOMER_SEARCH_CHARS)
                         ) {
                             Text(
                                 text = stringResource(
@@ -299,9 +297,22 @@ private fun OrderCustomerInputPanelContent(
                             )
                         }
 
+                        AnimatedVisibility(visible = showNotFoundInline) {
+                            Text(
+                                text = stringResource(
+                                    R.string.orders_phone_customer_not_found,
+                                    uiState.debouncedCustomerQuery
+                                ),
+                                color = PastelNeutralText,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(start = 4.dp, top = 6.dp)
+                            )
+                        }
+
                         if (isDropdownExpanded &&
                             !uiState.isSearchingCustomers &&
-                            uiState.debouncedCustomerQuery.length >= OrdersViewModel.MIN_CUSTOMER_SEARCH_CHARS
+                            uiState.debouncedCustomerQuery.length >= OrdersViewModel.MIN_CUSTOMER_SEARCH_CHARS &&
+                            uiState.filteredCustomers.isNotEmpty()
                         ) {
                             val filteredCustomers = uiState.filteredCustomers
 
@@ -320,51 +331,36 @@ private fun OrderCustomerInputPanelContent(
                                     shadowElevation = 6.dp,
                                     color = Color.White
                                 ) {
-                                    if (filteredCustomers.isEmpty()) {
-                                        Text(
-                                            text = stringResource(
-                                                R.string.orders_phone_customer_not_found,
-                                                uiState.debouncedCustomerQuery
-                                            ),
-                                            color = PastelNeutralText,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            textAlign = TextAlign.Center,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 14.dp, vertical = 14.dp)
-                                        )
-                                    } else {
-                                        LazyColumn {
-                                            items(filteredCustomers, key = { it.customerId }) { customer ->
-                                                DropdownMenuItem(
-                                                    text = {
-                                                        Column {
+                                    LazyColumn {
+                                        items(filteredCustomers, key = { it.customerId }) { customer ->
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Column {
+                                                        Text(
+                                                            text = customer.name,
+                                                            color = GrayBlue,
+                                                            fontWeight = FontWeight.SemiBold,
+                                                            fontSize = 14.sp,
+                                                            maxLines = 1,
+                                                            overflow = TextOverflow.Ellipsis
+                                                        )
+                                                        if (!customer.contact.isNullOrBlank()) {
                                                             Text(
-                                                                text = customer.name,
-                                                                color = GrayBlue,
-                                                                fontWeight = FontWeight.SemiBold,
-                                                                fontSize = 14.sp,
+                                                                text = customer.contact,
+                                                                color = PastelNeutralText,
+                                                                fontSize = 11.sp,
                                                                 maxLines = 1,
                                                                 overflow = TextOverflow.Ellipsis
                                                             )
-                                                            if (!customer.contact.isNullOrBlank()) {
-                                                                Text(
-                                                                    text = customer.contact,
-                                                                    color = PastelNeutralText,
-                                                                    fontSize = 11.sp,
-                                                                    maxLines = 1,
-                                                                    overflow = TextOverflow.Ellipsis
-                                                                )
-                                                            }
                                                         }
-                                                    },
-                                                    onClick = {
-                                                        onCustomerSelected(customer)
-                                                        isDropdownExpanded = false
                                                     }
-                                                )
-                                                HorizontalDivider(color = PastelBlueBg.copy(alpha = 0.7f))
-                                            }
+                                                },
+                                                onClick = {
+                                                    onCustomerSelected(customer)
+                                                    isDropdownExpanded = false
+                                                }
+                                            )
+                                            HorizontalDivider(color = PastelBlueBg.copy(alpha = 0.7f))
                                         }
                                     }
                                 }

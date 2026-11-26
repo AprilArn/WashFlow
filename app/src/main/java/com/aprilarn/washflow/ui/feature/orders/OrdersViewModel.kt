@@ -72,6 +72,18 @@ class OrdersViewModel(
         }
     }
 
+    private suspend fun loadCustomersIfNeeded(): List<Customers> {
+        if (hasLoadedCustomers) {
+            return _uiState.value.customers
+        }
+        val fetched = customerUseCase.getCustomersOnce()
+        if (fetched.isNotEmpty()) {
+            hasLoadedCustomers = true
+            _uiState.update { it.copy(customers = fetched) }
+        }
+        return fetched
+    }
+
     fun onCustomerQueryChanged(query: String) {
         val trimmed = query.trim()
         customerSearchJob?.cancel()
@@ -97,14 +109,7 @@ class OrdersViewModel(
 
         customerSearchJob = viewModelScope.launch {
             delay(CUSTOMER_SEARCH_DEBOUNCE_MS.milliseconds)
-            val sourceCustomers = if (hasLoadedCustomers) {
-                _uiState.value.customers
-            } else {
-                val fetched = customerUseCase.getCustomersOnce()
-                hasLoadedCustomers = true
-                _uiState.update { it.copy(customers = fetched) }
-                fetched
-            }
+            val sourceCustomers = loadCustomersIfNeeded()
 
             val matched = sourceCustomers.filter {
                 it.name.contains(trimmed, ignoreCase = true) ||
@@ -231,7 +236,8 @@ class OrdersViewModel(
             if (order != null) {
                 // Konversi list OrderItem ke map
                 val itemsMap = order.orderItems.associateBy { it.itemId }
-                val customer = _uiState.value.customers.find { it.customerId == order.customerId }
+                val customersList = loadCustomersIfNeeded()
+                val customer = customersList.find { it.customerId == order.customerId }
                     ?: Customers(order.customerId, order.customerName ?: "Unnamed")
 
                 _uiState.update {

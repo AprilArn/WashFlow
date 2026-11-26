@@ -74,6 +74,8 @@ fun SpendingChart(
             dateList.add(dateFormat.format(tempCal.time))
         }
     } else if (selectedPeriod == "Week") {
+        val dayFormat = SimpleDateFormat("dd", currentLocale)
+        val monthFormat = SimpleDateFormat("MMM", currentLocale)
         // 7 Minggu terakhir (Berdasarkan kalender nyata: Senin hingga Minggu)
         for (i in 6 downTo 0) {
             val startCal = Calendar.getInstance()
@@ -104,10 +106,9 @@ fun SpendingChart(
             endCal.set(Calendar.SECOND, 59)
             endCal.set(Calendar.MILLISECOND, 999)
             
-            val dateFormat = SimpleDateFormat("dd MMM", currentLocale)
-            // Labelnya: "12 Oct", menunjukkan hari Senin di awal minggu tersebut
-            daysList.add(dateFormat.format(startCal.time))
-            subLabelsList.add("")
+            // Pisahkan tanggal & bulan secara eksplisit agar selalu seragam 2 baris di semua font/perangkat
+            daysList.add(dayFormat.format(startCal.time))
+            subLabelsList.add(monthFormat.format(startCal.time))
             weekRanges.add(Pair(startCal.timeInMillis, endCal.timeInMillis))
         }
     } else { // "Month"
@@ -301,7 +302,7 @@ fun SpendingChart(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        val labelColumnWidth = 30.dp
+        val labelColumnWidth = 34.dp
         val chartHorizontalPadding = labelColumnWidth / 2
 
         BoxWithConstraints(
@@ -505,15 +506,18 @@ fun SpendingChart(
                     Text(
                         text = day,
                         fontSize = 11.sp,
+                        lineHeight = 14.sp,
                         color = if (isSelected) GrayBlue else Color.Gray,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        maxLines = 1,
+                        softWrap = false,
                         textAlign = TextAlign.Center
                     )
                     if (subLabel.isNotEmpty()) {
                         Text(
                             text = subLabel,
-                            fontSize = 9.sp,
-                            lineHeight = 11.sp,
+                            fontSize = 9.5.sp,
+                            lineHeight = 12.sp,
                             color = if (isSelected) GrayBlue.copy(alpha = 0.85f) else Color.Gray.copy(alpha = 0.8f),
                             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                             maxLines = 1,

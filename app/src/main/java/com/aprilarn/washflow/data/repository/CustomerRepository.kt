@@ -15,10 +15,9 @@ import kotlinx.coroutines.channels.awaitClose
 
 class CustomerRepository : CustomerRepositoryContract {
     private val db = Firebase.firestore
-    private val currentUser = Firebase.auth.currentUser
 
     private suspend fun getWorkspaceId(): String? {
-        val user = currentUser ?: return null
+        val user = Firebase.auth.currentUser ?: return null
         return try {
             val userDoc = db.collection("users").document(user.uid).get().await()
             userDoc.getString("workspaceId")
