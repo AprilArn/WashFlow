@@ -141,10 +141,11 @@ fun PhoneOrdersScreen(
                 modifier = Modifier.fillMaxWidth()
             )
         } else {
-            // TAHAP 2: Panel Pelanggan mengecil (shrink) + tombol silang untuk ganti pelanggan
-            PhoneSelectedCustomerCard(
+            // TAHAP 2: Panel Pelanggan mengecil (shrink) + tombol "Ganti" untuk ganti pelanggan
+            SelectedCustomerCard(
                 customer = selectedCustomer,
-                onClearCustomer = { viewModel.onClearSelectedCustomer() }
+                onClearCustomer = { viewModel.onClearSelectedCustomer() },
+                shadowElevation = 4.dp
             )
 
             // Tombol Batas Waktu tepat di bawah kartu nama pelanggan
@@ -653,96 +654,6 @@ private fun PhoneCustomerSelectionStep(
                             }
                     }
                 }
-            }
-        }
-    }
-}
-
-/**
- * Tahap 2 (Shrunk): Kartu nama pelanggan ringkas dengan tombol "Ganti" di kanan untuk mengganti pelanggan.
- */
-@Composable
-private fun PhoneSelectedCustomerCard(
-    customer: Customers,
-    onClearCustomer: () -> Unit
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        color = PastelBlueSoftBg,
-        border = BorderStroke(
-            width = 1.dp,
-            color = PastelBlue.copy(alpha = 0.45f)
-        ),
-        shadowElevation = 4.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.weight(1f)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(Color.White),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Person,
-                        contentDescription = null,
-                        tint = PastelBlue,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = customer.name,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            color = GrayBlue,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp
-                        ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    if (!customer.contact.isNullOrBlank()) {
-                        Text(
-                            text = customer.contact,
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                color = PastelNeutralText,
-                                fontSize = 11.sp
-                            ),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-            }
-
-            Surface(
-                onClick = onClearCustomer,
-                shape = RoundedCornerShape(50),
-                color = Color.White,
-                border = BorderStroke(1.dp, PastelBlue.copy(alpha = 0.25f))
-            ) {
-                Text(
-                    text = stringResource(R.string.common_change),
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        color = PastelBlue,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 12.sp
-                    ),
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                )
             }
         }
     }

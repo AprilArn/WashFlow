@@ -1,8 +1,14 @@
 package com.aprilarn.washflow.ui.feature.orders
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -19,16 +25,19 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowDropDown
 import androidx.compose.material.icons.rounded.ArrowDropUp
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Event
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Phone
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenuItem
@@ -48,17 +57,25 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -66,6 +83,7 @@ import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.aprilarn.washflow.R
+import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.ui.core.components.HapticSwitch
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
 import com.aprilarn.washflow.ui.core.theme.PastelBlue
@@ -73,21 +91,41 @@ import com.aprilarn.washflow.ui.core.theme.PastelBlueBg
 import com.aprilarn.washflow.ui.core.theme.PastelBlueSoftBg
 import com.aprilarn.washflow.ui.core.theme.PastelNeutralText
 import com.aprilarn.washflow.ui.core.theme.PastelSwitchOffTrack
+import com.aprilarn.washflow.ui.core.theme.WashFlowTheme
 import com.google.firebase.Timestamp
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderCustomerInputPanel(
     uiState: OrdersUiState,
     viewModel: OrdersViewModel
 ) {
+    OrderCustomerInputPanelContent(
+        uiState = uiState,
+        onCustomerQueryChanged = { viewModel.onCustomerQueryChanged(it) },
+        onCustomerSelected = { viewModel.onCustomerSelected(it) },
+        onClearSelectedCustomer = { viewModel.onClearSelectedCustomer() },
+        onDueDateChanged = { viewModel.onDueDateChanged(it) }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun OrderCustomerInputPanelContent(
+    uiState: OrdersUiState,
+    onCustomerQueryChanged: (String) -> Unit,
+    onCustomerSelected: (Customers) -> Unit,
+    onClearSelectedCustomer: () -> Unit,
+    onDueDateChanged: (Timestamp?) -> Unit
+) {
     var isDropdownExpanded by remember { mutableStateOf(false) }
+    var shouldFocusSearch by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
     var textFieldSize by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
+    val searchFocusRequester = remember { FocusRequester() }
     val calendar = remember { Calendar.getInstance() }
 
     val borderRadius = RoundedCornerShape(24.dp)
@@ -119,7 +157,7 @@ fun OrderCustomerInputPanel(
             modifier = Modifier
                 .fillMaxWidth()
                 .wrapContentHeight()
-                .animateContentSize(animationSpec = androidx.compose.animation.core.tween(durationMillis = 250))
+                .animateContentSize(animationSpec = tween(durationMillis = 250))
                 .padding(vertical = 18.dp, horizontal = 20.dp)
         ) {
             // Header bergaya Material Editorial dengan aksen vertikal
@@ -161,83 +199,173 @@ fun OrderCustomerInputPanel(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Column(modifier = Modifier.fillMaxWidth()) {
-                OutlinedTextField(
-                    value = uiState.customerSearchQuery,
-                    onValueChange = {
-                        viewModel.onCustomerQueryChanged(it)
-                        isDropdownExpanded = true
-                    },
-                    label = { Text(stringResource(R.string.master_customers_name_label)) },
-                    singleLine = true,
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Rounded.Person,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .onGloballyPositioned { coordinates ->
-                            textFieldSize = coordinates.size.toSize()
+            AnimatedContent(
+                targetState = uiState.selectedCustomer,
+                transitionSpec = {
+                    (fadeIn(tween(200)) + expandVertically(tween(220)))
+                        .togetherWith(fadeOut(tween(150)) + shrinkVertically(tween(180)))
+                },
+                label = "tabletCustomerSection"
+            ) { selectedCustomer ->
+                if (selectedCustomer != null) {
+                    SelectedCustomerCard(
+                        customer = selectedCustomer,
+                        onClearCustomer = {
+                            isDropdownExpanded = false
+                            shouldFocusSearch = true
+                            onClearSelectedCustomer()
                         },
-                    trailingIcon = {
-                        IconButton(onClick = { isDropdownExpanded = !isDropdownExpanded }) {
-                            Icon(
-                                imageVector = if (isDropdownExpanded) Icons.Rounded.ArrowDropUp else Icons.Rounded.ArrowDropDown,
-                                contentDescription = null
-                            )
+                        shadowElevation = 0.dp
+                    )
+                } else {
+                    LaunchedEffect(shouldFocusSearch) {
+                        if (shouldFocusSearch) {
+                            runCatching { searchFocusRequester.requestFocus() }
+                            shouldFocusSearch = false
                         }
-                    },
-                    colors = textFieldColors,
-                    shape = RoundedCornerShape(14.dp)
-                )
+                    }
 
-                if (isDropdownExpanded && uiState.debouncedCustomerQuery.length >= OrdersViewModel.MIN_CUSTOMER_SEARCH_CHARS) {
-                    val filteredCustomers = uiState.filteredCustomers
-
-                    if (filteredCustomers.isNotEmpty()) {
-                        Popup(
-                            onDismissRequest = { isDropdownExpanded = false },
-                            offset = IntOffset(x = 0, y = textFieldSize.height.toInt()),
-                            properties = PopupProperties(focusable = false)
-                        ) {
-                            Surface(
-                                modifier = Modifier
-                                    .width(with(LocalDensity.current) { textFieldSize.width.toDp() })
-                                    .padding(top = 6.dp)
-                                    .heightIn(max = 180.dp),
-                                shape = RoundedCornerShape(14.dp),
-                                shadowElevation = 6.dp,
-                                color = Color.White
-                            ) {
-                                LazyColumn {
-                                    items(filteredCustomers) { customer ->
-                                        DropdownMenuItem(
-                                            text = {
-                                                Column {
-                                                    Text(
-                                                        text = customer.name,
-                                                        color = GrayBlue,
-                                                        fontWeight = FontWeight.SemiBold,
-                                                        fontSize = 14.sp
-                                                    )
-                                                    if (!customer.contact.isNullOrBlank()) {
-                                                        Text(
-                                                            text = customer.contact,
-                                                            color = PastelNeutralText,
-                                                            fontSize = 11.sp
-                                                        )
-                                                    }
-                                                }
-                                            },
+                    val trimmedQuery = uiState.customerSearchQuery.trim()
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedTextField(
+                            value = uiState.customerSearchQuery,
+                            onValueChange = {
+                                onCustomerQueryChanged(it)
+                                isDropdownExpanded = it.isNotBlank()
+                            },
+                            label = { Text(stringResource(R.string.master_customers_name_label)) },
+                            singleLine = true,
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Rounded.Person,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .focusRequester(searchFocusRequester)
+                                .onGloballyPositioned { coordinates ->
+                                    textFieldSize = coordinates.size.toSize()
+                                },
+                            trailingIcon = {
+                                when {
+                                    uiState.isSearchingCustomers -> {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(18.dp),
+                                            strokeWidth = 2.dp,
+                                            color = PastelBlue
+                                        )
+                                    }
+                                    uiState.customerSearchQuery.isNotEmpty() -> {
+                                        IconButton(
                                             onClick = {
-                                                viewModel.onCustomerSelected(customer)
+                                                onCustomerQueryChanged("")
                                                 isDropdownExpanded = false
                                             }
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Rounded.Close,
+                                                contentDescription = stringResource(R.string.common_clear_search),
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
+                                    else -> {
+                                        IconButton(onClick = { isDropdownExpanded = !isDropdownExpanded }) {
+                                            Icon(
+                                                imageVector = if (isDropdownExpanded) Icons.Rounded.ArrowDropUp else Icons.Rounded.ArrowDropDown,
+                                                contentDescription = null
+                                            )
+                                        }
+                                    }
+                                }
+                            },
+                            colors = textFieldColors,
+                            shape = RoundedCornerShape(14.dp)
+                        )
+
+                        AnimatedVisibility(
+                            visible = trimmedQuery.isNotEmpty() && trimmedQuery.length < OrdersViewModel.MIN_CUSTOMER_SEARCH_CHARS
+                        ) {
+                            Text(
+                                text = stringResource(
+                                    R.string.orders_phone_min_chars_hint,
+                                    OrdersViewModel.MIN_CUSTOMER_SEARCH_CHARS
+                                ),
+                                color = PastelNeutralText,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(start = 4.dp, top = 6.dp)
+                            )
+                        }
+
+                        if (isDropdownExpanded &&
+                            !uiState.isSearchingCustomers &&
+                            uiState.debouncedCustomerQuery.length >= OrdersViewModel.MIN_CUSTOMER_SEARCH_CHARS
+                        ) {
+                            val filteredCustomers = uiState.filteredCustomers
+
+                            Popup(
+                                onDismissRequest = { isDropdownExpanded = false },
+                                offset = IntOffset(x = 0, y = textFieldSize.height.toInt()),
+                                properties = PopupProperties(focusable = false)
+                            ) {
+                                Surface(
+                                    modifier = Modifier
+                                        .width(with(LocalDensity.current) { textFieldSize.width.toDp() })
+                                        .padding(top = 6.dp)
+                                        .heightIn(max = 180.dp),
+                                    shape = RoundedCornerShape(14.dp),
+                                    border = BorderStroke(1.dp, PastelBlueBg),
+                                    shadowElevation = 6.dp,
+                                    color = Color.White
+                                ) {
+                                    if (filteredCustomers.isEmpty()) {
+                                        Text(
+                                            text = stringResource(
+                                                R.string.orders_phone_customer_not_found,
+                                                uiState.debouncedCustomerQuery
+                                            ),
+                                            color = PastelNeutralText,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            textAlign = TextAlign.Center,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 14.dp, vertical = 14.dp)
                                         )
-                                        HorizontalDivider(color = PastelBlueBg.copy(alpha = 0.7f))
+                                    } else {
+                                        LazyColumn {
+                                            items(filteredCustomers, key = { it.customerId }) { customer ->
+                                                DropdownMenuItem(
+                                                    text = {
+                                                        Column {
+                                                            Text(
+                                                                text = customer.name,
+                                                                color = GrayBlue,
+                                                                fontWeight = FontWeight.SemiBold,
+                                                                fontSize = 14.sp,
+                                                                maxLines = 1,
+                                                                overflow = TextOverflow.Ellipsis
+                                                            )
+                                                            if (!customer.contact.isNullOrBlank()) {
+                                                                Text(
+                                                                    text = customer.contact,
+                                                                    color = PastelNeutralText,
+                                                                    fontSize = 11.sp,
+                                                                    maxLines = 1,
+                                                                    overflow = TextOverflow.Ellipsis
+                                                                )
+                                                            }
+                                                        }
+                                                    },
+                                                    onClick = {
+                                                        onCustomerSelected(customer)
+                                                        isDropdownExpanded = false
+                                                    }
+                                                )
+                                                HorizontalDivider(color = PastelBlueBg.copy(alpha = 0.7f))
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -245,26 +373,6 @@ fun OrderCustomerInputPanel(
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedTextField(
-                value = uiState.selectedCustomer?.contact ?: "",
-                onValueChange = {},
-                readOnly = true,
-                singleLine = true,
-                label = { Text(stringResource(R.string.master_customers_phone_label)) },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Rounded.Phone,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = textFieldColors,
-                shape = RoundedCornerShape(14.dp)
-            )
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -285,9 +393,9 @@ fun OrderCustomerInputPanel(
                     onCheckedChange = { isChecked ->
                         if (isChecked) {
                             val defaultDate = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }
-                            viewModel.onDueDateChanged(Timestamp(defaultDate.time))
+                            onDueDateChanged(Timestamp(defaultDate.time))
                         } else {
-                            viewModel.onDueDateChanged(null)
+                            onDueDateChanged(null)
                         }
                     },
                     colors = SwitchDefaults.colors(
@@ -361,7 +469,7 @@ fun OrderCustomerInputPanel(
                             calendar.set(Calendar.HOUR_OF_DAY, timeCal.get(Calendar.HOUR_OF_DAY))
                             calendar.set(Calendar.MINUTE, timeCal.get(Calendar.MINUTE))
 
-                            viewModel.onDueDateChanged(Timestamp(calendar.time))
+                            onDueDateChanged(Timestamp(calendar.time))
                         }
                         showDatePicker = false
                         showTimePicker = true
@@ -410,7 +518,7 @@ fun OrderCustomerInputPanel(
                         calendar.set(Calendar.HOUR_OF_DAY, timePickerState.hour)
                         calendar.set(Calendar.MINUTE, timePickerState.minute)
 
-                        viewModel.onDueDateChanged(Timestamp(calendar.time))
+                        onDueDateChanged(Timestamp(calendar.time))
                         showTimePicker = false
                     }
                 ) {
@@ -423,5 +531,157 @@ fun OrderCustomerInputPanel(
                 }
             }
         )
+    }
+}
+
+/**
+ * Kartu detail pelanggan terpilih dengan tombol "Ganti" di kanan (dipakai bersama di Tablet & HP).
+ */
+@Composable
+internal fun SelectedCustomerCard(
+    customer: Customers,
+    onClearCustomer: () -> Unit,
+    modifier: Modifier = Modifier,
+    shadowElevation: Dp = 0.dp
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        color = PastelBlueSoftBg,
+        border = BorderStroke(
+            width = 1.dp,
+            color = PastelBlue.copy(alpha = 0.45f)
+        ),
+        shadowElevation = shadowElevation
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(Color.White),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Person,
+                        contentDescription = null,
+                        tint = PastelBlue,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = customer.name,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            color = GrayBlue,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (!customer.contact.isNullOrBlank()) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Phone,
+                                contentDescription = null,
+                                tint = PastelNeutralText,
+                                modifier = Modifier.size(11.dp)
+                            )
+                            Text(
+                                text = customer.contact,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    color = PastelNeutralText,
+                                    fontSize = 11.5.sp
+                                ),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+            }
+
+            Surface(
+                onClick = onClearCustomer,
+                shape = RoundedCornerShape(50),
+                color = Color.White,
+                border = BorderStroke(1.dp, PastelBlue.copy(alpha = 0.25f))
+            ) {
+                Text(
+                    text = stringResource(R.string.common_change),
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        color = PastelBlue,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 12.sp
+                    ),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                )
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFFB9E9FF, name = "Tablet Customer Panel - Search")
+@Composable
+private fun OrderCustomerInputPanelSearchPreview() {
+    WashFlowTheme {
+        Box(
+            modifier = Modifier
+                .width(360.dp)
+                .padding(16.dp)
+        ) {
+            OrderCustomerInputPanelContent(
+                uiState = OrdersUiState(
+                    customerSearchQuery = "Ve"
+                ),
+                onCustomerQueryChanged = {},
+                onCustomerSelected = {},
+                onClearSelectedCustomer = {},
+                onDueDateChanged = {}
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFFB9E9FF, name = "Tablet Customer Panel - Selected")
+@Composable
+private fun OrderCustomerInputPanelSelectedPreview() {
+    WashFlowTheme {
+        Box(
+            modifier = Modifier
+                .width(360.dp)
+                .padding(16.dp)
+        ) {
+            OrderCustomerInputPanelContent(
+                uiState = OrdersUiState(
+                    selectedCustomer = Customers(
+                        customerId = "c1",
+                        name = "Max Verstappen",
+                        contact = "0812-3456-7890"
+                    ),
+                    customerSearchQuery = "Max Verstappen"
+                ),
+                onCustomerQueryChanged = {},
+                onCustomerSelected = {},
+                onClearSelectedCustomer = {},
+                onDueDateChanged = {}
+            )
+        }
     }
 }
