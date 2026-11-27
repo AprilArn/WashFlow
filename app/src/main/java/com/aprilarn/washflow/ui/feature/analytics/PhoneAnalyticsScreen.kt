@@ -186,7 +186,7 @@ private fun PhoneAnalyticsSummaryTab(
     val recentOrders = remember(uiState.orders, recentFilter) {
         filterRecentOrders(uiState.orders, recentFilter)
     }
-    var selectedChartPeriod by rememberSaveable { mutableStateOf("Day") }
+    var selectedChartPeriod by rememberSaveable { mutableStateOf("Week") }
     val pagerState = rememberPagerState(pageCount = { 2 })
     val coroutineScope = rememberCoroutineScope()
 
