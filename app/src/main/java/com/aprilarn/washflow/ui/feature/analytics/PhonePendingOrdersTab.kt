@@ -33,9 +33,6 @@ import androidx.compose.material.icons.rounded.Phone
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Storefront
 import androidx.compose.material.icons.rounded.WarningAmber
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -45,7 +42,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -69,6 +65,8 @@ import androidx.core.net.toUri
 import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.data.model.Orders
+import com.aprilarn.washflow.ui.feature.analytics.component.PendingActionConfirm
+import com.aprilarn.washflow.ui.feature.analytics.component.PendingActionConfirmDialog
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
 import com.aprilarn.washflow.ui.core.theme.PastelAmber
 import com.aprilarn.washflow.ui.core.theme.PastelAmberBg
@@ -463,90 +461,28 @@ fun PhonePendingOrdersTab(
         }
     }
 
-    // Dialog Konfirmasi Aksi (Lunas / Diambil / WhatsApp)
+    // Dialog Konfirmasi Aksi (Lunas / Diambil / WhatsApp) — konsisten dengan versi Tablet
     pendingConfirm?.let { confirm ->
-        val customerFallback = stringResource(R.string.analytics_customer_fallback)
-        val (title, message, confirmText, confirmColor) = when (confirm) {
-            is PhonePendingConfirm.MarkPaid -> Quadruple(
-                stringResource(R.string.analytics_pending_confirm_paid_title),
-                stringResource(
-                    R.string.analytics_pending_confirm_paid_msg,
-                    confirm.order.customerName?.takeIf { it.isNotBlank() } ?: customerFallback,
-                    CurrencyUtils.formatRupiahWithSymbol(confirm.order.totalPrice)
-                ),
-                stringResource(R.string.analytics_pending_mark_paid),
-                PastelGreen
-            )
-            is PhonePendingConfirm.MarkPickedUp -> Quadruple(
-                stringResource(R.string.analytics_pending_confirm_pickup_title),
-                stringResource(
-                    R.string.analytics_pending_confirm_pickup_msg,
-                    confirm.order.customerName?.takeIf { it.isNotBlank() } ?: customerFallback
-                ),
-                stringResource(R.string.analytics_pending_mark_picked_up),
-                PastelBlue
-            )
-            is PhonePendingConfirm.SendWhatsApp -> Quadruple(
-                stringResource(R.string.analytics_pending_confirm_wa_title),
-                stringResource(
-                    R.string.analytics_pending_confirm_wa_msg,
-                    confirm.order.customerName?.takeIf { it.isNotBlank() } ?: customerFallback,
-                    confirm.contact
-                ),
-                stringResource(R.string.analytics_pending_confirm_wa_btn),
-                PastelGreen
-            )
+        val action = when (confirm) {
+            is PhonePendingConfirm.MarkPaid -> PendingActionConfirm.MarkPaid(confirm.order)
+            is PhonePendingConfirm.MarkPickedUp -> PendingActionConfirm.MarkPickedUp(confirm.order)
+            is PhonePendingConfirm.SendWhatsApp -> PendingActionConfirm.SendWhatsApp(confirm.order, confirm.contact)
         }
 
-        AlertDialog(
-            onDismissRequest = { pendingConfirm = null },
-            containerColor = Color.White,
-            shape = RoundedCornerShape(22.dp),
-            title = {
-                Text(
-                    text = title,
-                    color = GrayBlue,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 17.sp
-                )
-            },
-            text = {
-                Text(
-                    text = message,
-                    color = GrayBlue.copy(alpha = 0.85f),
-                    fontSize = 14.sp
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        when (confirm) {
-                            is PhonePendingConfirm.MarkPaid -> onTogglePayment(confirm.order.orderId, true)
-                            is PhonePendingConfirm.MarkPickedUp -> onTogglePickup(confirm.order.orderId, true)
-                            is PhonePendingConfirm.SendWhatsApp -> openPhoneWhatsAppReminder(context, confirm.order, confirm.contact)
-                        }
-                        pendingConfirm = null
-                    },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = confirmColor)
-                ) {
-                    Text(confirmText, color = Color.White, fontWeight = FontWeight.Bold)
+        PendingActionConfirmDialog(
+            action = action,
+            onDismiss = { pendingConfirm = null },
+            onConfirm = {
+                when (confirm) {
+                    is PhonePendingConfirm.MarkPaid -> onTogglePayment(confirm.order.orderId, true)
+                    is PhonePendingConfirm.MarkPickedUp -> onTogglePickup(confirm.order.orderId, true)
+                    is PhonePendingConfirm.SendWhatsApp -> openPhoneWhatsAppReminder(context, confirm.order, confirm.contact)
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { pendingConfirm = null }) {
-                    Text(
-                        stringResource(R.string.common_cancel),
-                        color = PastelNeutralText,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
+                pendingConfirm = null
             }
         )
     }
 }
-
-private data class Quadruple<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
 
 @Composable
 private fun PhonePendingCompactStatCard(

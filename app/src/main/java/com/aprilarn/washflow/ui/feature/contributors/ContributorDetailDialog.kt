@@ -14,14 +14,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.WorkspacePremium
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,7 +32,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.core.components.HoldToConfirmButton
-import com.aprilarn.washflow.ui.core.theme.GrayBlue
+import com.aprilarn.washflow.ui.core.components.WashFlowDialogSecondaryButton
+import com.aprilarn.washflow.ui.core.components.WashFlowDialogSurface
 import com.aprilarn.washflow.ui.core.theme.MainFontBlack
 import com.aprilarn.washflow.ui.core.theme.PastelAmber
 import com.aprilarn.washflow.ui.core.theme.PastelAmberBg
@@ -64,18 +62,7 @@ fun ContributorDetailDialog(
     }
 
     Dialog(onDismissRequest = onDismiss) {
-        Card(
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(24.dp)
-                    .fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+        WashFlowDialogSurface {
                 ContributorAvatarWithStatus(
                     name = contributor.name,
                     photoUrl = contributor.photoUrl,
@@ -202,20 +189,14 @@ fun ContributorDetailDialog(
                         durationMillis = 4000,
                         onConfirm = onKick
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
                 }
 
-                TextButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = stringResource(R.string.common_close),
-                        color = GrayBlue,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
+            WashFlowDialogSecondaryButton(
+                text = stringResource(R.string.common_close),
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }

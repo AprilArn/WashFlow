@@ -22,8 +22,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Remove
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -31,9 +29,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,6 +49,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Items
+import com.aprilarn.washflow.ui.core.components.WashFlowDialogActionRow
+import com.aprilarn.washflow.ui.core.components.WashFlowDialogSurface
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
 import com.aprilarn.washflow.ui.core.theme.PastelBlue
 import com.aprilarn.washflow.ui.core.theme.PastelBlueBg
@@ -122,7 +120,7 @@ fun OrdersScreen(
 }
 
 @Composable
-private fun QuantityInputDialog(
+internal fun QuantityInputDialog(
     item: Items,
     onDismiss: () -> Unit,
     onConfirm: (Int) -> Unit
@@ -146,16 +144,9 @@ private fun QuantityInputDialogContent(
     val currentQty = quantityText.toIntOrNull()?.coerceAtLeast(1) ?: 1
     val subtotal = item.itemPrice * currentQty
 
-    Surface(
-        modifier = Modifier
-            .width(360.dp)
-            .wrapContentHeight(),
-        shape = RoundedCornerShape(24.dp),
-        color = Color.White,
-        shadowElevation = 8.dp
-    ) {
+    WashFlowDialogSurface {
         Column(
-            modifier = Modifier.padding(24.dp),
+            modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
@@ -293,23 +284,13 @@ private fun QuantityInputDialogContent(
                 }
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                TextButton(onClick = onDismiss) {
-                    Text(stringResource(R.string.common_cancel), color = GrayBlue, fontWeight = FontWeight.SemiBold)
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(
-                    onClick = { onConfirm(currentQty) },
-                    shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PastelBlue)
-                ) {
-                    Text(stringResource(R.string.common_save), color = Color.White, fontWeight = FontWeight.Bold)
-                }
-            }
+            WashFlowDialogActionRow(
+                dismissText = stringResource(R.string.common_cancel),
+                onDismiss = onDismiss,
+                confirmText = stringResource(R.string.common_save),
+                onConfirm = { onConfirm(currentQty) },
+                confirmContainerColor = PastelBlue
+            )
         }
     }
 }

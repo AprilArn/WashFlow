@@ -36,8 +36,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import com.aprilarn.washflow.R
+import com.aprilarn.washflow.ui.core.components.WashFlowDialogActionRow
+import com.aprilarn.washflow.ui.core.components.WashFlowDialogHeader
+import com.aprilarn.washflow.ui.core.components.WashFlowDialogSurface
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
+import com.aprilarn.washflow.ui.core.theme.PastelBlue
+import com.aprilarn.washflow.ui.core.theme.PastelBlueIconBg
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -446,23 +452,23 @@ fun LocationSelectionPanel(
 
                 // --- DIALOG KONFIRMASI MODE AUTO ---
                 if (showAutoDialog) {
-                    AlertDialog(
-                        onDismissRequest = { showAutoDialog = false },
-                        title = {
-                            Text(
-                                text = stringResource(R.string.settings_map_auto_dialog_title),
-                                style = MaterialTheme.typography.titleLarge
+                    Dialog(onDismissRequest = { showAutoDialog = false }) {
+                        WashFlowDialogSurface {
+                            WashFlowDialogHeader(
+                                icon = Icons.Rounded.MyLocation,
+                                iconBgColor = PastelBlueIconBg,
+                                iconTint = PastelBlue,
+                                title = stringResource(R.string.settings_map_auto_dialog_title),
+                                subtitle = stringResource(R.string.settings_map_auto_dialog_message)
                             )
-                        },
-                        text = {
-                            Text(
-                                text = stringResource(R.string.settings_map_auto_dialog_message),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        },
-                        confirmButton = {
-                            Button(
-                                onClick = {
+
+                            Spacer(modifier = Modifier.height(22.dp))
+
+                            WashFlowDialogActionRow(
+                                dismissText = stringResource(R.string.common_cancel),
+                                onDismiss = { showAutoDialog = false },
+                                confirmText = stringResource(R.string.settings_map_enable),
+                                onConfirm = {
                                     showAutoDialog = false
                                     gpsTriggerMode = "AUTO"
                                     locationPermissionLauncher.launch(
@@ -471,18 +477,10 @@ fun LocationSelectionPanel(
                                             Manifest.permission.ACCESS_COARSE_LOCATION
                                         )
                                     )
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = GrayBlue)
-                            ) {
-                                Text(stringResource(R.string.settings_map_enable), color = Color.White)
-                            }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { showAutoDialog = false }) {
-                                Text(stringResource(R.string.common_cancel), color = GrayBlue)
-                            }
+                                }
+                            )
                         }
-                    )
+                    }
                 }
             } else {
                 Box(modifier = Modifier.fillMaxSize().background(Color.LightGray), contentAlignment = Alignment.Center) {

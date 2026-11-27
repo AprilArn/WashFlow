@@ -32,12 +32,8 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Event
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Phone
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -50,10 +46,10 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
+import com.aprilarn.washflow.ui.core.components.WashFlowDatePickerDialog
+import com.aprilarn.washflow.ui.core.components.WashFlowTimePickerDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -451,38 +447,25 @@ private fun OrderCustomerInputPanelContent(
         val datePickerState = rememberDatePickerState(
             initialSelectedDateMillis = initialDateMillis
         )
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        datePickerState.selectedDateMillis?.let { millis ->
-                            val currentDue = uiState.dueDate?.toDate()
-                                ?: Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }.time
-                            val timeCal = Calendar.getInstance().apply { time = currentDue }
+        WashFlowDatePickerDialog(
+            datePickerState = datePickerState,
+            onDismiss = { showDatePicker = false },
+            onConfirm = {
+                datePickerState.selectedDateMillis?.let { millis ->
+                    val currentDue = uiState.dueDate?.toDate()
+                        ?: Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }.time
+                    val timeCal = Calendar.getInstance().apply { time = currentDue }
 
-                            calendar.timeInMillis = millis
-                            calendar.set(Calendar.HOUR_OF_DAY, timeCal.get(Calendar.HOUR_OF_DAY))
-                            calendar.set(Calendar.MINUTE, timeCal.get(Calendar.MINUTE))
+                    calendar.timeInMillis = millis
+                    calendar.set(Calendar.HOUR_OF_DAY, timeCal.get(Calendar.HOUR_OF_DAY))
+                    calendar.set(Calendar.MINUTE, timeCal.get(Calendar.MINUTE))
 
-                            onDueDateChanged(Timestamp(calendar.time))
-                        }
-                        showDatePicker = false
-                        showTimePicker = true
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = PastelBlue)
-                ) {
-                    Text(stringResource(R.string.common_ok), color = Color.White)
+                    onDueDateChanged(Timestamp(calendar.time))
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text(stringResource(R.string.common_cancel), color = GrayBlue)
-                }
+                showDatePicker = false
+                showTimePicker = true
             }
-        ) {
-            DatePicker(state = datePickerState)
-        }
+        )
     }
 
     // --- DIALOG BARU UNTUK TIME PICKER ---
@@ -500,31 +483,16 @@ private fun OrderCustomerInputPanelContent(
             initialMinute = initialMinute,
             is24Hour = true
         )
-        AlertDialog(
-            onDismissRequest = { showTimePicker = false },
-            title = { Text(stringResource(R.string.orders_set_due_time_title), color = GrayBlue, fontWeight = FontWeight.Bold) },
-            text = {
-                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    TimePicker(state = timePickerState)
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        calendar.set(Calendar.HOUR_OF_DAY, timePickerState.hour)
-                        calendar.set(Calendar.MINUTE, timePickerState.minute)
+        WashFlowTimePickerDialog(
+            title = stringResource(R.string.orders_set_due_time_title),
+            timePickerState = timePickerState,
+            onDismiss = { showTimePicker = false },
+            onConfirm = {
+                calendar.set(Calendar.HOUR_OF_DAY, timePickerState.hour)
+                calendar.set(Calendar.MINUTE, timePickerState.minute)
 
-                        onDueDateChanged(Timestamp(calendar.time))
-                        showTimePicker = false
-                    }
-                ) {
-                    Text(stringResource(R.string.common_ok), color = PastelBlue, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showTimePicker = false }) {
-                    Text(stringResource(R.string.common_cancel), color = GrayBlue)
-                }
+                onDueDateChanged(Timestamp(calendar.time))
+                showTimePicker = false
             }
         )
     }

@@ -3,16 +3,18 @@ package com.aprilarn.washflow.ui.feature.settings
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.MyLocation
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,9 +24,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.core.components.HapticSwitch
+import com.aprilarn.washflow.ui.core.components.WashFlowDialogHeader
+import com.aprilarn.washflow.ui.core.components.WashFlowDialogSecondaryButton
+import com.aprilarn.washflow.ui.core.components.WashFlowDialogSurface
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
+import com.aprilarn.washflow.ui.core.theme.MainFontBlack
+import com.aprilarn.washflow.ui.core.theme.PastelBlue
+import com.aprilarn.washflow.ui.core.theme.PastelBlueBg
+import com.aprilarn.washflow.ui.core.theme.PastelBlueIconBg
+import com.aprilarn.washflow.ui.core.theme.PastelBlueSoftBg
+import com.aprilarn.washflow.ui.core.theme.PastelNeutralBg
+import com.aprilarn.washflow.ui.core.theme.PastelNeutralText
 import com.aprilarn.washflow.utils.AppLanguage
 import com.aprilarn.washflow.utils.AppLanguageManager
 
@@ -141,53 +154,78 @@ fun PreferencesSection(
     }
 
     if (showLanguageDialog) {
-        AlertDialog(
-            onDismissRequest = { showLanguageDialog = false },
-            title = { Text(stringResource(R.string.settings_language_dialog_title)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Dialog(onDismissRequest = { showLanguageDialog = false }) {
+            WashFlowDialogSurface {
+                WashFlowDialogHeader(
+                    icon = Icons.Rounded.Language,
+                    iconBgColor = PastelBlueIconBg,
+                    iconTint = PastelBlue,
+                    title = stringResource(R.string.settings_language_dialog_title)
+                )
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     AppLanguage.entries.forEach { language ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    showLanguageDialog = false
-                                    if (language != currentLanguage) {
-                                        currentLanguage = language
-                                        AppLanguageManager.setLanguage(context, language)
-                                        context.findActivity()?.recreate()
-                                    }
+                        val isSelected = language == currentLanguage
+                        Surface(
+                            onClick = {
+                                showLanguageDialog = false
+                                if (language != currentLanguage) {
+                                    currentLanguage = language
+                                    AppLanguageManager.setLanguage(context, language)
+                                    context.findActivity()?.recreate()
                                 }
-                                .padding(vertical = 8.dp, horizontal = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            color = if (isSelected) PastelBlueSoftBg else PastelNeutralBg.copy(alpha = 0.65f),
+                            border = BorderStroke(
+                                width = 1.dp,
+                                color = if (isSelected) PastelBlue.copy(alpha = 0.5f) else PastelBlueBg.copy(alpha = 0.4f)
+                            )
                         ) {
-                            RadioButton(
-                                selected = language == currentLanguage,
-                                onClick = {
-                                    showLanguageDialog = false
-                                    if (language != currentLanguage) {
-                                        currentLanguage = language
-                                        AppLanguageManager.setLanguage(context, language)
-                                        context.findActivity()?.recreate()
-                                    }
-                                },
-                                colors = RadioButtonDefaults.colors(selectedColor = GrayBlue)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = language.nativeLabel,
-                                style = MaterialTheme.typography.bodyLarge
-                            )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = language.nativeLabel,
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        color = if (isSelected) GrayBlue else MainFontBlack,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                    )
+                                )
+                                Icon(
+                                    imageVector = if (isSelected) {
+                                        Icons.Rounded.CheckCircle
+                                    } else {
+                                        Icons.Rounded.RadioButtonUnchecked
+                                    },
+                                    contentDescription = null,
+                                    tint = if (isSelected) PastelBlue else PastelNeutralText.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         }
                     }
                 }
-            },
-            confirmButton = {
-                TextButton(onClick = { showLanguageDialog = false }) {
-                    Text(stringResource(R.string.common_cancel), color = GrayBlue)
-                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                WashFlowDialogSecondaryButton(
+                    text = stringResource(R.string.common_cancel),
+                    onClick = { showLanguageDialog = false },
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
-        )
+        }
     }
 }
 

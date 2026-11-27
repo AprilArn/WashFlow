@@ -38,6 +38,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.aprilarn.washflow.ui.core.theme.AlertRed
+import com.aprilarn.washflow.ui.core.theme.PastelRose
+import com.aprilarn.washflow.ui.core.theme.PastelRoseBg
 import kotlinx.coroutines.delay
 
 @Composable
@@ -47,10 +50,10 @@ fun HoldToConfirmButton(
     progressText: String,
     durationMillis: Int = 1500,
     cornerRadius: Dp = 12.dp,
-    containerColor: Color = Color(0xFFFFEBEE), // Default: merah sangat muda
-    progressColor: Color = Color(0xFFD32F2F),  // Default: merah gelap
-    defaultTextColor: Color = Color(0xFFD32F2F), // Default: merah
-    progressTextColor: Color = Color.White,      // Default: putih
+    containerColor: Color = PastelRoseBg,
+    progressColor: Color = AlertRed,
+    defaultTextColor: Color = PastelRose,
+    progressTextColor: Color = Color.White,
     onConfirm: () -> Unit,
 ) {
     val context = LocalContext.current

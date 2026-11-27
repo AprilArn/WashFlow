@@ -50,9 +50,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Items
+import com.aprilarn.washflow.data.model.Services
 import com.aprilarn.washflow.ui.core.components.ColumnConfig
 import com.aprilarn.washflow.ui.core.components.DataTablePanel
 import com.aprilarn.washflow.ui.core.components.DeleteConfirmationDialog
+import com.aprilarn.washflow.ui.core.components.WashFlowDialogSurface
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
 import com.aprilarn.washflow.ui.core.theme.PastelAmber
 import com.aprilarn.washflow.ui.core.theme.PastelAmberBg
@@ -107,160 +109,26 @@ fun ItemsScreen(
                 }
             )
         } else {
-            Dialog(onDismissRequest = onDismissDialog) {
-                Surface(
-                    shape = RoundedCornerShape(24.dp),
-                    color = Color.White,
-                    shadowElevation = 8.dp
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp)
-                    ) {
-                        // Editorial Header
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .width(4.dp)
-                                    .height(30.dp)
-                                    .background(PastelAmber, RoundedCornerShape(2.dp))
-                            )
-                            Column {
-                                Text(
-                                    text = stringResource(R.string.master_edit_item_title, itemToEdit.itemName),
-                                    style = MaterialTheme.typography.titleLarge.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 19.sp,
-                                        color = GrayBlue
-                                    )
-                                )
-                                Text(
-                                    text = stringResource(R.string.master_items_edit_subtitle),
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        color = PastelNeutralText,
-                                        fontSize = 12.sp
-                                    )
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(14.dp))
-                        HorizontalDivider(color = PastelNeutralBg, thickness = 1.dp)
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            ServiceDropdown(
-                                services = uiState.services,
-                                selectedServiceId = editedService,
-                                onServiceSelected = { editedService = it.serviceId },
-                                label = stringResource(R.string.master_items_service_label),
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            OutlinedTextField(
-                                value = editedName,
-                                onValueChange = { editedName = it },
-                                label = { Text(stringResource(R.string.master_items_name_label)) },
-                                singleLine = true,
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(14.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedTextColor = GrayBlue,
-                                    unfocusedTextColor = GrayBlue,
-                                    focusedContainerColor = Color.White,
-                                    unfocusedContainerColor = itemSoftBg,
-                                    focusedBorderColor = PastelAmber,
-                                    unfocusedBorderColor = PastelAmberBg,
-                                    focusedLabelColor = PastelAmber,
-                                    unfocusedLabelColor = PastelNeutralText,
-                                    cursorColor = PastelAmber
-                                )
-                            )
-                            OutlinedTextField(
-                                value = editedPrice,
-                                onValueChange = { newValue ->
-                                    if (newValue.all { it.isDigit() }) {
-                                        editedPrice = newValue
-                                    }
-                                },
-                                label = { Text(stringResource(R.string.master_items_price_label)) },
-                                singleLine = true,
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(14.dp),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedTextColor = GrayBlue,
-                                    unfocusedTextColor = GrayBlue,
-                                    focusedContainerColor = Color.White,
-                                    unfocusedContainerColor = itemSoftBg,
-                                    focusedBorderColor = PastelAmber,
-                                    unfocusedBorderColor = PastelAmberBg,
-                                    focusedLabelColor = PastelAmber,
-                                    unfocusedLabelColor = PastelNeutralText,
-                                    cursorColor = PastelAmber
-                                )
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(22.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            OutlinedButton(
-                                onClick = { showDeleteConfirmation = true },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(48.dp),
-                                shape = RoundedCornerShape(14.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    containerColor = PastelRoseBg,
-                                    contentColor = PastelRose
-                                ),
-                                border = BorderStroke(1.dp, PastelRoseLight)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Delete,
-                                    contentDescription = stringResource(R.string.common_delete),
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(Modifier.width(6.dp))
-                                Text(stringResource(R.string.common_delete), fontWeight = FontWeight.Bold)
-                            }
-                            Button(
-                                onClick = {
-                                    val updatedItem = itemToEdit.copy(
-                                        serviceId = editedService,
-                                        itemName = editedName,
-                                        itemPrice = editedPrice.toDoubleOrNull() ?: 0.0
-                                    )
-                                    onEditItemClick(updatedItem)
-                                },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(48.dp),
-                                shape = RoundedCornerShape(14.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = PastelAmber,
-                                    contentColor = Color.White
-                                )
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Check,
-                                    contentDescription = stringResource(R.string.common_done),
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(Modifier.width(6.dp))
-                                Text(stringResource(R.string.common_done), fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
+            EditItemDialog(
+                itemToEdit = itemToEdit,
+                services = uiState.services,
+                editedService = editedService,
+                onEditedServiceChange = { editedService = it },
+                editedName = editedName,
+                onEditedNameChange = { editedName = it },
+                editedPrice = editedPrice,
+                onEditedPriceChange = { editedPrice = it },
+                onDismiss = onDismissDialog,
+                onDeleteClick = { showDeleteConfirmation = true },
+                onDoneClick = {
+                    val updatedItem = itemToEdit.copy(
+                        serviceId = editedService,
+                        itemName = editedName,
+                        itemPrice = editedPrice.toDoubleOrNull() ?: itemToEdit.itemPrice
+                    )
+                    onEditItemClick(updatedItem)
                 }
-            }
+            )
         }
     }
 
@@ -495,6 +363,162 @@ fun ItemsScreen(
                             )
                         )
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+internal fun EditItemDialog(
+    itemToEdit: Items,
+    services: List<Services>,
+    editedService: String,
+    onEditedServiceChange: (String) -> Unit,
+    editedName: String,
+    onEditedNameChange: (String) -> Unit,
+    editedPrice: String,
+    onEditedPriceChange: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onDeleteClick: () -> Unit,
+    onDoneClick: () -> Unit
+) {
+    val itemSoftBg = Color(0xFFFCF7F0)
+
+    Dialog(onDismissRequest = onDismiss) {
+        WashFlowDialogSurface(horizontalAlignment = Alignment.Start) {
+            // Editorial Header
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(4.dp)
+                        .height(30.dp)
+                        .background(PastelAmber, RoundedCornerShape(2.dp))
+                )
+                Column {
+                    Text(
+                        text = stringResource(R.string.master_edit_item_title, itemToEdit.itemName),
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 19.sp,
+                            color = GrayBlue
+                        )
+                    )
+                    Text(
+                        text = stringResource(R.string.master_items_edit_subtitle),
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = PastelNeutralText,
+                            fontSize = 12.sp
+                        )
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+            HorizontalDivider(color = PastelNeutralBg, thickness = 1.dp)
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                ServiceDropdown(
+                    services = services,
+                    selectedServiceId = editedService,
+                    onServiceSelected = { onEditedServiceChange(it.serviceId) },
+                    label = stringResource(R.string.master_items_service_label),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = editedName,
+                    onValueChange = onEditedNameChange,
+                    label = { Text(stringResource(R.string.master_items_name_label)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = GrayBlue,
+                        unfocusedTextColor = GrayBlue,
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = itemSoftBg,
+                        focusedBorderColor = PastelAmber,
+                        unfocusedBorderColor = PastelAmberBg,
+                        focusedLabelColor = PastelAmber,
+                        unfocusedLabelColor = PastelNeutralText,
+                        cursorColor = PastelAmber
+                    )
+                )
+                OutlinedTextField(
+                    value = editedPrice,
+                    onValueChange = { newValue ->
+                        if (newValue.all { it.isDigit() }) {
+                            onEditedPriceChange(newValue)
+                        }
+                    },
+                    label = { Text(stringResource(R.string.master_items_price_label)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = GrayBlue,
+                        unfocusedTextColor = GrayBlue,
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = itemSoftBg,
+                        focusedBorderColor = PastelAmber,
+                        unfocusedBorderColor = PastelAmberBg,
+                        focusedLabelColor = PastelAmber,
+                        unfocusedLabelColor = PastelNeutralText,
+                        cursorColor = PastelAmber
+                    )
+                )
+            }
+
+            Spacer(modifier = Modifier.height(22.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onDeleteClick,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = PastelRoseBg,
+                        contentColor = PastelRose
+                    ),
+                    border = BorderStroke(1.dp, PastelRoseLight)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Delete,
+                        contentDescription = stringResource(R.string.common_delete),
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.common_delete), fontWeight = FontWeight.Bold)
+                }
+                Button(
+                    onClick = onDoneClick,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = PastelAmber,
+                        contentColor = Color.White
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Check,
+                        contentDescription = stringResource(R.string.common_done),
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.common_done), fontWeight = FontWeight.Bold)
                 }
             }
         }

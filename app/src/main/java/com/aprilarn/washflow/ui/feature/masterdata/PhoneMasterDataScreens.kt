@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,14 +22,12 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -58,6 +55,7 @@ import com.aprilarn.washflow.ui.core.components.DataTablePanel
 import com.aprilarn.washflow.ui.core.components.DeleteConfirmationDialog
 import com.aprilarn.washflow.ui.core.components.EditDataPanel
 import com.aprilarn.washflow.ui.feature.masterdata.customers.CustomersUiState
+import com.aprilarn.washflow.ui.feature.masterdata.items.EditItemDialog
 import com.aprilarn.washflow.ui.feature.masterdata.items.ItemsUiState
 import com.aprilarn.washflow.ui.feature.masterdata.items.ServiceDropdown
 import com.aprilarn.washflow.ui.feature.masterdata.services.ServicesUiState
@@ -675,83 +673,28 @@ fun PhoneItemsScreen(
                 onDismiss = { showDeleteConfirmation = false }
             )
         } else {
-            Dialog(onDismissRequest = onDismissDialog) {
-                Surface(
-                    shape = RoundedCornerShape(24.dp),
-                    color = Color.White,
-                    shadowElevation = 8.dp
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.master_edit_item_title, itemToEdit.itemName),
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                color = GrayBlue,
-                                fontWeight = FontWeight.Bold
-                            )
+            EditItemDialog(
+                itemToEdit = itemToEdit,
+                services = uiState.services,
+                editedService = editedService,
+                onEditedServiceChange = { editedService = it },
+                editedName = editedName,
+                onEditedNameChange = { editedName = it },
+                editedPrice = editedPrice,
+                onEditedPriceChange = { editedPrice = it },
+                onDismiss = onDismissDialog,
+                onDeleteClick = { showDeleteConfirmation = true },
+                onDoneClick = {
+                    val price = editedPrice.toDoubleOrNull() ?: itemToEdit.itemPrice
+                    onEditItemClick(
+                        itemToEdit.copy(
+                            serviceId = editedService,
+                            itemName = editedName,
+                            itemPrice = price
                         )
-                        HorizontalDivider(color = PastelNeutralBg)
-                        ServiceDropdown(
-                            services = uiState.services,
-                            selectedServiceId = editedService,
-                            onServiceSelected = { editedService = it.serviceId },
-                            label = stringResource(R.string.master_items_service_label),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        OutlinedTextField(
-                            value = editedName,
-                            onValueChange = { editedName = it },
-                            label = { Text(stringResource(R.string.master_items_name_label)) },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(14.dp)
-                        )
-                        OutlinedTextField(
-                            value = editedPrice,
-                            onValueChange = { editedPrice = it },
-                            label = { Text(stringResource(R.string.master_items_price_label)) },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(14.dp)
-                        )
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            TextButton(onClick = { showDeleteConfirmation = true }) {
-                                Text(stringResource(R.string.common_delete), color = PastelRoseText, fontWeight = FontWeight.Bold)
-                            }
-                            Row {
-                                TextButton(onClick = onDismissDialog) {
-                                    Text(stringResource(R.string.common_cancel), color = GrayBlue)
-                                }
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Button(
-                                    onClick = {
-                                        val price = editedPrice.toDoubleOrNull() ?: itemToEdit.itemPrice
-                                        onEditItemClick(
-                                            itemToEdit.copy(
-                                                serviceId = editedService,
-                                                itemName = editedName,
-                                                itemPrice = price
-                                            )
-                                        )
-                                    },
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = PastelAmber)
-                                ) {
-                                    Text(stringResource(R.string.common_save), color = Color.White, fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
-                    }
+                    )
                 }
-            }
+            )
         }
     }
 }

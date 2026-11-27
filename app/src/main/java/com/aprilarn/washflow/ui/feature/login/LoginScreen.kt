@@ -4,6 +4,8 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,8 +20,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.aprilarn.washflow.R
+import com.aprilarn.washflow.ui.core.components.WashFlowDialogHeader
+import com.aprilarn.washflow.ui.core.components.WashFlowDialogPrimaryButton
+import com.aprilarn.washflow.ui.core.components.WashFlowDialogSurface
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
+import com.aprilarn.washflow.ui.core.theme.PastelRose
+import com.aprilarn.washflow.ui.core.theme.PastelRoseBg
 
 @Composable
 fun LoginScreen(
@@ -36,16 +44,7 @@ fun LoginScreen(
     }
 
     if (state.showTimeoutDialog) {
-        AlertDialog(
-            onDismissRequest = { /* Do nothing to force click OK */ },
-            title = { Text(stringResource(R.string.common_error)) },
-            text = { Text(stringResource(R.string.login_timeout_message)) },
-            confirmButton = {
-                TextButton(onClick = onTimeoutDialogDismiss) {
-                    Text(stringResource(R.string.common_ok))
-                }
-            }
-        )
+        LoginTimeoutDialog(onConfirm = onTimeoutDialogDismiss)
     }
 
     Column(
@@ -152,6 +151,30 @@ fun LoginScreen(
     }
 }
 
+@Composable
+internal fun LoginTimeoutDialog(
+    onConfirm: () -> Unit
+) {
+    Dialog(onDismissRequest = { /* Do nothing to force click OK */ }) {
+        WashFlowDialogSurface {
+            WashFlowDialogHeader(
+                icon = Icons.Rounded.WifiOff,
+                iconBgColor = PastelRoseBg,
+                iconTint = PastelRose,
+                title = stringResource(R.string.common_error),
+                subtitle = stringResource(R.string.login_timeout_message)
+            )
+
+            Spacer(modifier = Modifier.height(22.dp))
+
+            WashFlowDialogPrimaryButton(
+                text = stringResource(R.string.common_ok),
+                onClick = onConfirm,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
 
 @Preview(showBackground = true, widthDp = 960, heightDp = 600)
 @Composable

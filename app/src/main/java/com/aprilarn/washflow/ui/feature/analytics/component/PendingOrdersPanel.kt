@@ -36,7 +36,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -46,6 +45,9 @@ import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.data.model.OrderItem
 import com.aprilarn.washflow.data.model.Orders
+import com.aprilarn.washflow.ui.core.components.WashFlowDialogActionRow
+import com.aprilarn.washflow.ui.core.components.WashFlowDialogHeader
+import com.aprilarn.washflow.ui.core.components.WashFlowDialogSurface
 import com.aprilarn.washflow.ui.feature.analytics.isDone
 import com.aprilarn.washflow.ui.core.theme.Gray
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
@@ -81,7 +83,7 @@ private enum class PendingFilter(@param:StringRes val labelRes: Int) {
     OVERDUE_30(R.string.analytics_filter_overdue_30)
 }
 
-private sealed interface PendingActionConfirm {
+internal sealed interface PendingActionConfirm {
     data class MarkPaid(val order: Orders) : PendingActionConfirm
     data class MarkPickedUp(val order: Orders) : PendingActionConfirm
     data class SendWhatsApp(val order: Orders, val contact: String) : PendingActionConfirm
@@ -734,7 +736,7 @@ private fun PendingOrderRow(
 }
 
 @Composable
-private fun PendingActionConfirmDialog(
+internal fun PendingActionConfirmDialog(
     action: PendingActionConfirm,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
@@ -780,87 +782,25 @@ private fun PendingActionConfirmDialog(
     }
 
     Dialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier.widthIn(max = 400.dp),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(24.dp)
-                    .fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .background(badgeBgColor, RoundedCornerShape(14.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = accentColor,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
+        WashFlowDialogSurface {
+            WashFlowDialogHeader(
+                icon = icon,
+                iconBgColor = badgeBgColor,
+                iconTint = accentColor,
+                title = title,
+                subtitle = description
+            )
 
-                Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(22.dp))
 
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = GrayBlue
-                    ),
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodyMedium.copy(color = Gray),
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(22.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    TextButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.common_cancel),
-                            color = Gray,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                    Button(
-                        onClick = onConfirm,
-                        modifier = Modifier.weight(1.3f),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = badgeBgColor,
-                            contentColor = accentColor
-                        ),
-                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
-                    ) {
-                        Text(
-                            text = confirmLabel,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            maxLines = 1
-                        )
-                    }
-                }
-            }
+            WashFlowDialogActionRow(
+                dismissText = stringResource(R.string.common_cancel),
+                onDismiss = onDismiss,
+                confirmText = confirmLabel,
+                onConfirm = onConfirm,
+                confirmContainerColor = accentColor,
+                confirmContentColor = Color.White
+            )
         }
     }
 }

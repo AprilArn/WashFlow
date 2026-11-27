@@ -1,15 +1,19 @@
 package com.aprilarn.washflow.ui.core.components
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.ArrowLeft
-import androidx.compose.material3.*
+import androidx.compose.material.icons.rounded.PersonRemove
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,6 +27,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
+import com.aprilarn.washflow.ui.core.theme.PastelRose
+import com.aprilarn.washflow.ui.core.theme.PastelRoseBg
 import com.aprilarn.washflow.ui.core.theme.WashFlowTheme
 
 @Composable
@@ -40,78 +46,41 @@ fun KickedDialogContent(
     workspaceName: String,
     onConfirm: () -> Unit
 ) {
-    Card(
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(24.dp)
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
+    WashFlowDialogSurface {
+        WashFlowDialogHeader(
+            icon = Icons.Rounded.PersonRemove,
+            iconBgColor = PastelRoseBg,
+            iconTint = PastelRose,
+            title = stringResource(R.string.dialog_kicked_title),
+            subtitle = stringResource(R.string.dialog_kicked_message)
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = PastelRoseBg.copy(alpha = 0.65f)
         ) {
-            // Judul
-            Text(
-                text = stringResource(R.string.dialog_kicked_title),
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFFD32F2F) // Merah
-                )
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Pesan
-            Text(
-                text = stringResource(R.string.dialog_kicked_message),
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    color = Color.Gray,
-                    textAlign = TextAlign.Center
-                )
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
             Text(
                 text = "\"$workspaceName\"",
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    color = Color.Gray,
-                    textAlign = TextAlign.Center,
-                    fontWeight = FontWeight.Medium
-                )
+                    color = PastelRose,
+                    fontWeight = FontWeight.Bold
+                ),
+                textAlign = TextAlign.Center
             )
-
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Tombol Konfirmasi
-            OutlinedButton(
-                onClick = onConfirm,
-                border = BorderStroke(1.dp, GrayBlue)
-            ) {
-                Row (
-                    verticalAlignment = Alignment.CenterVertically
-                ){
-                    Icon(
-                        modifier = Modifier.size(18.dp),
-                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                        contentDescription = stringResource(R.string.dialog_kicked_back_button),
-                        tint = GrayBlue
-                    )
-                    Spacer(modifier = Modifier.width(8.dp) )
-                    Text(stringResource(R.string.dialog_kicked_back_button), color = GrayBlue)
-                }
-            }
-//            Button(
-//                onClick = onConfirm,
-//                modifier = Modifier.fillMaxWidth(),
-//                colors = ButtonDefaults.buttonColors(containerColor = GrayBlue),
-//                shape = RoundedCornerShape(12.dp)
-//            ) {
-//                Text("Kembali ke halaman Workspace", color = Color.White)
-//            }
         }
+
+        Spacer(modifier = Modifier.height(22.dp))
+
+        WashFlowDialogPrimaryButton(
+            text = stringResource(R.string.dialog_kicked_back_button),
+            onClick = onConfirm,
+            containerColor = GrayBlue,
+            leadingIcon = Icons.AutoMirrored.Rounded.ArrowBack,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 

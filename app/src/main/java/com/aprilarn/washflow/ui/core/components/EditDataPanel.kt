@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -65,7 +66,10 @@ fun EditDataPanel(
     val theme = remember(accentHint) { resolveTableDataTheme(accentHint) }
 
     Surface(
-        modifier = modifier.wrapContentHeight(),
+        modifier = modifier
+            .widthIn(max = 400.dp)
+            .fillMaxWidth()
+            .wrapContentHeight(),
         shape = RoundedCornerShape(24.dp),
         color = Color.White,
         shadowElevation = 8.dp
@@ -147,7 +151,7 @@ fun EditDataPanel(
                     modifier = Modifier
                         .weight(1f)
                         .height(48.dp),
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
                         containerColor = PastelRoseBg,
                         contentColor = PastelRose
@@ -175,7 +179,8 @@ fun EditDataPanel(
                         containerColor = theme.accentColor,
                         contentColor = Color.White
                     ),
-                    shape = RoundedCornerShape(14.dp)
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Check,

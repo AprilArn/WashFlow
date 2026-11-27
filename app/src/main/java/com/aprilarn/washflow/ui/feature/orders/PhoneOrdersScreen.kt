@@ -9,7 +9,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,22 +27,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Event
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Phone
 import androidx.compose.material.icons.rounded.ReceiptLong
-import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -54,11 +47,11 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTimePickerState
+import com.aprilarn.washflow.ui.core.components.WashFlowDatePickerDialog
+import com.aprilarn.washflow.ui.core.components.WashFlowTimePickerDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -71,12 +64,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.data.model.Items
@@ -252,38 +243,25 @@ fun PhoneOrdersScreen(
         val datePickerState = rememberDatePickerState(
             initialSelectedDateMillis = initialDateMillis
         )
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        datePickerState.selectedDateMillis?.let { millis ->
-                            val currentDue = uiState.dueDate?.toDate()
-                                ?: Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }.time
-                            val timeCal = Calendar.getInstance().apply { time = currentDue }
+        WashFlowDatePickerDialog(
+            datePickerState = datePickerState,
+            onDismiss = { showDatePicker = false },
+            onConfirm = {
+                datePickerState.selectedDateMillis?.let { millis ->
+                    val currentDue = uiState.dueDate?.toDate()
+                        ?: Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }.time
+                    val timeCal = Calendar.getInstance().apply { time = currentDue }
 
-                            calendar.timeInMillis = millis
-                            calendar.set(Calendar.HOUR_OF_DAY, timeCal.get(Calendar.HOUR_OF_DAY))
-                            calendar.set(Calendar.MINUTE, timeCal.get(Calendar.MINUTE))
+                    calendar.timeInMillis = millis
+                    calendar.set(Calendar.HOUR_OF_DAY, timeCal.get(Calendar.HOUR_OF_DAY))
+                    calendar.set(Calendar.MINUTE, timeCal.get(Calendar.MINUTE))
 
-                            viewModel.onDueDateChanged(Timestamp(calendar.time))
-                        }
-                        showDatePicker = false
-                        showTimePicker = true
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = PastelBlue)
-                ) {
-                    Text(stringResource(R.string.common_ok), color = Color.White)
+                    viewModel.onDueDateChanged(Timestamp(calendar.time))
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text(stringResource(R.string.common_cancel), color = GrayBlue)
-                }
+                showDatePicker = false
+                showTimePicker = true
             }
-        ) {
-            DatePicker(state = datePickerState)
-        }
+        )
     }
 
     // --- TIME PICKER DIALOG ---
@@ -301,31 +279,16 @@ fun PhoneOrdersScreen(
             initialMinute = initialMinute,
             is24Hour = true
         )
-        AlertDialog(
-            onDismissRequest = { showTimePicker = false },
-            title = { Text(stringResource(R.string.orders_set_due_time_title), color = GrayBlue, fontWeight = FontWeight.Bold) },
-            text = {
-                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    TimePicker(state = timePickerState)
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        calendar.set(Calendar.HOUR_OF_DAY, timePickerState.hour)
-                        calendar.set(Calendar.MINUTE, timePickerState.minute)
+        WashFlowTimePickerDialog(
+            title = stringResource(R.string.orders_set_due_time_title),
+            timePickerState = timePickerState,
+            onDismiss = { showTimePicker = false },
+            onConfirm = {
+                calendar.set(Calendar.HOUR_OF_DAY, timePickerState.hour)
+                calendar.set(Calendar.MINUTE, timePickerState.minute)
 
-                        viewModel.onDueDateChanged(Timestamp(calendar.time))
-                        showTimePicker = false
-                    }
-                ) {
-                    Text(stringResource(R.string.common_ok), color = PastelBlue, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showTimePicker = false }) {
-                    Text(stringResource(R.string.common_cancel), color = GrayBlue)
-                }
+                viewModel.onDueDateChanged(Timestamp(calendar.time))
+                showTimePicker = false
             }
         )
     }
@@ -380,7 +343,7 @@ fun PhoneOrdersScreen(
     }
 
     uiState.itemForQuantityInput?.let { item ->
-        PhoneQuantityInputDialog(
+        QuantityInputDialog(
             item = item,
             onDismiss = { viewModel.onDismissQuantityDialog() },
             onConfirm = { quantity -> viewModel.onQuantityConfirmed(quantity) }
@@ -740,180 +703,4 @@ private fun PhoneDueDateButton(
     }
 }
 
-@Composable
-private fun PhoneQuantityInputDialog(
-    item: Items,
-    onDismiss: () -> Unit,
-    onConfirm: (Int) -> Unit
-) {
-    var quantityText by rememberSaveable(item.itemId) { mutableStateOf("1") }
-    val currentQty = quantityText.toIntOrNull()?.coerceAtLeast(1) ?: 1
-    val subtotal = item.itemPrice * currentQty
 
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight(),
-            shape = RoundedCornerShape(24.dp),
-            color = Color.White,
-            shadowElevation = 8.dp
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.orders_qty_dialog_title),
-                    style = MaterialTheme.typography.labelLarge.copy(
-                        color = PastelNeutralText,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                )
-
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = item.itemName,
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            color = GrayBlue,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 19.sp
-                        ),
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = stringResource(
-                            R.string.orders_price_per_unit,
-                            CurrencyUtils.formatRupiahWithSymbol(item.itemPrice)
-                        ),
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = PastelNeutralText,
-                            fontWeight = FontWeight.Medium
-                        )
-                    )
-                }
-
-                HorizontalDivider(color = PastelBlueBg, thickness = 1.dp)
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    val btnShape = RoundedCornerShape(12.dp)
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(btnShape)
-                            .background(PastelBlueSoftBg)
-                            .border(1.dp, PastelBlueBg, btnShape)
-                            .clickable {
-                                val next = (currentQty - 1).coerceAtLeast(1)
-                                quantityText = next.toString()
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Remove,
-                            contentDescription = stringResource(R.string.orders_qty_decrease_cd),
-                            tint = PastelBlue
-                        )
-                    }
-
-                    OutlinedTextField(
-                        value = quantityText,
-                        onValueChange = { if (it.all { char -> char.isDigit() }) quantityText = it },
-                        label = { Text(stringResource(R.string.orders_qty_label)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true,
-                        textStyle = MaterialTheme.typography.titleMedium.copy(
-                            textAlign = TextAlign.Center,
-                            fontWeight = FontWeight.Bold,
-                            color = GrayBlue
-                        ),
-                        modifier = Modifier.width(100.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = GrayBlue,
-                            unfocusedTextColor = GrayBlue,
-                            focusedContainerColor = PastelBlueSoftBg.copy(alpha = 0.45f),
-                            unfocusedContainerColor = PastelBlueSoftBg.copy(alpha = 0.25f),
-                            focusedBorderColor = PastelBlue,
-                            unfocusedBorderColor = PastelBlueBg,
-                            focusedLabelColor = PastelBlue,
-                            unfocusedLabelColor = PastelNeutralText,
-                            cursorColor = PastelBlue
-                        )
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(btnShape)
-                            .background(PastelBlueSoftBg)
-                            .border(1.dp, PastelBlueBg, btnShape)
-                            .clickable {
-                                val next = currentQty + 1
-                                quantityText = next.toString()
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Add,
-                            contentDescription = stringResource(R.string.orders_qty_increase_cd),
-                            tint = PastelBlue
-                        )
-                    }
-                }
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(PastelBlueSoftBg.copy(alpha = 0.65f))
-                        .padding(horizontal = 14.dp, vertical = 10.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = stringResource(R.string.orders_subtotal),
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                color = PastelNeutralText,
-                                fontWeight = FontWeight.Medium
-                            )
-                        )
-                        Text(
-                            text = CurrencyUtils.formatRupiahWithSymbol(subtotal),
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                color = PastelBlue,
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                    }
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onDismiss) {
-                        Text(stringResource(R.string.common_cancel), color = GrayBlue, fontWeight = FontWeight.SemiBold)
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = { onConfirm(currentQty) },
-                        shape = RoundedCornerShape(12.dp),
-                        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = PastelBlue)
-                    ) {
-                        Text(stringResource(R.string.common_save), color = Color.White, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
-    }
-}

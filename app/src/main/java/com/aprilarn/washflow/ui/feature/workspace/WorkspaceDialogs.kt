@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,11 +32,6 @@ import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.PersonAdd
 import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Schedule
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDefaults
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -48,9 +42,6 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimePicker
-import androidx.compose.material3.TimePickerDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
@@ -79,6 +70,11 @@ import androidx.compose.ui.window.PopupProperties
 import com.aprilarn.washflow.R
 import com.aprilarn.washflow.data.model.Invites
 import com.aprilarn.washflow.ui.core.components.HapticSwitch
+import com.aprilarn.washflow.ui.core.components.WashFlowDatePickerDialog
+import com.aprilarn.washflow.ui.core.components.WashFlowDialogActionRow
+import com.aprilarn.washflow.ui.core.components.WashFlowDialogHeader
+import com.aprilarn.washflow.ui.core.components.WashFlowDialogSurface
+import com.aprilarn.washflow.ui.core.components.WashFlowTimePickerDialog
 import com.aprilarn.washflow.ui.core.theme.AlertRed
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
 import com.aprilarn.washflow.ui.core.theme.MainFontBlack
@@ -232,55 +228,6 @@ fun WorkspaceDropdownItem(
 }
 
 @Composable
-private fun WorkspaceDialogHeader(
-    icon: ImageVector,
-    iconBgColor: Color,
-    iconTint: Color,
-    title: String,
-    subtitle: String? = null
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Box(
-            modifier = Modifier
-                .size(52.dp)
-                .background(iconBgColor, RoundedCornerShape(16.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = iconTint,
-                modifier = Modifier.size(26.dp)
-            )
-        }
-        Spacer(modifier = Modifier.height(14.dp))
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleLarge.copy(
-                fontWeight = FontWeight.Bold,
-                fontSize = 19.sp,
-                color = GrayBlue
-            ),
-            textAlign = TextAlign.Center
-        )
-        if (!subtitle.isNullOrBlank()) {
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall.copy(
-                    color = PastelNeutralText,
-                    lineHeight = 18.sp
-                ),
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-}
-
-@Composable
 private fun workspaceDialogTextFieldColors(
     focusedBorderColor: Color = PastelBlue,
     focusedLabelColor: Color = PastelBlue
@@ -305,79 +252,35 @@ fun RenameWorkspaceDialog(
     var newName by remember { mutableStateOf(currentName) }
 
     Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = Color.White,
-            shadowElevation = 8.dp,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(24.dp)
-                    .fillMaxWidth()
-            ) {
-                WorkspaceDialogHeader(
-                    icon = Icons.Rounded.Edit,
-                    iconBgColor = PastelBlueIconBg,
-                    iconTint = PastelBlue,
-                    title = stringResource(R.string.workspace_rename_title)
-                )
+        WashFlowDialogSurface(horizontalAlignment = Alignment.Start) {
+            WashFlowDialogHeader(
+                icon = Icons.Rounded.Edit,
+                iconBgColor = PastelBlueIconBg,
+                iconTint = PastelBlue,
+                title = stringResource(R.string.workspace_rename_title)
+            )
 
-                Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-                OutlinedTextField(
-                    value = newName,
-                    onValueChange = { newName = it },
-                    label = { Text(stringResource(R.string.workspace_rename_label)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = workspaceDialogTextFieldColors()
-                )
+            OutlinedTextField(
+                value = newName,
+                onValueChange = { newName = it },
+                label = { Text(stringResource(R.string.workspace_rename_label)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = workspaceDialogTextFieldColors()
+            )
 
-                Spacer(modifier = Modifier.height(22.dp))
+            Spacer(modifier = Modifier.height(22.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = PastelNeutralBg,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        TextButton(
-                            onClick = onDismiss,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = stringResource(R.string.common_cancel),
-                                color = GrayBlue,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                    }
-
-                    Button(
-                        onClick = { onApply(newName.trim()) },
-                        enabled = newName.isNotBlank(),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = GrayBlue,
-                            contentColor = Color.White,
-                            disabledContainerColor = GrayBlue.copy(alpha = 0.35f)
-                        )
-                    ) {
-                        Text(
-                            text = stringResource(R.string.common_apply),
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-            }
+            WashFlowDialogActionRow(
+                dismissText = stringResource(R.string.common_cancel),
+                onDismiss = onDismiss,
+                confirmText = stringResource(R.string.common_apply),
+                onConfirm = { onApply(newName.trim()) },
+                confirmEnabled = newName.isNotBlank()
+            )
         }
     }
 }
@@ -399,141 +302,100 @@ fun ActiveInviteDialog(
     }
 
     Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = Color.White,
-            shadowElevation = 8.dp,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(24.dp)
-                    .fillMaxWidth()
+        WashFlowDialogSurface(horizontalAlignment = Alignment.Start) {
+            WashFlowDialogHeader(
+                icon = Icons.Rounded.Key,
+                iconBgColor = PastelBlueIconBg,
+                iconTint = PastelBlue,
+                title = stringResource(R.string.workspace_invite_active_title)
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Code Display and Copy Button
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = PastelBlueSoftBg,
+                border = BorderStroke(1.dp, PastelBlueBg)
             ) {
-                WorkspaceDialogHeader(
-                    icon = Icons.Rounded.Key,
-                    iconBgColor = PastelBlueIconBg,
-                    iconTint = PastelBlue,
-                    title = stringResource(R.string.workspace_invite_active_title)
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // Code Display and Copy Button
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    color = PastelBlueSoftBg,
-                    border = BorderStroke(1.dp, PastelBlueBg)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 18.dp, end = 10.dp, top = 10.dp, bottom = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        SelectionContainer {
-                            Text(
-                                text = invite.inviteId ?: "------",
-                                style = MaterialTheme.typography.headlineSmall.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = GrayBlue,
-                                    letterSpacing = 2.sp
-                                )
-                            )
-                        }
-                        IconButton(
-                            onClick = {
-                                clipboardManager.setText(AnnotatedString(invite.inviteId ?: ""))
-                                Toast.makeText(context, copiedToastText, Toast.LENGTH_SHORT).show()
-                            },
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(PastelBlueIconBg)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.ContentCopy,
-                                contentDescription = stringResource(R.string.workspace_invite_copy_cd),
-                                tint = PastelBlue,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // Info Section
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    color = PastelNeutralBg
-                ) {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.workspace_invite_valid_for, invite.maxContributors ?: 0),
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                color = MainFontBlack,
-                                fontWeight = FontWeight.Medium
-                            )
-                        )
-                        Text(
-                            text = stringResource(R.string.workspace_invite_expires_on, formattedExpiry),
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                color = PastelNeutralText
-                            )
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(22.dp))
-
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 18.dp, end = 10.dp, top = 10.dp, bottom = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = PastelRoseBg,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        TextButton(
-                            onClick = {
-                                onDelete()
-                                onDismiss()
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = stringResource(R.string.common_delete),
-                                color = PastelRose,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                    }
-
-                    Button(
-                        onClick = onDismiss,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = GrayBlue,
-                            contentColor = Color.White
-                        )
-                    ) {
+                    SelectionContainer {
                         Text(
-                            text = stringResource(R.string.common_close),
-                            fontWeight = FontWeight.SemiBold
+                            text = invite.inviteId ?: "------",
+                            style = MaterialTheme.typography.headlineSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = GrayBlue,
+                                letterSpacing = 2.sp
+                            )
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            clipboardManager.setText(AnnotatedString(invite.inviteId ?: ""))
+                            Toast.makeText(context, copiedToastText, Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(PastelBlueIconBg)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.ContentCopy,
+                            contentDescription = stringResource(R.string.workspace_invite_copy_cd),
+                            tint = PastelBlue,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Info Section
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                color = PastelNeutralBg
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.workspace_invite_valid_for, invite.maxContributors ?: 0),
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = MainFontBlack,
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
+                    Text(
+                        text = stringResource(R.string.workspace_invite_expires_on, formattedExpiry),
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = PastelNeutralText
+                        )
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(22.dp))
+
+            WashFlowDialogActionRow(
+                dismissText = stringResource(R.string.common_delete),
+                onDismiss = {
+                    onDelete()
+                    onDismiss()
+                },
+                confirmText = stringResource(R.string.common_close),
+                onConfirm = onDismiss,
+                dismissContainerColor = PastelRoseBg,
+                dismissContentColor = PastelRose
+            )
         }
     }
 }
@@ -563,45 +425,26 @@ fun CreateInviteDialog(
     )
 
     if (showDatePicker) {
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            colors = DatePickerDefaults.colors(containerColor = Color.White),
-            confirmButton = {
-                TextButton(onClick = {
-                    showDatePicker = false
-                    datePickerState.selectedDateMillis?.let {
-                        val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-                        cal.timeInMillis = it
-                        val currentCal = Calendar.getInstance()
-                        currentCal.time = expiryDate
-                        currentCal.set(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DATE))
-                        expiryDate = currentCal.time
-                    }
-                    showTimePicker = true
-                }) {
-                    Text(stringResource(R.string.common_ok), color = GrayBlue, fontWeight = FontWeight.SemiBold)
+        WashFlowDatePickerDialog(
+            datePickerState = datePickerState,
+            onDismiss = { showDatePicker = false },
+            onConfirm = {
+                showDatePicker = false
+                datePickerState.selectedDateMillis?.let {
+                    val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+                    cal.timeInMillis = it
+                    val currentCal = Calendar.getInstance()
+                    currentCal.time = expiryDate
+                    currentCal.set(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DATE))
+                    expiryDate = currentCal.time
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text(stringResource(R.string.common_cancel), color = PastelNeutralText)
-                }
+                showTimePicker = true
             }
-        ) {
-            DatePicker(
-                state = datePickerState,
-                colors = DatePickerDefaults.colors(
-                    containerColor = Color.White,
-                    selectedDayContainerColor = GrayBlue,
-                    todayDateBorderColor = PastelBlue,
-                    todayContentColor = GrayBlue
-                )
-            )
-        }
+        )
     }
 
     if (showTimePicker) {
-        WorkspaceTimePickerDialog(
+        WashFlowTimePickerDialog(
             title = stringResource(R.string.workspace_select_time),
             timePickerState = timePickerState,
             onDismiss = { showTimePicker = false },
@@ -619,192 +462,149 @@ fun CreateInviteDialog(
     val formatter = remember { SimpleDateFormat("EEE, dd MMM yyyy HH:mm", Locale.getDefault()) }
 
     Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = Color.White,
-            shadowElevation = 8.dp,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(24.dp)
-                    .fillMaxWidth()
+        WashFlowDialogSurface(horizontalAlignment = Alignment.Start) {
+            WashFlowDialogHeader(
+                icon = Icons.Rounded.PersonAdd,
+                iconBgColor = PastelGreenIconBg,
+                iconTint = PastelGreen,
+                title = stringResource(R.string.workspace_invite_create_title)
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                text = stringResource(R.string.workspace_invite_max_contributors),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = PastelNeutralText
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+
+            val currentMax = maxContributors.toIntOrNull() ?: 1
+            val canDecrease = currentMax > 1
+            val stepperBtnShape = RoundedCornerShape(14.dp)
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                WorkspaceDialogHeader(
-                    icon = Icons.Rounded.PersonAdd,
-                    iconBgColor = PastelGreenIconBg,
-                    iconTint = PastelGreen,
-                    title = stringResource(R.string.workspace_invite_create_title)
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                Text(
-                    text = stringResource(R.string.workspace_invite_max_contributors),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = PastelNeutralText
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-
-                val currentMax = maxContributors.toIntOrNull() ?: 1
-                val canDecrease = currentMax > 1
-                val stepperBtnShape = RoundedCornerShape(14.dp)
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Surface(
-                        onClick = {
-                            val next = (currentMax - 1).coerceAtLeast(1)
-                            maxContributors = next.toString()
-                        },
-                        enabled = canDecrease,
-                        modifier = Modifier.size(48.dp),
-                        shape = stepperBtnShape,
-                        color = if (canDecrease) PastelBlueSoftBg else PastelNeutralBg,
-                        border = BorderStroke(
-                            1.dp,
-                            if (canDecrease) PastelBlueBg else Color.Transparent
-                        )
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Rounded.Remove,
-                                contentDescription = stringResource(R.string.orders_qty_decrease_cd),
-                                tint = if (canDecrease) PastelBlue else PastelNeutralText.copy(alpha = 0.5f)
-                            )
-                        }
-                    }
-
-                    OutlinedTextField(
-                        modifier = Modifier.weight(1f),
-                        value = maxContributors,
-                        onValueChange = { if (it.all { char -> char.isDigit() }) maxContributors = it },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true,
-                        textStyle = MaterialTheme.typography.titleMedium.copy(
-                            textAlign = TextAlign.Center,
-                            fontWeight = FontWeight.Bold,
-                            color = GrayBlue
-                        ),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = GrayBlue,
-                            unfocusedTextColor = GrayBlue,
-                            focusedContainerColor = PastelBlueSoftBg.copy(alpha = 0.45f),
-                            unfocusedContainerColor = PastelBlueSoftBg.copy(alpha = 0.25f),
-                            focusedBorderColor = PastelBlue,
-                            unfocusedBorderColor = PastelBlueBg,
-                            cursorColor = PastelBlue
-                        )
+                Surface(
+                    onClick = {
+                        val next = (currentMax - 1).coerceAtLeast(1)
+                        maxContributors = next.toString()
+                    },
+                    enabled = canDecrease,
+                    modifier = Modifier.size(48.dp),
+                    shape = stepperBtnShape,
+                    color = if (canDecrease) PastelBlueSoftBg else PastelNeutralBg,
+                    border = BorderStroke(
+                        1.dp,
+                        if (canDecrease) PastelBlueBg else Color.Transparent
                     )
-
-                    Surface(
-                        onClick = {
-                            val next = (currentMax + 1).coerceAtLeast(1)
-                            maxContributors = next.toString()
-                        },
-                        modifier = Modifier.size(48.dp),
-                        shape = stepperBtnShape,
-                        color = PastelBlueSoftBg,
-                        border = BorderStroke(1.dp, PastelBlueBg)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Rounded.Add,
-                                contentDescription = stringResource(R.string.orders_qty_increase_cd),
-                                tint = PastelBlue
-                            )
-                        }
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Rounded.Remove,
+                            contentDescription = stringResource(R.string.orders_qty_decrease_cd),
+                            tint = if (canDecrease) PastelBlue else PastelNeutralText.copy(alpha = 0.5f)
+                        )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
-
-                Text(
-                    text = stringResource(R.string.workspace_invite_expires_at),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = PastelNeutralText
+                OutlinedTextField(
+                    modifier = Modifier.weight(1f),
+                    value = maxContributors,
+                    onValueChange = { if (it.all { char -> char.isDigit() }) maxContributors = it },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.titleMedium.copy(
+                        textAlign = TextAlign.Center,
+                        fontWeight = FontWeight.Bold,
+                        color = GrayBlue
+                    ),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = GrayBlue,
+                        unfocusedTextColor = GrayBlue,
+                        focusedContainerColor = PastelBlueSoftBg.copy(alpha = 0.45f),
+                        unfocusedContainerColor = PastelBlueSoftBg.copy(alpha = 0.25f),
+                        focusedBorderColor = PastelBlue,
+                        unfocusedBorderColor = PastelBlueBg,
+                        cursorColor = PastelBlue
+                    )
                 )
-                Spacer(modifier = Modifier.height(6.dp))
 
                 Surface(
-                    onClick = { showDatePicker = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
+                    onClick = {
+                        val next = (currentMax + 1).coerceAtLeast(1)
+                        maxContributors = next.toString()
+                    },
+                    modifier = Modifier.size(48.dp),
+                    shape = stepperBtnShape,
                     color = PastelBlueSoftBg,
                     border = BorderStroke(1.dp, PastelBlueBg)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
+                    Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = Icons.Rounded.CalendarMonth,
-                            contentDescription = null,
-                            tint = PastelBlue,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Text(
-                            text = formatter.format(expiryDate),
-                            color = GrayBlue,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 14.sp
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(22.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = PastelNeutralBg,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        TextButton(
-                            onClick = onDismiss,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = stringResource(R.string.common_cancel),
-                                color = GrayBlue,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                    }
-
-                    Button(
-                        onClick = {
-                            val maxUsers = (maxContributors.toIntOrNull() ?: 1).coerceAtLeast(1)
-                            onGenerate(maxUsers, expiryDate)
-                        },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = GrayBlue,
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Text(
-                            text = stringResource(R.string.workspace_invite_generate),
-                            fontWeight = FontWeight.SemiBold
+                            imageVector = Icons.Rounded.Add,
+                            contentDescription = stringResource(R.string.orders_qty_increase_cd),
+                            tint = PastelBlue
                         )
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Text(
+                text = stringResource(R.string.workspace_invite_expires_at),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = PastelNeutralText
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Surface(
+                onClick = { showDatePicker = true },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                color = PastelBlueSoftBg,
+                border = BorderStroke(1.dp, PastelBlueBg)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.CalendarMonth,
+                        contentDescription = null,
+                        tint = PastelBlue,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = formatter.format(expiryDate),
+                        color = GrayBlue,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(22.dp))
+
+            WashFlowDialogActionRow(
+                dismissText = stringResource(R.string.common_cancel),
+                onDismiss = onDismiss,
+                confirmText = stringResource(R.string.workspace_invite_generate),
+                onConfirm = {
+                    val maxUsers = (maxContributors.toIntOrNull() ?: 1).coerceAtLeast(1)
+                    onGenerate(maxUsers, expiryDate)
+                }
+            )
         }
     }
 }
@@ -837,7 +637,7 @@ fun OperationalHoursDialog(
     )
 
     if (isEditingOpenTime) {
-        WorkspaceTimePickerDialog(
+        WashFlowTimePickerDialog(
             title = stringResource(R.string.workspace_hours_set_open),
             timePickerState = openTimeState,
             onDismiss = { isEditingOpenTime = false },
@@ -846,7 +646,7 @@ fun OperationalHoursDialog(
     }
 
     if (isEditingCloseTime) {
-        WorkspaceTimePickerDialog(
+        WashFlowTimePickerDialog(
             title = stringResource(R.string.workspace_hours_set_close),
             timePickerState = closeTimeState,
             onDismiss = { isEditingCloseTime = false },
@@ -855,131 +655,88 @@ fun OperationalHoursDialog(
     }
 
     Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = Color.White,
-            shadowElevation = 8.dp,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(24.dp)
-                    .fillMaxWidth()
+        WashFlowDialogSurface(horizontalAlignment = Alignment.Start) {
+            WashFlowDialogHeader(
+                icon = Icons.Rounded.Schedule,
+                iconBgColor = PastelBlueIconBg,
+                iconTint = PastelBlue,
+                title = stringResource(R.string.workspace_hours_title)
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = PastelNeutralBg,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                WorkspaceDialogHeader(
-                    icon = Icons.Rounded.Schedule,
-                    iconBgColor = PastelBlueIconBg,
-                    iconTint = PastelBlue,
-                    title = stringResource(R.string.workspace_hours_title)
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = PastelNeutralBg,
-                    modifier = Modifier.fillMaxWidth()
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = stringResource(R.string.workspace_hours_toggle),
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                color = MainFontBlack,
-                                fontWeight = FontWeight.Medium
-                            ),
-                            modifier = Modifier.weight(1f)
+                    Text(
+                        text = stringResource(R.string.workspace_hours_toggle),
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = MainFontBlack,
+                            fontWeight = FontWeight.Medium
+                        ),
+                        modifier = Modifier.weight(1f)
+                    )
+                    HapticSwitch(
+                        checked = useOperationalHours,
+                        onCheckedChange = { useOperationalHours = it },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = PastelBlue,
+                            uncheckedThumbColor = Color.White,
+                            uncheckedTrackColor = PastelSwitchOffTrack,
+                            uncheckedBorderColor = Color.Transparent
                         )
-                        HapticSwitch(
-                            checked = useOperationalHours,
-                            onCheckedChange = { useOperationalHours = it },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color.White,
-                                checkedTrackColor = PastelBlue,
-                                uncheckedThumbColor = Color.White,
-                                uncheckedTrackColor = PastelSwitchOffTrack,
-                                uncheckedBorderColor = Color.Transparent
-                            )
-                        )
-                    }
+                    )
                 }
+            }
 
-                if (useOperationalHours) {
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        WorkspaceTimeTile(
-                            label = stringResource(R.string.workspace_hours_open_label),
-                            timeText = String.format(Locale.getDefault(), "%02d:%02d", openTimeState.hour, openTimeState.minute),
-                            onClick = { isEditingOpenTime = true },
-                            modifier = Modifier.weight(1f)
-                        )
-                        WorkspaceTimeTile(
-                            label = stringResource(R.string.workspace_hours_close_label),
-                            timeText = String.format(Locale.getDefault(), "%02d:%02d", closeTimeState.hour, closeTimeState.minute),
-                            onClick = { isEditingCloseTime = true },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(22.dp))
+            if (useOperationalHours) {
+                Spacer(modifier = Modifier.height(14.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = PastelNeutralBg,
+                    WorkspaceTimeTile(
+                        label = stringResource(R.string.workspace_hours_open_label),
+                        timeText = String.format(Locale.getDefault(), "%02d:%02d", openTimeState.hour, openTimeState.minute),
+                        onClick = { isEditingOpenTime = true },
                         modifier = Modifier.weight(1f)
-                    ) {
-                        TextButton(
-                            onClick = onDismiss,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = stringResource(R.string.common_cancel),
-                                color = GrayBlue,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                    }
-
-                    Button(
-                        onClick = {
-                            if (useOperationalHours) {
-                                val newOpen = String.format(Locale.getDefault(), "%02d:%02d", openTimeState.hour, openTimeState.minute)
-                                val newClose = String.format(Locale.getDefault(), "%02d:%02d", closeTimeState.hour, closeTimeState.minute)
-                                onApply(newOpen, newClose)
-                            } else {
-                                onApply(null, null)
-                            }
-                        },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = GrayBlue,
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Text(
-                            text = stringResource(R.string.common_apply),
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
+                    )
+                    WorkspaceTimeTile(
+                        label = stringResource(R.string.workspace_hours_close_label),
+                        timeText = String.format(Locale.getDefault(), "%02d:%02d", closeTimeState.hour, closeTimeState.minute),
+                        onClick = { isEditingCloseTime = true },
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
+
+            Spacer(modifier = Modifier.height(22.dp))
+
+            WashFlowDialogActionRow(
+                dismissText = stringResource(R.string.common_cancel),
+                onDismiss = onDismiss,
+                confirmText = stringResource(R.string.common_apply),
+                onConfirm = {
+                    if (useOperationalHours) {
+                        val newOpen = String.format(Locale.getDefault(), "%02d:%02d", openTimeState.hour, openTimeState.minute)
+                        val newClose = String.format(Locale.getDefault(), "%02d:%02d", closeTimeState.hour, closeTimeState.minute)
+                        onApply(newOpen, newClose)
+                    } else {
+                        onApply(null, null)
+                    }
+                }
+            )
         }
     }
 }
@@ -1021,78 +778,6 @@ private fun WorkspaceTimeTile(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun WorkspaceTimePickerDialog(
-    title: String,
-    timePickerState: androidx.compose.material3.TimePickerState,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit
-) {
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = Color.White,
-            shadowElevation = 8.dp
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = GrayBlue
-                    )
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                TimePicker(
-                    state = timePickerState,
-                    colors = TimePickerDefaults.colors(
-                        clockDialColor = PastelBlueSoftBg,
-                        selectorColor = GrayBlue,
-                        timeSelectorSelectedContainerColor = PastelBlueIconBg,
-                        timeSelectorSelectedContentColor = GrayBlue,
-                        timeSelectorUnselectedContainerColor = PastelNeutralBg,
-                        timeSelectorUnselectedContentColor = PastelNeutralText
-                    )
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(
-                        onClick = onDismiss,
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.common_cancel),
-                            color = PastelNeutralText,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = onConfirm,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = GrayBlue,
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Text(
-                            text = stringResource(R.string.common_ok),
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
 @Composable
 fun DeleteWorkspaceDialog(
     workspaceName: String,
@@ -1104,102 +789,57 @@ fun DeleteWorkspaceDialog(
     val isDeleteButtonEnabled = expectedName.isNotEmpty() && confirmText.trim() == expectedName
 
     Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = Color.White,
-            shadowElevation = 8.dp,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(24.dp)
-                    .fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                WorkspaceDialogHeader(
-                    icon = Icons.Rounded.DeleteForever,
-                    iconBgColor = PastelRoseBg,
-                    iconTint = PastelRose,
-                    title = stringResource(R.string.workspace_delete_title),
-                    subtitle = stringResource(R.string.workspace_delete_message)
-                )
+        WashFlowDialogSurface {
+            WashFlowDialogHeader(
+                icon = Icons.Rounded.DeleteForever,
+                iconBgColor = PastelRoseBg,
+                iconTint = PastelRose,
+                title = stringResource(R.string.workspace_delete_title),
+                subtitle = stringResource(R.string.workspace_delete_message)
+            )
 
-                Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-                Text(
-                    text = stringResource(R.string.workspace_delete_confirm_label, expectedName),
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = MainFontBlack,
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
+            Text(
+                text = stringResource(R.string.workspace_delete_confirm_label, expectedName),
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = MainFontBlack,
+                    fontWeight = FontWeight.SemiBold
+                ),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
 
-                Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-                OutlinedTextField(
-                    value = confirmText,
-                    onValueChange = { confirmText = it },
-                    placeholder = {
-                        Text(
-                            text = expectedName,
-                            color = PastelNeutralText
-                        )
-                    },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = workspaceDialogTextFieldColors(
-                        focusedBorderColor = PastelRose,
-                        focusedLabelColor = PastelRose
+            OutlinedTextField(
+                value = confirmText,
+                onValueChange = { confirmText = it },
+                placeholder = {
+                    Text(
+                        text = expectedName,
+                        color = PastelNeutralText
                     )
+                },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = workspaceDialogTextFieldColors(
+                    focusedBorderColor = PastelRose,
+                    focusedLabelColor = PastelRose
                 )
+            )
 
-                Spacer(modifier = Modifier.height(22.dp))
+            Spacer(modifier = Modifier.height(22.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = PastelNeutralBg,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        TextButton(
-                            onClick = onDismiss,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = stringResource(R.string.common_cancel),
-                                color = GrayBlue,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                    }
-
-                    Button(
-                        onClick = onConfirm,
-                        enabled = isDeleteButtonEnabled,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = AlertRed,
-                            contentColor = Color.White,
-                            disabledContainerColor = AlertRed.copy(alpha = 0.3f),
-                            disabledContentColor = Color.White.copy(alpha = 0.8f)
-                        )
-                    ) {
-                        Text(
-                            text = stringResource(R.string.common_delete),
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-            }
+            WashFlowDialogActionRow(
+                dismissText = stringResource(R.string.common_cancel),
+                onDismiss = onDismiss,
+                confirmText = stringResource(R.string.common_delete),
+                onConfirm = onConfirm,
+                confirmEnabled = isDeleteButtonEnabled,
+                confirmContainerColor = AlertRed
+            )
         }
     }
 }
