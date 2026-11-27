@@ -269,7 +269,8 @@ fun PhoneBottomNavigationBar(
                 val isHome = screen == AppNavigation.Home
                 val isSelected = currentRoute == screen.route ||
                         (screen == AppNavigation.TableData && isDataSubRoute) ||
-                        (isHome && currentRoute == AppNavigation.ManageOrder.route)
+                        (isHome && currentRoute == AppNavigation.ManageOrder.route) ||
+                        (screen == AppNavigation.Settings && currentRoute == "location_selection")
 
                 val navigateToTab: () -> Unit = {
                     if (currentRoute != screen.route) {

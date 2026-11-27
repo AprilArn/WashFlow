@@ -86,7 +86,7 @@ fun PhoneTableDataScreen(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(14.dp),
-        contentPadding = PaddingValues(bottom = 20.dp)
+        contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 6.dp, bottom = 20.dp)
     ) {
         item {
             TableDataCard(
@@ -140,7 +140,11 @@ fun PhoneCustomersScreen(
                 it.contact?.contains(searchQuery, ignoreCase = true) == true
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 14.dp, vertical = 6.dp)
+    ) {
         val customerColumns = listOf(
             ColumnConfig<Customers>(
                 header = stringResource(R.string.master_customers_col_name),
@@ -317,7 +321,11 @@ fun PhoneServicesScreen(
                 it.serviceId.contains(searchQuery, ignoreCase = true)
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 14.dp, vertical = 6.dp)
+    ) {
         val serviceColumns = listOf(
             ColumnConfig<Services>(
                 header = stringResource(R.string.master_services_col_id),
@@ -495,7 +503,11 @@ fun PhoneItemsScreen(
                 it.itemPrice.toString().contains(searchQuery, ignoreCase = true)
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 14.dp, vertical = 6.dp)
+    ) {
         val itemColumns = listOf(
             ColumnConfig<Items>(
                 header = stringResource(R.string.master_items_col_svc_short),

@@ -4,8 +4,15 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
@@ -15,8 +22,17 @@ import androidx.compose.material.icons.rounded.MyLocation
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.RadioButtonUnchecked
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,6 +40,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.core.components.HapticSwitch
@@ -32,18 +49,25 @@ import com.aprilarn.washflow.ui.core.components.WashFlowDialogSecondaryButton
 import com.aprilarn.washflow.ui.core.components.WashFlowDialogSurface
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
 import com.aprilarn.washflow.ui.core.theme.MainFontBlack
+import com.aprilarn.washflow.ui.core.theme.PastelAmber
+import com.aprilarn.washflow.ui.core.theme.PastelAmberBg
 import com.aprilarn.washflow.ui.core.theme.PastelBlue
 import com.aprilarn.washflow.ui.core.theme.PastelBlueBg
 import com.aprilarn.washflow.ui.core.theme.PastelBlueIconBg
 import com.aprilarn.washflow.ui.core.theme.PastelBlueSoftBg
+import com.aprilarn.washflow.ui.core.theme.PastelGreen
+import com.aprilarn.washflow.ui.core.theme.PastelGreenBg
+import com.aprilarn.washflow.ui.core.theme.PastelGreenIconBg
 import com.aprilarn.washflow.ui.core.theme.PastelNeutralBg
 import com.aprilarn.washflow.ui.core.theme.PastelNeutralText
+import com.aprilarn.washflow.ui.core.theme.PastelSwitchOffTrack
 import com.aprilarn.washflow.utils.AppLanguage
 import com.aprilarn.washflow.utils.AppLanguageManager
 
 @Composable
 fun PreferencesSection(
     locationName: String,
+    isAutoLocationMode: Boolean,
     onSetLocationClicked: () -> Unit,
     isSoundEnabled: Boolean,
     onSoundToggled: (Boolean) -> Unit,
@@ -53,103 +77,143 @@ fun PreferencesSection(
     var currentLanguage by remember { mutableStateOf(AppLanguageManager.getLanguage(context)) }
     var showLanguageDialog by remember { mutableStateOf(false) }
 
-    Column(modifier = modifier) {
-        Text(
-            text = stringResource(R.string.settings_preferences),
-            style = MaterialTheme.typography.bodyMedium.copy(
-                color = GrayBlue,
-                fontWeight = FontWeight.Bold
-            ),
-            modifier = Modifier.padding(bottom = 8.dp, start = 8.dp)
-        )
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        color = Color.White,
+        shadowElevation = 4.dp
+    ) {
+        Column(modifier = Modifier.padding(bottom = 6.dp)) {
+            SettingsSectionHeader(title = stringResource(R.string.settings_preferences))
 
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White)
-        ) {
-            Column {
-                // 1. Notifications and sounds (Switch)
-                SettingsItem(
-                    icon = Icons.Rounded.NotificationsActive,
-                    title = stringResource(R.string.settings_notifications_sound),
-                    trailingContent = {
-                        HapticSwitch(
-                            modifier = Modifier.height(24.dp),
-                            checked = isSoundEnabled,
-                            onCheckedChange = onSoundToggled,
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color.White,
-                                checkedTrackColor = GrayBlue
+            // 1. Notifications and sounds (Switch)
+            SettingsItem(
+                icon = Icons.Rounded.NotificationsActive,
+                iconTint = PastelBlue,
+                iconBgColor = PastelBlueIconBg,
+                title = stringResource(R.string.settings_notifications_sound),
+                trailingContent = {
+                    HapticSwitch(
+                        modifier = Modifier.height(28.dp),
+                        checked = isSoundEnabled,
+                        onCheckedChange = onSoundToggled,
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = GrayBlue,
+                            checkedBorderColor = Color.Transparent,
+                            uncheckedThumbColor = Color.White,
+                            uncheckedTrackColor = PastelSwitchOffTrack,
+                            uncheckedBorderColor = Color.Transparent
+                        )
+                    )
+                }
+            )
+
+            HorizontalDivider(
+                color = PastelNeutralBg,
+                modifier = Modifier.padding(horizontal = 20.dp)
+            )
+
+            // 2. Language
+            SettingsItem(
+                icon = Icons.Rounded.Language,
+                iconTint = PastelBlue,
+                iconBgColor = PastelBlueIconBg,
+                title = stringResource(R.string.settings_language),
+                onClick = { showLanguageDialog = true },
+                trailingContent = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = currentLanguage.nativeLabel,
+                            color = PastelNeutralText,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 13.sp
                             )
                         )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = PastelNeutralText,
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
-                )
+                }
+            )
 
-                HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f), modifier = Modifier.padding(horizontal = 24.dp))
+            HorizontalDivider(
+                color = PastelNeutralBg,
+                modifier = Modifier.padding(horizontal = 20.dp)
+            )
 
-                // 2. Language
-                SettingsItem(
-                    icon = Icons.Rounded.Language,
-                    title = stringResource(R.string.settings_language),
-                    onClick = { showLanguageDialog = true },
-                    trailingContent = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = currentLanguage.nativeLabel,
-                                color = Color.Gray,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
-                        }
-                    }
-                )
-
-                HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f), modifier = Modifier.padding(horizontal = 24.dp))
-
-                // 3. Set location
-                SettingsItem(
-                    icon = Icons.Rounded.MyLocation,
-                    title = stringResource(R.string.settings_set_location),
-                    onClick = onSetLocationClicked,
-                    trailingContent = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.widthIn(max = 200.dp)
+            // 3. Set location (dengan alamat di subtitle & badge mode Auto/Manual)
+            SettingsItem(
+                icon = Icons.Rounded.MyLocation,
+                iconTint = PastelGreen,
+                iconBgColor = PastelGreenIconBg,
+                title = stringResource(R.string.settings_set_location),
+                subtitle = locationName,
+                subtitleMarquee = true,
+                onClick = onSetLocationClicked,
+                trailingContent = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (isAutoLocationMode) PastelGreenBg else PastelBlueSoftBg
                         ) {
-                            Spacer(modifier = Modifier.width(16.dp))
                             Text(
-                                text = locationName,
-                                color = Color.Gray,
-                                style = MaterialTheme.typography.bodyMedium,
-                                maxLines = 1,
-                                modifier = Modifier
-                                    .weight(1f, fill = false)
-                                    .basicMarquee()
+                                text = stringResource(
+                                    if (isAutoLocationMode) R.string.settings_location_mode_auto
+                                    else R.string.settings_location_mode_manual
+                                ),
+                                color = if (isAutoLocationMode) PastelGreen else PastelBlue,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp
+                                ),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
-                            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
                         }
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = PastelNeutralText,
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
-                )
+                }
+            )
 
-                HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f), modifier = Modifier.padding(horizontal = 24.dp))
+            HorizontalDivider(
+                color = PastelNeutralBg,
+                modifier = Modifier.padding(horizontal = 20.dp)
+            )
 
-                // 4. Theme
-                SettingsItem(
-                    icon = Icons.Rounded.Palette,
-                    title = stringResource(R.string.settings_theme),
-                    trailingContent = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = stringResource(R.string.settings_theme_light),
-                                color = Color.Gray,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
-                        }
+            // 4. Theme (badge non-interaktif, tanpa panah palsu)
+            SettingsItem(
+                icon = Icons.Rounded.Palette,
+                iconTint = PastelAmber,
+                iconBgColor = PastelAmberBg,
+                title = stringResource(R.string.settings_theme),
+                trailingContent = {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = PastelNeutralBg
+                    ) {
+                        Text(
+                            text = stringResource(R.string.settings_theme_light),
+                            color = PastelNeutralText,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 11.sp
+                            ),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                        )
                     }
-                )
-            }
+                }
+            )
         }
     }
 

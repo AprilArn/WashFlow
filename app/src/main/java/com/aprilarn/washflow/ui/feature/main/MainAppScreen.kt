@@ -425,7 +425,9 @@ fun MainAppScreen(
                         },
                         onLocationFetched = { lat, lon ->
                             if (!settingsState.hasFetchedLocation) {
-                                settingsViewModel.fetchAddressAndSave(lat, lon)
+                                val prefs = context.getSharedPreferences("WashFlowPrefs", Context.MODE_PRIVATE)
+                                val isAuto = prefs.getString("LOCATION_MODE", "AUTO") != "STATIC"
+                                settingsViewModel.fetchAddressAndSave(lat, lon, isAutoMode = isAuto)
                             }
                         }
                     )
@@ -684,7 +686,9 @@ fun MainAppScreen(
                             userId = "", displayName = "Unknown", email = "No Email", profilePictureUrl = null
                         ),
                         settingsUiState = settingsState,
-                        onSetLocationClicked = { // <-- UBAH JADI onSetLocationClicked
+                        workspaceName = mainUiState.workspaceName,
+                        isOwner = mainUiState.isCurrentUserOwner,
+                        onSetLocationClicked = {
                             bottomNavController.navigate("location_selection")
                         },
                         onSignOut = onSignOut
@@ -692,28 +696,22 @@ fun MainAppScreen(
                 }
 
                 composable("location_selection") {
-                    // Panggil context untuk SharedPreferences
-                    val context = LocalContext.current
                     val sharedPreferences = remember { context.getSharedPreferences("WashFlowPrefs", Context.MODE_PRIVATE) }
 
                     LocationSelectionPanel(
-                        // Sekarang menerima 2 parameter (lat, lon)
+                        initialLat = settingsState.latitude,
+                        initialLon = settingsState.longitude,
+                        initialIsAutoMode = if (settingsState.hasFetchedLocation) settingsState.isAutoLocationMode else null,
                         onLocationSelected = { lat, lon, isGps ->
                             sharedPreferences.edit().apply {
-                                // Jika isGps = true berarti "Auto", jika false berarti "Static/Manual"
                                 putString("LOCATION_MODE", if (isGps) "AUTO" else "STATIC")
                                 putFloat("STATIC_LAT", lat.toFloat())
                                 putFloat("STATIC_LON", lon.toFloat())
                                 apply()
                             }
 
-                            // Panggil fungsi baru di SettingsViewModel untuk cari nama tempat & save
-                            settingsViewModel.fetchAddressAndSave(lat, lon)
-
-                            // Tetap update cuaca di Home
+                            settingsViewModel.fetchAddressAndSave(lat, lon, isAutoMode = isGps)
                             homeViewModel.fetchWeatherData(lat, lon, isGps)
-
-                            // Kembali ke layar Settings
                             bottomNavController.popBackStack()
                         },
                         onBackClick = { bottomNavController.popBackStack() }
@@ -933,7 +931,8 @@ private fun navRouteOrderIndex(route: String?): Int {
         AppNavigation.Items.route -> 4
         AppNavigation.Analytics.route -> 5
         AppNavigation.Settings.route -> 6
-        AppNavigation.Contributors.route -> 7
+        "location_selection" -> 7
+        AppNavigation.Contributors.route -> 8
         else -> 0
     }
 }

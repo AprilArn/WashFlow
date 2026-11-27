@@ -195,7 +195,7 @@ fun PhoneHomeScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(vertical = 8.dp),
+            .padding(start = 14.dp, end = 14.dp, top = 6.dp, bottom = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {

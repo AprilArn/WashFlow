@@ -119,12 +119,16 @@ fun PhoneManageOrderScreen(
     val coroutineScope = rememberCoroutineScope()
 
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = 6.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         // 1. TabRow 3 Status dengan Badge Jumlah Order
         Surface(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp),
             shape = RoundedCornerShape(20.dp),
             color = Color.White,
             shadowElevation = 6.dp
@@ -192,12 +196,14 @@ fun PhoneManageOrderScreen(
             }
         }
 
-        // 2. HorizontalPager Daftar Order per Status
+        // 2. HorizontalPager Daftar Order per Status (edge-to-edge dengan contentPadding agar shadow kartu tidak ter-clip)
         HorizontalPager(
             state = pagerState,
             modifier = Modifier
                 .weight(1f)
-                .fillMaxWidth()
+                .fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 14.dp),
+            pageSpacing = 14.dp
         ) { page ->
             val currentStage = stages[page]
             val ordersForStage = when (currentStage) {
@@ -208,7 +214,9 @@ fun PhoneManageOrderScreen(
 
             if (ordersForStage.isEmpty()) {
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(bottom = 6.dp),
                     shape = RoundedCornerShape(24.dp),
                     color = Color.White.copy(alpha = 0.88f)
                 ) {
@@ -227,7 +235,7 @@ fun PhoneManageOrderScreen(
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
-                    contentPadding = PaddingValues(bottom = 16.dp)
+                    contentPadding = PaddingValues(top = 2.dp, bottom = 16.dp)
                 ) {
                     items(ordersForStage, key = { it.orderId }) { order ->
                         PhoneOrderKanbanCard(

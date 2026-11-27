@@ -117,7 +117,7 @@ fun PhoneOrdersScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .animateContentSize(animationSpec = tween(durationMillis = 260)),
+            .padding(horizontal = 14.dp, vertical = 6.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         if (selectedCustomer == null) {
@@ -149,8 +149,8 @@ fun PhoneOrdersScreen(
             // Katalog Layanan & Item (mengisi ruang utama)
             AnimatedVisibility(
                 visible = true,
-                enter = fadeIn(tween(220)) + expandVertically(tween(240)),
-                exit = fadeOut(tween(150)) + shrinkVertically(tween(200)),
+                enter = fadeIn(tween(220)) + expandVertically(tween(240), clip = false),
+                exit = fadeOut(tween(150)) + shrinkVertically(tween(200), clip = false),
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()

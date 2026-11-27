@@ -336,7 +336,6 @@ fun PhoneMainScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .padding(horizontal = 14.dp, vertical = 6.dp)
             ) {
                 NavHost(
                     navController = bottomNavController,
@@ -392,7 +391,9 @@ fun PhoneMainScreen(
                             },
                             onLocationFetched = { lat, lon ->
                                 if (!settingsState.hasFetchedLocation) {
-                                    settingsViewModel.fetchAddressAndSave(lat, lon)
+                                    val prefs = context.getSharedPreferences("WashFlowPrefs", Context.MODE_PRIVATE)
+                                    val isAuto = prefs.getString("LOCATION_MODE", "AUTO") != "STATIC"
+                                    settingsViewModel.fetchAddressAndSave(lat, lon, isAutoMode = isAuto)
                                 }
                             }
                         )
@@ -646,6 +647,8 @@ fun PhoneMainScreen(
                                 profilePictureUrl = null
                             ),
                             settingsUiState = settingsState,
+                            workspaceName = mainUiState.workspaceName,
+                            isOwner = mainUiState.isCurrentUserOwner,
                             onSetLocationClicked = {
                                 bottomNavController.navigate("location_selection")
                             },
@@ -658,20 +661,29 @@ fun PhoneMainScreen(
                             context.getSharedPreferences("WashFlowPrefs", Context.MODE_PRIVATE)
                         }
 
-                        LocationSelectionPanel(
-                            onLocationSelected = { lat, lon, isGps ->
-                                sharedPreferences.edit().apply {
-                                    putString("LOCATION_MODE", if (isGps) "AUTO" else "STATIC")
-                                    putFloat("STATIC_LAT", lat.toFloat())
-                                    putFloat("STATIC_LON", lon.toFloat())
-                                    apply()
-                                }
-                                settingsViewModel.fetchAddressAndSave(lat, lon)
-                                homeViewModel.fetchWeatherData(lat, lon, isGps)
-                                bottomNavController.popBackStack()
-                            },
-                            onBackClick = { bottomNavController.popBackStack() }
-                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 14.dp, vertical = 6.dp)
+                        ) {
+                            LocationSelectionPanel(
+                                initialLat = settingsState.latitude,
+                                initialLon = settingsState.longitude,
+                                initialIsAutoMode = if (settingsState.hasFetchedLocation) settingsState.isAutoLocationMode else null,
+                                onLocationSelected = { lat, lon, isGps ->
+                                    sharedPreferences.edit().apply {
+                                        putString("LOCATION_MODE", if (isGps) "AUTO" else "STATIC")
+                                        putFloat("STATIC_LAT", lat.toFloat())
+                                        putFloat("STATIC_LON", lon.toFloat())
+                                        apply()
+                                    }
+                                    settingsViewModel.fetchAddressAndSave(lat, lon, isAutoMode = isGps)
+                                    homeViewModel.fetchWeatherData(lat, lon, isGps)
+                                    bottomNavController.popBackStack()
+                                },
+                                onBackClick = { bottomNavController.popBackStack() }
+                            )
+                        }
                     }
                 }
 
@@ -877,7 +889,8 @@ private fun phoneNavRouteOrderIndex(route: String?): Int {
         AppNavigation.ManageOrder.route -> 4
         AppNavigation.Analytics.route -> 5
         AppNavigation.Settings.route -> 6
-        AppNavigation.Contributors.route -> 7
+        "location_selection" -> 7
+        AppNavigation.Contributors.route -> 8
         else -> 3
     }
 }

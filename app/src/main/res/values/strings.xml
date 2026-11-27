@@ -165,16 +165,31 @@
     <string name="settings_logout_hold_default">Hold to Logout (1s)</string>
     <string name="settings_logout_hold_progress">Logging out…</string>
     <string name="settings_map_title">Set Location on Map</string>
+    <string name="settings_map_subtitle">Weather forecast &amp; drying recommendations</string>
     <string name="settings_map_auto_mode">Auto Mode</string>
-    <string name="settings_map_search_placeholder">Search here…</string>
+    <string name="settings_map_manual_mode">Manual Pin</string>
+    <string name="settings_map_search_placeholder">Search city, street, or place…</string>
     <string name="settings_map_searching_address">Finding address…</string>
     <string name="settings_map_address_not_found">Address not found</string>
-    <string name="settings_map_auto_button">Auto</string>
+    <string name="settings_map_no_results">No matching locations found</string>
+    <string name="settings_map_tap_hint">Tap the map or use GPS to select a location</string>
+    <string name="settings_map_drag_tip">Drag pin to fine-tune</string>
+    <string name="settings_map_auto_button">Auto GPS</string>
     <string name="settings_map_current_location_cd">Current Location (Static)</string>
+    <string name="settings_map_toggle_satellite_cd">Toggle Satellite View</string>
+    <string name="settings_map_fetching_gps">Getting current GPS location…</string>
+    <string name="settings_map_gps_failed">Unable to get GPS location. Make sure Location is enabled.</string>
+    <string name="settings_map_permission_denied">Location permission is required to use GPS.</string>
     <string name="settings_map_auto_dialog_title">Enable Auto Mode?</string>
     <string name="settings_map_auto_dialog_message">Weather recommendations will update dynamically based on your device\'s current GPS location wherever you go.</string>
     <string name="settings_map_enable">Enable</string>
     <string name="settings_map_preview">Google Map (Preview Mode)</string>
+    <string name="settings_location_mode_auto">Auto</string>
+    <string name="settings_location_mode_manual">Manual</string>
+    <string name="settings_support_dialog_title">Support &amp; About</string>
+    <string name="settings_support_dialog_message">WashFlow helps you manage laundry orders, weather-based drying recommendations, and team collaboration in real time.</string>
+    <string name="settings_support_version_label">App Version</string>
+    <string name="settings_support_tip">Need help or found an issue? Contact your workspace owner or the WashFlow support team.</string>
 
     <!-- Home & Weather -->
     <string name="home_greeting_morning">Good Morning!</string>

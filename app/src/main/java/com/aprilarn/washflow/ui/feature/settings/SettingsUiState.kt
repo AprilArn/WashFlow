@@ -6,6 +6,7 @@ import com.aprilarn.washflow.ui.core.utils.UiText
 data class SettingsUiState(
     val locationName: UiText = UiText.StringResource(R.string.settings_select_location),
     val hasFetchedLocation: Boolean = false,
+    val isAutoLocationMode: Boolean = true,
     val latitude: Double? = null,
     val longitude: Double? = null
 )

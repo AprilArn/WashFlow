@@ -21,14 +21,15 @@ class SettingsViewModel(
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState = _uiState.asStateFlow()
 
-    // Fungsi ini dipanggil dari navigation di MainActivity
-    fun fetchAddressAndSave(lat: Double, lon: Double) {
+    // Fungsi ini dipanggil dari navigation di MainActivity / MainAppScreen
+    fun fetchAddressAndSave(lat: Double, lon: Double, isAutoMode: Boolean? = null) {
         viewModelScope.launch {
             // Set sementara saat loading
             _uiState.update {
                 it.copy(
                     locationName = UiText.StringResource(R.string.settings_finding_location),
                     hasFetchedLocation = true,
+                    isAutoLocationMode = isAutoMode ?: it.isAutoLocationMode,
                     latitude = lat,
                     longitude = lon
                 )

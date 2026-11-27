@@ -77,9 +77,18 @@ fun NavigationBar(
         )
     }
 
+    val resolvedSelectedRoute = when (currentRoute) {
+        AppNavigation.ManageOrder.route -> AppNavigation.Home.route
+        AppNavigation.Customers.route,
+        AppNavigation.Services.route,
+        AppNavigation.Items.route -> AppNavigation.TableData.route
+        "location_selection" -> AppNavigation.Settings.route
+        else -> currentRoute
+    }
+
     NavigationBarContent(
         items = items,
-        selectedRoute = currentRoute,
+        selectedRoute = resolvedSelectedRoute,
         isDarkBackground = isDarkBackground,
         modifier = modifier
     ) { screen ->

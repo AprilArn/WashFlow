@@ -162,16 +162,31 @@
     <string name="settings_logout_hold_default">Tahan untuk Keluar (1d)</string>
     <string name="settings_logout_hold_progress">Keluar…</string>
     <string name="settings_map_title">Atur Lokasi di Peta</string>
+    <string name="settings_map_subtitle">Prakiraan cuaca &amp; rekomendasi jemur</string>
     <string name="settings_map_auto_mode">Mode Otomatis</string>
-    <string name="settings_map_search_placeholder">Cari di sini…</string>
+    <string name="settings_map_manual_mode">Pin Manual</string>
+    <string name="settings_map_search_placeholder">Cari kota, jalan, atau tempat…</string>
     <string name="settings_map_searching_address">Mencari alamat…</string>
     <string name="settings_map_address_not_found">Alamat tidak ditemukan</string>
-    <string name="settings_map_auto_button">Otomatis</string>
+    <string name="settings_map_no_results">Lokasi tidak ditemukan</string>
+    <string name="settings_map_tap_hint">Ketuk peta atau gunakan GPS untuk memilih lokasi</string>
+    <string name="settings_map_drag_tip">Geser pin untuk menyesuaikan</string>
+    <string name="settings_map_auto_button">GPS Otomatis</string>
     <string name="settings_map_current_location_cd">Lokasi Saat Ini (Statis)</string>
+    <string name="settings_map_toggle_satellite_cd">Ubah Tampilan Satelit</string>
+    <string name="settings_map_fetching_gps">Mengambil lokasi GPS saat ini…</string>
+    <string name="settings_map_gps_failed">Gagal mendapatkan lokasi GPS. Pastikan layanan lokasi aktif.</string>
+    <string name="settings_map_permission_denied">Izin lokasi diperlukan untuk menggunakan GPS.</string>
     <string name="settings_map_auto_dialog_title">Aktifkan Mode Otomatis?</string>
     <string name="settings_map_auto_dialog_message">Rekomendasi cuaca akan diperbarui secara dinamis berdasarkan lokasi GPS perangkat Anda ke mana pun Anda pergi.</string>
     <string name="settings_map_enable">Aktifkan</string>
     <string name="settings_map_preview">Google Maps (Mode Pratinjau)</string>
+    <string name="settings_location_mode_auto">Otomatis</string>
+    <string name="settings_location_mode_manual">Manual</string>
+    <string name="settings_support_dialog_title">Bantuan &amp; Tentang</string>
+    <string name="settings_support_dialog_message">WashFlow membantu Anda mengelola pesanan laundry, rekomendasi jemur berbasis cuaca, dan kolaborasi tim secara real-time.</string>
+    <string name="settings_support_version_label">Versi Aplikasi</string>
+    <string name="settings_support_tip">Butuh bantuan atau menemukan kendala? Hubungi pemilik workspace atau tim dukungan WashFlow.</string>
 
     <!-- Home & Weather -->
     <string name="home_greeting_morning">Selamat Pagi!</string>

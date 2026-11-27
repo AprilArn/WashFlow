@@ -2,15 +2,17 @@ package com.aprilarn.washflow.ui.feature.settings
 
 import android.content.Context
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,56 +34,62 @@ fun SettingsScreen(
     userData: UserData,
     settingsUiState: SettingsUiState,
     onSetLocationClicked: () -> Unit,
-    onSignOut: () -> Unit
+    onSignOut: () -> Unit,
+    workspaceName: String? = null,
+    isOwner: Boolean? = null
 ) {
-    // Scroll state untuk bagian konten bawah
     val scrollState = rememberScrollState()
-
-    // State baru untuk mengontrol kemunculan dialog logout
     var showLogoutDialog by rememberSaveable { mutableStateOf(false) }
 
     val context = LocalContext.current
     val sharedPrefs = remember { context.getSharedPreferences("WashFlowPrefs", Context.MODE_PRIVATE) }
     var isSoundEnabled by rememberSaveable { mutableStateOf(sharedPrefs.getBoolean("SOUND_ENABLED", true)) }
+    val isAutoLocationMode = remember(settingsUiState.isAutoLocationMode, settingsUiState.hasFetchedLocation) {
+        if (settingsUiState.hasFetchedLocation) {
+            settingsUiState.isAutoLocationMode
+        } else {
+            sharedPrefs.getString("LOCATION_MODE", "AUTO") != "STATIC"
+        }
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(scrollState),
-        horizontalAlignment = Alignment.CenterHorizontally // Menengahkan konten (600.dp)
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // --- KONTEN (SCROLLABLE BERSAMA) ---
-        ProfileInfoCard(
-            userData = userData,
-            modifier = Modifier.width(600.dp) // Membatasi lebar sesuai request
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
         Column(
             modifier = Modifier
-                .width(600.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+                .widthIn(max = 600.dp)
+                .fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Masukkan state switch suara ke PreferencesSection
+            ProfileInfoCard(
+                userData = userData,
+                workspaceName = workspaceName,
+                isOwner = isOwner,
+                modifier = Modifier.fillMaxWidth()
+            )
+
             PreferencesSection(
                 locationName = settingsUiState.locationName.asString(),
+                isAutoLocationMode = isAutoLocationMode,
                 onSetLocationClicked = onSetLocationClicked,
                 isSoundEnabled = isSoundEnabled,
                 onSoundToggled = { newValue ->
-                    isSoundEnabled = newValue // Update UI Switch
-                    sharedPrefs.edit().putBoolean("SOUND_ENABLED", newValue).apply() // Simpan memori permanen
+                    isSoundEnabled = newValue
+                    sharedPrefs.edit().putBoolean("SOUND_ENABLED", newValue).apply()
                 }
             )
 
             AccountSection(
-                // 1. CEGAT KLIK LOGOUT: Ubah state menjadi true untuk memunculkan dialog
                 onSignOut = { showLogoutDialog = true }
             )
+
+            Spacer(modifier = Modifier.height(12.dp))
         }
     }
 
-    // --- DIALOG KONFIRMASI LOGOUT ---
     if (showLogoutDialog) {
         LogoutConfirmationDialog(
             onLogoutConfirmed = {
@@ -97,11 +105,13 @@ fun SettingsScreen(
 @Composable
 fun SettingsScreenPreview() {
     Box(
-        modifier = Modifier.background(
-            Brush.linearGradient(
-                colors = listOf(Color(0xFFB9E9FF), Color(0xFFFFD6BF))
+        modifier = Modifier
+            .background(
+                Brush.linearGradient(
+                    colors = listOf(Color(0xFFB9E9FF), Color(0xFFFFD6BF))
+                )
             )
-        )
+            .padding(24.dp)
     ) {
         SettingsScreen(
             userData = UserData(
@@ -113,9 +123,12 @@ fun SettingsScreenPreview() {
             settingsUiState = SettingsUiState(
                 locationName = UiText.DynamicString("Boyolali, Central Java"),
                 hasFetchedLocation = true,
+                isAutoLocationMode = true,
                 latitude = -7.797068,
                 longitude = 110.370529
             ),
+            workspaceName = "WashFlow Express",
+            isOwner = true,
             onSetLocationClicked = {},
             onSignOut = {}
         )

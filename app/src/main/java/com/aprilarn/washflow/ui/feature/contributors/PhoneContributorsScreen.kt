@@ -83,7 +83,9 @@ fun PhoneContributorsScreen(
     }
 
     Surface(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 14.dp, vertical = 6.dp),
         shape = RoundedCornerShape(24.dp),
         color = Color.White,
         shadowElevation = 4.dp

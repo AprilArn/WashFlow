@@ -90,7 +90,9 @@ fun PhoneAnalyticsScreen(
     )
 
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 14.dp, vertical = 6.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         // 1. Horizontal Segmented Tab Bar untuk HP
