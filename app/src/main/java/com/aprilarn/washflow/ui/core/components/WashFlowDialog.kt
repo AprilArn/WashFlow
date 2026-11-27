@@ -44,15 +44,19 @@ import androidx.compose.material3.TimePickerLayoutType
 import androidx.compose.material3.TimePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -74,6 +78,7 @@ import com.aprilarn.washflow.ui.core.theme.PastelNeutralBg
 import com.aprilarn.washflow.ui.core.theme.PastelNeutralText
 import com.aprilarn.washflow.ui.core.theme.PastelRose
 import com.aprilarn.washflow.ui.core.theme.PastelRoseBg
+import kotlinx.coroutines.flow.drop
 
 internal fun playConfirmationSound(context: Context) {
     val prefs = context.getSharedPreferences("WashFlowPrefs", Context.MODE_PRIVATE)
@@ -309,6 +314,17 @@ fun WashFlowDatePickerDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
+    val view = LocalView.current
+    val context = LocalContext.current
+
+    LaunchedEffect(datePickerState) {
+        snapshotFlow { datePickerState.selectedDateMillis }
+            .drop(1)
+            .collect {
+                performLightHaptic(view, context)
+            }
+    }
+
     DatePickerDialog(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(24.dp),
@@ -399,7 +415,20 @@ private fun WashFlowTimePickerDialogContent(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
+    val view = LocalView.current
+    val context = LocalContext.current
     var useKeyboardInput by remember { mutableStateOf(false) }
+
+    // Bergetar ringan (tick) setiap kali jam, menit, atau mode seleksi berubah saat digeser/diketik
+    LaunchedEffect(timePickerState) {
+        snapshotFlow {
+            Triple(timePickerState.hour, timePickerState.minute, timePickerState.selection)
+        }
+            .drop(1)
+            .collect {
+                performLightHaptic(view, context)
+            }
+    }
 
     val timePickerColors = TimePickerDefaults.colors(
         clockDialColor = PastelBlueSoftBg,
@@ -471,7 +500,10 @@ private fun WashFlowTimePickerDialogContent(
                         .background(PastelNeutralBg)
                         .clickable(
                             role = Role.Button,
-                            onClick = { useKeyboardInput = !useKeyboardInput }
+                            onClick = {
+                                performLightHaptic(view, context)
+                                useKeyboardInput = !useKeyboardInput
+                            }
                         ),
                     contentAlignment = Alignment.Center
                 ) {

@@ -181,7 +181,7 @@ fun HoldToConfirmButton(
     }
 }
 
-private fun performLightHaptic(view: View, context: Context) {
+internal fun performLightHaptic(view: View, context: Context) {
     try {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
