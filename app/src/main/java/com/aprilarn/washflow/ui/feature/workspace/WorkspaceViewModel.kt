@@ -10,6 +10,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 // Event untuk navigasi atau menampilkan pesan
 sealed class WorkspaceEvent {
@@ -63,7 +64,7 @@ class WorkspaceViewModel(
             _uiState.update { it.copy(isLoading = true) }
 
             // 2. Panggil dari inviteUseCase dan tangani return type baru (Pair)
-            val result = inviteUseCase.joinWorkspace(inviteCode.trim())
+            val result = inviteUseCase.joinWorkspace(inviteCode.trim().uppercase(Locale.ROOT))
 
             if (result.first) { // 'first' berisi Boolean (sukses/gagal)
                 _eventFlow.emit(WorkspaceEvent.NavigateToDashboard)

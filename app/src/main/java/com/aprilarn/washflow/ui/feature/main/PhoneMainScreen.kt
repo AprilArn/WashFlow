@@ -108,6 +108,8 @@ import com.aprilarn.washflow.ui.feature.workspace.OperationalHoursDialog
 import com.aprilarn.washflow.ui.feature.workspace.RenameWorkspaceDialog
 import com.aprilarn.washflow.ui.feature.workspace.WorkspaceOptionsDropdown
 import com.aprilarn.washflow.utils.WorkspacePresenceEffect
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -270,8 +272,12 @@ fun PhoneMainScreen(
         )
     }
 
+    val hazeState = rememberHazeState()
+
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .hazeSource(state = hazeState),
         topBar = {
             PhoneTopHeader(
                 workspaceName = mainUiState.workspaceName,
@@ -708,7 +714,9 @@ fun PhoneMainScreen(
             onDismiss = { notificationsViewModel.onDismissNotificationOptions() },
             onNotificationClick = { notif ->
                 notificationsViewModel.markNotificationAsRead(notif)
-            }
+            },
+            hazeState = hazeState,
+            isDarkBackground = isDarkWeatherBg
         )
     }
 
@@ -815,7 +823,9 @@ fun PhoneMainScreen(
             onClearHistory = { aiAgentViewModel.onClearHistory() },
             onConfirmAction = { id, action -> aiAgentViewModel.onConfirmAction(id, action) },
             onCancelAction = { aiAgentViewModel.onCancelAction(it) },
-            onDismiss = { aiAgentViewModel.onDismissAiAgent() }
+            onDismiss = { aiAgentViewModel.onDismissAiAgent() },
+            hazeState = hazeState,
+            isDarkBackground = isDarkWeatherBg
         )
     }
 

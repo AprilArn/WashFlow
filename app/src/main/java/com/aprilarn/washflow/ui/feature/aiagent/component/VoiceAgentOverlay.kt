@@ -79,6 +79,7 @@ fun VoiceAgentOverlay(
     isVisibleInitial: Boolean = false,
     text: String = "",
     lastMessage: ChatMessage? = null,
+    @Suppress("UNUSED_PARAMETER")
     isAlreadyAnimated: Boolean = false,
     customers: List<Customers> = emptyList(),
     items: List<Items> = emptyList(),
@@ -582,21 +583,19 @@ fun VoiceAgentOverlay(
                                     )
                                 }
 
-                                var showCard by remember(lastMessage.id, isAlreadyAnimated) {
-                                    mutableStateOf(isAlreadyAnimated)
+                                var showCard by remember(lastMessage.id) {
+                                    mutableStateOf(false)
                                 }
 
-                                LaunchedEffect(isAlreadyAnimated) {
-                                    if (!isAlreadyAnimated) {
-                                        delay(300L)
-                                    }
+                                LaunchedEffect(lastMessage.id) {
+                                    delay(220L)
                                     showCard = true
                                 }
 
                                 AnimatedVisibility(
                                     visible = showCard,
-                                    enter = if (isAlreadyAnimated) EnterTransition.None else fadeIn() + expandVertically(),
-                                    exit = fadeOut()
+                                    enter = fadeIn(animationSpec = tween(350)) + expandVertically(animationSpec = tween(300)),
+                                    exit = fadeOut(animationSpec = tween(250))
                                 ) {
                                     Column {
                                         if (displayText.isNotBlank()) {

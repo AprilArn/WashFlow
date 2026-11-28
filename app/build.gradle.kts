@@ -84,6 +84,7 @@ dependencies {
     implementation(libs.androidx.foundation)
     implementation(libs.androidx.foundation.layout)
     implementation(libs.androidx.material.icons.extended)
+    implementation(libs.haze)
 
     // Navigation
     implementation(libs.androidx.navigation.compose)

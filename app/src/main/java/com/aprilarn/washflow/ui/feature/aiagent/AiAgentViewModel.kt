@@ -279,10 +279,16 @@ class AiAgentViewModel(
         val parsedAction = AiAgentParser.parseAction(finalResponseRaw) ?: AiAgentAction.None
         val finalResponseText = AiAgentParser.cleanText(finalResponseRaw)
 
+        val finalAiMessageId = aiPlaceholder.id
+
+        // Initialize typewriter progress to 0 BEFORE flipping isThinking = false
+        // so the very first frame never flashes full text or premature confirmation cards
+        messageAnimationProgress[finalAiMessageId] = 0
+
         // Replace placeholder with the final response
         _uiState.update { state ->
             val updatedMessages = state.messages.map { msg ->
-                if (msg.id == aiPlaceholder.id) {
+                if (msg.id == finalAiMessageId) {
                     msg.copy(
                         text = finalResponseText,
                         isThinking = false,
@@ -297,19 +303,13 @@ class AiAgentViewModel(
             state.copy(
                 messages = updatedMessages,
                 modelStatus = if (isAllFailed) AiModelStatus.FAILURE else AiModelStatus.SUCCESS,
-                isAiThinking = false
+                isAiThinking = false,
+                isTypewriterActive = true,
+                voiceAgentStatus = if (isFromVoice) VoiceAgentStatus.ANSWERING else state.voiceAgentStatus
             )
         }
 
-        if (isFromVoice) {
-            _uiState.update { it.copy(voiceAgentStatus = VoiceAgentStatus.ANSWERING) }
-        }
-
         // Start background typewriter simulation
-        val finalAiMessageId = aiPlaceholder.id
-        _uiState.update { it.copy(isTypewriterActive = true) }
-        messageAnimationProgress[finalAiMessageId] = 0
-        
         for (i in 1..finalResponseText.length) {
             val partialText = finalResponseText.take(i)
             messageAnimationProgress[finalAiMessageId] = i

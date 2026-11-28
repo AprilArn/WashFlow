@@ -14,6 +14,7 @@ composeBom = "2024.09.00"
 activityCompose = "1.10.1"
 composeMaterialIcons = "1.7.8"
 foundation = "1.9.0"
+haze = "1.6.10"
 
 # Firebase
 firebaseBom = "33.1.2"
@@ -69,6 +70,7 @@ androidx-material3 = { group = "androidx.compose.material3", name = "material3" 
 androidx-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
 androidx-foundation-layout = { group = "androidx.compose.foundation", name = "foundation-layout", version.ref = "foundation" }
 androidx-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended", version.ref = "composeMaterialIcons" }
+haze = { group = "dev.chrisbanes.haze", name = "haze", version.ref = "haze" }
 
 # Firebase
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }

@@ -7,25 +7,29 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.aprilarn.washflow.ui.core.theme.Gray
 import com.aprilarn.washflow.data.model.Customers
 import com.aprilarn.washflow.data.model.Items
 import com.aprilarn.washflow.data.model.Services
@@ -37,6 +41,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.TextFieldValue
 import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.feature.aiagent.component.*
+import dev.chrisbanes.haze.HazeProgressive
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -65,7 +76,9 @@ fun AiAgentPanel(
     onClearHistory: () -> Unit,
     onConfirmAction: (String, AiAgentAction?) -> Unit,
     onCancelAction: (String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    hazeState: HazeState? = null,
+    isDarkBackground: Boolean = false
 ) {
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
@@ -262,6 +275,29 @@ fun AiAgentPanel(
         }
     }
 
+    val panelHazeState = rememberHazeState()
+    val scrimAlpha = if (isDarkBackground) 0.26f else 0.16f
+    val glassTintAlpha = if (isDarkBackground) 0.54f else 0.40f
+    val hazeStyle = remember(isDarkBackground) {
+        HazeStyle(
+            backgroundColor = Color(0xFFF8FAFC),
+            tint = HazeTint(Color.White.copy(alpha = glassTintAlpha)),
+            blurRadius = 22.dp,
+            noiseFactor = 0.08f,
+            fallbackTint = HazeTint(Color.White.copy(alpha = 0.85f))
+        )
+    }
+    val barTintAlpha = if (isDarkBackground) 0.56f else 0.48f
+    val barHazeStyle = remember(isDarkBackground) {
+        HazeStyle(
+            backgroundColor = Color(0xFFF8FAFC),
+            tint = HazeTint(Color.White.copy(alpha = barTintAlpha)),
+            blurRadius = 18.dp,
+            noiseFactor = 0.06f,
+            fallbackTint = HazeTint(Color.White.copy(alpha = 0.90f))
+        )
+    }
+
     // --- UI Layout ---
     Box(modifier = Modifier.fillMaxSize()) {
         AnimatedVisibility(
@@ -272,7 +308,7 @@ fun AiAgentPanel(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.3f))
+                    .background(Color.Black.copy(alpha = scrimAlpha))
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
@@ -281,10 +317,17 @@ fun AiAgentPanel(
             )
         }
 
-        Box(
+        BoxWithConstraints(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.CenterEnd
         ) {
+            val isWideScreen = maxWidth > 440.dp
+            val panelShape = if (isWideScreen) {
+                RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp)
+            } else {
+                RectangleShape
+            }
+
             AnimatedVisibility(
                 visible = expanded,
                 enter = slideInHorizontally(
@@ -296,28 +339,75 @@ fun AiAgentPanel(
                     animationSpec = tween(durationMillis = 300)
                 )
             ) {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .width(400.dp),
-                    color = Color.White,
-                    shadowElevation = 24.dp
-                ) {
+                val panelModifier = Modifier
+                    .fillMaxHeight()
+                    .then(if (isWideScreen) Modifier.width(400.dp) else Modifier.fillMaxWidth())
+                    .clip(panelShape)
+                    .then(
+                        if (isWideScreen) {
+                            Modifier.border(
+                                width = 1.dp,
+                                brush = Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.White.copy(alpha = 0.85f),
+                                        Color.White.copy(alpha = 0.45f),
+                                        Color.White.copy(alpha = 0.65f)
+                                    )
+                                ),
+                                shape = panelShape
+                            )
+                        } else {
+                            Modifier
+                        }
+                    )
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = {}
+                    )
+
+                Box(modifier = panelModifier) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .nestedScroll(nestedScrollConnection)
                     ) {
-                        LazyColumn(
-                            state = listState,
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(
-                                top = with(density) { headerHeightPx.toDp() },
-                                bottom = with(density) { footerHeightPx.toDp() },
-                                start = 24.dp,
-                                end = 24.dp
-                            )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .hazeSource(state = panelHazeState)
                         ) {
+                            Box(
+                                modifier = Modifier
+                                    .matchParentSize()
+                                    .then(
+                                        if (hazeState != null) {
+                                            Modifier.hazeEffect(state = hazeState, style = hazeStyle)
+                                        } else {
+                                            Modifier.background(Color.White.copy(alpha = 0.82f))
+                                        }
+                                    )
+                                    .background(
+                                        Brush.verticalGradient(
+                                            colors = listOf(
+                                                Color.White.copy(alpha = 0.22f),
+                                                Color.White.copy(alpha = 0.08f),
+                                                Color.White.copy(alpha = 0.16f)
+                                            )
+                                        )
+                                    )
+                            )
+
+                            LazyColumn(
+                                state = listState,
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(
+                                    top = with(density) { headerHeightPx.toDp() } + if (messages.isNotEmpty()) 4.dp else 0.dp,
+                                    bottom = with(density) { footerHeightPx.toDp() },
+                                    start = 24.dp,
+                                    end = 24.dp
+                                )
+                            ) {
                             if (messages.isEmpty()) {
                                 item {
                                     AiAgentEmptyState(
@@ -360,7 +450,9 @@ fun AiAgentPanel(
                                         if (!alreadyAnimated) {
                                             delay(50L)
                                             animProgress = 1f
-                                            onMessageAnimated(message.id)
+                                            if (message.isUser) {
+                                                onMessageAnimated(message.id)
+                                            }
                                         }
                                     }
 
@@ -406,15 +498,34 @@ fun AiAgentPanel(
                                     }
                                 }
                             }
+                            }
                         }
 
-                        // Header Overlay
-                        Box(
+                        // Header Overlay (seamless progressive blur without divider)
+                        val headerProgressive = remember {
+                            HazeProgressive.Brush(
+                                Brush.verticalGradient(
+                                    0.0f to Color.Black,
+                                    0.68f to Color.Black,
+                                    1.0f to Color.Transparent
+                                )
+                            )
+                        }
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .onGloballyPositioned { headerHeightPx = it.size.height.toFloat() }
                                 .graphicsLayer { translationY = headerOffsetPx }
-                                .background(Color.White)
+                                .hazeEffect(state = panelHazeState, style = barHazeStyle) {
+                                    progressive = headerProgressive
+                                }
+                                .background(
+                                    Brush.verticalGradient(
+                                        0.0f to Color.White.copy(alpha = 0.24f),
+                                        0.68f to Color.White.copy(alpha = 0.14f),
+                                        1.0f to Color.Transparent
+                                    )
+                                )
                                 .statusBarsPadding()
                                 .align(Alignment.TopCenter)
                         ) {
@@ -422,42 +533,67 @@ fun AiAgentPanel(
                                 onClearHistory = onClearHistory,
                                 onDismiss = onDismiss
                             )
+                            Spacer(modifier = Modifier.height(14.dp))
                         }
 
-                        // Input Overlay
+                        // Input Overlay (seamless progressive blur without divider)
+                        val footerProgressive = remember {
+                            HazeProgressive.Brush(
+                                Brush.verticalGradient(
+                                    0.0f to Color.Transparent,
+                                    0.22f to Color.Black,
+                                    1.0f to Color.Black
+                                )
+                            )
+                        }
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .onGloballyPositioned { footerHeightPx = it.size.height.toFloat() }
                                 .graphicsLayer { translationY = footerOffsetPx }
-                                .background(Color.White)
-                                .navigationBarsPadding()
-                                .imePadding()
-                                .align(Alignment.BottomCenter)
-                                .padding(16.dp)
-                        ) {
-                            AiAgentPanelInputArea(
-                                inputMessage = inputMessage,
-                                onInputChange = onInputChange,
-                                onSendMessage = onSendMessage,
-                                onStopProcessing = onStopProcessing,
-                                modelStatus = modelStatus,
-                                currentModelName = currentModelName,
-                                cooldownSeconds = cooldownSeconds,
-                                isAiThinking = isAiThinking,
-                                isTypewriterActive = isTypewriterActive
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    stringResource(R.string.ai_disclaimer),
-                                    color = Gray,
-                                    fontSize = 10.sp
+                                .hazeEffect(state = panelHazeState, style = barHazeStyle) {
+                                    progressive = footerProgressive
+                                }
+                                .background(
+                                    Brush.verticalGradient(
+                                        0.0f to Color.Transparent,
+                                        0.22f to Color.White.copy(alpha = 0.14f),
+                                        1.0f to Color.White.copy(alpha = 0.28f)
+                                    )
                                 )
+                                .align(Alignment.BottomCenter)
+                        ) {
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .navigationBarsPadding()
+                                    .imePadding()
+                                    .padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 16.dp)
+                            ) {
+                                AiAgentPanelInputArea(
+                                    inputMessage = inputMessage,
+                                    onInputChange = onInputChange,
+                                    onSendMessage = onSendMessage,
+                                    onStopProcessing = onStopProcessing,
+                                    modelStatus = modelStatus,
+                                    currentModelName = currentModelName,
+                                    cooldownSeconds = cooldownSeconds,
+                                    isAiThinking = isAiThinking,
+                                    isTypewriterActive = isTypewriterActive
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        stringResource(R.string.ai_disclaimer),
+                                        color = Color(0xFF475569),
+                                        fontSize = 10.sp
+                                    )
+                                }
                             }
                         }
 
@@ -477,7 +613,7 @@ fun AiAgentPanel(
                             ),
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
-                                .padding(bottom = with(density) { footerHeightPx.toDp() + 16.dp })
+                                .padding(bottom = with(density) { footerHeightPx.toDp() + 8.dp })
                                 .graphicsLayer { translationY = footerOffsetPx }
                         ) {
                             AiAgentScrollToBottomButton(

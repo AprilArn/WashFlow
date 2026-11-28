@@ -108,6 +108,8 @@
     <string name="workspace_processing">Processing…</string>
     <string name="workspace_invite_code_label">Workspace invitation code</string>
     <string name="workspace_invite_code_placeholder">e.g., ABC123</string>
+    <string name="workspace_invite_paste_cd">Paste code</string>
+    <string name="workspace_invite_clipboard_empty">No valid code in clipboard</string>
     <string name="workspace_join_button">Join</string>
     <string name="workspace_join_full_button">Join Workspace</string>
     <string name="workspace_or">or</string>
@@ -667,4 +669,6 @@
     <string name="ai_item_details_header">Item Details</string>
     <string name="ai_unknown_service">Unknown Service</string>
     <string name="ai_confirm_btn">Confirm</string>
+    <string name="ai_copy_message">Copy</string>
+    <string name="ai_copied_message">Copied</string>
 </resources>

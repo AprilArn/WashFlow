@@ -29,14 +29,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.aprilarn.washflow.ui.core.theme.AlertRed
 import com.aprilarn.washflow.ui.core.theme.PastelRose
@@ -54,6 +57,8 @@ fun HoldToConfirmButton(
     progressColor: Color = AlertRed,
     defaultTextColor: Color = PastelRose,
     progressTextColor: Color = Color.White,
+    fontSize: TextUnit = TextUnit.Unspecified,
+    enabled: Boolean = true,
     onConfirm: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -118,8 +123,15 @@ fun HoldToConfirmButton(
     }
 
     // Efek hentakan keras 1x ketika progress mencapai 100%
+    LaunchedEffect(enabled) {
+        if (!enabled) {
+            isPressed = false
+            triggerAction = false
+        }
+    }
+
     LaunchedEffect(triggerAction) {
-        if (triggerAction) {
+        if (triggerAction && enabled) {
             performHeavyHaptic(view, context)
             onConfirm()
         }
@@ -144,9 +156,11 @@ fun HoldToConfirmButton(
         modifier = modifier
             .fillMaxWidth()
             .height(50.dp)
+            .alpha(if (enabled) 1f else 0.45f)
             .clip(buttonShape)
             .background(containerColor)
-            .pointerInput(Unit) {
+            .pointerInput(enabled) {
+                if (!enabled) return@pointerInput
                 detectTapGestures(
                     onPress = {
                         triggerAction = false
@@ -175,7 +189,10 @@ fun HoldToConfirmButton(
             Text(
                 text = if (progress >= 1f) progressText else defaultText,
                 color = if (progress > 0.5f) progressTextColor else defaultTextColor,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                fontSize = fontSize,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }

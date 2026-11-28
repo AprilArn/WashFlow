@@ -105,6 +105,8 @@
     <string name="workspace_processing">Memproses…</string>
     <string name="workspace_invite_code_label">Kode undangan workspace</string>
     <string name="workspace_invite_code_placeholder">contoh: ABC123</string>
+    <string name="workspace_invite_paste_cd">Tempel kode</string>
+    <string name="workspace_invite_clipboard_empty">Tidak ada kode valid di clipboard</string>
     <string name="workspace_join_button">Gabung</string>
     <string name="workspace_join_full_button">Gabung Workspace</string>
     <string name="workspace_or">atau</string>
@@ -663,4 +665,6 @@
     <string name="ai_item_details_header">Rincian Item</string>
     <string name="ai_unknown_service">Layanan Tidak Diketahui</string>
     <string name="ai_confirm_btn">Konfirmasi</string>
+    <string name="ai_copy_message">Salin</string>
+    <string name="ai_copied_message">Disalin</string>
 </resources>

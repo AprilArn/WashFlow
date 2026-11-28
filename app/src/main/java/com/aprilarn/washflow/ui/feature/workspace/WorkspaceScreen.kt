@@ -1,7 +1,16 @@
 package com.aprilarn.washflow.ui.feature.workspace
 
+import android.widget.Toast
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,44 +31,52 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Key
+import androidx.compose.material.icons.rounded.ContentPaste
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -68,11 +85,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.aprilarn.washflow.R
+import com.aprilarn.washflow.ui.core.components.performLightHaptic
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
 import com.aprilarn.washflow.ui.core.theme.MainBlue
 import com.aprilarn.washflow.ui.core.theme.MainFontBlack
 import com.aprilarn.washflow.ui.core.theme.MornYellow
 import com.aprilarn.washflow.ui.core.theme.PastelBlue
+import com.aprilarn.washflow.ui.core.theme.PastelBlueBg
 import com.aprilarn.washflow.ui.core.theme.PastelBlueIconBg
 import com.aprilarn.washflow.ui.core.theme.PastelBlueSoftBg
 import com.aprilarn.washflow.ui.core.theme.PastelGreen
@@ -81,6 +100,16 @@ import com.aprilarn.washflow.ui.core.theme.PastelGreenIconBg
 import com.aprilarn.washflow.ui.core.theme.PastelGreenSoftBg
 import com.aprilarn.washflow.ui.core.theme.PastelNeutralBg
 import com.aprilarn.washflow.ui.core.theme.PastelNeutralText
+import java.util.Locale
+
+internal const val INVITE_CODE_LENGTH = 6
+
+internal fun sanitizeInviteCode(raw: String): String {
+    return raw
+        .uppercase(Locale.ROOT)
+        .filter { it in 'A'..'Z' || it in '0'..'9' }
+        .take(INVITE_CODE_LENGTH)
+}
 
 @Composable
 fun WorkspaceScreen(
@@ -343,7 +372,8 @@ internal fun WorkspaceJoinCard(
     onJoinClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val canJoin = inviteCode.isNotBlank() && !isLoading
+    val sanitizedCode = sanitizeInviteCode(inviteCode)
+    val canJoin = sanitizedCode.length == INVITE_CODE_LENGTH && !isLoading
 
     Surface(
         modifier = modifier,
@@ -354,7 +384,10 @@ internal fun WorkspaceJoinCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 20.dp)
+                .padding(
+                    horizontal = if (horizontalActionLayout) 24.dp else 20.dp,
+                    vertical = 20.dp
+                )
         ) {
             // Header Editorial bergaya TableDataCard
             Row(
@@ -395,10 +428,11 @@ internal fun WorkspaceJoinCard(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     WorkspaceInviteCodeField(
-                        inviteCode = inviteCode,
+                        inviteCode = sanitizedCode,
                         onInviteCodeChange = onInviteCodeChange,
                         isLoading = isLoading,
                         canJoin = canJoin,
+                        isCompact = false,
                         onJoinClick = onJoinClick,
                         modifier = Modifier.weight(1f)
                     )
@@ -425,15 +459,16 @@ internal fun WorkspaceJoinCard(
                 }
             } else {
                 WorkspaceInviteCodeField(
-                    inviteCode = inviteCode,
+                    inviteCode = sanitizedCode,
                     onInviteCodeChange = onInviteCodeChange,
                     isLoading = isLoading,
                     canJoin = canJoin,
+                    isCompact = true,
                     onJoinClick = onJoinClick,
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 Button(
                     onClick = onJoinClick,
@@ -466,62 +501,155 @@ private fun WorkspaceInviteCodeField(
     onInviteCodeChange: (String) -> Unit,
     isLoading: Boolean,
     canJoin: Boolean,
+    isCompact: Boolean,
     onJoinClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    OutlinedTextField(
-        value = inviteCode,
-        onValueChange = onInviteCodeChange,
-        enabled = !isLoading,
+    val context = LocalContext.current
+    val view = LocalView.current
+    @Suppress("DEPRECATION")
+    val clipboardManager = LocalClipboardManager.current
+    val clipboardEmptyText = stringResource(R.string.workspace_invite_clipboard_empty)
+
+    var isFocused by remember { mutableStateOf(false) }
+
+    val boxHeight = if (isCompact) 48.dp else 54.dp
+    val boxSpacing = if (isCompact) 6.dp else 8.dp
+    val boxCorner = RoundedCornerShape(12.dp)
+
+    val cursorTransition = rememberInfiniteTransition(label = "otpCursorBlink")
+    val cursorAlpha by cursorTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 520, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "otpCursorAlpha"
+    )
+
+    Row(
         modifier = modifier,
-        singleLine = true,
-        shape = RoundedCornerShape(14.dp),
-        placeholder = {
-            Text(
-                text = stringResource(R.string.workspace_invite_code_label) +
-                    " (" + stringResource(R.string.workspace_invite_code_placeholder) + ")",
-                color = PastelNeutralText,
-                fontSize = 13.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        },
-        leadingIcon = {
-            Icon(
-                imageVector = Icons.Rounded.Key,
-                contentDescription = null,
-                tint = PastelBlue,
-                modifier = Modifier.size(19.dp)
-            )
-        },
-        trailingIcon = {
-            if (inviteCode.isNotEmpty() && !isLoading) {
-                IconButton(onClick = { onInviteCodeChange("") }) {
-                    Icon(
-                        imageVector = Icons.Rounded.Close,
-                        contentDescription = stringResource(R.string.common_clear_search),
-                        tint = PastelNeutralText,
-                        modifier = Modifier.size(18.dp)
-                    )
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(if (isCompact) 8.dp else 10.dp)
+    ) {
+        BasicTextField(
+            value = TextFieldValue(
+                text = inviteCode,
+                selection = TextRange(inviteCode.length)
+            ),
+            onValueChange = { newValue ->
+                val sanitized = sanitizeInviteCode(newValue.text)
+                if (sanitized != inviteCode) {
+                    onInviteCodeChange(sanitized)
+                }
+            },
+            enabled = !isLoading,
+            singleLine = true,
+            cursorBrush = SolidColor(Color.Transparent),
+            keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.Characters,
+                autoCorrectEnabled = false,
+                keyboardType = KeyboardType.Ascii,
+                imeAction = ImeAction.Done
+            ),
+            keyboardActions = KeyboardActions(
+                onDone = { if (canJoin) onJoinClick() }
+            ),
+            modifier = Modifier
+                .weight(1f)
+                .onFocusChanged { isFocused = it.isFocused },
+            decorationBox = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(boxSpacing),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    repeat(INVITE_CODE_LENGTH) { index ->
+                        val char = inviteCode.getOrNull(index)
+                        val isFilled = char != null
+                        val isCurrentSlot = isFocused && !isLoading && (
+                            index == inviteCode.length ||
+                                (inviteCode.length == INVITE_CODE_LENGTH && index == INVITE_CODE_LENGTH - 1)
+                            )
+
+                        val containerColor = when {
+                            isLoading -> PastelNeutralBg.copy(alpha = 0.45f)
+                            isFilled || isCurrentSlot -> PastelBlueSoftBg
+                            else -> PastelNeutralBg.copy(alpha = 0.72f)
+                        }
+                        val borderColor = when {
+                            isLoading -> Color.Transparent
+                            isCurrentSlot -> PastelBlue
+                            isFilled -> PastelBlueBg
+                            else -> PastelBlueBg.copy(alpha = 0.55f)
+                        }
+                        val borderWidth = if (isCurrentSlot) 1.5.dp else 1.dp
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(boxHeight)
+                                .clip(boxCorner)
+                                .background(containerColor)
+                                .border(borderWidth, borderColor, boxCorner),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (char != null) {
+                                Text(
+                                    text = char.toString(),
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        color = if (isLoading) PastelNeutralText else GrayBlue,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = if (isCompact) 18.sp else 20.sp
+                                    )
+                                )
+                            } else if (isFocused && !isLoading && index == inviteCode.length) {
+                                Box(
+                                    modifier = Modifier
+                                        .width(2.dp)
+                                        .height(if (isCompact) 18.dp else 20.dp)
+                                        .alpha(cursorAlpha)
+                                        .background(PastelBlue, RoundedCornerShape(1.dp))
+                                )
+                            }
+                        }
+                    }
                 }
             }
-        },
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        keyboardActions = KeyboardActions(
-            onDone = { if (canJoin) onJoinClick() }
-        ),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = PastelNeutralBg.copy(alpha = 0.65f),
-            unfocusedContainerColor = PastelNeutralBg.copy(alpha = 0.65f),
-            disabledContainerColor = PastelNeutralBg.copy(alpha = 0.45f),
-            focusedBorderColor = PastelBlue,
-            unfocusedBorderColor = Color.Transparent,
-            disabledBorderColor = Color.Transparent,
-            focusedTextColor = MainFontBlack,
-            unfocusedTextColor = MainFontBlack,
-            cursorColor = GrayBlue
         )
-    )
+
+        // Tombol Paste di sebelah kanan 6 kotak input
+        Surface(
+            onClick = {
+                val clipText = clipboardManager.getText()?.text.orEmpty()
+                val pasted = sanitizeInviteCode(clipText)
+                if (pasted.isNotEmpty()) {
+                    performLightHaptic(view, context)
+                    onInviteCodeChange(pasted)
+                } else {
+                    Toast.makeText(context, clipboardEmptyText, Toast.LENGTH_SHORT).show()
+                }
+            },
+            enabled = !isLoading,
+            modifier = Modifier.size(boxHeight),
+            shape = boxCorner,
+            color = if (isLoading) PastelNeutralBg.copy(alpha = 0.45f) else PastelBlueSoftBg,
+            border = BorderStroke(
+                width = 1.dp,
+                color = if (isLoading) Color.Transparent else PastelBlueBg
+            )
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Rounded.ContentPaste,
+                    contentDescription = stringResource(R.string.workspace_invite_paste_cd),
+                    tint = if (isLoading) PastelNeutralText else PastelBlue,
+                    modifier = Modifier.size(if (isCompact) 20.dp else 22.dp)
+                )
+            }
+        }
+    }
 }
 
 @Composable

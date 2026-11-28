@@ -32,10 +32,8 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.aprilarn.washflow.R
 import com.aprilarn.washflow.ui.feature.aiagent.AiModelStatus
-import com.aprilarn.washflow.ui.core.theme.Gray
 import com.aprilarn.washflow.ui.core.theme.GrayBlue
 import com.aprilarn.washflow.ui.core.theme.MainFontBlack
-import com.aprilarn.washflow.ui.core.theme.PastelBlueSoftBg
 
 @Composable
 fun AiAgentPanelHeader(
@@ -85,7 +83,8 @@ fun AiAgentPanelHeader(
                                 .padding(end = 24.dp),
                             shape = RoundedCornerShape(12.dp),
                             shadowElevation = 8.dp,
-                            color = Color.White
+                            color = Color.White.copy(alpha = 0.94f),
+                            border = BorderStroke(1.dp, Color.White)
                         ) {
                             Column(modifier = Modifier.width(IntrinsicSize.Max)) {
                                 Text(
@@ -114,7 +113,8 @@ fun AiAgentPanelHeader(
                     onDismiss()
                 },
                 shape = CircleShape,
-                color = PastelBlueSoftBg,
+                color = Color.White.copy(alpha = 0.55f),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.80f)),
                 modifier = Modifier.size(36.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -142,10 +142,13 @@ fun AiAgentPanelInputArea(
     isAiThinking: Boolean,
     isTypewriterActive: Boolean
 ) {
+    val inputShape = RoundedCornerShape(16.dp)
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(12.dp))
+            .clip(inputShape)
+            .background(Color.White.copy(alpha = 0.78f))
+            .border(1.dp, Color.White.copy(alpha = 0.90f), inputShape)
             .padding(8.dp)
     ) {
         Column {
@@ -166,7 +169,12 @@ fun AiAgentPanelInputArea(
                             false
                         }
                     },
-                placeholder = { Text(stringResource(R.string.ai_input_placeholder), color = Color.Gray) },
+                placeholder = {
+                    Text(
+                        stringResource(R.string.ai_input_placeholder),
+                        color = Color(0xFF64748B)
+                    )
+                },
                 keyboardOptions = KeyboardOptions(
                     imeAction = ImeAction.Send
                 ),
@@ -217,7 +225,7 @@ fun AiAgentPanelInputArea(
                             ) {
                                 Text(
                                     text = statusText,
-                                    color = Gray,
+                                    color = Color(0xFF475569),
                                     fontSize = 12.sp
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
@@ -227,7 +235,7 @@ fun AiAgentPanelInputArea(
                                             imageVector = Icons.Rounded.MoreHoriz,
                                             contentDescription = stringResource(R.string.ai_status_idle),
                                             modifier = Modifier.size(14.dp),
-                                            tint = Gray
+                                            tint = Color(0xFF475569)
                                         )
                                     }
                                     AiModelStatus.THINKING -> {
@@ -266,7 +274,7 @@ fun AiAgentPanelInputArea(
                                             imageVector = Icons.Rounded.Timer,
                                             contentDescription = stringResource(R.string.ai_status_cooldown_cd),
                                             modifier = Modifier.size(14.dp),
-                                            tint = Color.Gray
+                                            tint = Color(0xFF475569)
                                         )
                                     }
                                 }
@@ -283,13 +291,13 @@ fun AiAgentPanelInputArea(
                         },
                         enabled = (inputMessage.text.isNotBlank() || showStopButton) && !showDisabledSend,
                         modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(10.dp))
                             .background(
                                 when {
                                     showStopButton -> Color.Red
-                                    showDisabledSend -> Color(0xFFE0E0E0)
+                                    showDisabledSend -> MainFontBlack.copy(alpha = 0.14f)
                                     inputMessage.text.isNotBlank() -> GrayBlue
-                                    else -> Color(0xFFE0E0E0)
+                                    else -> MainFontBlack.copy(alpha = 0.14f)
                                 }
                             )
                             .height(38.dp)
@@ -335,18 +343,20 @@ fun AiAgentEmptyState(
             text = stringResource(R.string.ai_greeting_subtitle),
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Medium,
-                color = Gray,
+                color = Color(0xFF475569),
                 fontSize = 20.sp
             )
         )
         Spacer(modifier = Modifier.height(64.dp))
 
         // Info Card
+        val infoCardShape = RoundedCornerShape(14.dp)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFF1E2124))
+                .clip(infoCardShape)
+                .background(Color(0xFF1E293B).copy(alpha = 0.84f))
+                .border(1.dp, Color.White.copy(alpha = 0.18f), infoCardShape)
                 .padding(16.dp)
         ) {
             Column {
@@ -402,8 +412,9 @@ fun AiAgentScrollToBottomButton(
     Surface(
         onClick = onClick,
         shape = CircleShape,
-        color = Color(0xFF60B0FF).copy(alpha = 0.9f),
-        border = BorderStroke(1.dp, Color(0xFFC1DFFF).copy(alpha = 0.9f)),
+        color = Color.White.copy(alpha = 0.88f),
+        border = BorderStroke(1.dp, Color.White),
+        shadowElevation = 6.dp,
         modifier = modifier.height(36.dp)
     ) {
         Row(
@@ -414,17 +425,17 @@ fun AiAgentScrollToBottomButton(
             Text(
                 text = stringResource(R.string.ai_scroll_to_bottom),
                 style = MaterialTheme.typography.labelLarge.copy(
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.SemiBold,
                     fontSize = 12.sp
                 ),
-                color = Color.White
+                color = GrayBlue
             )
-            Spacer(modifier = Modifier.width(6.dp))
+            Spacer(modifier = Modifier.width(4.dp))
             Icon(
                 imageVector = Icons.Rounded.KeyboardArrowDown,
                 contentDescription = null,
                 modifier = Modifier.size(18.dp),
-                tint = Color.White
+                tint = GrayBlue
             )
         }
     }
